@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: aurafit-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: aurafit
+      POSTGRES_PASSWORD: aurafit123
+      POSTGRES_DB: aurafit_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
