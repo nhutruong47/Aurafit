@@ -1,54 +1,54 @@
 package com.aurafit.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
-@Table(name = "users")
+@Table(name = "\"User\"")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String email;
-
-    @Column(nullable = false)
-    private String password;
-
     @Column(name = "full_name")
     private String fullName;
 
+    @Column(unique = true, nullable = false)
+    private String email;
+
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
     private String phone;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private String role = "USER";
+    @Column(name = "phone_verified")
+    private Boolean phoneVerified = false;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Enumerated(EnumType.STRING)
+    private Role role = Role.CUSTOMER;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private UserVerification userVerification;
+    @Enumerated(EnumType.STRING)
+    private UserStatus status = UserStatus.ACTIVE;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    public enum Role {
+        CUSTOMER, STAFF, ADMIN
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public enum UserStatus {
+        ACTIVE, BLOCKED
     }
 }
