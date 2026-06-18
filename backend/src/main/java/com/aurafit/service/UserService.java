@@ -2,14 +2,13 @@ package com.aurafit.service;
 
 import com.aurafit.dto.request.AuthRequest;
 import com.aurafit.dto.request.RegisterRequest;
-import com.aurafit.dto.response.AuthResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import com.aurafit.dto.response.AuthResponseDTO;
 
 public interface UserService {
+
     void register(RegisterRequest request);
 
-    AuthResponse login(AuthRequest request, HttpServletResponse response);
+    AuthResponseDTO login(AuthRequest request);
 
-    AuthResponse refresh(HttpServletRequest request);
+    AuthResponseDTO refresh(String refreshToken);
 }

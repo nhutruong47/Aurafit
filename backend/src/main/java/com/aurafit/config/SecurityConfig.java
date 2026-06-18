@@ -1,7 +1,9 @@
 package com.aurafit.config;
 
+import com.aurafit.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -9,45 +11,76 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.aurafit.security.JwtAuthenticationFilter;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity                     // enables @PreAuthorize, @Secured, @RolesAllowed
 public class SecurityConfig {
 
-        private final JwtAuthenticationFilter jwtAuthFilter;
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
-        public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
-                this.jwtAuthFilter = jwtAuthFilter;
-        }
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
 
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                http
-                                .csrf(csrf -> csrf.disable())
-                                .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                                .authorizeHttpRequests(auth -> auth
-                                                // Cho phép truy cập công khai vào giao diện Swagger UI để test API
-                                                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**",
-                                                                "/swagger-ui.html")
-                                                .permitAll()
+    // -------------------------------------------------------------------------
+    // Security Filter Chain — pure Lambda DSL, zero deprecated methods
+    // -------------------------------------------------------------------------
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                                                // Mở khóa thêm cụm /api/users/** để Swagger gọi được API đăng ký tự do
-                                                .requestMatchers("/api/auth/**", "/api/users/**")
-                                                .permitAll()
+            .csrf(csrf -> csrf.disable())
 
-                                                // Tất cả các request khác bắt buộc phải đăng nhập và có JWT Token hợp
-                                                // lệ
-                                                .anyRequest().authenticated())
-                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                return http.build();
-        }
+            .authorizeHttpRequests(auth -> auth
+                // Public auth endpoints (register, login, refresh)
+                .requestMatchers("/api/auth/**", "/api/users/register", "/api/users/login", "/api/users/refresh").permitAll()
 
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-                return new BCryptPasswordEncoder();
-        }
+                // Public product browsing (future catalog endpoints)
+                .requestMatchers("/api/public/**").permitAll()
+
+                // Swagger UI & OpenAPI docs
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+                // Everything else requires a valid JWT
+                .anyRequest().authenticated()
+            )
+
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    // -------------------------------------------------------------------------
+    // CORS — configured for the React frontend on localhost:5173
+    // -------------------------------------------------------------------------
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+        config.setExposedHeaders(List.of("Set-Cookie", "Authorization"));
+        config.setAllowCredentials(true);               // REQUIRED for HttpOnly cookie transport
+        config.setMaxAge(3600L);                         // pre-flight cache 1 hour
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 }

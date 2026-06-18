@@ -1,22 +1,29 @@
+# =============================================================================
+# AuraFit – Shared / Default Configuration
+# =============================================================================
+# This file contains properties that are common across ALL profiles.
+# Profile-specific overrides live in application-{profile}.yml.
+# Activate a profile via: --spring.profiles.active=dev
+# =============================================================================
+
 server:
   port: 8080
 
 spring:
-  datasource:
-    url: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true
-    username: postgres.hfwmxrrfxsmfhewffemc
-    password: vnfBQ0krpWh7qPWT
-    driver-class-name: org.postgresql.Driver
+  # -- Default profile used when none is explicitly set ----------------------
+  profiles:
+    active: dev
+
   jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    open-in-view: false
+    open-in-view: false                   # Disable OSIV – avoid lazy-loading surprises
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+# -- JWT Configuration -------------------------------------------------------
+# These are safe defaults for LOCAL development only.
+# In production, inject via environment variables or a secrets manager.
 jwt:
   secret: "0ZgnYV0N/IuRZuKZGPV4kNazFFEv3KetkLsXc51E5Qo="
-  expiration: 86400000
+  access-token-expiration: 900000         # 15 minutes (ms)
+  refresh-token-expiration: 604800000     # 7 days     (ms)

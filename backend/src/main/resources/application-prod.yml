@@ -1,0 +1,24 @@
+# =============================================================================
+# AuraFit – PROD Profile (Template – do NOT commit real credentials)
+# =============================================================================
+# Activate via: --spring.profiles.active=prod
+# Inject secrets through environment variables or a vault.
+# =============================================================================
+
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate                  # NEVER auto-alter in production
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+jwt:
+  secret: ${JWT_SECRET}

@@ -21,17 +21,15 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration}")
-    private long jwtExpirationInMs;
+    @Value("${jwt.access-token-expiration}")
+    private long accessTokenExpirationMs;
 
-    // Thiết lập thời gian sống cố định cho Refresh Token trong Cookie là 7 ngày
-    // (tính theo ms)
-    private final long REFRESH_TOKEN_EXPIRATION_MS = 7L * 24 * 60 * 60 * 1000;
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpirationMs;
 
-    private Key getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
+    // -------------------------------------------------------------------------
+    // Token extraction
+    // -------------------------------------------------------------------------
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -50,44 +48,68 @@ public class JwtTokenProvider {
                 .getBody();
     }
 
-    public Boolean isTokenExpired(String token) {
+    // -------------------------------------------------------------------------
+    // Token validation
+    // -------------------------------------------------------------------------
+
+    public boolean isTokenExpired(String token) {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
-    public Boolean validateToken(String token, UserDetails userDetails) {
+    /**
+     * Validates that the token belongs to the given user and has not expired.
+     * Used by JwtAuthenticationFilter for ACCESS tokens extracted from the
+     * Authorization header.
+     */
+    public boolean validateToken(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
-    // Sinh Access Token ngắn hạn cho bộ nhớ RAM (Memory Frontend)
+    // -------------------------------------------------------------------------
+    // Token generation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Generates a short-lived ACCESS token (stored in frontend memory).
+     */
     public String generateToken(String username, Long userId, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("role", role);
         claims.put("tokenType", "ACCESS");
 
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(username)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationInMs))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
+        return buildToken(claims, username, accessTokenExpirationMs);
     }
 
-    // Sinh Refresh Token dài hạn 7 ngày cho HttpOnly Cookie
+    /**
+     * Generates a long-lived REFRESH token (transported via HttpOnly cookie).
+     */
     public String generateRefreshToken(String username, Long userId, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("role", role);
         claims.put("tokenType", "REFRESH");
 
+        return buildToken(claims, username, refreshTokenExpirationMs);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    private String buildToken(Map<String, Object> claims, String subject, long expirationMs) {
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(username)
+                .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_MS))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    private Key getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 }

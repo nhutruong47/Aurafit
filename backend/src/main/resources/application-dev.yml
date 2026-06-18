@@ -1,0 +1,21 @@
+# =============================================================================
+# AuraFit – DEV Profile (Local Docker PostgreSQL)
+# =============================================================================
+# Activated by: --spring.profiles.active=dev   (default in application.yml)
+# Requires:     docker compose up -d
+# =============================================================================
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/aurafit_db
+    username: aurafit
+    password: aurafit123
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update                    # Auto-create/alter tables in dev
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
