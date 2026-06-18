@@ -2,6 +2,7 @@ package com.aurafit.security;
 
 import com.aurafit.entity.User;
 import com.aurafit.enums.UserStatus;
+import com.aurafit.exception.UnauthorizedException;
 import com.aurafit.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -22,10 +23,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy email: " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Khong tim thay email: " + email));
 
         if (user.getStatus() == UserStatus.BLOCKED) {
-            throw new RuntimeException("Tài khoản của bạn hiện đang bị khóa!");
+            throw new UnauthorizedException("Tai khoan cua ban hien dang bi khoa.");
         }
 
         return new org.springframework.security.core.userdetails.User(

@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public interface UserService {
-    String register(RegisterRequest request);
+    void register(RegisterRequest request);
 
     AuthResponse login(AuthRequest request, HttpServletResponse response);
 
