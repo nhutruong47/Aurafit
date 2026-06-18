@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { formatCurrency } from '../utils/formatCurrency';
 import { fallbackProductImage, toCartItem } from '../utils/productMapper';
-import { getShopByProductCategory } from '../utils/shopMock';
+import { adminContact } from '../utils/shopMock';
 
 const initialMockReviews = [
   {
@@ -49,8 +49,6 @@ export default function ProductDetail({ product, onAddToCart, onNavigate, curren
   
   const [newReviewData, setNewReviewData] = useState({ rating: 5, comment: '' });
 
-  const shop = useMemo(() => getShopByProductCategory(product?.rawCategory || product?.category), [product]);
-  
   const isAdmin = useMemo(() => currentUser?.role?.split(',').some((role) => role.trim() === 'ADMIN'), [currentUser]);
 
   useEffect(() => {
@@ -177,37 +175,33 @@ export default function ProductDetail({ product, onAddToCart, onNavigate, curren
               </p>
             </div>
 
-            {/* Shop Card */}
+            {/* Admin Contact Card */}
             <div className="mb-8 p-5 border border-[#cfc4c5] bg-[#f9f9f9] flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <img
-                  src={shop.avatar}
-                  alt={shop.name}
-                  className="w-14 h-14 rounded-full object-cover border border-[#cfc4c5]/50 cursor-pointer"
-                  onClick={() => onNavigate?.('shopDetail', shop)}
+                  src={adminContact.avatar}
+                  alt={adminContact.name}
+                  className="w-14 h-14 rounded-full object-cover border border-[#cfc4c5]/50"
                 />
                 <div>
-                  <h4
-                    className="font-serif text-lg font-bold hover:text-[#99854e] cursor-pointer transition"
-                    onClick={() => onNavigate?.('shopDetail', shop)}
-                  >
-                    {shop.name}
+                  <h4 className="font-serif text-lg font-bold">
+                    {adminContact.name}
                   </h4>
                   <div className="flex items-center gap-2 mt-1 text-xs text-[#5f5e5e]">
                     <span className="flex items-center text-[#99854e]">
                       <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                      {shop.rating}
+                      {adminContact.rating}
                     </span>
                     <span>•</span>
-                    <span>{shop.address.split(',').slice(-2).join(', ').trim()}</span>
+                    <span>{adminContact.address.split(',').slice(-2).join(', ').trim()}</span>
                   </div>
                 </div>
               </div>
               <button
-                onClick={() => onNavigate?.('shopDetail', shop)}
+                onClick={() => onNavigate?.('chat', product)}
                 className="px-5 py-2.5 border border-black text-[11px] font-semibold uppercase tracking-[0.15em] text-black hover:bg-black hover:text-white transition-all duration-300"
               >
-                Xem Cửa hàng
+                Liên hệ admin
               </button>
             </div>
 
@@ -245,7 +239,7 @@ export default function ProductDetail({ product, onAddToCart, onNavigate, curren
                     onClick={() => onNavigate?.('chat', product)}
                     className="w-full py-5 border border-black text-black text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 hover:bg-black hover:text-white"
                   >
-                    Chat với cửa hàng
+                    Liên hệ admin
                   </button>
                 </>
               )}

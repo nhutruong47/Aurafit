@@ -3,32 +3,13 @@ import { fetchCostumes, fetchRecommendedCostumes, fetchSeasonalCostumes } from '
 import { fallbackProductImage, mapCostumeToProduct, toCartItem } from '../utils/productMapper';
 import { formatCurrency } from '../utils/formatCurrency';
 
-const seasonCopy = {
-  spring: {
-    label: 'Mua xuan',
-    copy: 'Uu tien ky yeu, ao dai, vest sang va do su kien nhe.',
-  },
-  summer: {
-    label: 'Mua he',
-    copy: 'Uu tien cosplay, ky yeu, su kien ngoai troi va outfit de mac.',
-  },
-  autumn: {
-    label: 'Mua thu',
-    copy: 'Uu tien do su kien, concept chup anh va cosplay co lop.',
-  },
-  winter: {
-    label: 'Mua dong',
-    copy: 'Uu tien formalwear, party look, cosplay toi mau va phu kien di kem.',
-  },
-};
+const PAGE_SIZE = 20;
 
-function getCurrentSeason() {
-  const month = new Date().getMonth() + 1;
-  if (month >= 3 && month <= 5) return seasonCopy.spring;
-  if (month >= 6 && month <= 8) return seasonCopy.summer;
-  if (month >= 9 && month <= 11) return seasonCopy.autumn;
-  return seasonCopy.winter;
-}
+const tabs = [
+  { id: 'recommended', label: 'De xuat', icon: 'auto_awesome' },
+  { id: 'trending', label: 'Xu huong', icon: 'trending_up' },
+  { id: 'all', label: 'Tat ca san pham', icon: 'grid_view' },
+];
 
 function uniqueProducts(products) {
   const seen = new Set();
@@ -40,16 +21,16 @@ function uniqueProducts(products) {
 }
 
 export default function Shop({ currentUser, onNavigate, onAddToCart }) {
+  const [activeTab, setActiveTab] = useState('recommended');
+  const [pageByTab, setPageByTab] = useState({ recommended: 1, trending: 1, all: 1 });
   const [recommendedProducts, setRecommendedProducts] = useState([]);
-  const [seasonalProducts, setSeasonalProducts] = useState([]);
+  const [trendingProducts, setTrendingProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const currentSeason = useMemo(() => getCurrentSeason(), []);
 
   useEffect(() => {
     let isMounted = true;
-
     setIsLoading(true);
     setError('');
 
@@ -60,13 +41,14 @@ export default function Shop({ currentUser, onNavigate, onAddToCart }) {
     ])
       .then(([recommendedData, seasonalData, allData]) => {
         if (!isMounted) return;
-        setRecommendedProducts(Array.isArray(recommendedData) ? recommendedData.map(mapCostumeToProduct) : []);
-        setSeasonalProducts(Array.isArray(seasonalData) ? seasonalData.map(mapCostumeToProduct) : []);
-        setAllProducts(Array.isArray(allData) ? allData.map(mapCostumeToProduct) : []);
+
+        setRecommendedProducts(uniqueProducts((recommendedData || []).map(mapCostumeToProduct)));
+        setTrendingProducts(uniqueProducts((seasonalData || []).map(mapCostumeToProduct)));
+        setAllProducts(uniqueProducts((allData || []).map(mapCostumeToProduct)));
       })
       .catch((requestError) => {
         if (!isMounted) return;
-        setError(requestError.message || 'Khong the tai du lieu shop.');
+        setError(requestError.message || 'Khong the tai du lieu shop chung.');
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -77,126 +59,144 @@ export default function Shop({ currentUser, onNavigate, onAddToCart }) {
     };
   }, [currentUser?.id]);
 
-  const habitProducts = uniqueProducts(recommendedProducts).slice(0, 8);
-  const seasonProducts = uniqueProducts(seasonalProducts).slice(0, 8);
-  const sortedAllProducts = uniqueProducts(recommendedProducts.length ? recommendedProducts : allProducts);
+  const productsByTab = useMemo(
+    () => ({
+      recommended: recommendedProducts,
+      trending: trendingProducts,
+      all: allProducts,
+    }),
+    [allProducts, recommendedProducts, trendingProducts]
+  );
+
+  const activeProducts = productsByTab[activeTab] || [];
+  const activePage = pageByTab[activeTab] || 1;
+  const totalPages = Math.max(1, Math.ceil(activeProducts.length / PAGE_SIZE));
+  const visibleProducts = activeProducts.slice((activePage - 1) * PAGE_SIZE, activePage * PAGE_SIZE);
+
+  const setActivePage = (page) => {
+    setPageByTab((currentPages) => ({
+      ...currentPages,
+      [activeTab]: Math.min(Math.max(page, 1), totalPages),
+    }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setPageByTab((currentPages) => ({
+      ...currentPages,
+      [tabId]: currentPages[tabId] || 1,
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
       <section className="border-b border-[#cfc4c5] bg-white">
         <div className="mx-auto max-w-[1440px] px-5 py-12 md:px-20 md:py-16">
-          <div className="grid gap-8 lg:grid-cols-[1fr_420px] lg:items-end">
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">
+            AuraFit Shop
+          </p>
+          <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div>
-              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">AuraFit Shop</p>
               <h1 className="font-serif text-[44px] font-normal italic leading-[1.1] md:text-[68px]">
-                De xuat tu hanh vi va mua hien tai
+                Shop chung cho tat ca trang phuc
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-7 text-[#5f5e5e]">
-                Shop khong bat user tu chon tab. He thong doc du lieu theo doi san pham user xem, them gio, thanh toan va ket hop voi thoi gian hien tai de sap xep san pham.
+                Tat ca san pham deu do AuraFit Admin quan ly. Xem nhanh theo de xuat ca nhan,
+                xu huong theo mua, hoac toan bo kho trang phuc.
               </p>
             </div>
             <div className="border border-[#cfc4c5] bg-[#f9f9f9] p-5">
               <div className="mb-4 flex items-center justify-between gap-4">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#5f5e5e]">SeasonalTrend</span>
-                <span className="material-symbols-outlined text-[#99854e]">calendar_month</span>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#5f5e5e]">
+                  Pagination
+                </span>
+                <span className="material-symbols-outlined text-[#99854e]">view_module</span>
               </div>
-              <p className="font-serif text-3xl italic">{currentSeason.label}</p>
-              <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">{currentSeason.copy}</p>
-              <div className="mt-5 border-t border-[#cfc4c5] pt-4 text-sm">
-                <span className="text-[#5f5e5e]">UserPreference: </span>
-                <strong>{currentUser ? `User #${currentUser.id}` : 'khach chua dang nhap'}</strong>
-              </div>
+              <p className="font-serif text-3xl italic">20 san pham / trang</p>
+              <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
+                Moi nhom san pham co phan trang rieng de xem nhanh va khong bi qua tai.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <main className="mx-auto max-w-[1440px] space-y-16 px-5 py-12 md:px-20">
+      <main className="mx-auto max-w-[1440px] px-5 py-10 md:px-20">
+        <div className="mb-8 grid gap-3 border border-[#cfc4c5] bg-white p-3 md:grid-cols-3">
+          {tabs.map((tab) => {
+            const count = productsByTab[tab.id]?.length || 0;
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex items-center justify-between gap-4 border px-5 py-4 text-left transition ${
+                  isActive
+                    ? 'border-black bg-black text-white'
+                    : 'border-[#e1dddc] bg-[#fafafa] text-black hover:border-[#99854e]'
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
+                  <span className="text-[12px] font-semibold uppercase tracking-[0.16em]">{tab.label}</span>
+                </span>
+                <span className={`text-xs ${isActive ? 'text-white/70' : 'text-[#777777]'}`}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mb-6 flex flex-col justify-between gap-3 border-b border-[#cfc4c5] pb-5 md:flex-row md:items-end">
+          <div>
+            <h2 className="font-serif text-3xl font-normal italic md:text-4xl">
+              {tabs.find((tab) => tab.id === activeTab)?.label}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#5f5e5e]">
+              Dang hien {visibleProducts.length} / {activeProducts.length} san pham.
+            </p>
+          </div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">
+            Trang {activePage} / {totalPages}
+          </p>
+        </div>
+
         {error && (
-          <p className="border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
+          <p className="mb-6 border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
             {error}
           </p>
         )}
 
         {isLoading ? (
           <LoadingGrid />
-        ) : (
+        ) : visibleProducts.length ? (
           <>
-            <ProductSection
-              title="Đề xuất"
-              caption={
-                currentUser
-                  ? 'Lay tu InteractionLog: san pham da xem, them gio va mua cua tai khoan nay.'
-                  : 'Chua dang nhap nen he thong tam uu tien theo mua hien tai.'
-              }
-              products={habitProducts}
-              badge="UserPreference"
-              onNavigate={onNavigate}
-              onAddToCart={onAddToCart}
-            />
-
-            <ProductSection
-              title={`San pham hop ${currentSeason.label.toLowerCase()}`}
-              caption="Tinh theo thang hien tai tren he thong, sau do uu tien category va tag phu hop mua."
-              products={seasonProducts}
-              badge="SeasonalTrend"
-              onNavigate={onNavigate}
-              onAddToCart={onAddToCart}
-            />
-
-            <ProductSection
-              title="Tat ca san pham da sap xep"
-              caption="Danh sach day du, san pham dung gu va dung mua duoc day len truoc."
-              products={sortedAllProducts}
-              badge="Shop"
-              onNavigate={onNavigate}
-              onAddToCart={onAddToCart}
-              showAll
-            />
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {visibleProducts.map((product) => (
+                <ProductCard
+                  key={`${activeTab}-${product.id}`}
+                  product={product}
+                  onNavigate={onNavigate}
+                  onAddToCart={onAddToCart}
+                />
+              ))}
+            </div>
+            <Pagination currentPage={activePage} totalPages={totalPages} onPageChange={setActivePage} />
           </>
+        ) : (
+          <div className="border border-[#cfc4c5] bg-white p-10 text-center">
+            <span className="material-symbols-outlined mb-4 text-[44px] text-[#99854e]">inventory_2</span>
+            <h3 className="font-serif text-3xl italic">Chua co san pham</h3>
+            <p className="mt-3 text-sm text-[#5f5e5e]">Nhom nay chua co du lieu phu hop.</p>
+          </div>
         )}
       </main>
     </div>
   );
 }
 
-function ProductSection({ title, caption, products, badge, onNavigate, onAddToCart, showAll = false }) {
-  const visibleProducts = showAll ? products : products.slice(0, 8);
-
-  return (
-    <section>
-      <div className="mb-8 flex flex-col justify-between gap-3 border-b border-[#cfc4c5] pb-5 md:flex-row md:items-end">
-        <div>
-          <h2 className="font-serif text-3xl font-normal italic md:text-4xl">{title}</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5f5e5e]">{caption}</p>
-        </div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">
-          {visibleProducts.length} san pham
-        </p>
-      </div>
-
-      {visibleProducts.length ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {visibleProducts.map((product) => (
-            <ProductCard
-              key={`${badge}-${product.id}`}
-              product={product}
-              badge={badge}
-              onNavigate={onNavigate}
-              onAddToCart={onAddToCart}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="border border-[#cfc4c5] bg-white p-8 text-sm text-[#5f5e5e]">
-          Chua co du lieu phu hop cho nhom nay.
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ProductCard({ product, badge, onNavigate, onAddToCart }) {
+function ProductCard({ product, onNavigate, onAddToCart }) {
   return (
     <article
       onClick={() => onNavigate?.('productDetail', product)}
@@ -212,57 +212,19 @@ function ProductCard({ product, badge, onNavigate, onAddToCart }) {
           className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
         />
         <span className="absolute left-3 top-3 z-10 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
-          {badge}
+          {product.category}
         </span>
-
-        {/* Hover overlay — hiện thông tin sản phẩm khi rê chuột */}
-        <div className="absolute inset-0 z-[5] flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/40 to-transparent p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <h4 className="mb-1 line-clamp-2 font-serif text-lg italic leading-snug text-white">
-            {product.name}
-          </h4>
-          {product.description && (
-            <p className="mb-2 line-clamp-3 text-[11px] leading-[1.5] text-white/75">
-              {product.description}
-            </p>
-          )}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-white/60">
-            {product.category && (
-              <span className="rounded-sm bg-white/15 px-1.5 py-0.5 font-semibold uppercase tracking-wider">
-                {product.category}
-              </span>
-            )}
-            {product.subcategory && (
-              <span className="rounded-sm bg-white/15 px-1.5 py-0.5 font-semibold uppercase tracking-wider">
-                {product.subcategory}
-              </span>
-            )}
-            {product.tag && (
-              <span className="rounded-sm bg-white/15 px-1.5 py-0.5 font-semibold uppercase tracking-wider">
-                {product.tag}
-              </span>
-            )}
-            {product.size && (
-              <span className="rounded-sm bg-white/15 px-1.5 py-0.5 font-semibold uppercase tracking-wider">
-                Size {product.size}
-              </span>
-            )}
-          </div>
-          <div className="mt-2.5 flex items-center gap-4 border-t border-white/15 pt-2.5 text-xs">
-            <div>
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-white/45">Giá thuê</span>
-              <p className="mt-0.5 font-medium text-white">{formatCurrency(product.priceValue)}</p>
-            </div>
-            <div>
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-white/45">Tiền cọc</span>
-              <p className="mt-0.5 font-medium text-white">{formatCurrency(product.depositValue)}</p>
-            </div>
-            <span className={`ml-auto inline-block h-2 w-2 rounded-full ${product.available ? 'bg-emerald-400' : 'bg-red-400'}`} title={product.available ? 'Còn hàng' : 'Hết hàng'} />
-          </div>
-        </div>
+        <span
+          className={`absolute right-3 top-3 z-10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
+            product.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}
+        >
+          {product.available ? 'Con hang' : 'Tam het'}
+        </span>
       </div>
       <div className="p-5">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">
-          {product.category} | {product.tag || product.subcategory}
+          {product.subcategory || product.rawCategory} {product.tag ? `| ${product.tag}` : ''}
         </p>
         <h3 className="line-clamp-2 min-h-[48px] font-serif text-2xl italic leading-tight transition group-hover:text-[#99854e]">
           {product.name}
@@ -293,6 +255,46 @@ function ProductCard({ product, badge, onNavigate, onAddToCart }) {
         </button>
       </div>
     </article>
+  );
+}
+
+function Pagination({ currentPage, totalPages, onPageChange }) {
+  if (totalPages <= 1) return null;
+
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  return (
+    <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="flex h-10 w-10 items-center justify-center border border-[#cfc4c5] bg-white disabled:cursor-not-allowed disabled:text-[#cfc4c5]"
+        aria-label="Previous page"
+      >
+        <span className="material-symbols-outlined text-[18px]">west</span>
+      </button>
+      {pages.map((page) => (
+        <button
+          key={page}
+          onClick={() => onPageChange(page)}
+          className={`h-10 min-w-10 border px-3 text-sm font-semibold ${
+            page === currentPage
+              ? 'border-black bg-black text-white'
+              : 'border-[#cfc4c5] bg-white text-black hover:border-[#99854e]'
+          }`}
+        >
+          {page}
+        </button>
+      ))}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="flex h-10 w-10 items-center justify-center border border-[#cfc4c5] bg-white disabled:cursor-not-allowed disabled:text-[#cfc4c5]"
+        aria-label="Next page"
+      >
+        <span className="material-symbols-outlined text-[18px]">east</span>
+      </button>
+    </div>
   );
 }
 

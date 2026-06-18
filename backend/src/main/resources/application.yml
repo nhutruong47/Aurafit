@@ -3,11 +3,10 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/aurafit_db
-    username: aurafit
-    password: aurafit123
+    url: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+    username: postgres.hfwmxrrfxsmfhewffemc
+    password: vnfBQ0krpWh7qPWT
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,3 +16,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+
+jwt:
+  secret: "0ZgnYV0N/IuRZuKZGPV4kNazFFEv3KetkLsXc51E5Qo="
+  expiration: 86400000

@@ -13,7 +13,7 @@ const fallbackItems = [
   },
 ];
 
-const navLinks = ['Cosplay', 'Events', 'Yearbook', 'Shop'];
+const navLinks = ['Shop', 'Cosplay', 'Events', 'Yearbook'];
 
 export default function OrderSuccess({ cartItems = [], onNavigate }) {
   const items = cartItems.length
@@ -36,7 +36,7 @@ export default function OrderSuccess({ cartItems = [], onNavigate }) {
           {navLinks.map((link) => (
             <button
               key={link}
-              onClick={() => onNavigate?.('home')}
+              onClick={() => onNavigate?.(link === 'Shop' ? 'shop' : link.toLowerCase())}
               className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e] transition hover:text-[#99854e]"
             >
               {link}
@@ -161,7 +161,11 @@ export default function OrderSuccess({ cartItems = [], onNavigate }) {
           ['menu_book', 'Yearbook'],
           ['auto_awesome', 'Shop'],
         ].map(([icon, label]) => (
-          <button key={label} className="flex flex-col items-center justify-center p-2 text-[#5f5e5e]">
+          <button
+            key={label}
+            onClick={() => onNavigate?.(label === 'Shop' ? 'shop' : label.toLowerCase())}
+            className="flex flex-col items-center justify-center p-2 text-[#5f5e5e]"
+          >
             <span className="material-symbols-outlined">{icon}</span>
             <span className="text-[10px] font-bold uppercase tracking-tight">{label}</span>
           </button>

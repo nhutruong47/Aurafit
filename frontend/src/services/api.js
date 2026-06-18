@@ -30,6 +30,18 @@ export const fetchRecommendedCostumes = async (userId) => {
   return requestJson(`/costumes/recommendations${query}`);
 };
 
+export const createCostume = async (costumeData) =>
+  requestJson('/costumes', {
+    method: 'POST',
+    body: JSON.stringify(costumeData),
+  });
+
+export const updateCostume = async (id, costumeData) =>
+  requestJson(`/costumes/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(costumeData),
+  });
+
 export const fetchOrders = async () => {
   const response = await fetch(`${API_BASE_URL}/orders`);
   return response.json();
@@ -54,32 +66,6 @@ export const loginUser = async (credentials) =>
   requestJson('/users/login', {
     method: 'POST',
     body: JSON.stringify(credentials),
-  });
-
-export const createLessorApplication = async (applicationData) =>
-  requestJson('/lessor-applications', {
-    method: 'POST',
-    body: JSON.stringify(applicationData),
-  });
-
-export const fetchLessorApplications = async (status) => {
-  const query = status ? `?status=${encodeURIComponent(status)}` : '';
-  return requestJson(`/lessor-applications${query}`);
-};
-
-export const fetchUserLessorApplications = async (userId) =>
-  requestJson(`/lessor-applications/user/${encodeURIComponent(userId)}`);
-
-export const approveLessorApplication = async (id, adminUserId = null) =>
-  requestJson(`/lessor-applications/${encodeURIComponent(id)}/approve`, {
-    method: 'POST',
-    body: JSON.stringify({ adminUserId }),
-  });
-
-export const rejectLessorApplication = async (id, rejectReason, adminUserId = null) =>
-  requestJson(`/lessor-applications/${encodeURIComponent(id)}/reject`, {
-    method: 'POST',
-    body: JSON.stringify({ adminUserId, rejectReason }),
   });
 
 export const fetchStaffOrders = async () => requestJson('/orders/staff');
@@ -114,15 +100,12 @@ export default {
   fetchCostumes,
   fetchSeasonalCostumes,
   fetchRecommendedCostumes,
+  createCostume,
+  updateCostume,
   fetchOrders,
   createOrder,
   registerUser,
   loginUser,
-  createLessorApplication,
-  fetchLessorApplications,
-  fetchUserLessorApplications,
-  approveLessorApplication,
-  rejectLessorApplication,
   fetchStaffOrders,
   fetchStaffOrder,
   createPickupHandover,

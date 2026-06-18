@@ -5,36 +5,24 @@ export default function Navbar({
   onNavigate,
   onSearchOpen,
   cartCount = 0,
-  currentUser,
   isAdmin = false,
   isStaff = false,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isLessor = currentUser?.role?.split(',').some((role) => role.trim() === 'LESSOR');
-
-  const goHomeSection = (sectionId) => {
-    if (currentPage !== 'home') {
-      onNavigate('home');
-      window.setTimeout(() => {
-        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
-      }, 80);
-    } else {
-      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
-    }
-    setMobileMenuOpen(false);
-  };
 
   const goPage = (page) => {
     onNavigate(page);
     setMobileMenuOpen(false);
   };
 
-  const navLinks = isAdmin ? [] : [
-    { label: 'Cosplay', page: 'cosplay', action: () => goPage('cosplay') },
-    { label: 'Events', page: 'events', action: () => goPage('events') },
-    { label: 'Yearbook', page: 'yearbook', action: () => goPage('yearbook') },
-    { label: 'Shop', page: 'shop', action: () => goPage('shop') },
-  ];
+  const navLinks = isAdmin
+    ? []
+    : [
+        { label: 'Shop', page: 'shop', action: () => goPage('shop') },
+        { label: 'Cosplay', page: 'cosplay', action: () => goPage('cosplay') },
+        { label: 'Events', page: 'events', action: () => goPage('events') },
+        { label: 'Yearbook', page: 'yearbook', action: () => goPage('yearbook') },
+      ];
 
   const iconButtonClass =
     'flex h-11 w-11 items-center justify-center transition hover:text-[#99854e] focus:outline-none focus:ring-2 focus:ring-[#99854e]/30';
@@ -95,10 +83,11 @@ export default function Navbar({
               <button
                 onClick={() => goPage('chat')}
                 className={`${iconButtonClass} ${currentPage === 'chat' ? 'text-[#99854e]' : ''}`}
-                aria-label="Messages"
+                aria-label="Contact admin"
+                title="Contact admin"
               >
                 <span className="material-symbols-outlined" style={currentPage === 'chat' ? { fontVariationSettings: "'FILL' 1" } : undefined}>
-                  forum
+                  support_agent
                 </span>
               </button>
               <button
@@ -110,23 +99,6 @@ export default function Navbar({
                   receipt_long
                 </span>
               </button>
-              {isLessor && (
-                <button
-                  onClick={() => goPage('sellerDashboard')}
-                  className={`${iconButtonClass} hidden md:flex ${
-                    currentPage === 'sellerDashboard' ? 'text-[#99854e]' : ''
-                  }`}
-                  aria-label="Kênh Người Bán"
-                  title="Kênh Người Bán"
-                >
-                  <span
-                    className="material-symbols-outlined"
-                    style={currentPage === 'sellerDashboard' ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                  >
-                    storefront
-                  </span>
-                </button>
-              )}
             </>
           )}
           {isAdmin && (
@@ -195,6 +167,28 @@ export default function Navbar({
                 {link.label}
               </button>
             ))}
+            {isAdmin && (
+              <button
+                onClick={() => goPage('adminDashboard')}
+                className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#99854e]"
+              >
+                Admin
+              </button>
+            )}
+            {isStaff && (
+              <button
+                onClick={() => goPage('staffDashboard')}
+                className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e]"
+              >
+                Staff
+              </button>
+            )}
+            <button
+              onClick={() => goPage('account')}
+              className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e]"
+            >
+              Account
+            </button>
           </div>
         </div>
       )}

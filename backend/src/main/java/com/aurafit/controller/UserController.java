@@ -1,32 +1,42 @@
 package com.aurafit.controller;
 
-import com.aurafit.dto.LoginUserRequest;
-import com.aurafit.dto.RegisterUserRequest;
-import com.aurafit.dto.UserResponse;
-import com.aurafit.service.UserService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.aurafit.dto.request.AuthRequest;
+import com.aurafit.dto.request.RegisterRequest;
+import com.aurafit.dto.response.AuthResponse;
+import com.aurafit.service.user.UserService;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
-@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
 
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
     @PostMapping("/register")
-    public UserResponse register(@Valid @RequestBody RegisterUserRequest request) {
-        return userService.register(request);
+    @Operation(summary = "Đăng ký tài khoản mới cho Khách hàng", description = "Tự động mã hóa mật khẩu và tạo role CUSTOMER")
+    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(userService.register(request));
     }
 
     @PostMapping("/login")
-    public UserResponse login(@Valid @RequestBody LoginUserRequest request) {
-        return userService.login(request);
+    @Operation(summary = "Đăng nhập hệ thống (Dual Token)", description = "Access Token trả về Body JSON (Memory). Refresh Token tự nhét ngầm vào HttpOnly Cookie")
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request, HttpServletResponse response) {
+        return ResponseEntity.ok(userService.login(request, response));
+    }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Cấp lại Access Token mới", description = "Đọc HttpOnly Cookie từ Request để tự động gia hạn Access Token lên Memory")
+    public ResponseEntity<AuthResponse> refresh(HttpServletRequest request) {
+        return ResponseEntity.ok(userService.refresh(request));
     }
 }

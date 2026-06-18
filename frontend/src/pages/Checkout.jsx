@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
 import { useCostumes } from '../hooks/useCostumes';
-import { getShopByProductCategory } from '../utils/shopMock';
 
 const singleItemSummaryRows = [
   { label: 'Rental Subtotal', value: '$180.00' },
@@ -277,7 +276,7 @@ export default function Checkout({
                         onClick={() => onNavigate?.('chat')}
                         className="mb-4 w-full border border-black py-4 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:bg-black hover:text-white"
                       >
-                        Liên hệ shop tư vấn giỏ hàng
+                        Liên hệ admin tư vấn giỏ hàng
                       </button>
                       <p className="text-center text-[11px] leading-relaxed text-[#999999]">
                         By clicking checkout, you agree to our{' '}
@@ -389,9 +388,7 @@ function EmptyCart({ onNavigate }) {
   );
 }
 
-function RentalItem({ item, delay, onRemoveFromCart, onUpdateCartQuantity, onNavigate }) {
-  const shop = getShopByProductCategory(item.rawCategory || item.category);
-
+function RentalItem({ item, delay, onRemoveFromCart, onUpdateCartQuantity }) {
   return (
     <article
       className="group relative flex flex-col items-start gap-8 md:flex-row"
@@ -415,13 +412,7 @@ function RentalItem({ item, delay, onRemoveFromCart, onUpdateCartQuantity, onNav
               <h3 className="font-serif text-3xl font-normal uppercase tracking-tight">{item.name}</h3>
               <p className="mt-1 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e]">{item.tone}</p>
               <p className="mt-1.5 text-xs text-[#99854e]">
-                Cung cấp bởi:{' '}
-                <span
-                  className="font-bold hover:underline cursor-pointer"
-                  onClick={() => onNavigate?.('shopDetail', shop)}
-                >
-                  {shop.name}
-                </span>
+                Quản lý bởi: <span className="font-bold">AuraFit Admin</span>
               </p>
 
               <div className="mt-4 space-y-4">
