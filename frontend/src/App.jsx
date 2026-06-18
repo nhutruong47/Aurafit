@@ -1,27 +1,28 @@
 import { useEffect } from 'react';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import Home from './pages/Home';
+import Footer from './components/layout/Footer';
+import Navbar from './components/layout/Navbar';
+import Account from './pages/Account';
+import AdminDashboard from './pages/AdminDashboard';
 import Catalog from './pages/Catalog';
-import Shop from './pages/Shop';
-import Checkout from './pages/Checkout';
-import Payment from './pages/Payment';
-import OrderSuccess from './pages/OrderSuccess';
 import Chat from './pages/Chat';
-import Yearbook from './pages/Yearbook';
+import Checkout from './pages/Checkout';
 import Cosplay from './pages/Cosplay';
 import CustomerCare from './pages/CustomerCare';
-import Account from './pages/Account';
 import Events from './pages/Events';
-import ProductDetail from './pages/ProductDetail';
+import Home from './pages/Home';
+import OrderSuccess from './pages/OrderSuccess';
 import Orders from './pages/Orders';
-import AdminDashboard from './pages/AdminDashboard';
+import Payment from './pages/Payment';
+import ProductDetail from './pages/ProductDetail';
+import Shop from './pages/Shop';
 import StaffDashboard from './pages/StaffDashboard';
+import Yearbook from './pages/Yearbook';
 import { logUserInteraction } from './services/api';
-import { addCartItem, removeCartItem, selectCartCount, selectCartItems, updateCartQuantity } from './store/cartSlice';
 import { selectCurrentUser, setCurrentUser } from './store/authSlice';
+import { addCartItem, removeCartItem, selectCartCount, selectCartItems, updateCartQuantity } from './store/cartSlice';
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { useNavigationStore } from './stores/useNavigationStore';
+import { useNavigationStore } from './store/useNavigationStore';
+import { hasUserRole } from './utils/roles';
 
 function App() {
   const dispatch = useAppDispatch();
@@ -36,17 +37,14 @@ function App() {
   const handleSearchOpen = useNavigationStore((state) => state.openSearch);
 
   useEffect(() => {
-    const hasAdminRole = currentUser?.role?.split(',').some((value) => value.trim() === 'ADMIN');
-    if (hasAdminRole && !['adminDashboard', 'account'].includes(currentPage)) {
+    if (hasUserRole(currentUser, 'ADMIN') && !['adminDashboard', 'account'].includes(currentPage)) {
       handleNavigate('adminDashboard');
     }
-  }, [currentUser, currentPage, handleNavigate]);
+  }, [currentPage, currentUser, handleNavigate]);
 
   const handleAuthChange = (user) => {
     dispatch(setCurrentUser(user));
   };
-
-  const hasRole = (role) => currentUser?.role?.split(',').some((value) => value.trim() === role);
 
   const handleAddToCart = (item) => {
     if (currentUser?.id && item?.id) {
@@ -131,7 +129,7 @@ function App() {
   const hidesFooter = usesCustomShell || currentPage === 'chat' || currentPage === 'adminDashboard' || currentPage === 'staffDashboard';
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] flex flex-col">
+    <div className="flex min-h-screen flex-col bg-[#f9f9f9]">
       {!usesCustomShell && (
         <Navbar
           currentPage={currentPage}
@@ -139,8 +137,8 @@ function App() {
           onSearchOpen={handleSearchOpen}
           cartCount={cartCount}
           currentUser={currentUser}
-          isAdmin={hasRole('ADMIN')}
-          isStaff={hasRole('STAFF')}
+          isAdmin={hasUserRole(currentUser, 'ADMIN')}
+          isStaff={hasUserRole(currentUser, 'STAFF')}
         />
       )}
       <main className="flex-1">{renderPage()}</main>

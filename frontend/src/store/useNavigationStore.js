@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { loadJson, saveJson, saveString } from '../store/browserStorage';
+import { loadJson, saveJson, saveString } from './browserStorage';
 
 const scrollToTop = () => {
   if (typeof window !== 'undefined') {
