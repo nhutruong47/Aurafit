@@ -1,5 +1,6 @@
 package com.aurafit.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -50,6 +51,7 @@ public class CostumeSet {
     @Builder.Default
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
+    @JsonIgnore
     private Set<Costume> costumes = new HashSet<>();
 
     @PrePersist

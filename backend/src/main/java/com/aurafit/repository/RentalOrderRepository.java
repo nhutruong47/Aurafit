@@ -4,6 +4,10 @@ import com.aurafit.entity.RentalOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface RentalOrderRepository extends JpaRepository<RentalOrder, Long> {
+
+    List<RentalOrder> findAllByOrderByCreatedAtDesc();
 }

@@ -1,8 +1,33 @@
 const API_BASE_URL = 'http://localhost:8080/api';
 
-export const fetchCostumes = async () => {
-  const response = await fetch(`${API_BASE_URL}/costumes`);
+const requestJson = async (path, options = {}) => {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    throw new Error(errorBody?.message || 'Không thể kết nối backend/database.');
+  }
+
   return response.json();
+};
+
+export const fetchCostumes = async (category) => {
+  const query = category ? `?category=${encodeURIComponent(category)}` : '';
+  const response = await fetch(`${API_BASE_URL}/costumes${query}`);
+  if (!response.ok) {
+    throw new Error('Không thể tải dữ liệu sản phẩm từ database.');
+  }
+  return response.json();
+};
+
+export const fetchSeasonalCostumes = async () => requestJson('/costumes/seasonal');
+
+export const fetchRecommendedCostumes = async (userId) => {
+  const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+  return requestJson(`/costumes/recommendations${query}`);
 };
 
 export const fetchOrders = async () => {
@@ -19,4 +44,89 @@ export const createOrder = async (orderData) => {
   return response.json();
 };
 
-export default { fetchCostumes, fetchOrders, createOrder };
+export const registerUser = async (userData) =>
+  requestJson('/users/register', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  });
+
+export const loginUser = async (credentials) =>
+  requestJson('/users/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials),
+  });
+
+export const createLessorApplication = async (applicationData) =>
+  requestJson('/lessor-applications', {
+    method: 'POST',
+    body: JSON.stringify(applicationData),
+  });
+
+export const fetchLessorApplications = async (status) => {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  return requestJson(`/lessor-applications${query}`);
+};
+
+export const fetchUserLessorApplications = async (userId) =>
+  requestJson(`/lessor-applications/user/${encodeURIComponent(userId)}`);
+
+export const approveLessorApplication = async (id, adminUserId = null) =>
+  requestJson(`/lessor-applications/${encodeURIComponent(id)}/approve`, {
+    method: 'POST',
+    body: JSON.stringify({ adminUserId }),
+  });
+
+export const rejectLessorApplication = async (id, rejectReason, adminUserId = null) =>
+  requestJson(`/lessor-applications/${encodeURIComponent(id)}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ adminUserId, rejectReason }),
+  });
+
+export const fetchStaffOrders = async () => requestJson('/orders/staff');
+
+export const fetchStaffOrder = async (orderId) => requestJson(`/orders/staff/${encodeURIComponent(orderId)}`);
+
+export const createPickupHandover = async (orderId, handoverData) =>
+  requestJson(`/orders/${encodeURIComponent(orderId)}/handover/pickup`, {
+    method: 'POST',
+    body: JSON.stringify(handoverData),
+  });
+
+export const createReturnHandover = async (orderId, handoverData) =>
+  requestJson(`/orders/${encodeURIComponent(orderId)}/handover/return`, {
+    method: 'POST',
+    body: JSON.stringify(handoverData),
+  });
+
+export const createPayment = async (paymentData) =>
+  requestJson('/payments', {
+    method: 'POST',
+    body: JSON.stringify(paymentData),
+  });
+
+export const logUserInteraction = async (interactionData) =>
+  requestJson('/interactions', {
+    method: 'POST',
+    body: JSON.stringify(interactionData),
+  });
+
+export default {
+  fetchCostumes,
+  fetchSeasonalCostumes,
+  fetchRecommendedCostumes,
+  fetchOrders,
+  createOrder,
+  registerUser,
+  loginUser,
+  createLessorApplication,
+  fetchLessorApplications,
+  fetchUserLessorApplications,
+  approveLessorApplication,
+  rejectLessorApplication,
+  fetchStaffOrders,
+  fetchStaffOrder,
+  createPickupHandover,
+  createReturnHandover,
+  createPayment,
+  logUserInteraction,
+};

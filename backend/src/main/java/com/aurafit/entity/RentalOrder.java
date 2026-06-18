@@ -55,6 +55,11 @@ public class RentalOrder {
     @ToString.Exclude
     private List<Payment> payments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "rentalOrder", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<RentalOrderDetail> details = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
