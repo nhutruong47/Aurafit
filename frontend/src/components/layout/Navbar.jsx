@@ -1,3 +1,4 @@
+// Navbar dung chung cua ung dung tren desktop va mobile.
 import { useState } from 'react';
 
 export default function Navbar({

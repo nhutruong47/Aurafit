@@ -3,32 +3,37 @@ import { fetchCostumes } from '../services/api';
 import { categoryApiNames, mapCostumeToProduct } from '../utils/productMapper';
 
 export function useCostumes(categoryKey) {
-  const [costumes, setCostumes] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [state, setState] = useState({
+    costumes: [],
+    isLoading: false,
+    error: null,
+    requestKey: null,
+  });
 
   useEffect(() => {
     let isMounted = true;
     const category = categoryKey ? categoryApiNames[categoryKey] || categoryKey : undefined;
-
-    setIsLoading(true);
-    setError(null);
+    const requestKey = categoryKey || '__all__';
 
     fetchCostumes(category)
       .then((data) => {
         if (isMounted) {
-          setCostumes(Array.isArray(data) ? data.map(mapCostumeToProduct) : []);
+          setState({
+            costumes: Array.isArray(data) ? data.map(mapCostumeToProduct) : [],
+            isLoading: false,
+            error: null,
+            requestKey,
+          });
         }
       })
       .catch((requestError) => {
         if (isMounted) {
-          setError(requestError);
-          setCostumes([]);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoading(false);
+          setState({
+            costumes: [],
+            isLoading: false,
+            error: requestError,
+            requestKey,
+          });
         }
       });
 
@@ -37,5 +42,14 @@ export function useCostumes(categoryKey) {
     };
   }, [categoryKey]);
 
-  return useMemo(() => ({ costumes, isLoading, error }), [costumes, error, isLoading]);
+  return useMemo(() => {
+    const requestKey = categoryKey || '__all__';
+    const isCurrentRequest = state.requestKey === requestKey;
+
+    return {
+      costumes: isCurrentRequest ? state.costumes : [],
+      isLoading: !isCurrentRequest || state.isLoading,
+      error: isCurrentRequest ? state.error : null,
+    };
+  }, [categoryKey, state]);
 }

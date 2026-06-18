@@ -1,0 +1,70 @@
+// Bang chi tiet mot don hang gom timeline va danh sach san pham da thue.
+import { formatCurrency } from '../../utils/formatCurrency';
+import { getOrderCode, getOrderTimeline, mapOrderStatus } from './orderUtils';
+import OrderTimeline from './OrderTimeline';
+
+const fallbackImage =
+  'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=200&q=80';
+
+export default function OrderDetailsPanel({ order }) {
+  const statusInfo = mapOrderStatus(order.status);
+  const timeline = getOrderTimeline(order);
+
+  return (
+    <div className="sticky top-28 border border-[#cfc4c5] bg-white p-8 md:p-10">
+      <div className="mb-8 flex items-baseline justify-between border-b border-[#cfc4c5] pb-6">
+        <h2 className="font-serif text-3xl font-normal">Chi tiết: {getOrderCode(order.id)}</h2>
+        <span className={`text-[12px] font-bold uppercase tracking-[0.2em] ${statusInfo.color}`}>{statusInfo.text}</span>
+      </div>
+
+      {order.status === 'OVERDUE' && (
+        <div className="mb-8 border border-[#ba1a1a]/30 bg-[#ffdad6] p-5 text-[#93000a]">
+          <div className="flex items-start gap-4">
+            <span className="material-symbols-outlined mt-0.5 text-[20px]">error</span>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em]">Yêu cầu hoàn trả gấp</p>
+              <p className="mt-2 text-sm leading-6">
+                Đơn hàng của bạn đã vượt quá thời gian thuê quy định. Vui lòng hoàn trả sản phẩm ngay lập tức để
+                tránh phát sinh thêm phí phạt.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-12">
+        <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Tiến trình theo dõi</h3>
+        <OrderTimeline timeline={timeline} />
+      </div>
+
+      <div className="border-t border-[#cfc4c5] pt-8">
+        <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Sản phẩm đã thuê</h3>
+        <div className="space-y-4">
+          {order.details?.map((item, index) => (
+            <div key={`${item.skuCode}-${index}`} className="flex items-center justify-between border-b border-[#cfc4c5]/20 pb-4">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-12 overflow-hidden bg-[#eeeeee]">
+                  <img
+                    src={item.costumeImageUrl || fallbackImage}
+                    alt={item.costumeName}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-black">{item.costumeName}</p>
+                  <p className="mt-1 text-[10px] text-[#5f5e5e]">
+                    {item.skuCode} | Size {item.size}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold text-black">{formatCurrency(item.rentalPrice || 0)}</p>
+                <p className="mt-0.5 text-[9px] text-[#999999]">Đặt cọc: {formatCurrency(item.depositPrice || 0)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

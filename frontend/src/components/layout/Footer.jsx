@@ -1,3 +1,4 @@
+// Footer dung chung cua ung dung voi cac lien ket dieu huong.
 const footerColumns = [
   {
     title: 'Company',
