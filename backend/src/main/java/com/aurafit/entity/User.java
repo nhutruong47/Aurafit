@@ -1,12 +1,14 @@
 package com.aurafit.entity;
 
+import com.aurafit.enums.Role;
+import com.aurafit.enums.UserStatus;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
 @Entity
@@ -44,11 +46,4 @@ public class User {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public enum Role {
-        CUSTOMER, STAFF, ADMIN
-    }
-
-    public enum UserStatus {
-        ACTIVE, BLOCKED
-    }
 }

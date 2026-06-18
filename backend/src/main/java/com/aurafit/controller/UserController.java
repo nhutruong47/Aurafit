@@ -3,7 +3,7 @@ package com.aurafit.controller;
 import com.aurafit.dto.request.AuthRequest;
 import com.aurafit.dto.request.RegisterRequest;
 import com.aurafit.dto.response.AuthResponse;
-import com.aurafit.service.user.UserService;
+import com.aurafit.service.UserService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

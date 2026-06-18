@@ -1,4 +1,4 @@
-package com.aurafit.service.user;
+package com.aurafit.service;
 
 import com.aurafit.dto.request.AuthRequest;
 import com.aurafit.dto.request.RegisterRequest;

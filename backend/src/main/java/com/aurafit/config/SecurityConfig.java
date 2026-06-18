@@ -10,7 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.aurafit.config.jwt.JwtAuthenticationFilter;
+import com.aurafit.security.JwtAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity

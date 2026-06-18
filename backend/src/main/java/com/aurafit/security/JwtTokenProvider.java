@@ -1,4 +1,4 @@
-package com.aurafit.config.jwt;
+package com.aurafit.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

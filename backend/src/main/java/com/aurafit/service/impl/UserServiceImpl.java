@@ -1,12 +1,14 @@
-package com.aurafit.service.user;
+package com.aurafit.service.impl;
 
-import com.aurafit.config.jwt.JwtTokenProvider;
+import com.aurafit.security.JwtTokenProvider;
 import com.aurafit.dto.request.AuthRequest;
 import com.aurafit.dto.request.RegisterRequest;
 import com.aurafit.dto.response.AuthResponse;
 import com.aurafit.entity.User;
 import com.aurafit.repository.UserRepository;
 
+import com.aurafit.security.CustomUserDetailsService;
+import com.aurafit.service.UserService;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;

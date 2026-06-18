@@ -1,4 +1,4 @@
-package com.aurafit.config.jwt;
+package com.aurafit.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
