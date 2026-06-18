@@ -60,3 +60,4 @@ ERRORS.md
 # Ignore markdown files except README
 *.md
 !README.md
+!memory.md
