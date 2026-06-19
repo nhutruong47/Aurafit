@@ -2,8 +2,11 @@ package com.aurafit.config;
 
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
+import com.aurafit.entity.CostumeItem;
 import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.ItemStatus;
 import com.aurafit.repository.CategoryRepository;
+import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.CostumeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,6 +31,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final CategoryRepository categoryRepository;
     private final CostumeRepository costumeRepository;
+    private final CostumeItemRepository costumeItemRepository;
 
     @Override
     @Transactional
@@ -147,9 +152,33 @@ public class DataInitializer implements CommandLineRunner {
                         .build()
         );
 
-        costumeRepository.saveAll(costumes);
+        List<Costume> savedCostumes = costumeRepository.saveAll(costumes);
 
-        log.info("✅ Database initialized with {} categories and {} costumes.",
-                3, costumes.size());
+        // ── CostumeItems (Physical Inventory) ────────────────────────────
+        // Each costume gets 2 physical units with different sizes
+        String[][] sizes = {{"S", "M"}, {"M", "L"}, {"S", "L"}, {"M", "XL"},
+                            {"S", "M"}, {"M", "L"}, {"S", "M"}, {"M", "L"}};
+        String[][] colors = {{"Xanh Đen", "Xanh Đen"}, {"Đen", "Đen"},
+                             {"Tím", "Tím"}, {"Xanh Dương", "Xanh Dương"},
+                             {"Đỏ", "Đỏ"}, {"Navy", "Navy"},
+                             {"Hồng Pastel", "Xanh Pastel"}, {"Cam Đen", "Cam Đen"}};
+
+        List<CostumeItem> allItems = new ArrayList<>();
+        for (int i = 0; i < savedCostumes.size(); i++) {
+            Costume costume = savedCostumes.get(i);
+            for (int j = 0; j < 2; j++) {
+                allItems.add(CostumeItem.builder()
+                        .sku(String.format("AF-%03d-%s-%d", costume.getId(), sizes[i][j], j + 1))
+                        .size(sizes[i][j])
+                        .color(colors[i][j])
+                        .status(ItemStatus.AVAILABLE)
+                        .costume(costume)
+                        .build());
+            }
+        }
+        costumeItemRepository.saveAll(allItems);
+
+        log.info("✅ Database initialized with {} categories, {} costumes, and {} physical items.",
+                3, savedCostumes.size(), allItems.size());
     }
 }

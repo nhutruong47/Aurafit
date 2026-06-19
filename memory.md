@@ -17,4 +17,16 @@ Tài liệu này lưu trữ tiến độ và các tính năng đã được hoà
   - `GET /api/public/catalog/costumes`: Lấy danh sách trang phục có kèm **Phân trang** (Pagination) và **Lọc** (Tìm kiếm theo keyword, lọc theo Category ID).
   - `GET /api/public/catalog/costumes/{id}`: Xem chi tiết 1 trang phục.
 - **Fix lỗi dữ liệu rỗng (PostgreSQL):** Sửa lỗi Postgres không đọc được keyword null bằng cách chuẩn hóa sang String rỗng (`""`).
-- **Data Seeder:** Tạo class `DataInitializer` tự động khởi tạo dữ liệu mẫu (3 danh mục, 8 bộ trang phục kèm hình ảnh thật) mỗi khi chạy app.
+- **Data Seeder:** Tạo class `DataInitializer` tự động khởi tạo dữ liệu mẫu (3 danh mục, 8 bộ trang phục kèm hình ảnh thật) mỗi khi chạy app. Đặc biệt, cập nhật data mẫu để chứa cả các mặt hàng vật lý (`CostumeItem`) với các SKU riêng biệt (Size S, M, L).
+
+## Phase 3: Quản lý Giỏ hàng (Shopping Cart API) - Part 1
+- **Domain Driven Design:** Tách biệt rõ ràng giữa `Costume` (Mẫu mã để hiển thị Catalog) và `CostumeItem` (Sản phẩm vật lý có mã SKU, Size, Màu sắc để tính tồn kho).
+- **Thực thể Cart & CartItem:** Tạo mới bảng `carts` (Quản lý trạng thái `ACTIVE`, `CHECKED_OUT`, `ABANDONED`) và `cart_items` (Ghi nhận thời gian thuê và giá tiền). Thiết lập quan hệ với tính năng `orphanRemoval = true`.
+- **Anti-IDOR Security:** Xây dựng `CartController` bảo mật nghiêm ngặt, tuyệt đối không nhận `userId` từ request body mà tự động bóc tách (extract) từ JWT Security Context (email của người đang đăng nhập).
+- **Cart Service Logic:** Xử lý nghiệp vụ phức tạp của giỏ hàng bao gồm:
+  - Tự động tạo giỏ hàng trống nếu user chưa có.
+  - Validate tính hợp lệ của ngày thuê (`rentalEndDate > rentalStartDate`).
+  - Kiểm tra trạng thái khả dụng (`AVAILABLE`) của món đồ vật lý (SKU).
+  - Ngăn chặn việc thêm trùng lặp một mã vật lý (`SKU`) vào cùng một giỏ hàng.
+  - Tự động tính toán số ngày thuê bằng `ChronoUnit.DAYS`, sau đó quy đổi ra `subtotal` và tổng giá trị giỏ hàng `totalCartValue`.
+- **Tối ưu Database Queries:** Sử dụng Custom JPQL `JOIN FETCH` để fetch 3 cấp độ (`Cart` -> `CartItem` -> `CostumeItem` -> `Costume`) chỉ bằng 1 câu lệnh SQL duy nhất, dập tắt tận gốc lỗi N+1 Query khi ánh xạ sang đối tượng DTO trả về cho Frontend.
