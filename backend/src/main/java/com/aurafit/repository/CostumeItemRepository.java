@@ -3,6 +3,7 @@ package com.aurafit.repository;
 import com.aurafit.entity.CostumeItem;
 import com.aurafit.enums.ItemStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,4 +24,12 @@ public interface CostumeItemRepository extends JpaRepository<CostumeItem, Long> 
      */
     @Query("SELECT ci FROM CostumeItem ci JOIN FETCH ci.costume WHERE ci.id = :id")
     Optional<CostumeItem> findByIdWithCostume(@Param("id") Long id);
+
+    /**
+     * Bulk-updates the status of multiple CostumeItems by their IDs.
+     * Used during checkout to lock inventory by marking items as RENTED.
+     */
+    @Modifying
+    @Query("UPDATE CostumeItem ci SET ci.status = :newStatus WHERE ci.id IN :ids")
+    int updateStatusByIds(@Param("ids") List<Long> ids, @Param("newStatus") ItemStatus newStatus);
 }

@@ -1,5 +1,6 @@
 package com.aurafit.entity;
 
+import com.aurafit.enums.ReturnStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,9 +31,23 @@ public class RentalOrderDetail extends BaseEntity {
     @JoinColumn(name = "costume_item_id", nullable = false)
     private CostumeItem costumeItem;
 
-    @Column(nullable = false)
-    private BigDecimal price;
+    @Column(name = "price_per_day", nullable = false)
+    private BigDecimal pricePerDay;
+
+    @Column(name = "rental_days", nullable = false)
+    private int rentalDays;
 
     @Column(nullable = false)
+    private BigDecimal subtotal;
+
+    @Column(name = "deposit", nullable = false)
     private BigDecimal deposit;
+
+    @Column(name = "price", nullable = false)
+    private BigDecimal price;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "return_status", nullable = false)
+    @Builder.Default
+    private ReturnStatus returnStatus = ReturnStatus.NOT_RETURNED;
 }

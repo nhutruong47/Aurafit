@@ -37,11 +37,27 @@ public class RentalOrder extends BaseEntity {
     @Column(name = "rental_end_date", nullable = false)
     private LocalDateTime rentalEndDate;
 
-    @Column(name = "total_price", nullable = false)
-    private BigDecimal totalPrice;
+    @Column(name = "receiver_name", nullable = false)
+    private String receiverName;
+
+    @Column(name = "receiver_phone", nullable = false)
+    private String receiverPhone;
+
+    @Column(name = "delivery_address", nullable = false, columnDefinition = "TEXT")
+    private String deliveryAddress;
+
+    @Column(name = "total_rental_price", nullable = false)
+    private BigDecimal totalRentalPrice;
 
     @Column(name = "total_deposit", nullable = false)
     private BigDecimal totalDeposit;
+
+    @Builder.Default
+    @Column(name = "discount_amount", nullable = false)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(name = "total_price", nullable = false)
+    private BigDecimal totalPrice;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -50,7 +66,7 @@ public class RentalOrder extends BaseEntity {
 
     @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "rentalOrder", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "rentalOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<RentalOrderDetail> details = new ArrayList<>();
 
     @JsonIgnore
