@@ -53,20 +53,15 @@ Giai đoạn tiếp theo mở rộng hệ thống từ quản lý giỏ hàng sa
 - **Các bảng liên quan:** `User`.
 - **Dự phóng API:** `POST /api/auth/register/request-otp`, `POST /api/auth/register/verify-otp`.
 
-### 2. Tiến trình Đặt hàng (Checkout) — `POST /api/orders/checkout`
-- **Logic giỏ hàng thuần túy (không có OTP):** Checkout là xử lý tạo đơn thuê trực tiếp từ giỏ hàng, không cần bất kỳ bước xác thực email OTP nào (vì tài khoản đã được xác thực ngay khi đăng ký).
+### 2. Tiến trình Đặt hàng (Checkout) — `POST /api/orders/checkout` [MỚI - UNIFIED FLOW]
+- **Tái cấu trúc luồng dùng chung:** Loại bỏ tư duy rẽ nhánh logic phức tạp. Checkout hiện tại là một API duy nhất tiếp nhận một danh sách (List) các SKU cần thanh toán từ Frontend, xử lý chung cho cả "Thuê Ngay" và "Mua từ Giỏ hàng".
 - **Quy trình nội bộ (bọc trong `@Transactional`):**
-  - Extract `user_id` từ JWT Security Context.
-  - Truy xuất `Cart` có `status = 'ACTIVE'` và các `CartItem` liên kết của người dùng hiện tại.
-  - Kiểm tra tồn kho: Tất cả `CostumeItem` liên kết phải có `status = 'AVAILABLE'`. Nếu bất kỳ SKU nào đang `RENTED` bởi đơn khác → báo lỗi không cho đặt chồng.
-  - Tính toán bằng `BigDecimal`:
-    - `total_rental_price` = Σ(Số ngày thuê × `price_per_day` từ `CostumeItem`).
-    - `total_deposit` = Σ(`deposit_amount` từ `CostumeItem`).
-    - `discount_amount` = Áp dụng promo code (nếu có).
-  - Tạo `RentalOrder` với `status = 'PENDING'`, ghi nhận `receiver_name`, `receiver_phone`, `delivery_address` (từ request body).
-  - Tạo `RentalOrderDetail` cho từng `CartItem`, mỗi bản ghi có `return_status = 'NOT_RETURNED'`, `price_per_day`, `rental_days`, `subtotal`.
-  - Cập nhật `Cart.status = 'CHECKED_OUT'`.
-  - Cập nhật `CostumeItem.status = 'RENTED'` để khóa tồn kho.
+  - Trích xuất thông tin User ngầm qua JWT Security Context.
+  - Duyệt mảng dữ liệu đầu vào, validate trạng thái từng `CostumeItem` bắt buộc phải là `AVAILABLE`.
+  - Tính toán tài chính an toàn tuyệt đối bằng `BigDecimal` (`total_rental_price`, `total_deposit`).
+  - Tạo một bản ghi `RentalOrder` ở trạng thái `PENDING` và lưu tập hợp các bản ghi `RentalOrderDetail`.
+  - Cập nhật `CostumeItem.status = 'RENTED'` để khóa tồn kho, chống đặt chồng chéo (Concurrency).
+  - Tích hợp logic dọn dẹp giỏ hàng thông minh: Tự động đối soát và xóa bỏ các `CartItem` tương ứng trong giỏ hàng `ACTIVE` của người dùng nếu món đồ đó vừa được tạo đơn thành công.
 - **Các bảng liên quan:** `Cart`, `CartItem`, `CostumeItem`, `RentalOrder`, `RentalOrderDetail`.
 - **Dự phóng API:** `POST /api/orders/checkout`.
 

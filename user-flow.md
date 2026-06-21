@@ -45,28 +45,21 @@ Khi đã có tài khoản và Token, người dùng bắt đầu tiến trình c
 
 ---
 
-## 4. Tiến trình Đặt hàng (Checkout)
-Khi đã hoàn tất việc chọn trang phục trong giỏ hàng, khách hàng tiến hành bước tiếp theo — xác minh thông tin cá nhân, giao hàng và tạo đơn thuê chính thức trong hệ thống. **Lưu ý:** Tài khoản sau khi đăng ký đã mặc định được xác thực email (`email_verified = true`), nên bước Checkout diễn ra liền mạch mà không có xác thực OTP cản trở.
-* **Nhập thông tin giao hàng:** Khách hàng điền form thông tin người nhận bao gồm: `receiver_name` (Họ tên người nhận), `receiver_phone` (SĐT liên hệ), `delivery_address` (Địa chỉ nhận hàng chi tiết: số nhà, đường, phường/xã, quận/huyện, thành phố).
-  * *Quy trình nội bộ của Server:*
-    - Validate các trường bắt buộc (`receiver_name`, `receiver_phone`, `delivery_address`).
-    - Kiểm tra định dạng SĐT Việt Nam (10 số, bắt đầu bằng 0).
-    - Dữ liệu giao hàng sẽ được ghi nhận trực tiếp vào bản ghi `RentalOrder` khi tạo đơn ở bước tiếp theo (bảng `RentalOrder` có sẵn các cột `receiver_name`, `receiver_phone`, `delivery_address`).
-  * *Người dùng gọi API:* `POST /api/orders/checkout` (gửi kèm thông tin giao hàng trong request body)
-* **Xác nhận đơn hàng (Create Order):** Khách hàng xem lại toàn bộ thông tin: Danh sách trang phục đã chọn, `rental_start_date`, `rental_end_date`, phí thuê, tiền cọc, mã giảm giá (nếu có) và tổng số tiền. Khách hàng bấm nút "Xác nhận đặt hàng".
+## 4. Tiến trình Đặt hàng (Checkout) - Luồng Dùng Chung (Unified Flow)
+Hệ thống sử dụng duy nhất một cổng Checkout chung để xử lý cho cả 2 trường hợp: Khách bấm "Thuê Ngay" lẻ 1 sản phẩm từ trang chi tiết hoặc Khách bấm "Đặt hàng" nhiều sản phẩm từ giao diện Giỏ hàng. Frontend sẽ đóng gói thông tin các món cần thuê thành một danh sách các SKU gửi lên hệ thống.
+
+* **Nhập thông tin giao hàng & Xác nhận đơn:** Khách hàng điền form thông tin người nhận bao gồm: `receiver_name`, `receiver_phone`, `delivery_address` và xem lại danh sách trang phục đã chọn kèm `rental_start_date`, `rental_end_date`. Khách hàng bấm nút "Xác nhận đặt hàng".
   * *Quy trình nội bộ của Server (bọc trong `@Transactional`):*
-    - Xác minh danh tính qua JWT.
-    - Truy xuất `Cart` có `status = 'ACTIVE'` và các `CartItem` liên kết của người dùng hiện tại.
-    - Kiểm tra tồn kho: Tất cả `CostumeItem` liên kết phải có `status = 'AVAILABLE'`. Nếu bất kỳ SKU nào đang được thuê bởi đơn khác (`RENTED`) → báo lỗi, không cho đặt chồng.
+    - Xác minh danh tính qua JWT (Chống tấn công IDOR).
+    - Kiểm tra danh sách mặt hàng gửi lên. Kiểm tra tồn kho: Tất cả các `CostumeItem` (SKU) được chọn phải có `status = 'AVAILABLE'`. Nếu bất kỳ SKU nào không khả dụng -> Báo lỗi lập tức.
     - Tính toán chi tiết bằng `BigDecimal`:
-      - **total_rental_price:** Tổng (Số ngày thuê × `price_per_day` của từng `CostumeItem`) cho tất cả `RentalOrderDetail`.
-      - **total_deposit:** Tổng `deposit_amount` của từng `CostumeItem` đã chọn.
-      - **discount_amount:** Áp dụng mã khuyến mãi (nếu có), trừ vào tiền thuê.
-    - Tạo bản ghi `RentalOrder` với `status = 'PENDING'` (chờ thanh toán).
-    - Tạo các bản ghi `RentalOrderDetail` cho từng `CostumeItem`, mỗi bản ghi có `return_status = 'NOT_RETURNED'`.
-    - Cập nhật `Cart.status = 'CHECKED_OUT'`.
-    - Cập nhật `CostumeItem.status = 'RENTED'` cho các SKU đã đặt (khóa tồn kho, không cho thuê chồng).
-  * *Người dùng gọi API:* `POST /api/orders/checkout`
+      - **total_rental_price:** Tổng của (Số ngày thuê × `price_per_day` của từng mặt hàng × số lượng).
+      - **total_deposit:** Tổng tiền cọc của các mặt hàng.
+      - **discount_amount:** Áp dụng mã khuyến mãi (nếu có).
+    - Tạo bản ghi `RentalOrder` với `status = 'PENDING'` (chờ thanh toán) và các bản ghi `RentalOrderDetail` liên kết (gán `return_status = 'NOT_RETURNED'`).
+    - Cập nhật `CostumeItem.status = 'RENTED'` cho các SKU đã đặt để khóa tồn kho hệ thống.
+    - **Dọn dẹp Giỏ hàng tự động:** Server quét bảng `Cart` xem user có giỏ hàng nào đang `ACTIVE` không. Nếu có, tự động xóa các `CartItem` có mã SKU trùng với các món vừa đặt mua thành công (Giúp dọn sạch giỏ hàng nếu đi từ luồng Giỏ hàng, và giữ nguyên giỏ hàng nếu khách sử dụng nút "Thuê Ngay" lẻ bên ngoài).
+  * *Người dùng gọi API:* `POST /api/orders/checkout` (Gửi kèm thông tin giao hàng và mảng danh sách SKU trong Request Body).
 
 ## 5. Thanh toán (Payment)
 Sau khi đơn hàng được tạo thành công (`RentalOrder.status = 'PENDING'`), khách hàng tiến hành thanh toán tự động qua hệ thống VietQR kết hợp đối soát tự động SePay.
