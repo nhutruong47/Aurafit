@@ -13,6 +13,8 @@ public interface RentalOrderRepository extends JpaRepository<RentalOrder, Long> 
     @Query("SELECT ro FROM RentalOrder ro LEFT JOIN FETCH ro.details WHERE ro.user.id = :userId ORDER BY ro.createdAt DESC")
     List<RentalOrder> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
+    Optional<RentalOrder> findByIdAndUserId(Long orderId, Long userId);
+
     @Query("""
             SELECT ro FROM RentalOrder ro
             LEFT JOIN FETCH ro.details rd

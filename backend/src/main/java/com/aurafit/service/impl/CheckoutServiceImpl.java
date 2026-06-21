@@ -1,5 +1,6 @@
 package com.aurafit.service.impl;
 
+import com.aurafit.dto.request.CheckoutItemRequest;
 import com.aurafit.dto.request.CheckoutRequest;
 import com.aurafit.dto.response.OrderResponse;
 import com.aurafit.entity.*;
@@ -16,76 +17,157 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+/**
+ * Unified checkout service that handles both "Thuê Ngay" (single-item) and
+ * "Đặt đơn từ giỏ hàng" (multi-item) flows through a single public method.
+ *
+ * Security: userId is always extracted from SecurityContext (IDOR-safe) — never
+ * accepted from the request body.
+ */
 @Service
 public class CheckoutServiceImpl implements CheckoutService {
 
     private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
     private final RentalOrderRepository rentalOrderRepository;
     private final CostumeItemRepository costumeItemRepository;
     private final UserRepository userRepository;
 
     public CheckoutServiceImpl(CartRepository cartRepository,
-                               RentalOrderRepository rentalOrderRepository,
-                               CostumeItemRepository costumeItemRepository,
-                               UserRepository userRepository) {
+                              CartItemRepository cartItemRepository,
+                              RentalOrderRepository rentalOrderRepository,
+                              CostumeItemRepository costumeItemRepository,
+                              UserRepository userRepository) {
         this.cartRepository = cartRepository;
+        this.cartItemRepository = cartItemRepository;
         this.rentalOrderRepository = rentalOrderRepository;
         this.costumeItemRepository = costumeItemRepository;
         this.userRepository = userRepository;
     }
 
+    /**
+     * Unified checkout — single endpoint, any number of SKUs.
+     *
+     * Transaction boundaries:
+     * - Entire flow is atomic: if any step fails, all DB changes are rolled back.
+     * - Inventory is locked BEFORE the order is saved (fail-fast on stock conflict).
+     */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public OrderResponse checkout(Long userId, CheckoutRequest request) {
 
-        // ── 1. Load user (fail-fast if deleted mid-session) ────────────────
+        // ── Step 1: Validate item list is present and non-empty ─────────────────
+        List<CheckoutItemRequest> items = request.items();
+        if (items == null || items.isEmpty()) {
+            throw new BadRequestException("Danh sach mat hang thanh toan khong duoc de trong.");
+        }
+
+        // ── Step 2: Load authenticated user (fail-fast) ────────────────────────
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // ── 2. Load active cart with full item graph (JOIN FETCH — no N+1) ─
-        Cart cart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
-                .orElseThrow(() -> new BadRequestException("Khong tim thay gio hang ACTIVE nao."));
+        // ── Step 3: Accumulation buckets ───────────────────────────────────────
+        BigDecimal totalRentalPrice = BigDecimal.ZERO;
+        BigDecimal totalDeposit = BigDecimal.ZERO;
+        LocalDateTime orderStartDate = null;
+        LocalDateTime orderEndDate = null;
+        List<RentalOrderDetail> orderDetails = new ArrayList<>();
 
-        if (cart.getItems().isEmpty()) {
-            throw new BadRequestException("Gio hang cua ban dang trong. Vui long them san pham truoc.");
-        }
+        // Collect all SKUs successfully processed so we can clean up the cart later
+        Set<String> orderedSkus = items.stream()
+                .map(CheckoutItemRequest::sku)
+                .collect(Collectors.toSet());
 
-        // ── 3. Concurrency stock check ─────────────────────────────────────
-        // Ensures every item in the cart is still AVAILABLE before locking.
-        // If any item was taken by another user, the order is rejected with SKU details.
-        for (CartItem cartItem : cart.getItems()) {
-            CostumeItem ci = cartItem.getCostumeItem();
-            if (ci.getStatus() != ItemStatus.AVAILABLE) {
+        // ── Step 4: Process each item in the request list ─────────────────────
+        for (CheckoutItemRequest item : items) {
+
+            // ── 4a. Locate physical CostumeItem by SKU ──────────────────────────
+            CostumeItem costumeItem = costumeItemRepository.findBySku(item.sku())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "CostumeItem", "sku", item.sku()
+                    ));
+
+            // ── 4b. Stock availability check ──────────────────────────────────
+            if (costumeItem.getStatus() != ItemStatus.AVAILABLE) {
                 throw new BadRequestException(
-                        "San pham [SKU: " + ci.getSku() + "] khong con san. "
-                        + "Trang thai hien tai: " + ci.getStatus()
+                        "San pham ma [SKU: " + item.sku() + "] hien khong kha dung. "
+                        + "Trang thai hien tai: " + costumeItem.getStatus()
                 );
             }
+
+            // ── 4c. Validate rental date window ────────────────────────────────
+            if (!item.rentalEndDate().isAfter(item.rentalStartDate())) {
+                throw new BadRequestException(
+                        "Ngay tra (rentalEndDate) cua san pham [SKU: " + item.sku()
+                        + "] phai sau ngay nhan (rentalStartDate)."
+                );
+            }
+
+            // ── 4d. Calculate rental duration in days ───────────────────────────
+            long rentalDays = ChronoUnit.DAYS.between(
+                    item.rentalStartDate(),
+                    item.rentalEndDate()
+            );
+            if (rentalDays <= 0) {
+                throw new BadRequestException(
+                        "So ngay thue phai lon hon 0 cho san pham [SKU: " + item.sku() + "]."
+                );
+            }
+
+            // ── 4e. Pull financial data from parent Costume ─────────────────────
+            Costume costume = costumeItem.getCostume();
+            BigDecimal pricePerDay = costume.getRentalPrice();
+            BigDecimal depositPerItem = costume.getDepositPrice();
+
+            // subtotalRental = pricePerDay * rentalDays * quantity
+            BigDecimal subtotalRental = pricePerDay
+                    .multiply(BigDecimal.valueOf(rentalDays))
+                    .multiply(BigDecimal.valueOf(item.quantity()));
+
+            // subtotalDeposit = depositPerItem * quantity
+            BigDecimal subtotalDeposit = depositPerItem
+                    .multiply(BigDecimal.valueOf(item.quantity()));
+
+            // ── 4f. Accumulate into order totals ────────────────────────────────
+            totalRentalPrice = totalRentalPrice.add(subtotalRental);
+            totalDeposit = totalDeposit.add(subtotalDeposit);
+
+            // Track the global rental window across all items
+            LocalDateTime itemStart = item.rentalStartDate().atStartOfDay();
+            LocalDateTime itemEnd = item.rentalEndDate().atTime(LocalTime.MAX);
+            if (orderStartDate == null || itemStart.isBefore(orderStartDate)) {
+                orderStartDate = itemStart;
+            }
+            if (orderEndDate == null || itemEnd.isAfter(orderEndDate)) {
+                orderEndDate = itemEnd;
+            }
+
+            // ── 4g. Build and attach RentalOrderDetail ──────────────────────────
+            RentalOrderDetail detail = RentalOrderDetail.builder()
+                    .costumeItem(costumeItem)
+                    .pricePerDay(pricePerDay)
+                    .rentalDays((int) rentalDays)
+                    .subtotal(subtotalRental)
+                    .deposit(depositPerItem)
+                    .price(pricePerDay)
+                    .returnStatus(ReturnStatus.NOT_RETURNED)
+                    .build();
+            orderDetails.add(detail);
+
+            // ── 4h. Lock inventory immediately ─────────────────────────────────
+            // Prevents double-booking race conditions across concurrent requests.
+            // Will be rolled back automatically if transaction fails downstream.
+            costumeItem.setStatus(ItemStatus.RENTED);
+            costumeItemRepository.save(costumeItem);
         }
 
-        // ── 4. Financial calculations using BigDecimal ──────────────────────
-        // rental_price: sum of (price_per_day * rental_days) for all CartItems
-        BigDecimal totalRentalPrice = cart.getItems().stream()
-                .map(CartItem::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // deposit: sum of (costume.depositPrice * quantity) — quantity is always 1 per physical item
-        BigDecimal totalDeposit = cart.getItems().stream()
-                .map(ci -> ci.getCostumeItem().getCostume().getDepositPrice())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal discountAmount = BigDecimal.ZERO;
-
-        // Determine rental period from cart items (all items in a cart share the same window)
-        LocalDateTime rentalStartDate = cart.getItems().get(0)
-                .getRentalStartDate().atStartOfDay();
-        LocalDateTime rentalEndDate = cart.getItems().get(0)
-                .getRentalEndDate().atTime(LocalTime.MAX);
-
-        // ── 5. Build RentalOrder with cascade details ───────────────────────
+        // ── Step 5: Create and persist RentalOrder ──────────────────────────────
         RentalOrder order = RentalOrder.builder()
                 .user(user)
                 .receiverName(request.receiverName())
@@ -93,45 +175,38 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .deliveryAddress(request.deliveryAddress())
                 .totalRentalPrice(totalRentalPrice)
                 .totalDeposit(totalDeposit)
-                .discountAmount(discountAmount)
-                .totalPrice(totalRentalPrice.subtract(discountAmount))
-                .rentalStartDate(rentalStartDate)
-                .rentalEndDate(rentalEndDate)
-                .details(new ArrayList<>())
+                .discountAmount(BigDecimal.ZERO)
+                .totalPrice(totalRentalPrice)          // no discount applied yet
+                .rentalStartDate(orderStartDate)
+                .rentalEndDate(orderEndDate)
+                .details(orderDetails)
+                .status(com.aurafit.enums.OrderStatus.PENDING)
                 .build();
 
-        // Build each detail line and attach to the order (cascade = ALL persists automatically)
-        for (CartItem cartItem : cart.getItems()) {
-            Costume costume = cartItem.getCostumeItem().getCostume();
-            RentalOrderDetail detail = RentalOrderDetail.builder()
-                    .rentalOrder(order)
-                    .costumeItem(cartItem.getCostumeItem())
-                    .pricePerDay(costume.getRentalPrice())
-                    .rentalDays(cartItem.getRentalDays())
-                    .subtotal(cartItem.getSubtotal())
-                    .deposit(costume.getDepositPrice())
-                    .price(costume.getRentalPrice())
-                    .returnStatus(ReturnStatus.NOT_RETURNED)
-                    .build();
-            order.getDetails().add(detail);
+        // Attach each detail to the order before persisting (cascade = ALL)
+        for (RentalOrderDetail detail : orderDetails) {
+            detail.setRentalOrder(order);
         }
 
-        // ── 6. Persist order (cascades RentalOrderDetail via CascadeType.ALL) ─
         RentalOrder savedOrder = rentalOrderRepository.save(order);
 
-        // ── 7. Mark all CostumeItems as RENTED (lock inventory) ─────────────
-        List<Long> rentedItemIds = cart.getItems().stream()
-                .map(ci -> ci.getCostumeItem().getId())
-                .toList();
-        costumeItemRepository.updateStatusByIds(rentedItemIds, ItemStatus.RENTED);
+        // ── Step 6: Smart cart cleanup ─────────────────────────────────────────
+        // Only remove from cart the SKUs that were just ordered.
+        // If the user used "Thuê Ngay" for an item not in their cart, the cart
+        // remains completely untouched.
+        cartRepository.findByUserIdAndStatus(userId, CartStatus.ACTIVE)
+                .ifPresent(cart -> {
+                    List<CartItem> cartItemsToDelete = cart.getItems().stream()
+                            .filter(ci -> orderedSkus.contains(ci.getCostumeItem().getSku()))
+                            .toList();
+                    if (!cartItemsToDelete.isEmpty()) {
+                        cartItemRepository.deleteAll(cartItemsToDelete);
+                    }
+                });
 
-        // ── 8. Close the cart ───────────────────────────────────────────────
-        cart.setStatus(CartStatus.CHECKED_OUT);
-        cartRepository.save(cart);
-
-        // ── 9. Re-fetch with full graph for the response DTO ───────────────
-        // Eagerly load details + costumeItem + costume to avoid lazy-loading issues
-        // outside the transaction boundary.
+        // ── Step 7: Re-fetch with full graph for response DTO ───────────────────
+        // Must eagerly load all relations here (outside transaction boundary),
+        // otherwise lazy proxies fail when the session closes.
         RentalOrder responseOrder = rentalOrderRepository
                 .findByIdWithDetailsAndCostumes(savedOrder.getId())
                 .orElse(savedOrder);

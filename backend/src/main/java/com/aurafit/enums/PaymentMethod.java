@@ -1,6 +1,8 @@
 package com.aurafit.enums;
 
 public enum PaymentMethod {
-    VN_PAY,
-    CASH
+    CASH,
+    BANKING,
+    MOMO,
+    VN_PAY
 }

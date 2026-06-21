@@ -45,9 +45,11 @@ public class CheckoutController {
 
     @PostMapping("/checkout")
     @Operation(
-            summary = "Checkout — convert cart to order",
-            description = "Fetches the authenticated user's ACTIVE cart, validates stock, "
-                    + "locks inventory, creates a PENDING RentalOrder, and returns full order details."
+            summary = "Checkout — unified single endpoint",
+            description = "Accepts a list of SKUs with rental dates and creates a PENDING RentalOrder. "
+                    + "Both 'Thuê Ngay' (single-item) and 'Đặt đơn từ giỏ hàng' (multi-item) "
+                    + "use this same endpoint — Frontend builds the item list accordingly. "
+                    + "Locks inventory, persists the order, and removes only the ordered SKUs from the active cart."
     )
     public ResponseEntity<OrderResponse> checkout(
             Authentication authentication,

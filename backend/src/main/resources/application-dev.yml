@@ -35,3 +35,7 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+
+# -- SePay Webhook ------------------------------------------------------------
+sepay:
+  webhook-token: "${SEPAY_WEBHOOK_TOKEN:CHANGE_ME_IN_PRODUCTION}"

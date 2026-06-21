@@ -32,4 +32,10 @@ public interface CostumeItemRepository extends JpaRepository<CostumeItem, Long> 
     @Modifying
     @Query("UPDATE CostumeItem ci SET ci.status = :newStatus WHERE ci.id IN :ids")
     int updateStatusByIds(@Param("ids") List<Long> ids, @Param("newStatus") ItemStatus newStatus);
+
+    /**
+     * Finds a physical item by its SKU, used during direct checkout to
+     * locate the exact CostumeItem without needing its database ID.
+     */
+    Optional<CostumeItem> findBySku(String sku);
 }
