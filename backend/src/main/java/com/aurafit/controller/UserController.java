@@ -4,7 +4,9 @@ import com.aurafit.dto.request.AuthRequest;
 import com.aurafit.dto.request.RegisterRequest;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.AuthResponseDTO;
+import com.aurafit.dto.response.OtpSentResponse;
 import com.aurafit.exception.UnauthorizedException;
+import com.aurafit.service.AuthService;
 import com.aurafit.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.Cookie;
@@ -25,15 +27,27 @@ public class UserController {
     private static final Duration REFRESH_COOKIE_MAX_AGE = Duration.ofDays(7);
 
     private final UserService userService;
+    private final AuthService authService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, AuthService authService) {
         this.userService = userService;
+        this.authService = authService;
     }
 
     @PostMapping("/register")
     @Operation(summary = "Dang ky tai khoan moi cho khach hang",
-            description = "Ma hoa mat khau va tao tai khoan mac dinh voi role CUSTOMER")
-    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
+            description = "Email Gmail bat buoc xac thuc OTP. Email khac dang ky truc tiep.")
+    public ResponseEntity<ApiResponse<?>> register(@Valid @RequestBody RegisterRequest request) {
+        boolean isGmail = request.getEmail() != null
+                && request.getEmail().toLowerCase().endsWith("@gmail.com");
+
+        if (isGmail) {
+            OtpSentResponse result = authService.requestOtp(
+                    new com.aurafit.dto.request.OtpRequestDTO(request.getEmail()));
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Email Gmail can xac thuc OTP. Ma xac thuc da duoc gui.", result));
+        }
+
         userService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Dang ky tai khoan thanh cong.", HttpStatus.CREATED));

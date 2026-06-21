@@ -46,16 +46,19 @@ public class AuthService {
     // -------------------------------------------------------------------------
 
     /**
-     * Checks for email duplicates, generates an OTP, stores it in the in-memory
-     * cache, and dispatches it via Gmail SMTP.
+     * Checks that the email is a Gmail address and is not already registered/verified,
+     * generates an OTP, stores it in the in-memory cache, and dispatches it via Gmail SMTP.
      *
      * @param request contains only the email address
      * @return a lightweight response confirming dispatch
-     * @throws ConflictException if the email is already registered
+     * @throws ConflictException if the email is not Gmail, or is already registered and verified
      */
     @Transactional(readOnly = true)
     public OtpSentResponse requestOtp(OtpRequestDTO request) {
-        if (userRepository.existsByEmail(request.email())) {
+        if (!isGmail(request.email())) {
+            throw new ConflictException("Chi email Gmail can xac thuc OTP.");
+        }
+        if (userRepository.existsByEmailAndEmailVerifiedTrue(request.email())) {
             throw new ConflictException("Email nay da duoc su dung. Vui long su dung email khac.");
         }
 
@@ -82,12 +85,24 @@ public class AuthService {
     public AuthResponseDTO verifyOtpAndRegister(VerifyOtpRequestDTO request) {
         otpService.verify(request.email(), request.otpCode());
 
-        User user = new User();
-        user.setFullName(request.fullName());
-        user.setEmail(request.email());
-        user.setPhone(request.phone());
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setEmailVerified(true);
+        User user = userRepository.findByEmail(request.email()).orElse(null);
+        if (user != null && Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new ConflictException("Email nay da duoc su dung. Vui long su dung email khac.");
+        }
+
+        if (user != null) {
+            user.setFullName(request.fullName());
+            user.setPhone(request.phone());
+            user.setPasswordHash(passwordEncoder.encode(request.password()));
+            user.setEmailVerified(true);
+        } else {
+            user = new User();
+            user.setFullName(request.fullName());
+            user.setEmail(request.email());
+            user.setPhone(request.phone());
+            user.setPasswordHash(passwordEncoder.encode(request.password()));
+            user.setEmailVerified(true);
+        }
 
         User savedUser = userRepository.save(user);
         otpService.remove(request.email());
@@ -98,6 +113,10 @@ public class AuthService {
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    private static boolean isGmail(String email) {
+        return email != null && email.toLowerCase().endsWith("@gmail.com");
+    }
 
     private AuthResponseDTO buildAuthResponse(User user) {
         String accessToken = jwtTokenProvider.generateToken(
