@@ -57,20 +57,5 @@ pgdata/
 GEMINI.md
 ERRORS.md
 
-# Ignore markdown files except README
+# Markdown
 *.md
-README.md
-!memory.md
-!user-flow.md
-AGENTS.md
-PROJECT_CONTEXT.md
-ARCHITECTURE.md
-API_CONTEXT.md
-DATABASE_CONTEXT.md
-FRONTEND_CONTEXT.md
-BACKEND_CONTEXT.md
-RISK.md
-TODO_CONTEXT.md
-DECISIONS.md
-PROMPTING_GUIDE.md
-ROADMAP.md
