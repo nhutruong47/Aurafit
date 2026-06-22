@@ -5,27 +5,28 @@ import PaymentSummary from '../components/payment/PaymentSummary';
 import { fallbackItems } from '../components/payment/paymentData';
 import { logUserInteraction } from '../services/interactionsService';
 import { createPayment } from '../services/paymentsService';
+import { useCheckoutStore } from '../store/useCheckoutStore';
 
 export default function Payment({ cartItems = [], currentUser, onNavigate }) {
+  const { pendingOrderId } = useCheckoutStore();
   const [delivery, setDelivery] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState('VNPAY');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const items = cartItems.length ? cartItems : fallbackItems;
-  const demoOrderId = 1;
-  const payableAmount = 16000000;
 
   const handleCompletePayment = async () => {
+    if (!pendingOrderId) {
+      setPaymentError('Khong tim thay don hang. Vui long quay lai buoc checkout.');
+      return;
+    }
+
     setIsSubmitting(true);
     setPaymentError('');
 
     try {
-      await createPayment({
-        rentalOrderId: demoOrderId,
-        amount: payableAmount,
-        paymentType: 'DEPOSIT',
-        paymentMethod,
-      });
+      await createPayment({ orderId: pendingOrderId });
+
       if (currentUser?.id) {
         await Promise.allSettled(
           items
@@ -45,9 +46,10 @@ export default function Payment({ cartItems = [], currentUser, onNavigate }) {
             )
         );
       }
+
       onNavigate?.('success');
     } catch (error) {
-      setPaymentError(error.message || 'Không thể tạo thanh toán.');
+      setPaymentError(error.message || 'Khong the tao thanh toan.');
     } finally {
       setIsSubmitting(false);
     }
@@ -61,7 +63,6 @@ export default function Payment({ cartItems = [], currentUser, onNavigate }) {
         <PaymentFormSections
           delivery={delivery}
           paymentMethod={paymentMethod}
-          demoOrderId={demoOrderId}
           onDeliveryChange={setDelivery}
           onPaymentMethodChange={setPaymentMethod}
         />

@@ -4,10 +4,16 @@ export const fetchOrders = async () => requestJson({ url: '/orders', method: 'GE
 
 export const createOrder = async (orderData) =>
   requestJson({
-    url: '/orders',
+    url: '/orders/checkout',
     method: 'POST',
     data: orderData,
   });
+
+export const fetchOrderDetail = async (orderId) =>
+  requestJson({ url: `/orders/${encodeURIComponent(orderId)}`, method: 'GET' });
+
+export const fetchOrderTimeline = async (orderId) =>
+  requestJson({ url: `/orders/${encodeURIComponent(orderId)}/timeline`, method: 'GET' });
 
 export const fetchStaffOrders = async () => requestJson({ url: '/orders/staff', method: 'GET' });
 

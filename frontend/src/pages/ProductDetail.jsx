@@ -8,38 +8,38 @@ import { hasUserRole } from '../utils/roles';
 const initialMockReviews = [
   {
     id: 1,
-    author: 'Nguyá»…n Minh Anh',
+    author: 'Nguyen Minh Anh',
     rating: 5,
     date: '10/05/2026',
-    comment: 'Trang phá»¥c ráº¥t Ä‘áº¹p, cháº¥t liá»‡u váº£i cao cáº¥p vÃ  lÃªn form cá»±c chuáº©n. Dá»‹ch vá»¥ tÆ° váº¥n nhiá»‡t tÃ¬nh, giao hÃ ng nhanh chÃ³ng.',
+    comment: 'Trang phuc rat dep, chat lieu vai cao cap va len form cuc chuan. Dich vu tu van nhiet tinh, giao hang nhanh chong.',
   },
   {
     id: 2,
-    author: 'Tráº§n Háº£i ÄÄƒng',
+    author: 'Tran Hai Dang',
     rating: 4,
     date: '02/06/2026',
-    comment: 'Äá»“ lÃªn form chuáº©n, mÃ u sáº¯c y nhÆ° hÃ¬nh chá»¥p. CÃ³ má»™t chÃºt váº¿t nhÄƒn nhá» do váº­n chuyá»ƒn nhÆ°ng á»§i sÆ¡ lÃ  Ä‘áº¹p ngay.',
+    comment: 'Do len form chuan, mau sac y nhu hinh chup. Co mot chut vet nhan nho do van chuyen nhung ui so la dep ngay.',
   },
   {
     id: 3,
-    author: 'LÃª Ngá»c Diá»‡p',
+    author: 'Le Ngoc Diep',
     rating: 5,
     date: '12/06/2026',
-    comment: 'Tuyá»‡t vá»i! MÃ¬nh thuÃª Ä‘á»“ Ä‘i dá»± dáº¡ há»™i ai cÅ©ng khen. Sáº½ tiáº¿p tá»¥c á»§ng há»™ AuraFit trong nhá»¯ng sá»± kiá»‡n tá»›i.',
+    comment: 'Tuyet voi! Minh thue do di du da hoi ai cung khen. Se tiep tuc ung ho AuraFit trong nhung su kien toi.',
   },
   {
     id: 4,
-    author: 'Pháº¡m Thu HÃ ',
+    author: 'Pham Thu Ha',
     rating: 3,
     date: '15/06/2026',
-    comment: 'Äá»“ táº¡m á»•n nhÆ°ng form hÆ¡i rá»™ng so vá»›i báº£ng size. Pháº£i dÃ¹ng thÃªm káº¹p phÃ­a sau má»›i vá»«a.',
+    comment: 'Do tam on nhung form hoi rong so voi bang size. Phai dung them kep phia sau moi vua.',
   },
   {
     id: 5,
-    author: 'HoÃ ng VÄƒn ThÃ¡i',
+    author: 'Hoang Van Thai',
     rating: 5,
     date: '20/06/2026',
-    comment: 'QuÃ¡ Æ°ng Ã½. Äá»“ giáº·t thÆ¡m tho sáº¡ch sáº½, bá»c trong tÃºi xÃ¡ch ráº¥t chuyÃªn nghiá»‡p.',
+    comment: 'Qua ung y. Do giat thom tho sach se, boc trong tui xach rat chuyen nghiep.',
   },
 ];
 
@@ -61,6 +61,7 @@ export default function ProductDetail({ onAddToCart, onNavigate, currentUser }) 
 
     return costumes.find((item) => String(item.id) === productId) || null;
   }, [costumes, productId, routeProduct]);
+
   const isAdmin = useMemo(() => hasUserRole(currentUser, 'ADMIN'), [currentUser]);
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function ProductDetail({ onAddToCart, onNavigate, currentUser }) 
     const avg = total > 0 ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / total).toFixed(1) : 0;
     const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     reviews.forEach((review) => {
-      counts[review.rating]++;
+      counts[review.rating] += 1;
     });
     return { total, avg, counts };
   }, [reviews]);
@@ -86,25 +87,36 @@ export default function ProductDetail({ onAddToCart, onNavigate, currentUser }) 
 
   const displayedReviews = showAllReviews ? filteredReviews : filteredReviews.slice(0, 3);
 
+  const handleAddToCartClick = () => {
+    if (!currentUser?.id) {
+      onNavigate?.('account');
+      return;
+    }
+
+    onAddToCart?.(product);
+  };
+
   const handleSubmitReview = (event) => {
     event.preventDefault();
     if (!newReviewData.comment.trim()) return;
 
     const newReview = {
       id: Date.now(),
-      author: 'Báº¡n (KhÃ¡ch hÃ ng)',
+      author: 'Ban (Khach hang)',
       rating: newReviewData.rating,
       date: new Date().toLocaleDateString('vi-VN'),
       comment: newReviewData.comment,
     };
 
-    setReviews([newReview, ...reviews]);
+    setReviews((currentReviews) => [newReview, ...currentReviews]);
     setNewReviewData({ rating: 5, comment: '' });
     setShowReviewForm(false);
     setFilterRating('all');
   };
 
-  if (!product) return null;
+  if (!product) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8">
@@ -114,13 +126,14 @@ export default function ProductDetail({ onAddToCart, onNavigate, currentUser }) 
           className="mb-8 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:text-black"
         >
           <span className="material-symbols-outlined text-[16px]">west</span>
-          Quay láº¡i
+          Quay lai
         </button>
 
         <ProductHero
           product={product}
           isAdmin={isAdmin}
-          onAddToCart={onAddToCart}
+          isLoading={isLoading}
+          onAddToCart={handleAddToCartClick}
           onNavigate={onNavigate}
         />
 

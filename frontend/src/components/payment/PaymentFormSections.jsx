@@ -1,5 +1,6 @@
 // Cac section form cho dia chi, giao hang va phuong thuc thanh toan.
 import { deliveryOptions } from './paymentData';
+import { useCheckoutStore } from '../../store/useCheckoutStore';
 
 function CheckoutSection({ number, title, meta, icon, children }) {
   return (
@@ -37,10 +38,11 @@ function GoldDivider() {
 export default function PaymentFormSections({
   delivery,
   paymentMethod,
-  demoOrderId,
   onDeliveryChange,
   onPaymentMethodChange,
 }) {
+  const { pendingOrderId } = useCheckoutStore();
+  const displayOrderId = pendingOrderId || '----';
   return (
     <div className="space-y-16 lg:max-w-3xl">
       <CheckoutSection number="01" title="Shipping Address" meta="Required">
@@ -105,7 +107,7 @@ export default function PaymentFormSections({
         <div className="space-y-6">
           <div className="border border-[#cfc4c5] bg-white p-5">
             <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">Rental Order</p>
-            <p className="font-serif text-3xl italic">RO-{String(demoOrderId).padStart(4, '0')}</p>
+            <p className="font-serif text-3xl italic">RO-{String(displayOrderId).padStart(4, '0')}</p>
             <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
               Thanh toán thành công sẽ tạo Payment status PAID và chuyển đơn sang PENDING_CONFIRMATION.
             </p>
@@ -114,7 +116,7 @@ export default function PaymentFormSections({
             <div className="border border-[#cfc4c5] bg-[#f7f7f7] p-5 text-sm leading-7">
               <p><strong>Ngân hàng:</strong> AuraFit Demo Bank</p>
               <p><strong>Số tài khoản:</strong> 1900 2026 888</p>
-              <p><strong>Nội dung:</strong> AURAFIT RO{String(demoOrderId).padStart(4, '0')}</p>
+              <p><strong>Nội dung:</strong> AURAFIT RO{String(displayOrderId).padStart(4, '0')}</p>
             </div>
           ) : (
             <div className="border border-[#cfc4c5] bg-[#f7f7f7] p-5 text-sm leading-7">

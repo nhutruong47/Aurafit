@@ -1,51 +1,87 @@
 import { useState } from 'react';
 import AccountAuthForm from '../components/account/AccountAuthForm';
 import AccountProfileView from '../components/account/AccountProfileView';
-import { loginUser, registerUser } from '../services/authService';
+import { loginUser, verifyOtpAndRegister } from '../services/authService';
 import { getUserRoles } from '../utils/roles';
+
+const ROLE_REDIRECTS = {
+  ADMIN: 'adminDashboard',
+  STAFF: 'staffDashboard',
+  CUSTOMER: 'home',
+};
+
+const resolveRolePage = (user) => {
+  const roles = getUserRoles(user);
+  if (roles.includes('ADMIN')) return ROLE_REDIRECTS.ADMIN;
+  if (roles.includes('STAFF')) return ROLE_REDIRECTS.STAFF;
+  return ROLE_REDIRECTS.CUSTOMER;
+};
+
+const normalizeAuthUser = (payload) => {
+  if (!payload) return null;
+  const userDto = payload.user || {};
+  const roleName = typeof userDto.role === 'string' ? userDto.role : userDto.role?.name;
+
+  return {
+    ...userDto,
+    fullName: userDto.fullName || userDto.full_name,
+    accessToken: payload.accessToken,
+    role: roleName || 'CUSTOMER',
+  };
+};
 
 export default function Account({ onNavigate, currentUser, onAuthChange }) {
   const [mode, setMode] = useState('login');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isRegister = mode === 'register';
-
-  const handleSubmit = async (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-
-    if (isRegister && formData.get('password') !== formData.get('confirmPassword')) {
-      setFormError('Mật khẩu xác nhận chưa khớp. Vui lòng kiểm tra lại.');
-      return;
-    }
-
     setIsSubmitting(true);
     setFormError('');
 
     try {
-      const user = isRegister
-        ? await registerUser({
-            email: formData.get('email'),
-            password: formData.get('password'),
-            fullName: formData.get('fullName'),
-            phone: formData.get('phone'),
-          })
-        : await loginUser({
-            email: formData.get('email'),
-            password: formData.get('password'),
-          });
-
+      const payload = await loginUser({
+        email: formData.get('email'),
+        password: formData.get('password'),
+      });
+      const user = normalizeAuthUser(payload);
       onAuthChange?.(user);
-      const roles = getUserRoles(user);
-      const isAdmin = roles.includes('ADMIN');
-      const isStaff = roles.includes('STAFF');
-      onNavigate?.(isAdmin ? 'adminDashboard' : isStaff ? 'staffDashboard' : 'home');
+      onNavigate?.(resolveRolePage(user));
     } catch (error) {
-      setFormError(error.message || 'Không thể xử lý yêu cầu. Vui lòng thử lại.');
+      setFormError(error.message || 'Khong the xu ly yeu cau. Vui long thu lai.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleRegister = async (registrationData) => {
+    setIsSubmitting(true);
+    setFormError('');
+
+    try {
+      const payload = await verifyOtpAndRegister(registrationData);
+      const user = normalizeAuthUser(payload);
+      if (user?.accessToken) {
+        onAuthChange?.(user);
+        onNavigate?.(resolveRolePage(user));
+      } else {
+        setFormError('Dang ky thanh cong nhung chua nhan duoc phien dang nhap. Vui long dang nhap lai.');
+        setMode('login');
+      }
+    } catch (error) {
+      setFormError(error.message || 'Khong the hoan tat dang ky. Vui long thu lai.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = (eventOrPayload) => {
+    if (typeof eventOrPayload?.preventDefault === 'function') {
+      return handleLogin(eventOrPayload);
+    }
+    return handleRegister(eventOrPayload);
   };
 
   if (currentUser) {

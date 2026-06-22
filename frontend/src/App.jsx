@@ -127,6 +127,7 @@ function App() {
           element={
             <Checkout
               cartItems={cartItems}
+              currentUser={currentUser}
               onAddToCart={handleAddToCart}
               onRemoveFromCart={handleRemoveFromCart}
               onUpdateCartQuantity={handleUpdateCartQuantity}

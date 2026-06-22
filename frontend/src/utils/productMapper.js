@@ -24,7 +24,8 @@ export const fallbackProductImage =
 export const mapCostumeToProduct = (costume) => {
   const rentalPrice = Number(costume.rentalPrice ?? costume.rental_price ?? costume.price ?? 0);
   const depositPrice = Number(costume.depositPrice ?? costume.deposit_price ?? costume.deposit ?? 0);
-  const rawCategory = costume.category || '';
+  const rawCategory = extractCategoryName(costume.category);
+  const rawSubcategory = extractCategoryName(costume.subcategory);
 
   return {
     id: costume.id,
@@ -33,7 +34,7 @@ export const mapCostumeToProduct = (costume) => {
     image: costume.imageUrl || costume.image_url || fallbackProductImage,
     rawCategory,
     category: categoryLabels[rawCategory] || rawCategory,
-    subcategory: costume.subcategory || '',
+    subcategory: rawSubcategory,
     tag: costume.tag || '',
     size: costume.size || '',
     available: costume.available !== false,
@@ -43,9 +44,16 @@ export const mapCostumeToProduct = (costume) => {
     depositValue: depositPrice,
     price: formatCurrency(rentalPrice),
     deposit: formatCurrency(depositPrice),
-    meta: [costume.subcategory, costume.tag, costume.size].filter(Boolean).join(' • '),
+    meta: [rawSubcategory, costume.tag, costume.size].filter(Boolean).join(' • '),
   };
 };
+
+function extractCategoryName(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object' && value.name) return value.name;
+  return '';
+}
 
 export const toCartItem = (product) => ({
   id: product.id,

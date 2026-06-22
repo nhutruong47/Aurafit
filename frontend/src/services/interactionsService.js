@@ -1,8 +1,16 @@
 import { requestJson } from './http/request';
 
-export const logUserInteraction = async (interactionData) =>
+export const trackUserBehavior = async (interactionData) =>
   requestJson({
-    url: '/interactions',
+    url: '/ai/track',
     method: 'POST',
     data: interactionData,
   });
+
+export const logUserInteraction = async (interactionData) => {
+  try {
+    return await trackUserBehavior(interactionData);
+  } catch {
+    return null;
+  }
+};

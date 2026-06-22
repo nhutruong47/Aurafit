@@ -1,5 +1,7 @@
-// Form dang nhap va dang ky tai khoan cho nguoi dung.
-function TextField({ label, name, placeholder, type }) {
+import { useEffect, useState } from 'react';
+import { requestRegistrationOtp } from '../../services/authService';
+
+function TextField({ label, name, placeholder, type = 'text', value, onChange, required = true, autoComplete }) {
   return (
     <label className="block">
       <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5f5e5e]">{label}</span>
@@ -7,21 +9,129 @@ function TextField({ label, name, placeholder, type }) {
         className="w-full border border-[#cfc4c5] bg-[#f9f9f9] px-4 py-4 outline-none transition focus:border-[#99854e]"
         name={name}
         placeholder={placeholder}
-        required
+        required={required}
         type={type}
+        value={value}
+        onChange={onChange}
+        autoComplete={autoComplete}
       />
     </label>
   );
 }
 
-export default function AccountAuthForm({
-  mode,
-  formError,
-  isSubmitting,
-  onModeChange,
-  onSubmit,
-}) {
+const OTP_TTL_SECONDS = 300;
+
+const emptyForm = {
+  email: '',
+  fullName: '',
+  phone: '',
+  password: '',
+  confirmPassword: '',
+  otpCode: '',
+};
+
+export default function AccountAuthForm({ mode, formError, isSubmitting, onModeChange, onSubmit }) {
   const isRegister = mode === 'register';
+  const [stage, setStage] = useState('details');
+  const [form, setForm] = useState(emptyForm);
+  const [localError, setLocalError] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
+  const [otpCountdown, setOtpCountdown] = useState(0);
+
+  useEffect(() => {
+    if (otpCountdown <= 0) return undefined;
+    const timer = window.setInterval(() => {
+      setOtpCountdown((current) => (current > 0 ? current - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [otpCountdown]);
+
+  useEffect(() => {
+    if (mode !== 'register') {
+      setStage('details');
+      setForm(emptyForm);
+      setLocalError('');
+      setInfoMessage('');
+      setOtpCountdown(0);
+    }
+  }, [mode]);
+
+  const updateField = (field) => (event) => {
+    let nextValue = event.target.value;
+    if (field === 'otpCode') {
+      nextValue = nextValue.replace(/\D/g, '').slice(0, 6);
+    } else if (field === 'phone') {
+      nextValue = nextValue.replace(/\D/g, '').slice(0, 11);
+    }
+    setForm((current) => ({ ...current, [field]: nextValue }));
+  };
+
+  const handleSendOtp = async (event) => {
+    event.preventDefault();
+    setLocalError('');
+    setInfoMessage('');
+
+    if (form.password !== form.confirmPassword) {
+      setLocalError('Mat khau xac nhan chua khop. Vui long kiem tra lai.');
+      return;
+    }
+
+    if (!form.email || !form.fullName || !form.phone || !form.password) {
+      setLocalError('Vui long dien day du ho ten, so dien thoai, email va mat khau.');
+      return;
+    }
+
+    try {
+      const response = await requestRegistrationOtp({
+        email: form.email,
+        fullName: form.fullName,
+        phone: form.phone,
+        password: form.password,
+      });
+      setStage('verify-otp');
+      setOtpCountdown(OTP_TTL_SECONDS);
+      const fallbackMsg = `Da dang ky tam. Ma OTP da gui toi ${form.email}. Vui long kiem tra hop thu va nhap ma de kich hoat tai khoan.`;
+      setInfoMessage(response?.message || fallbackMsg);
+    } catch (err) {
+      setLocalError(err.message || 'Khong the dang ky va gui ma OTP. Vui long thu lai.');
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!form.email || otpCountdown > 0) return;
+    setLocalError('');
+    setInfoMessage('');
+
+    try {
+      await requestRegistrationOtp({
+        email: form.email,
+        fullName: form.fullName,
+        phone: form.phone,
+        password: form.password,
+      });
+      setOtpCountdown(OTP_TTL_SECONDS);
+      setInfoMessage('Da gui lai ma OTP. Vui long kiem tra email.');
+    } catch (err) {
+      setLocalError(err.message || 'Khong the gui lai ma OTP.');
+    }
+  };
+
+  const handleVerifyAndRegister = async (event) => {
+    event.preventDefault();
+    setLocalError('');
+
+    if (!form.otpCode || form.otpCode.length !== 6) {
+      setLocalError('Vui long nhap du 6 chu so cua ma OTP.');
+      return;
+    }
+
+    await onSubmit({
+      email: form.email,
+      otpCode: form.otpCode,
+    });
+  };
+
+  const displayError = formError || localError;
 
   return (
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
@@ -32,8 +142,8 @@ export default function AccountAuthForm({
             Your rental wardrobe, one sign in away.
           </h1>
           <p className="mt-7 max-w-lg text-base leading-8 text-[#5f5e5e]">
-            Đăng nhập để theo dõi đơn thuê, quản lý giỏ hàng và liên hệ AuraFit Admin khi cần tư vấn.
-            Sản phẩm trên hệ thống chỉ do tài khoản ADMIN đăng tải và quản lý.
+            Dang nhap de theo doi don thue, quan ly gio hang va lien he AuraFit Admin khi can tu van.
+            San pham tren he thong chi do tai khoan ADMIN dang tai va quan ly.
           </p>
           <div className="mt-10 grid max-w-md grid-cols-3 gap-4">
             {[
@@ -53,62 +163,197 @@ export default function AccountAuthForm({
           <div className="w-full border border-[#cfc4c5] bg-white p-6 md:p-10">
             <div className="mb-9 grid grid-cols-2 border border-[#cfc4c5] bg-[#f3f3f4] p-1">
               <button
-                onClick={() => onModeChange('login')}
+                type="button"
+                onClick={() => {
+                  onModeChange('login');
+                  setLocalError('');
+                  setInfoMessage('');
+                }}
                 className={`px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
                   !isRegister ? 'bg-black text-white' : 'text-[#5f5e5e] hover:text-black'
                 }`}
               >
-                Đăng nhập
+                Dang nhap
               </button>
               <button
-                onClick={() => onModeChange('register')}
+                type="button"
+                onClick={() => {
+                  onModeChange('register');
+                  setLocalError('');
+                  setInfoMessage('');
+                }}
                 className={`px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
                   isRegister ? 'bg-black text-white' : 'text-[#5f5e5e] hover:text-black'
                 }`}
               >
-                Đăng ký
+                Dang ky
               </button>
             </div>
 
             <div className="mb-8">
               <h2 className="font-serif text-3xl font-normal italic md:text-4xl">
-                {isRegister ? 'Tạo tài khoản customer' : 'Chào mừng trở lại'}
+                {isRegister
+                  ? stage === 'verify-otp'
+                    ? 'Xac thuc OTP de hoan tat dang ky'
+                    : 'Dang ky tai khoan'
+                  : 'Chao mung tro lai'}
               </h2>
               <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
                 {isRegister
-                  ? 'Tài khoản mới được tạo với role CUSTOMER. Khách hàng có thể thuê đồ và liên hệ admin để được hỗ trợ.'
-                  : 'Admin đăng nhập sẽ vào dashboard quản lý sản phẩm. Staff đăng nhập sẽ vào màn hình bàn giao.'}
+                  ? stage === 'verify-otp'
+                    ? `Ma xac thuc da gui toi ${form.email}. Nhap ma OTP de kich hoat tai khoan cua ban.`
+                    : 'Dien day du thong tin roi nhan Dang ky. He thong se gui ma OTP xac thuc email Gmail truoc khi hoan tat dang ky.'
+                  : 'Admin dang nhap se vao dashboard quan ly san pham. Staff dang nhap se vao man hinh ban giao.'}
               </p>
             </div>
 
-            <form className="space-y-5" onSubmit={onSubmit}>
-              {isRegister && (
-                <>
-                  <TextField label="Họ tên" name="fullName" placeholder="Nguyễn Thành An" type="text" />
-                  <TextField label="Số điện thoại" name="phone" placeholder="0901 234 567" type="tel" />
-                </>
-              )}
+            {!isRegister ? (
+              <form className="space-y-5" onSubmit={onSubmit}>
+                <TextField label="Email" name="email" type="email" placeholder="you@aurafit.vn" autoComplete="email" />
+                <TextField label="Mat khau" name="password" type="password" placeholder="********" autoComplete="current-password" />
 
-              <TextField label="Email" name="email" placeholder="you@aurafit.vn" type="email" />
-              <TextField label="Mật khẩu" name="password" placeholder="********" type="password" />
+                {displayError && (
+                  <div className="border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
+                    {displayError}
+                  </div>
+                )}
 
-              {isRegister && (
-                <TextField label="Xác nhận mật khẩu" name="confirmPassword" placeholder="********" type="password" />
-              )}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
+                >
+                  {isSubmitting ? 'Dang xu ly...' : 'Dang nhap'}
+                </button>
+              </form>
+            ) : stage === 'details' ? (
+              <form className="space-y-5" onSubmit={handleSendOtp}>
+                <TextField
+                  label="Ho ten"
+                  name="fullName"
+                  placeholder="Nguyen Thanh An"
+                  value={form.fullName}
+                  onChange={updateField('fullName')}
+                  autoComplete="name"
+                />
+                <TextField
+                  label="So dien thoai"
+                  name="phone"
+                  type="tel"
+                  placeholder="0901 234 567"
+                  value={form.phone}
+                  onChange={updateField('phone')}
+                  autoComplete="tel"
+                />
+                <TextField
+                  label="Email Gmail"
+                  name="email"
+                  type="email"
+                  placeholder="you@gmail.com"
+                  value={form.email}
+                  onChange={updateField('email')}
+                  autoComplete="email"
+                />
+                <TextField
+                  label="Mat khau"
+                  name="password"
+                  type="password"
+                  placeholder="********"
+                  value={form.password}
+                  onChange={updateField('password')}
+                  autoComplete="new-password"
+                />
+                <TextField
+                  label="Xac nhan mat khau"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="********"
+                  value={form.confirmPassword}
+                  onChange={updateField('confirmPassword')}
+                  autoComplete="new-password"
+                />
 
-              {formError && (
-                <div className="border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
-                  {formError}
+                {displayError && (
+                  <div className="border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
+                    {displayError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
+                >
+                  {isSubmitting ? 'Dang dang ky...' : 'Dang ky'}
+                </button>
+              </form>
+            ) : (
+              <form className="space-y-5" onSubmit={handleVerifyAndRegister}>
+                <div className="border border-[#cfc4c5] bg-[#f9f9f9] p-4 text-sm leading-6 text-[#5f5e5e]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#99854e]">Thong tin da dang ky</p>
+                  <p className="mt-2"><strong>Ho ten:</strong> {form.fullName}</p>
+                  <p><strong>So dien thoai:</strong> {form.phone}</p>
+                  <p><strong>Email:</strong> {form.email}</p>
                 </div>
-              )}
 
-              <button
-                disabled={isSubmitting}
-                className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
-              >
-                {isSubmitting ? 'Đang xử lý...' : isRegister ? 'Tạo tài khoản' : 'Đăng nhập'}
-              </button>
-            </form>
+                <div>
+                  <TextField
+                    label="Ma OTP (6 chu so)"
+                    name="otpCode"
+                    placeholder="123456"
+                    value={form.otpCode}
+                    onChange={updateField('otpCode')}
+                  />
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#5f5e5e]">
+                    <span>
+                      {otpCountdown > 0
+                        ? `Ma het han sau ${Math.floor(otpCountdown / 60)}:${String(otpCountdown % 60).padStart(2, '0')}`
+                        : 'Ma da het han, vui long gui lai.'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={otpCountdown > 0}
+                      className="font-semibold uppercase tracking-[0.16em] text-[#99854e] transition hover:text-black disabled:cursor-not-allowed disabled:text-[#999999]"
+                    >
+                      Gui lai ma
+                    </button>
+                  </div>
+                </div>
+
+                {infoMessage && (
+                  <div className="border border-[#99854e]/30 bg-[#99854e]/10 px-4 py-3 text-sm text-[#99854e]">
+                    {infoMessage}
+                  </div>
+                )}
+
+                {displayError && (
+                  <div className="border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
+                    {displayError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
+                >
+                  {isSubmitting ? 'Dang xu ly...' : 'Xac thuc va tao tai khoan'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStage('details');
+                    setLocalError('');
+                    setInfoMessage('');
+                  }}
+                  className="block w-full text-center text-[11px] uppercase tracking-[0.18em] text-[#5f5e5e] transition hover:text-black"
+                >
+                  ← Chinh sua thong tin
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </section>
