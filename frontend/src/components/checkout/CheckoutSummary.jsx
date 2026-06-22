@@ -8,6 +8,9 @@ export default function CheckoutSummary({
   onVoucherCodeChange,
   onApplyVoucher,
   onNavigate,
+  onProceedToCheckout,
+  isSubmitting,
+  checkoutError,
 }) {
   return (
     <div className="sticky top-32 border border-[#cfc4c5] bg-white p-8 shadow-sm">
@@ -37,11 +40,15 @@ export default function CheckoutSummary({
                 <span className="font-serif text-xl uppercase">Total Due</span>
                 <span className="font-serif text-[32px] tracking-tight">{formattedTotalDue}</span>
               </div>
+              {checkoutError && (
+                <p className="mb-3 text-sm text-red-600">{checkoutError}</p>
+              )}
               <button
-                onClick={() => onNavigate?.('payment')}
-                className="mb-2 w-full bg-black py-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition duration-500 hover:bg-[#99854e] hover:tracking-[0.3em]"
+                onClick={onProceedToCheckout}
+                disabled={isSubmitting}
+                className="mb-2 w-full bg-black py-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition duration-500 hover:bg-[#99854e] hover:tracking-[0.3em] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Proceed to Checkout
+                {isSubmitting ? 'Đang xử lý...' : 'Proceed to Checkout'}
               </button>
               <button
                 onClick={() => onNavigate?.('chat')}

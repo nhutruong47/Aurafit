@@ -3,7 +3,14 @@ import { formatCurrency } from '../../utils/formatCurrency';
 import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
 import { adminContact } from '../../utils/shopMock';
 
-export default function ProductHero({ product, isAdmin, onAddToCart, onNavigate }) {
+export default function ProductHero({ product, isAdmin, isLoading = false, isAddingToCart = false, onAddToCart, onNavigate }) {
+  if (!product) return null;
+
+  const handleAddToCart = () => {
+    if (isAddingToCart) return;
+    onAddToCart?.(toCartItem(product));
+  };
+
   return (
     <div className="flex flex-col gap-12 border border-[#cfc4c5] bg-white p-6 md:flex-row md:p-12">
       <div className="w-full overflow-hidden border border-[#cfc4c5]/20 bg-[#f9f9f9] md:w-1/2">
@@ -109,15 +116,15 @@ export default function ProductHero({ product, isAdmin, onAddToCart, onNavigate 
           ) : (
             <>
               <button
-                disabled={!product.available}
-                onClick={() => onAddToCart?.(toCartItem(product))}
+                disabled={!product.available || isLoading || isAddingToCart}
+                onClick={handleAddToCart}
                 className={`mb-4 w-full py-5 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
-                  product.available
+                  product.available && !isLoading && !isAddingToCart
                     ? 'bg-black text-white hover:bg-[#99854e]'
                     : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
                 }`}
               >
-                {product.available ? 'Thêm vào giỏ hàng' : 'Tạm hết hàng'}
+                {isAddingToCart ? 'Đang thêm...' : isLoading ? 'Đang tải...' : product.available ? 'Thêm vào giỏ hàng' : 'Tạm hết hàng'}
               </button>
               <button
                 onClick={() => onNavigate?.('chat', product)}

@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -68,6 +69,26 @@ public class CostumeServiceImpl implements CostumeService {
         return categoryRepository.findAll()
                 .stream()
                 .map(CategoryDTO::fromEntity)
+                .toList();
+    }
+
+    @Override
+    public List<CostumeDTO> getSeasonalCostumes(int limit) {
+        return costumeRepository.findSeasonalCostumes(CostumeStatus.ACTIVE,
+                        org.springframework.data.domain.PageRequest.of(0, limit))
+                .stream()
+                .map(CostumeDTO::fromEntity)
+                .toList();
+    }
+
+    @Override
+    public List<CostumeDTO> getRecommendedCostumes(Long userId, int limit) {
+        List<Costume> costumes = costumeRepository
+                .findActiveCostumesForRecommendations(CostumeStatus.ACTIVE);
+        Collections.shuffle(costumes);
+        return costumes.stream()
+                .limit(limit)
+                .map(CostumeDTO::fromEntity)
                 .toList();
     }
 }

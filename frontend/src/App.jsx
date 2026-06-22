@@ -17,11 +17,12 @@ import ProductDetail from './pages/ProductDetail';
 import Shop from './pages/Shop';
 import StaffDashboard from './pages/StaffDashboard';
 import Yearbook from './pages/Yearbook';
-import { logUserInteraction } from './services/api';
-import { selectCurrentUser, setCurrentUser } from './store/authSlice';
-import { addCartItem, removeCartItem, selectCartCount, selectCartItems, updateCartQuantity } from './store/cartSlice';
+import { fetchCart, logUserInteraction } from './services/api';
+import { selectCurrentUser, setCurrentUser, clearCurrentUser } from './store/authSlice';
+import { addCartItem, clearCart, removeCartItem, selectCartCount, selectCartItems, setCartItems, updateCartQuantity } from './store/cartSlice';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { useNavigationStore } from './store/useNavigationStore';
+import { useCheckoutStore } from './store/useCheckoutStore';
 import { hasUserRole } from './utils/roles';
 
 function App() {
@@ -35,6 +36,8 @@ function App() {
   const searchFocusToken = useNavigationStore((state) => state.searchFocusToken);
   const handleNavigate = useNavigationStore((state) => state.navigate);
   const handleSearchOpen = useNavigationStore((state) => state.openSearch);
+  const clearPendingOrderId = useCheckoutStore((state) => state.clearPendingOrderId);
+  const setPendingOrderId = useCheckoutStore((state) => state.setPendingOrderId);
 
   useEffect(() => {
     if (hasUserRole(currentUser, 'ADMIN') && !['adminDashboard', 'account'].includes(currentPage)) {
@@ -42,8 +45,32 @@ function App() {
     }
   }, [currentPage, currentUser, handleNavigate]);
 
+  // Sync the cart with the backend whenever the authenticated user changes.
+  useEffect(() => {
+    if (!currentUser?.id) {
+      return;
+    }
+
+    let isMounted = true;
+    fetchCart()
+      .then((cartData) => {
+        if (!isMounted) return;
+        const items = cartData?.items || [];
+        if (items.length > 0) {
+          dispatch(setCartItems(items));
+        }
+      })
+      .catch(() => {
+        // Keep local cart state if backend is unreachable.
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, dispatch]);
+
   const handleAuthChange = (user) => {
-    dispatch(setCurrentUser(user));
+    dispatch(user ? setCurrentUser(user) : clearCurrentUser());
   };
 
   const handleAddToCart = (item) => {
@@ -72,7 +99,20 @@ function App() {
   };
 
   const handleRemoveFromCart = (cartId) => {
+    const item = cartItems.find((cartItem) => cartItem.cartId === cartId);
+    if (currentUser?.id && item?.cartItemId) {
+      // Best-effort backend removal — UI removes locally regardless.
+      import('./services/api').then(({ removeCartItem }) =>
+        removeCartItem(item.cartItemId).catch(() => {})
+      );
+    }
     dispatch(removeCartItem(cartId));
+  };
+
+  const handleCheckoutSuccess = (orderId) => {
+    dispatch(clearCart());
+    clearPendingOrderId();
+    setPendingOrderId(orderId);
   };
 
   const renderPage = () => {
@@ -85,9 +125,11 @@ function App() {
         return (
           <Checkout
             cartItems={cartItems}
+            currentUser={currentUser}
             onAddToCart={handleAddToCart}
             onRemoveFromCart={handleRemoveFromCart}
             onUpdateCartQuantity={handleUpdateCartQuantity}
+            onCheckoutSuccess={handleCheckoutSuccess}
             onNavigate={handleNavigate}
           />
         );

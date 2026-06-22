@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CostumeRepository extends JpaRepository<Costume, Long> {
@@ -53,4 +54,30 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      */
     @Query("SELECT c FROM Costume c JOIN FETCH c.category WHERE c.id = :id")
     Optional<Costume> findByIdWithCategory(@Param("id") Long id);
+
+    /**
+     * Returns the most frequently rented active costumes, ordered by rental frequency.
+     * Seasonal/featured costumes for the homepage.
+     */
+    @Query(value = """
+            SELECT c FROM Costume c
+            JOIN FETCH c.category
+            WHERE c.status = :status
+            ORDER BY SIZE(c.items) DESC
+            """)
+    List<Costume> findSeasonalCostumes(@Param("status") CostumeStatus status, Pageable pageable);
+
+    /**
+     * Returns personalized costume recommendations for a user.
+     * Currently returns random active costumes as a simple baseline.
+     * TODO: Replace with ML-based collaborative filtering using user interaction history.
+     */
+    @Query("SELECT c FROM Costume c JOIN FETCH c.category WHERE c.status = :status")
+    List<Costume> findActiveCostumesForRecommendations(@Param("status") CostumeStatus status);
+
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.items WHERE c.id = :id")
+    Optional<Costume> findByIdWithItems(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.items ORDER BY c.id DESC")
+    List<Costume> findAllWithItems();
 }

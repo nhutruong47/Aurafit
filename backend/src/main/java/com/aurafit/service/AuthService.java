@@ -5,9 +5,9 @@ import com.aurafit.dto.request.VerifyOtpRequestDTO;
 import com.aurafit.dto.response.AuthResponseDTO;
 import com.aurafit.dto.response.OtpSentResponse;
 import com.aurafit.dto.response.UserResponseDTO;
+import com.aurafit.entity.OtpVerification;
 import com.aurafit.entity.User;
 import com.aurafit.exception.ConflictException;
-import com.aurafit.entity.OtpEntry;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.security.CustomUserDetailsService;
 import com.aurafit.security.JwtTokenProvider;
@@ -42,18 +42,20 @@ public class AuthService {
     }
 
     // -------------------------------------------------------------------------
-    // Step 1 — Request OTP
+    // Step 1 — Register & Request OTP (single combined call)
     // -------------------------------------------------------------------------
 
     /**
-     * Checks that the email is a Gmail address and is not already registered/verified,
-     * generates an OTP, stores it in the in-memory cache, and dispatches it via Gmail SMTP.
+     * Persists the full registration payload into the OTP cache, generates an
+     * OTP, and dispatches it via Gmail SMTP. The user is not yet committed to
+     * the database — that happens in Step 2 after the OTP is verified.
      *
-     * @param request contains only the email address
+     * @param request contains email, fullName, phone, password
      * @return a lightweight response confirming dispatch
-     * @throws ConflictException if the email is not Gmail, or is already registered and verified
+     * @throws ConflictException if the email is not Gmail, or is already
+     *                           registered and verified
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public OtpSentResponse requestOtp(OtpRequestDTO request) {
         if (!isGmail(request.email())) {
             throw new ConflictException("Chi email Gmail can xac thuc OTP.");
@@ -62,47 +64,41 @@ public class AuthService {
             throw new ConflictException("Email nay da duoc su dung. Vui long su dung email khac.");
         }
 
-        otpService.store(request.email());
-        OtpEntry entry = otpService.getValidEntry(request.email());
+        String hashedPassword = passwordEncoder.encode(request.password());
+        otpService.store(request.email(), request.fullName(), request.phone(), hashedPassword);
+        OtpVerification entry = otpService.getValidEntry(request.email());
         emailService.sendOtpEmail(request.email(), entry.getOtpCode());
 
         return new OtpSentResponse(LocalDateTime.now(), "Ma xac thuc da duoc gui den email cua ban.");
     }
 
     // -------------------------------------------------------------------------
-    // Step 2 — Verify OTP & Register
+    // Step 2 — Verify OTP & Finalize Registration
     // -------------------------------------------------------------------------
 
     /**
-     * Verifies the OTP from the cache, removes it, encodes the password with BCrypt,
-     * creates the User entity with emailVerified = true, persists it, and returns
-     * a full AuthResponse (access + refresh JWT).
+     * Verifies the OTP from the cache. The registration payload (full name,
+     * phone, hashed password) is also read from the same cache entry so the
+     * user is finally persisted with emailVerified = true.
      *
-     * @param request contains email, otpCode, fullName, phone, password
+     * @param request contains email and otpCode
      * @return AuthResponseDTO with accessToken, refreshToken, and user data
      */
     @Transactional
     public AuthResponseDTO verifyOtpAndRegister(VerifyOtpRequestDTO request) {
         otpService.verify(request.email(), request.otpCode());
+        OtpVerification entry = otpService.getValidEntry(request.email());
 
-        User user = userRepository.findByEmail(request.email()).orElse(null);
-        if (user != null && Boolean.TRUE.equals(user.getEmailVerified())) {
+        if (userRepository.existsByEmailAndEmailVerifiedTrue(request.email())) {
             throw new ConflictException("Email nay da duoc su dung. Vui long su dung email khac.");
         }
 
-        if (user != null) {
-            user.setFullName(request.fullName());
-            user.setPhone(request.phone());
-            user.setPasswordHash(passwordEncoder.encode(request.password()));
-            user.setEmailVerified(true);
-        } else {
-            user = new User();
-            user.setFullName(request.fullName());
-            user.setEmail(request.email());
-            user.setPhone(request.phone());
-            user.setPasswordHash(passwordEncoder.encode(request.password()));
-            user.setEmailVerified(true);
-        }
+        User user = userRepository.findByEmail(request.email()).orElseGet(User::new);
+        user.setEmail(request.email());
+        user.setFullName(entry.getFullName());
+        user.setPhone(entry.getPhone());
+        user.setPasswordHash(entry.getPasswordHash());
+        user.setEmailVerified(true);
 
         User savedUser = userRepository.save(user);
         otpService.remove(request.email());

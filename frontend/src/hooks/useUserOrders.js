@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchStaffOrders } from '../services/api';
+import { fetchOrders } from '../services/api';
 
 export function useUserOrders(currentUser) {
   const [orders, setOrders] = useState([]);
@@ -7,33 +7,33 @@ export function useUserOrders(currentUser) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const targetEmail = currentUser?.email || 'customer@aurafit.vn';
-
   const loadOrders = useCallback(async () => {
+    if (!currentUser?.id) {
+      setOrders([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
-      const data = await fetchStaffOrders();
-      const userOrders = data.filter((order) => order.customerEmail === targetEmail);
-
-      setOrders(userOrders);
+      const data = await fetchOrders();
+      setOrders(data || []);
       setSelectedOrderId((currentId) => {
-        if (userOrders.some((order) => order.id === currentId)) {
+        if (data?.some((order) => order.id === currentId)) {
           return currentId;
         }
-
-        return userOrders[0]?.id ?? null;
+        return data?.[0]?.id ?? null;
       });
     } catch (err) {
       setError(err.message || 'Không thể tải danh sách lịch sử đơn hàng.');
     } finally {
       setIsLoading(false);
     }
-  }, [targetEmail]);
+  }, [currentUser?.id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadOrders();
   }, [loadOrders]);
 

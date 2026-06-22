@@ -5,19 +5,33 @@ import CheckoutSuggestionCard from '../components/checkout/CheckoutSuggestionCar
 import CheckoutSummary from '../components/checkout/CheckoutSummary';
 import RentalItemCard from '../components/checkout/RentalItemCard';
 import { multiItemSummaryRows, singleItemSummaryRows, suggestions, toRentalItem } from '../components/checkout/checkoutData';
+import { createOrder } from '../services/api';
 import { useCostumes } from '../hooks/useCostumes';
+import { useCheckoutStore } from '../store/useCheckoutStore';
+
+const PAGE_SIZE = 20;
 
 export default function Checkout({
   cartItems = [],
+  currentUser,
   onAddToCart,
   onRemoveFromCart,
   onUpdateCartQuantity,
+  onCheckoutSuccess,
   onNavigate,
 }) {
   const { costumes } = useCostumes();
+  const { setPendingOrderId } = useCheckoutStore();
   const accessoriesSliderRef = useRef(null);
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherApplied, setVoucherApplied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const [deliveryInfo, setDeliveryInfo] = useState({
+    receiverName: '',
+    receiverPhone: '',
+    deliveryAddress: '',
+  });
 
   const rentalItems = cartItems.map(toRentalItem);
   const hasCartItems = rentalItems.length > 0;
@@ -75,24 +89,72 @@ export default function Checkout({
 
   const summaryRows = useMemo(() => {
     const rows = isSingleRentalItem ? [...singleItemSummaryRows] : [...multiItemSummaryRows];
-
     if (voucherApplied) {
       const discount = isSingleRentalItem ? 36 : 126;
       rows.push({ label: 'Voucher (AURA20WELCOME)', value: `-$${discount}.00`, accent: true });
     }
-
     return rows;
   }, [isSingleRentalItem, voucherApplied]);
 
   const formattedTotalDue = useMemo(() => {
     let totalDue = isSingleRentalItem ? 320 : 862;
-
     if (voucherApplied) {
       totalDue -= isSingleRentalItem ? 36 : 126;
     }
-
     return `$${totalDue}.00`;
   }, [isSingleRentalItem, voucherApplied]);
+
+  const handleDeliveryChange = (event) => {
+    const { name, value } = event.target;
+    setDeliveryInfo((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const isDeliveryValid = () => {
+    return (
+      deliveryInfo.receiverName.trim().length > 0 &&
+      deliveryInfo.receiverPhone.trim().length > 0 &&
+      deliveryInfo.deliveryAddress.trim().length > 0
+    );
+  };
+
+  const handleProceedToCheckout = async () => {
+    if (!currentUser?.id) {
+      onNavigate?.('account');
+      return;
+    }
+
+    if (!isDeliveryValid()) {
+      setCheckoutError('Vui lòng điền đầy đủ thông tin giao hàng.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setCheckoutError('');
+
+    try {
+      const items = rentalItems.map((item) => ({
+        sku: item.sku || item.id,
+        quantity: 1,
+        rentalStartDate: item.rentalStartDate || new Date().toISOString().split('T')[0],
+        rentalEndDate: item.rentalEndDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      }));
+
+      const orderResponse = await createOrder({
+        receiverName: deliveryInfo.receiverName,
+        receiverPhone: deliveryInfo.receiverPhone,
+        deliveryAddress: deliveryInfo.deliveryAddress,
+        items,
+      });
+
+      setPendingOrderId(orderResponse.id);
+      onCheckoutSuccess?.(orderResponse.id);
+      onNavigate?.('payment');
+    } catch (err) {
+      setCheckoutError(err.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="bg-[#f9f9f9] pb-20 text-[#1a1c1c] md:pb-0">
@@ -176,6 +238,62 @@ export default function Checkout({
                 </div>
               </div>
             )}
+
+            {hasCartItems && (
+              <div className="border-t border-[#cfc4c5] pt-12">
+                <h2 className="mb-6 font-serif text-2xl font-normal uppercase italic">Thông tin giao hàng</h2>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Tên người nhận *</label>
+                    <input
+                      type="text"
+                      name="receiverName"
+                      value={deliveryInfo.receiverName}
+                      onChange={handleDeliveryChange}
+                      placeholder="Họ và tên"
+                      className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Số điện thoại *</label>
+                    <input
+                      type="tel"
+                      name="receiverPhone"
+                      value={deliveryInfo.receiverPhone}
+                      onChange={handleDeliveryChange}
+                      placeholder="0xxx xxx xxx"
+                      className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Địa chỉ giao hàng *</label>
+                    <input
+                      type="text"
+                      name="deliveryAddress"
+                      value={deliveryInfo.deliveryAddress}
+                      onChange={handleDeliveryChange}
+                      placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                      className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                    />
+                  </div>
+                </div>
+                {checkoutError && (
+                  <p className="mt-3 text-sm text-red-600">{checkoutError}</p>
+                )}
+                {!currentUser?.id && (
+                  <p className="mt-3 text-sm text-[#99854e]">
+                    Vui lòng{' '}
+                    <button
+                      onClick={() => onNavigate?.('account')}
+                      className="underline hover:text-black"
+                    >
+                      đăng nhập
+                    </button>{' '}
+                    để tiếp tục thanh toán.
+                  </p>
+                )}
+              </div>
+            )}
           </section>
 
           <aside className="lg:col-span-4">
@@ -188,6 +306,9 @@ export default function Checkout({
               onVoucherCodeChange={setVoucherCode}
               onApplyVoucher={handleApplyVoucher}
               onNavigate={onNavigate}
+              onProceedToCheckout={handleProceedToCheckout}
+              isSubmitting={isSubmitting}
+              checkoutError={checkoutError}
             />
           </aside>
         </div>

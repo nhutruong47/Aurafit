@@ -43,7 +43,11 @@ public class UserController {
 
         if (isGmail) {
             OtpSentResponse result = authService.requestOtp(
-                    new com.aurafit.dto.request.OtpRequestDTO(request.getEmail()));
+                    new com.aurafit.dto.request.OtpRequestDTO(
+                            request.getEmail(),
+                            request.getFullName(),
+                            request.getPhone(),
+                            request.getPassword()));
             return ResponseEntity.ok(ApiResponse.success(
                     "Email Gmail can xac thuc OTP. Ma xac thuc da duoc gui.", result));
         }

@@ -4,27 +4,28 @@ import PaymentHeader from '../components/payment/PaymentHeader';
 import PaymentSummary from '../components/payment/PaymentSummary';
 import { fallbackItems } from '../components/payment/paymentData';
 import { createPayment, logUserInteraction } from '../services/api';
+import { useCheckoutStore } from '../store/useCheckoutStore';
 
 export default function Payment({ cartItems = [], currentUser, onNavigate }) {
+  const { pendingOrderId, clearPendingOrderId } = useCheckoutStore();
   const [delivery, setDelivery] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState('VNPAY');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const items = cartItems.length ? cartItems : fallbackItems;
-  const demoOrderId = 1;
-  const payableAmount = 16000000;
 
   const handleCompletePayment = async () => {
+    if (!pendingOrderId) {
+      setPaymentError('Không tìm thấy đơn hàng. Vui lòng quay lại bước checkout.');
+      return;
+    }
+
     setIsSubmitting(true);
     setPaymentError('');
 
     try {
-      await createPayment({
-        rentalOrderId: demoOrderId,
-        amount: payableAmount,
-        paymentType: 'DEPOSIT',
-        paymentMethod,
-      });
+      await createPayment({ rentalOrderId: pendingOrderId });
+
       if (currentUser?.id) {
         await Promise.allSettled(
           items
@@ -44,6 +45,8 @@ export default function Payment({ cartItems = [], currentUser, onNavigate }) {
             )
         );
       }
+
+      clearPendingOrderId();
       onNavigate?.('success');
     } catch (error) {
       setPaymentError(error.message || 'Không thể tạo thanh toán.');
@@ -60,7 +63,6 @@ export default function Payment({ cartItems = [], currentUser, onNavigate }) {
         <PaymentFormSections
           delivery={delivery}
           paymentMethod={paymentMethod}
-          demoOrderId={demoOrderId}
           onDeliveryChange={setDelivery}
           onPaymentMethodChange={setPaymentMethod}
         />

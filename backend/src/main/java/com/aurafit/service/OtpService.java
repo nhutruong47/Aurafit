@@ -1,13 +1,14 @@
 package com.aurafit.service;
 
+import com.aurafit.entity.OtpVerification;
 import com.aurafit.exception.BadRequestException;
-import com.aurafit.entity.OtpEntry;
+import com.aurafit.repository.OtpVerificationRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class OtpService {
@@ -15,32 +16,41 @@ public class OtpService {
     private static final int OTP_TTL_MINUTES = 5;
     private static final int OTP_LENGTH = 6;
 
-    private final Map<String, OtpEntry> otpCache = new ConcurrentHashMap<>();
+    private final OtpVerificationRepository repository;
     private final Random random = new Random();
 
-    /**
-     * Stores a newly generated OTP for the given email, overwriting any existing
-     * entry (resend scenario).
-     */
-    public void store(String email) {
-        String code = generateOtp();
-        LocalDateTime now = LocalDateTime.now();
-        otpCache.put(email, new OtpEntry(code, now, now.plusMinutes(OTP_TTL_MINUTES)));
+    public OtpService(OtpVerificationRepository repository) {
+        this.repository = repository;
     }
 
     /**
-     * Retrieves the stored OTP entry for the given email.
-     *
-     * @throws BadRequestException if no OTP was requested for this email,
-     *                             or if the OTP has expired.
+     * Generates a new OTP and (over)writes the verification record for the
+     * given email. Registration data is persisted alongside the OTP so Step 2
+     * only needs to verify the code.
      */
-    public OtpEntry getValidEntry(String email) {
-        OtpEntry entry = otpCache.get(email);
-        if (entry == null) {
-            throw new BadRequestException("Ban chua yeu cau ma OTP. Vui long gui lai.");
-        }
+    @Transactional
+    public void store(String email, String fullName, String phone, String passwordHash) {
+        String code = generateOtp();
+        LocalDateTime now = LocalDateTime.now();
+
+        OtpVerification entry = repository.findByEmail(email).orElseGet(OtpVerification::new);
+        entry.setEmail(email);
+        entry.setOtpCode(code);
+        entry.setExpiresAt(now.plusMinutes(OTP_TTL_MINUTES));
+        entry.setFullName(fullName);
+        entry.setPhone(phone);
+        entry.setPasswordHash(passwordHash);
+        repository.save(entry);
+    }
+
+    /**
+     * Retrieves the stored OTP record for the given email.
+     */
+    public OtpVerification getValidEntry(String email) {
+        OtpVerification entry = repository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("Ban chua yeu cau ma OTP. Vui long gui lai."));
         if (entry.isExpired()) {
-            otpCache.remove(email);
+            repository.deleteByEmail(email);
             throw new BadRequestException("Ma OTP da het han (qua 5 phut). Vui long gui lai.");
         }
         return entry;
@@ -48,26 +58,21 @@ public class OtpService {
 
     /**
      * Verifies that the supplied code matches the stored entry.
-     *
-     * @throws BadRequestException if the code does not match.
      */
     public void verify(String email, String inputCode) {
-        OtpEntry entry = getValidEntry(email);
+        OtpVerification entry = getValidEntry(email);
         if (!entry.getOtpCode().equals(inputCode)) {
             throw new BadRequestException("Ma OTP khong dung. Vui long thu lai.");
         }
     }
 
     /**
-     * Removes the OTP entry after successful verification.
+     * Removes the OTP record after successful verification.
      */
+    @Transactional
     public void remove(String email) {
-        otpCache.remove(email);
+        repository.deleteByEmail(email);
     }
-
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
 
     private String generateOtp() {
         int bound = (int) Math.pow(10, OTP_LENGTH - 1);  // 100_000

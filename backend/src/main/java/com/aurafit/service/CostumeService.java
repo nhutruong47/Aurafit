@@ -37,4 +37,21 @@ public interface CostumeService {
      * @return A list of CategoryDTOs.
      */
     List<CategoryDTO> getAllCategories();
+
+    /**
+     * Fetches seasonal / featured costumes for the homepage banner.
+     *
+     * @param limit Number of costumes to return.
+     * @return A list of CostumeDTOs, sorted by popularity.
+     */
+    List<CostumeDTO> getSeasonalCostumes(int limit);
+
+    /**
+     * Fetches personalized recommendations for a user.
+     *
+     * @param userId The user ID (nullable for anonymous users).
+     * @param limit  Number of recommendations to return.
+     * @return A list of CostumeDTOs.
+     */
+    List<CostumeDTO> getRecommendedCostumes(Long userId, int limit);
 }

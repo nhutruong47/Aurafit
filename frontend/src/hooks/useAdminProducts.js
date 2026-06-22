@@ -8,11 +8,7 @@ export const emptyProductForm = {
   imageUrl: '',
   rentalPrice: '',
   depositPrice: '',
-  category: 'Cosplay',
-  subcategory: '',
-  tag: '',
-  size: 'Free Size',
-  available: true,
+  categoryId: 1,
 };
 
 export function useAdminProducts(currentUser) {
@@ -29,19 +25,19 @@ export function useAdminProducts(currentUser) {
 
   const filteredProducts = useMemo(() => {
     const query = productSearch.trim().toLowerCase();
-
     return products.filter((product) => {
       const matchesSearch =
         !query ||
-        [product.name, product.description, product.subcategory, product.tag]
+        [product.name, product.description]
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(query));
       const matchesCategory =
-        productCategoryFilter === 'all' || product.category === productCategoryFilter;
+        productCategoryFilter === 'all' ||
+        product.category?.name === productCategoryFilter;
       const matchesStatus =
         productStatusFilter === 'all' ||
-        (productStatusFilter === 'available' && product.available) ||
-        (productStatusFilter === 'hidden' && !product.available);
+        (productStatusFilter === 'available' && product.status === 'ACTIVE') ||
+        (productStatusFilter === 'hidden' && product.status !== 'ACTIVE');
 
       return matchesSearch && matchesCategory && matchesStatus;
     });
@@ -51,7 +47,11 @@ export function useAdminProducts(currentUser) {
     if (!isAdmin) return;
 
     fetchCostumes()
-      .then((data) => setProducts(Array.isArray(data) ? data : []))
+      .then((data) => {
+        // Backend returns paginated response with `content` array
+        const list = Array.isArray(data) ? data : data?.content || [];
+        setProducts(list);
+      })
       .catch(() => setProductError('Không thể tải danh sách sản phẩm.'));
   }, [isAdmin]);
 
@@ -71,11 +71,7 @@ export function useAdminProducts(currentUser) {
       imageUrl: product.imageUrl || '',
       rentalPrice: product.rentalPrice ?? '',
       depositPrice: product.depositPrice ?? '',
-      category: product.category || 'Cosplay',
-      subcategory: product.subcategory || '',
-      tag: product.tag || '',
-      size: product.size || 'Free Size',
-      available: product.available ?? true,
+      categoryId: product.category?.id || 1,
     });
     setProductMessage('');
     setProductError('');
@@ -88,23 +84,27 @@ export function useAdminProducts(currentUser) {
     setProductError('');
   };
 
-  const submitProduct = async (currentUserId) => {
+  const submitProduct = async () => {
     setIsSavingProduct(true);
     setProductMessage('');
     setProductError('');
 
     try {
       const payload = {
-        ...productForm,
-        adminUserId: currentUserId,
+        name: productForm.name,
+        description: productForm.description,
+        imageUrl: productForm.imageUrl,
         rentalPrice: Number(productForm.rentalPrice),
         depositPrice: Number(productForm.depositPrice),
+        categoryId: Number(productForm.categoryId),
       };
 
       if (editingProductId) {
         const updatedProduct = await updateCostume(editingProductId, payload);
         setProducts((currentProducts) =>
-          currentProducts.map((product) => (product.id === updatedProduct.id ? updatedProduct : product))
+          currentProducts.map((product) =>
+            product.id === updatedProduct.id ? updatedProduct : product
+          )
         );
         setProductMessage('Sản phẩm đã được cập nhật thành công.');
       } else {

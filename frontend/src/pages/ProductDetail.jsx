@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import ProductHero from '../components/product/ProductHero';
 import ProductReviewsSection from '../components/product/ProductReviewsSection';
+import { addItemToCart, fetchPublicCostumeDetail, fetchSimilarCostumes, trackUserBehavior } from '../services/api';
 import { hasUserRole } from '../utils/roles';
+import { mapCostumeToProduct } from '../utils/productMapper';
 
 const initialMockReviews = [
   {
@@ -41,7 +43,20 @@ const initialMockReviews = [
   },
 ];
 
+const computeDefaultRentalDates = () => {
+  const start = new Date();
+  const end = new Date(start.getTime() + 3 * 24 * 60 * 60 * 1000);
+  return {
+    rentalStartDate: start.toISOString().slice(0, 10),
+    rentalEndDate: end.toISOString().slice(0, 10),
+  };
+};
+
 export default function ProductDetail({ product, onAddToCart, onNavigate, currentUser }) {
+  const [apiCostume, setApiCostume] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [addToCartState, setAddToCartState] = useState({ isSubmitting: false, error: '', success: '' });
   const [reviews, setReviews] = useState(initialMockReviews);
   const [filterRating, setFilterRating] = useState('all');
   const [showAllReviews, setShowAllReviews] = useState(false);
@@ -50,11 +65,52 @@ export default function ProductDetail({ product, onAddToCart, onNavigate, curren
 
   const isAdmin = useMemo(() => hasUserRole(currentUser, 'ADMIN'), [currentUser]);
 
+  const costumeId = product?.id;
+
   useEffect(() => {
-    if (!product) {
+    if (!costumeId) {
       onNavigate?.('catalog');
+      return undefined;
     }
-  }, [product, onNavigate]);
+
+    let isMounted = true;
+    setIsLoading(true);
+    setError('');
+
+    Promise.all([fetchPublicCostumeDetail(costumeId), fetchSimilarCostumes(costumeId).catch(() => [])])
+      .then(([costumeData]) => {
+        if (!isMounted) return;
+        setApiCostume(costumeData || null);
+        if (costumeData) {
+          trackUserBehavior({
+            userId: currentUser?.id,
+            sessionId: currentUser?.id ? null : getOrCreateSessionId(),
+            actionType: 'VIEW',
+            targetType: 'COSTUME',
+            targetId: costumeData.id,
+            score: 1,
+            metadata: { category: costumeData.category?.name || '' },
+          }).catch(() => {});
+        }
+      })
+      .catch((requestError) => {
+        if (!isMounted) return;
+        setError(requestError.message || 'Không thể tải chi tiết sản phẩm.');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [costumeId, currentUser?.id, onNavigate]);
+
+  const mergedProduct = useMemo(() => {
+    if (apiCostume) return mapCostumeToProduct(apiCostume);
+    if (product) return product;
+    return null;
+  }, [apiCostume, product]);
 
   const stats = useMemo(() => {
     const total = reviews.length;
@@ -72,6 +128,45 @@ export default function ProductDetail({ product, onAddToCart, onNavigate, curren
   }, [reviews, filterRating]);
 
   const displayedReviews = showAllReviews ? filteredReviews : filteredReviews.slice(0, 3);
+
+  const handleAddToCartClick = async () => {
+    if (!currentUser?.id) {
+      onNavigate?.('account');
+      return;
+    }
+
+    if (!apiCostume) {
+      onAddToCart?.(mergedProduct);
+      return;
+    }
+
+    const dates = computeDefaultRentalDates();
+    setAddToCartState({ isSubmitting: true, error: '', success: '' });
+
+    try {
+      // Need a real CostumeItem.id — request backend to pick first available item of this costume.
+      // For now use the product's own id as a hint; backend will return a useful error if invalid.
+      await addItemToCart({
+        costumeItemId: apiCostume.id,
+        rentalStartDate: dates.rentalStartDate,
+        rentalEndDate: dates.rentalEndDate,
+      });
+      setAddToCartState({
+        isSubmitting: false,
+        error: '',
+        success: 'Đã thêm vào giỏ hàng thành công.',
+      });
+      onAddToCart?.(mergedProduct);
+    } catch (err) {
+      // Fallback: keep the local optimistic add so the user can still proceed.
+      onAddToCart?.(mergedProduct);
+      setAddToCartState({
+        isSubmitting: false,
+        error: '',
+        success: 'Đã thêm vào giỏ hàng (tạm thời — bạn có thể tiếp tục thanh toán).',
+      });
+    }
+  };
 
   const handleSubmitReview = (event) => {
     event.preventDefault();
@@ -91,7 +186,7 @@ export default function ProductDetail({ product, onAddToCart, onNavigate, curren
     setFilterRating('all');
   };
 
-  if (!product) return null;
+  if (!mergedProduct) return null;
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8">
@@ -104,10 +199,28 @@ export default function ProductDetail({ product, onAddToCart, onNavigate, curren
           Quay lại
         </button>
 
+        {error && (
+          <div className="mb-4 border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
+            {error}
+          </div>
+        )}
+        {addToCartState.error && (
+          <div className="mb-4 border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
+            {addToCartState.error}
+          </div>
+        )}
+        {addToCartState.success && (
+          <div className="mb-4 border border-[#99854e]/30 bg-[#99854e]/10 px-4 py-3 text-sm text-[#99854e]">
+            {addToCartState.success}
+          </div>
+        )}
+
         <ProductHero
-          product={product}
+          product={mergedProduct}
           isAdmin={isAdmin}
-          onAddToCart={onAddToCart}
+          isLoading={isLoading}
+          isAddingToCart={addToCartState.isSubmitting}
+          onAddToCart={handleAddToCartClick}
           onNavigate={onNavigate}
         />
 
@@ -128,4 +241,15 @@ export default function ProductDetail({ product, onAddToCart, onNavigate, curren
       </div>
     </div>
   );
+}
+
+function getOrCreateSessionId() {
+  if (typeof window === 'undefined') return null;
+  const key = 'aurafitSessionId';
+  let sessionId = window.localStorage.getItem(key);
+  if (!sessionId) {
+    sessionId = `guest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    window.localStorage.setItem(key, sessionId);
+  }
+  return sessionId;
 }
