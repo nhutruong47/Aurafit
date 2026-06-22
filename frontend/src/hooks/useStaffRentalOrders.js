@@ -36,22 +36,36 @@ export function useStaffRentalOrders(currentUser) {
     const totalOrders = orders.length;
     const pickedUp = orders.filter((order) => order.status === 'PICKED_UP').length;
     const returned = orders.filter((order) => order.status === 'RETURNED').length;
-    const waiting = orders.filter((order) => order.status === 'PENDING_CONFIRMATION').length;
+    const waiting = orders.filter((order) => order.status === 'PENDING' || order.status === 'CONFIRMED').length;
     return { totalOrders, pickedUp, returned, waiting };
   }, [orders]);
 
   const loadOrders = async (preferredOrderId = null) => {
-    const orderList = await fetchStaffOrders();
-    setOrders(orderList);
-    const nextOrderId = preferredOrderId || activeOrderId || orderList[0]?.id || null;
-    setActiveOrderId(nextOrderId);
-    if (nextOrderId) {
-      const order = await fetchStaffOrder(nextOrderId);
-      setActiveOrder(order);
-      setSelectedDetailId(order.details?.[0]?.id || '');
-    } else {
-      setActiveOrder(null);
-      setSelectedDetailId('');
+    setIsLoading(true);
+
+    try {
+      const orderList = await fetchStaffOrders();
+      setOrders(orderList);
+
+      const nextOrderId = preferredOrderId || activeOrderId || orderList[0]?.id || null;
+      setActiveOrderId(nextOrderId);
+
+      if (nextOrderId) {
+        const order = await fetchStaffOrder(nextOrderId);
+        setActiveOrder(order);
+        setSelectedDetailId(order.details?.[0]?.id || '');
+      } else {
+        setActiveOrder(null);
+        setSelectedDetailId('');
+      }
+
+      setError('');
+      setLoadedUserKey(requestKey);
+    } catch (loadError) {
+      setError(loadError.message || 'Khong the tai danh sach don.');
+      setLoadedUserKey(requestKey);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -60,28 +74,40 @@ export function useStaffRentalOrders(currentUser) {
 
     let mounted = true;
 
-    fetchStaffOrders()
-      .then(async (orderList) => {
+    const bootstrap = async () => {
+      setIsLoading(true);
+
+      try {
+        const orderList = await fetchStaffOrders();
         if (!mounted) return;
+
         setOrders(orderList);
         const firstOrderId = orderList[0]?.id || null;
         setActiveOrderId(firstOrderId);
+
         if (firstOrderId) {
           const order = await fetchStaffOrder(firstOrderId);
           if (!mounted) return;
+
           setActiveOrder(order);
           setSelectedDetailId(order.details?.[0]?.id || '');
+        } else {
+          setActiveOrder(null);
+          setSelectedDetailId('');
         }
+
         setError('');
-        setIsLoading(false);
-        setLoadedUserKey(requestKey);
-      })
-      .catch((loadError) => {
+      } catch (loadError) {
         if (!mounted) return;
-        setError(loadError.message || 'Không thể tải danh sách đơn.');
+        setError(loadError.message || 'Khong the tai danh sach don.');
+      } finally {
+        if (!mounted) return;
         setIsLoading(false);
         setLoadedUserKey(requestKey);
-      });
+      }
+    };
+
+    bootstrap();
 
     return () => {
       mounted = false;
@@ -92,53 +118,51 @@ export function useStaffRentalOrders(currentUser) {
     setActiveOrderId(orderId);
     setError('');
     setMessage('');
+
     try {
       const order = await fetchStaffOrder(orderId);
       setActiveOrder(order);
       setSelectedDetailId(order.details?.[0]?.id || '');
     } catch (loadError) {
-      setError(loadError.message || 'Không thể tải chi tiết đơn.');
+      setError(loadError.message || 'Khong the tai chi tiet don.');
     }
   };
 
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => setHandoverImageUrl(String(reader.result || ''));
-    reader.readAsDataURL(file);
+  const handleHandoverImageUploaded = (asset) => {
+    setHandoverImageUrl(asset?.secureUrl || '');
   };
 
   const submitHandover = async () => {
-    if (!activeOrder || !selectedDetailId || !currentUser?.id) return;
+    if (!activeOrder || !selectedDetailId) return;
 
     setIsSubmitting(true);
     setError('');
     setMessage('');
 
     const payload = {
-      staffUserId: currentUser.id,
       rentalOrderDetailId: Number(selectedDetailId),
-      handoverImageUrl,
+      imageUrl: handoverImageUrl,
       note,
-      returnStatus: mode === 'RETURN' ? returnStatus : null,
+      ...(mode === 'RETURN' ? { returnStatus } : {}),
     };
 
     try {
-      const updatedOrder =
-        mode === 'PICKUP'
-          ? await createPickupHandover(activeOrder.id, payload)
-          : await createReturnHandover(activeOrder.id, payload);
+      if (mode === 'PICKUP') {
+        await createPickupHandover(activeOrder.id, payload);
+      } else {
+        await createReturnHandover(activeOrder.id, payload);
+      }
 
-      setActiveOrder(updatedOrder);
-      setSelectedDetailId(updatedOrder.details?.[0]?.id || '');
+      const refreshedOrder = await fetchStaffOrder(activeOrder.id);
+      setActiveOrder(refreshedOrder);
+      setSelectedDetailId(refreshedOrder.details?.[0]?.id || '');
       setHandoverImageUrl('');
       setNote('');
-      setMessage(mode === 'PICKUP' ? 'Đã tạo biên bản bàn giao PICKUP.' : 'Đã ghi nhận khách trả đồ.');
-      await loadOrders(updatedOrder.id);
+      setMessage(mode === 'PICKUP' ? 'Da tao bien ban ban giao PICKUP.' : 'Da ghi nhan khach tra do.');
+
+      await loadOrders(activeOrder.id);
     } catch (submitError) {
-      setError(submitError.message || 'Không thể lưu biên bản.');
+      setError(submitError.message || 'Khong the luu bien ban.');
     } finally {
       setIsSubmitting(false);
     }
@@ -169,7 +193,7 @@ export function useStaffRentalOrders(currentUser) {
     setHandoverImageUrl,
     setNote,
     setPreviewImage,
-    handleFileChange,
+    handleHandoverImageUploaded,
     submitHandover,
   };
 }

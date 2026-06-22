@@ -1,3 +1,5 @@
+import { formatCurrency } from '../../utils/formatCurrency';
+
 export const singleItemSummaryRows = [
   { label: 'Rental Subtotal', value: '$180.00' },
   { label: 'Security Deposit (Refundable)', value: '$120.00' },
@@ -55,28 +57,44 @@ export const mobileTabs = [
 
 export function toRentalItem(item, index) {
   const isSizedItem = item.name?.toLowerCase().includes('gown') || item.name?.toLowerCase().includes('dress');
+  const numericPrice = Number(item.subtotal ?? item.unitPrice ?? item.price ?? 0);
+  const displayPrice =
+    typeof item.price === 'string' && item.price.trim().length > 0 ? item.price : formatCurrency(numericPrice);
 
   return {
     id: item.cartId || item.id || item.name || index,
+    cartItemId: item.cartItemId,
+    costumeItemId: item.costumeItemId || item.id,
     name: item.name,
     tone: item.meta || 'Curated Rental',
     badge: '-10%',
     image: item.image,
     rawCategory: item.rawCategory,
     category: item.category,
+    sku: item.sku,
+    size: item.size,
+    color: item.color,
     quantity: item.quantity || 1,
+    rentalStartDate: item.rentalStartDate,
+    rentalEndDate: item.rentalEndDate,
+    rentalDays: item.rentalDays,
+    unitPrice: item.unitPrice,
+    subtotal: item.subtotal,
     sizes: [
       {
-        label: isSizedItem ? 'Size 38' : 'One Size',
+        label: item.size ? `Size ${item.size}` : isSizedItem ? 'Size 38' : 'One Size',
         stock: 'In Stock',
         quantity: item.quantity || 1,
       },
     ],
-    period: 'Oct 14 - Oct 18 (4 Days)',
+    period:
+      item.rentalStartDate && item.rentalEndDate
+        ? `${item.rentalStartDate} - ${item.rentalEndDate}`
+        : 'Rental period pending',
     detailLabel: item.name?.toLowerCase().includes('bag') ? 'Status' : 'Protection',
     detail: item.name?.toLowerCase().includes('bag') ? 'Available for Delivery' : 'Premium Insurance Included',
-    original: item.price ? item.price.replace('đ', 'đ') : '$200.00',
-    total: item.price || '$180.00',
+    original: displayPrice,
+    total: displayPrice,
     addText: item.name?.toLowerCase().includes('bag') ? 'Add another unit' : 'Add another size',
   };
 }

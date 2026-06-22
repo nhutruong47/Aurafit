@@ -45,3 +45,23 @@ Các hướng phát triển tiếp theo đã được xác định nhưng chưa 
 - Backend lõi cho auth/catalog/cart/checkout/payment đã có nền tảng.
 - Frontend đã có giao diện tương đối đầy đủ, nhưng nhiều phần vẫn chưa nối chuẩn với backend.
 - Tài liệu context hiện được dùng như nguồn tham chiếu cho các lần refactor và tích hợp tiếp theo.
+
+## Phase 4: Upload service cho hình ảnh
+- Thêm upload module riêng ở backend để nhận `multipart/form-data`, validate ảnh và upload signed lên Cloudinary.
+- Thêm entity `UploadAsset` để lưu metadata ảnh đã upload:
+  - `originalFileName`
+  - `url`
+  - `secureUrl`
+  - `publicId`
+  - `resourceType`
+  - `format`
+  - `size`
+  - `uploadedBy`
+- Endpoint mới:
+  - `POST /api/uploads/images`
+- Quyền hiện tại:
+  - chỉ user đã đăng nhập có role `ADMIN` hoặc `CUSTOMER`
+- Tích hợp frontend giai đoạn đầu:
+  - admin upload ảnh cho `Costume`
+  - giá trị `secureUrl` được gán vào `Costume.imageUrl`
+- Phần rating/review có nhu cầu dùng lại upload service này trong tương lai, nhưng module review backend chưa tồn tại nên chưa tích hợp ở phase này.

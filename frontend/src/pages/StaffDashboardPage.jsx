@@ -31,7 +31,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     setHandoverImageUrl,
     setNote,
     setPreviewImage,
-    handleFileChange,
+    handleHandoverImageUploaded,
     submitHandover,
   } = useStaffRentalOrders(currentUser);
 
@@ -119,7 +119,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               onSelectDetail={setSelectedDetailId}
               onReturnStatusChange={setReturnStatus}
               onImageUrlChange={setHandoverImageUrl}
-              onFileChange={handleFileChange}
+              onImageUploaded={handleHandoverImageUploaded}
               onNoteChange={setNote}
               onPreviewImage={setPreviewImage}
               onSubmit={handleSubmit}

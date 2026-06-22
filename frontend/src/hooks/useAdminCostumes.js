@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { fetchPublicCategories } from '../services/catalogService';
 import { createCostume, fetchAdminCostumes, updateCostume } from '../services/costumeService';
 import { hasUserRole } from '../utils/roles';
 
@@ -13,6 +14,7 @@ export const emptyProductForm = {
 
 export function useAdminCostumes(currentUser) {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [editingProductId, setEditingProductId] = useState(null);
   const [productSearch, setProductSearch] = useState('');
@@ -46,9 +48,17 @@ export function useAdminCostumes(currentUser) {
   useEffect(() => {
     if (!isAdmin) return;
 
-    fetchAdminCostumes()
-      .then((data) => {
-        setProducts(Array.isArray(data) ? data : []);
+    Promise.all([fetchAdminCostumes(), fetchPublicCategories()])
+      .then(([costumeData, categoryData]) => {
+        const nextCategories = Array.isArray(categoryData) ? categoryData : [];
+        setProducts(Array.isArray(costumeData) ? costumeData : []);
+        setCategories(nextCategories);
+        if (nextCategories.length > 0) {
+          setProductForm((currentForm) => ({
+            ...currentForm,
+            categoryId: currentForm.categoryId || nextCategories[0].id,
+          }));
+        }
       })
       .catch(() => setProductError('Khong the tai danh sach san pham.'));
   }, [isAdmin]);
@@ -61,6 +71,13 @@ export function useAdminCostumes(currentUser) {
     }));
   };
 
+  const handleProductImageUploaded = (asset) => {
+    setProductForm((currentForm) => ({
+      ...currentForm,
+      imageUrl: asset?.secureUrl || '',
+    }));
+  };
+
   const hydrateProductForm = (product) => {
     setEditingProductId(product.id);
     setProductForm({
@@ -69,7 +86,7 @@ export function useAdminCostumes(currentUser) {
       imageUrl: product.imageUrl || '',
       rentalPrice: product.rentalPrice ?? '',
       depositPrice: product.depositPrice ?? '',
-      categoryId: product.category?.id || 1,
+      categoryId: product.category?.id || categories[0]?.id || 1,
     });
     setProductMessage('');
     setProductError('');
@@ -77,7 +94,10 @@ export function useAdminCostumes(currentUser) {
 
   const resetProductForm = () => {
     setEditingProductId(null);
-    setProductForm(emptyProductForm);
+    setProductForm({
+      ...emptyProductForm,
+      categoryId: categories[0]?.id || emptyProductForm.categoryId,
+    });
     setProductMessage('');
     setProductError('');
   };
@@ -112,7 +132,10 @@ export function useAdminCostumes(currentUser) {
       }
 
       setEditingProductId(null);
-      setProductForm(emptyProductForm);
+      setProductForm({
+        ...emptyProductForm,
+        categoryId: categories[0]?.id || emptyProductForm.categoryId,
+      });
       return true;
     } catch (error) {
       setProductError(error.message || 'Khong the luu san pham.');
@@ -125,6 +148,7 @@ export function useAdminCostumes(currentUser) {
   return {
     isAdmin,
     products,
+    categories,
     filteredProducts,
     productForm,
     editingProductId,
@@ -138,6 +162,7 @@ export function useAdminCostumes(currentUser) {
     setProductCategoryFilter,
     setProductStatusFilter,
     handleProductFieldChange,
+    handleProductImageUploaded,
     hydrateProductForm,
     resetProductForm,
     submitProduct,

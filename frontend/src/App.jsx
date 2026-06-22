@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
@@ -19,9 +19,17 @@ import StaffDashboardPage from './pages/StaffDashboardPage';
 import UserAccountPage from './pages/UserAccountPage';
 import YearbookPage from './pages/YearbookPage';
 import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from './routing/navigation';
+import { addItemToCart as addItemToCartApi, fetchCart, removeCartItem as removeCartItemApi } from './services/cartService';
 import { logUserInteraction } from './services/interactionsService';
 import { selectCurrentUser, setCurrentUser } from './store/authSlice';
-import { addCartItem, removeCartItem, selectCartCount, selectCartItems, updateCartQuantity } from './store/cartSlice';
+import {
+  addCartItem,
+  removeCartItem,
+  selectCartCount,
+  selectCartItems,
+  setCartItems,
+  updateCartQuantity,
+} from './store/cartSlice';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { hasUserRole } from './utils/roles';
 
@@ -62,6 +70,23 @@ function App() {
   const handleNavigate = useLegacyNavigate();
   const handleSearchOpen = useSearchNavigation();
 
+  useEffect(() => {
+    if (!currentUser?.id) return undefined;
+
+    let isMounted = true;
+
+    fetchCart()
+      .then((cart) => {
+        if (!isMounted) return;
+        dispatch(setCartItems(cart?.items || []));
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, dispatch]);
+
   const handleAuthChange = useCallback(
     (user) => {
       dispatch(setCurrentUser(user));
@@ -70,7 +95,7 @@ function App() {
   );
 
   const handleAddToCart = useCallback(
-    (item) => {
+    async (item) => {
       if (currentUser?.id && item?.id) {
         logUserInteraction({
           userId: currentUser.id,
@@ -85,7 +110,21 @@ function App() {
         }).catch(() => {});
       }
 
-      dispatch(addCartItem(item));
+      if (currentUser?.id && item?.costumeItemId && item?.rentalStartDate && item?.rentalEndDate) {
+        try {
+          const cart = await addItemToCartApi({
+            costumeItemId: item.costumeItemId,
+            rentalStartDate: item.rentalStartDate,
+            rentalEndDate: item.rentalEndDate,
+          });
+          dispatch(setCartItems(cart?.items || []));
+        } catch {
+          dispatch(addCartItem(item));
+        }
+      } else {
+        dispatch(addCartItem(item));
+      }
+
       if (location.pathname !== '/checkout') {
         handleNavigate('checkout');
       }
@@ -101,10 +140,22 @@ function App() {
   );
 
   const handleRemoveFromCart = useCallback(
-    (cartId) => {
+    async (cartId) => {
+      const matchedItem = cartItems.find((item) => item.cartId === cartId);
+
+      if (currentUser?.id && matchedItem?.cartItemId) {
+        try {
+          const cart = await removeCartItemApi(matchedItem.cartItemId);
+          dispatch(setCartItems(cart?.items || []));
+          return;
+        } catch {
+          return;
+        }
+      }
+
       dispatch(removeCartItem(cartId));
     },
-    [dispatch]
+    [cartItems, currentUser?.id, dispatch]
   );
 
   return (

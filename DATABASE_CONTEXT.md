@@ -19,6 +19,7 @@
 | `RentalOrder` | `id`, `user_id`, các field người nhận, rental window, totals, `status` | Entity checkout chính |
 | `RentalOrderDetail` | `id`, `rental_order_id`, `costume_item_id`, pricing fields, `returnStatus` | Một dòng cho mỗi món đồ vật lý đã đặt |
 | `Payment` | `id`, `rental_order_id`, `amount`, `method`, `status`, `transactionId` | Quan hệ một-một với order |
+| `UploadAsset` | `id`, `original_file_name`, `url`, `secure_url`, `public_id`, `resource_type`, `format`, `size`, `uploaded_by_user_id` | Metadata ảnh upload lên Cloudinary |
 | `OtpEntry` | chỉ in-memory | Không phải bảng DB |
 
 ## Quan hệ
@@ -31,6 +32,7 @@
 - `RentalOrder 1 -> many RentalOrderDetail`
 - `RentalOrderDetail many -> 1 CostumeItem`
 - `RentalOrder 1 -> 1 Payment`
+- `User 1 -> many UploadAsset`
 
 ## Enum quan trọng
 | Enum | Giá trị |
@@ -79,7 +81,7 @@
 | `booking` | Gần nhất là `RentalOrder` |
 | `appointment` | Không có |
 | `rating` | Không có ở backend; UI review ở frontend chỉ là local |
-| `upload` | Không có ở backend; ảnh staff ở frontend chỉ là local/base64 |
+| `upload` | Đã có `UploadAsset`; rating/review chưa có entity liên kết |
 
 ## Rủi ro schema / migration
 - Không có lịch sử migration bằng Flyway/Liquibase.

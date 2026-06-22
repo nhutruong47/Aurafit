@@ -2,31 +2,31 @@ import { useEffect, useMemo, useState } from 'react';
 import PaymentFormSections from '../components/payment/PaymentFormSections';
 import PaymentHeader from '../components/payment/PaymentHeader';
 import PaymentSummary from '../components/payment/PaymentSummary';
-import { logUserInteraction } from '../services/interactionsService';
 import { fetchOrderDetail } from '../services/rentalOrderService';
 import { createPayment } from '../services/paymentService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 import { formatCurrency } from '../utils/formatCurrency';
 import { fallbackProductImage } from '../utils/productMapper';
 
-export default function PaymentPage({ cartItems = [], currentUser, onNavigate }) {
+export default function PaymentPage({ cartItems = [], onNavigate }) {
   const { pendingOrderId } = useCheckoutStore();
-  const [delivery, setDelivery] = useState('standard');
-  const [paymentMethod, setPaymentMethod] = useState('VNPAY');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const [order, setOrder] = useState(null);
   const [isLoadingOrder, setIsLoadingOrder] = useState(false);
+  const [paymentInit, setPaymentInit] = useState(null);
 
   useEffect(() => {
     if (!pendingOrderId) {
       setOrder(null);
+      setPaymentInit(null);
       return undefined;
     }
 
     let isMounted = true;
     setIsLoadingOrder(true);
     setPaymentError('');
+    setPaymentInit(null);
 
     fetchOrderDetail(pendingOrderId)
       .then((orderData) => {
@@ -53,8 +53,8 @@ export default function PaymentPage({ cartItems = [], currentUser, onNavigate })
       return order.details.map((detail) => ({
         id: detail.id,
         name: detail.costumeName || 'Trang phuc AuraFit',
-        meta: [detail.sku, detail.size, detail.color].filter(Boolean).join(' • ') || 'Rental item',
-        price: formatCurrency(detail.subtotal || 0),
+        meta: [detail.skuCode || detail.sku, detail.size, detail.color].filter(Boolean).join(' • ') || 'Rental item',
+        price: formatCurrency(detail.subtotal || detail.rentalPrice || 0),
         image: fallbackProductImage,
       }));
     }
@@ -82,29 +82,8 @@ export default function PaymentPage({ cartItems = [], currentUser, onNavigate })
     setPaymentError('');
 
     try {
-      await createPayment({ orderId: pendingOrderId, method: paymentMethod });
-
-      if (currentUser?.id) {
-        await Promise.allSettled(
-          items
-            .filter((item) => item.id)
-            .map((item) =>
-              logUserInteraction({
-                userId: currentUser.id,
-                actionType: 'PURCHASE',
-                targetType: 'COSTUME',
-                targetId: item.id,
-                metadata: JSON.stringify({
-                  category: item.rawCategory || item.category,
-                  subcategory: item.subcategory,
-                  tag: item.tag,
-                }),
-              })
-            )
-        );
-      }
-
-      onNavigate?.('success');
+      const paymentPayload = await createPayment({ orderId: pendingOrderId });
+      setPaymentInit(paymentPayload || null);
     } catch (error) {
       setPaymentError(error.message || 'Khong the tao thanh toan.');
     } finally {
@@ -117,19 +96,16 @@ export default function PaymentPage({ cartItems = [], currentUser, onNavigate })
       <PaymentHeader onNavigate={onNavigate} />
 
       <main className="mx-auto flex max-w-[1440px] flex-col gap-16 px-5 py-16 md:px-20 lg:flex-row lg:gap-20">
-        <PaymentFormSections
-          delivery={delivery}
-          paymentMethod={paymentMethod}
-          onDeliveryChange={setDelivery}
-          onPaymentMethodChange={setPaymentMethod}
-        />
+        <PaymentFormSections order={order} paymentInit={paymentInit} />
         <PaymentSummary
           items={items}
           summary={summary}
           isLoading={isLoadingOrder}
           paymentError={paymentError}
+          paymentInit={paymentInit}
           isSubmitting={isSubmitting}
           onCompletePayment={handleCompletePayment}
+          onViewOrders={() => onNavigate?.('orders')}
         />
       </main>
     </div>

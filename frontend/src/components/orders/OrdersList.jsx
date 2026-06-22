@@ -1,4 +1,3 @@
-// Danh sach don hang cho phep nguoi dung chon don can xem chi tiet.
 import { formatCurrency } from '../../utils/formatCurrency';
 import { getOrderCode, mapOrderStatus } from './orderUtils';
 
@@ -8,7 +7,7 @@ const fallbackImage =
 export default function OrdersList({ orders, selectedOrderId, onSelectOrder }) {
   return (
     <div className="lg:col-span-5">
-      <h2 className="mb-6 text-[12px] font-semibold uppercase tracking-[0.2em]">Tất cả đơn hàng</h2>
+      <h2 className="mb-6 text-[12px] font-semibold uppercase tracking-[0.2em]">Tat ca don hang</h2>
       <div className="space-y-4">
         {orders.map((order) => {
           const statusInfo = mapOrderStatus(order.status);
@@ -23,22 +22,23 @@ export default function OrdersList({ orders, selectedOrderId, onSelectOrder }) {
             >
               <div className="flex gap-4">
                 <div className="h-16 w-12 shrink-0 overflow-hidden bg-[#eeeeee]">
-                  <img
-                    src={order.details?.[0]?.costumeImageUrl || fallbackImage}
-                    alt="Product"
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={fallbackImage} alt="Order" className="h-full w-full object-cover" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <p className="text-[11px] font-bold uppercase tracking-widest">{getOrderCode(order.id)}</p>
                   <p className="mt-1 text-xs text-[#5f5e5e]">
-                    {new Date(order.rentalDate || order.createdAt).toLocaleDateString('vi-VN')}
+                    {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                  </p>
+                  <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-[#999999]">
+                    {order.itemCount || 0} mon
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <p className={`text-[11px] font-bold uppercase tracking-widest ${statusInfo.color}`}>{statusInfo.text}</p>
-                <p className="mt-1 font-serif text-lg">{formatCurrency(order.totalRentalFee || 0)}</p>
+                <p className="mt-1 font-serif text-lg">
+                  {formatCurrency(order.totalRentalPrice || order.totalRentalFee || 0)}
+                </p>
               </div>
             </div>
           );

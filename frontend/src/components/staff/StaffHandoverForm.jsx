@@ -1,4 +1,4 @@
-// Form ban giao va cap nhat tinh trang item cho staff.
+import ImageUploadField from '../ui/ImageUploadField';
 import { returnStatuses } from './staffData';
 import { Field } from './StaffDashboardShared';
 
@@ -15,14 +15,14 @@ export default function StaffHandoverForm({
   onSelectDetail,
   onReturnStatusChange,
   onImageUrlChange,
-  onFileChange,
+  onImageUploaded,
   onNoteChange,
   onPreviewImage,
   onSubmit,
 }) {
   return (
     <aside className="border border-[#cfc4c5] bg-white p-5 lg:col-span-3">
-      <h2 className="mb-5 text-[11px] font-semibold uppercase tracking-[0.2em]">Tạo biên bản</h2>
+      <h2 className="mb-5 text-[11px] font-semibold uppercase tracking-[0.2em]">Tao bien ban</h2>
       <form className="space-y-5" onSubmit={onSubmit}>
         <div className="grid grid-cols-2 border border-[#cfc4c5] bg-[#f3f3f4] p-1">
           {['PICKUP', 'RETURN'].map((value) => (
@@ -39,7 +39,7 @@ export default function StaffHandoverForm({
           ))}
         </div>
 
-        <Field label="Trang phục">
+        <Field label="Trang phuc">
           <select
             value={selectedDetailId}
             onChange={(event) => onSelectDetail(event.target.value)}
@@ -62,7 +62,7 @@ export default function StaffHandoverForm({
         )}
 
         {mode === 'RETURN' && (
-          <Field label="Tình trạng trả">
+          <Field label="Tinh trang tra">
             <div className="space-y-2">
               {returnStatuses.map((status) => (
                 <label key={status.value} className="flex cursor-pointer items-center justify-between border border-[#cfc4c5] px-3 py-3">
@@ -79,37 +79,40 @@ export default function StaffHandoverForm({
           </Field>
         )}
 
-        <Field label="Ảnh bàn giao">
+        <Field label="URL anh ban giao">
           <input
-            value={handoverImageUrl.startsWith('data:') ? '' : handoverImageUrl}
+            value={handoverImageUrl}
             onChange={(event) => onImageUrlChange(event.target.value)}
             placeholder="https://..."
-            className="mb-3 w-full border border-[#cfc4c5] bg-[#f9f9f9] px-3 py-3 text-sm outline-none focus:border-[#99854e]"
+            className="w-full border border-[#cfc4c5] bg-[#f9f9f9] px-3 py-3 text-sm outline-none focus:border-[#99854e]"
             type="url"
           />
-          <input
-            onChange={onFileChange}
-            className="block w-full text-sm file:mr-3 file:border-0 file:bg-black file:px-4 file:py-3 file:text-[10px] file:font-semibold file:uppercase file:tracking-[0.14em] file:text-white"
-            type="file"
-            accept="image/*"
-          />
-          {handoverImageUrl && (
-            <button
-              type="button"
-              onClick={() => onPreviewImage(handoverImageUrl)}
-              className="mt-3 aspect-[4/3] w-full overflow-hidden border border-[#cfc4c5] bg-[#eeeeee]"
-            >
-              <img src={handoverImageUrl} alt="Preview" className="h-full w-full object-cover" />
-            </button>
-          )}
         </Field>
 
-        <Field label="Ghi chú">
+        <ImageUploadField
+          label="Anh ban giao"
+          value={handoverImageUrl}
+          disabled={isSubmitting}
+          readyLabel="Anh da san sang cho bien ban."
+          onUploaded={onImageUploaded}
+        />
+
+        {handoverImageUrl && (
+          <button
+            type="button"
+            onClick={() => onPreviewImage(handoverImageUrl)}
+            className="aspect-[4/3] w-full overflow-hidden border border-[#cfc4c5] bg-[#eeeeee]"
+          >
+            <img src={handoverImageUrl} alt="Preview" className="h-full w-full object-cover" />
+          </button>
+        )}
+
+        <Field label="Ghi chu">
           <textarea
             value={note}
             onChange={(event) => onNoteChange(event.target.value)}
             className="min-h-28 w-full border border-[#cfc4c5] bg-[#f9f9f9] px-3 py-3 text-sm outline-none focus:border-[#99854e]"
-            placeholder="Kiểm tra tình trạng, phụ kiện, vết hỏng nếu có..."
+            placeholder="Kiem tra tinh trang, phu kien, vet hong neu co..."
           />
         </Field>
 
@@ -117,7 +120,7 @@ export default function StaffHandoverForm({
           disabled={isSubmitting || !handoverImageUrl || !selectedDetailId}
           className="w-full bg-black px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
         >
-          {isSubmitting ? 'Đang lưu...' : mode === 'PICKUP' ? 'Xác nhận bàn giao' : 'Xác nhận trả đồ'}
+          {isSubmitting ? 'Dang luu...' : mode === 'PICKUP' ? 'Xac nhan ban giao' : 'Xac nhan tra do'}
         </button>
       </form>
     </aside>

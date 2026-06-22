@@ -44,6 +44,9 @@
 | Secret đang bị commit trong repo | Cao | `application-dev.yml`, `application.yml` | Rotate secret và loại khỏi source control |
 | Chưa có rate limiting / anti-abuse cho OTP hoặc login | Trung bình | auth controller/service | Thêm throttling và audit logging |
 | CORS dev bị hard-code cho một origin; policy production chưa được tài liệu hóa | Thấp | `SecurityConfig.java` | Externalize danh sách allowed origins |
+| Upload image hiện cho phép `ADMIN` và `CUSTOMER`; nếu không thêm rate limit/quota có thể bị abuse lưu trữ | Trung bình | `UploadController.java`, `UploadServiceImpl.java` | Bổ sung quota, rate limit, monitoring, cleanup policy |
+| Metadata upload đã được rollback remote khi lưu DB fail, nhưng domain hiện mới chỉ tham chiếu `secureUrl` string thay vì FK đến `UploadAsset` | Trung bình | `UploadAsset.java`, `Costume.java` | Cân nhắc quan hệ tham chiếu rõ ràng khi làm review/rating module |
+| Cloudinary credentials phụ thuộc env vars; nếu thiếu app vẫn chạy nhưng upload sẽ fail runtime | Thấp | `CloudinaryConfig.java`, `application.yml` | Tài liệu hóa env bắt buộc và thêm startup health/config check nếu cần |
 
 ## UX
 | Rủi ro | Mức độ | File/module liên quan | Hướng xử lý đề xuất |

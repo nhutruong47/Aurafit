@@ -129,11 +129,21 @@ export default function RentalOrderCheckoutPage({
     setCheckoutError('');
 
     try {
+      const invalidItems = rentalItems.filter(
+        (item) => !item?.sku || !item?.rentalStartDate || !item?.rentalEndDate
+      );
+
+      if (invalidItems.length > 0) {
+        throw new Error(
+          'Gio hang chua du du lieu backend de checkout. Moi san pham can co SKU va khoang ngay thue hop le.'
+        );
+      }
+
       const items = rentalItems.map((item) => ({
-        sku: item.sku || item.id,
+        sku: item.sku,
         quantity: 1,
-        rentalStartDate: item.rentalStartDate || new Date().toISOString().split('T')[0],
-        rentalEndDate: item.rentalEndDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        rentalStartDate: item.rentalStartDate,
+        rentalEndDate: item.rentalEndDate,
       }));
 
       const orderResponse = await createOrder({

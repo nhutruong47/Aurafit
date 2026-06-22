@@ -103,6 +103,29 @@
 }
 ```
 
+## API upload ảnh
+| Method | Endpoint | Auth | Mục đích | Request | Response | Ghi chú |
+| --- | --- | --- | --- | --- | --- | --- |
+| `POST` | `/api/uploads/images` | Bearer JWT, role `ADMIN` hoặc `CUSTOMER` | Upload ảnh signed qua backend lên Cloudinary và lưu metadata DB | `multipart/form-data`, field `file` | `UploadAssetResponse` | Chỉ chấp nhận `jpg`, `jpeg`, `png`, `webp`; reject file rỗng; có giới hạn size |
+
+### `UploadAssetResponse`
+```json
+{
+  "id": 1,
+  "originalFileName": "avatar.png",
+  "url": "http://res.cloudinary.com/...",
+  "secureUrl": "https://res.cloudinary.com/...",
+  "publicId": "aurafit/avatar-abc123",
+  "resourceType": "image",
+  "format": "png",
+  "size": 123456,
+  "uploadedAt": "2026-06-22T10:00:00"
+}
+```
+
+- Giai đoạn hiện tại frontend admin dùng upload này để lấy `secureUrl` rồi gán vào `Costume.imageUrl`.
+- Flow rating/review chưa được nối vì backend review module chưa tồn tại.
+
 ## Contract lỗi
 - Format lỗi global:
 ```json
@@ -124,6 +147,7 @@
 | AI recommendations / AI chat / interaction tracking | Chưa có ở backend |
 | Cập nhật profile user / đổi mật khẩu | Chưa có ở backend |
 | Timeline endpoint `/api/orders/{id}/timeline` | Chưa có ở backend |
+| Review/rating có upload ảnh | Chưa có ở backend |
 
 ## Phần frontend đang kỳ vọng nhưng backend thiếu hoặc lệch
 | Lệnh gọi từ frontend | Thực tế backend hiện tại |

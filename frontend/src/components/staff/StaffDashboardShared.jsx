@@ -1,9 +1,11 @@
 // Tap hop component dung chung cho staff dashboard.
 const statusTone = {
-  PENDING_PAYMENT: 'border-[#a15c00]/30 bg-[#fff7df] text-[#7a4d00]',
-  PENDING_CONFIRMATION: 'border-[#99854e]/30 bg-[#f8f4e8] text-[#725f2f]',
+  PENDING: 'border-[#a15c00]/30 bg-[#fff7df] text-[#7a4d00]',
+  CONFIRMED: 'border-[#99854e]/30 bg-[#f8f4e8] text-[#725f2f]',
   PICKED_UP: 'border-[#1c6b9a]/30 bg-[#e8f4fb] text-[#165276]',
   RETURNED: 'border-[#087b3f]/30 bg-[#e8f7ee] text-[#087b3f]',
+  COMPLETED: 'border-[#087b3f]/30 bg-[#e8f7ee] text-[#087b3f]',
+  CANCELLED: 'border-[#cfc4c5] bg-[#f4f4f4] text-[#5f5e5e]',
   DAMAGED: 'border-[#a15c00]/30 bg-[#fff7df] text-[#7a4d00]',
   LOST: 'border-[#ba1a1a]/30 bg-[#ffdad6] text-[#93000a]',
 };

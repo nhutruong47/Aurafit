@@ -33,6 +33,7 @@
 | `CheckoutController` | checkout, danh sách đơn, chi tiết đơn |
 | `PaymentController` | khởi tạo thanh toán |
 | `SePayWebhookController` | webhook thanh toán |
+| `UploadController` | upload ảnh lên Cloudinary và lưu metadata |
 
 ## Service chính
 | Service | Trách nhiệm |
@@ -45,6 +46,7 @@
 | `OtpService` | Lưu trữ và validate OTP in-memory |
 | `EmailService` | Gửi email OTP HTML |
 | `CostumeServiceImpl` | Endpoint đọc catalog |
+| `UploadServiceImpl` | Validate ảnh, upload Cloudinary, rollback remote khi lưu metadata DB fail |
 
 ## Security / Guard / Middleware
 - `SecurityConfig`
@@ -95,5 +97,5 @@
 | API quản lý sản phẩm cho admin | Chưa có |
 | Cập nhật profile / đổi mật khẩu | Chưa có |
 | Lưu trữ rating/review | Chưa có |
-| Upload/media storage | Chưa có |
+| Upload/media storage | Đã có module upload ảnh Cloudinary + metadata DB; chưa nối review/rating |
 | Engine AI recommendation/chat | Chưa có ở backend |

@@ -2,80 +2,90 @@ export const getOrderCode = (id) => `RO-${String(id).padStart(4, '0')}`;
 
 export const mapOrderStatus = (status) => {
   switch (status) {
-    case 'PENDING_PAYMENT':
-      return { text: 'Chờ thanh toán', color: 'text-[#a15c00]' };
-    case 'PENDING_CONFIRMATION':
-      return { text: 'Chờ xác nhận', color: 'text-[#99854e]' };
+    case 'PENDING':
+      return { text: 'Cho thanh toan', color: 'text-[#a15c00]' };
+    case 'CONFIRMED':
+      return { text: 'Da xac nhan', color: 'text-[#99854e]' };
     case 'PICKED_UP':
-      return { text: 'Đang vận chuyển', color: 'text-[#1c6b9a]' };
+      return { text: 'Da ban giao', color: 'text-[#1c6b9a]' };
     case 'RETURNED':
-      return { text: 'Hoàn thành', color: 'text-[#087b3f]' };
+      return { text: 'Da tra do', color: 'text-[#087b3f]' };
+    case 'COMPLETED':
+      return { text: 'Hoan thanh', color: 'text-[#087b3f]' };
     case 'CANCELLED':
-    case 'CANCELED':
-      return { text: 'Đã hủy', color: 'text-gray-400' };
+      return { text: 'Da huy', color: 'text-gray-400' };
     default:
-      return { text: status || 'Chờ xác nhận', color: 'text-gray-500' };
+      return { text: status || 'Dang cap nhat', color: 'text-gray-500' };
   }
 };
 
+const formatMoment = (value, fallbackLabel) => {
+  if (!value) return fallbackLabel;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallbackLabel;
+
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 export const getOrderTimeline = (order) => {
-  const baseDate = new Date(order.rentalDate || order.createdAt || Date.now());
-  const formatDate = (date, daysOffset, timeStr) => {
-    const nextDate = new Date(date);
-    nextDate.setDate(nextDate.getDate() + daysOffset);
-    return `${nextDate.getDate()} Thg ${nextDate.getMonth() + 1}, ${timeStr}`;
-  };
+  const status = order?.status;
+  const isCancelled = status === 'CANCELLED';
+  const isConfirmed = ['CONFIRMED', 'PICKED_UP', 'RETURNED', 'COMPLETED'].includes(status);
+  const isPickedUp = ['PICKED_UP', 'RETURNED', 'COMPLETED'].includes(status);
+  const isReturned = ['RETURNED', 'COMPLETED'].includes(status);
+  const isCompleted = status === 'COMPLETED';
 
   const timeline = [
     {
-      status: 'Đã xác nhận',
-      date: formatDate(baseDate, 0, '09:00'),
+      status: 'Don duoc tao',
+      date: formatMoment(order?.createdAt, 'Dang cap nhat'),
       icon: 'receipt_long',
       completed: true,
+      current: status === 'PENDING',
+    },
+    {
+      status: isCancelled ? 'Don da huy' : 'Xac nhan thanh toan',
+      date: isCancelled
+        ? formatMoment(order?.createdAt, 'Da huy')
+        : formatMoment(order?.createdAt, 'Cho xac nhan'),
+      icon: isCancelled ? 'cancel' : 'verified',
+      completed: isCancelled || isConfirmed,
+      current: !isCancelled && status === 'CONFIRMED',
+      isCanceled: isCancelled,
+    },
+    {
+      status: 'Ban giao trang phuc',
+      date: formatMoment(order?.rentalStartDate, 'Cho ngay ban giao'),
+      icon: 'local_shipping',
+      completed: isPickedUp,
+      current: status === 'PICKED_UP',
+    },
+    {
+      status: 'Khach tra do',
+      date: formatMoment(order?.rentalEndDate, 'Cho ngay tra do'),
+      icon: 'assignment_return',
+      completed: isReturned,
+      current: status === 'RETURNED',
+    },
+    {
+      status: 'Hoan tat don hang',
+      date: formatMoment(order?.rentalEndDate, 'Cho hoan tat'),
+      icon: 'check_circle',
+      completed: isCompleted,
+      current: isCompleted,
     },
   ];
 
-  if (order.status === 'CANCELLED' || order.status === 'CANCELED' || order.status === 'Đã hủy') {
-    timeline.push({
-      status: 'Đã hủy',
-      date: formatDate(baseDate, 0, '10:30'),
-      icon: 'cancel',
-      completed: true,
-      current: true,
-      isCanceled: true,
-    });
-
-    return timeline;
+  if (isCancelled) {
+    return timeline.slice(0, 2);
   }
-
-  const isPreparing = order.status === 'PENDING_CONFIRMATION' || order.status === 'PENDING_PAYMENT';
-  const isPreparingDone = ['PENDING_CONFIRMATION', 'PICKED_UP', 'RETURNED'].includes(order.status);
-  timeline.push({
-    status: 'Đang chuẩn bị',
-    date: formatDate(baseDate, 0, '14:30'),
-    icon: 'inventory_2',
-    completed: isPreparingDone,
-    current: isPreparing,
-  });
-
-  const isDelivering = order.status === 'PICKED_UP';
-  const isDeliveringDone = ['PICKED_UP', 'RETURNED'].includes(order.status);
-  timeline.push({
-    status: 'Đang vận chuyển',
-    date: formatDate(baseDate, 1, '08:15'),
-    icon: 'local_shipping',
-    completed: isDeliveringDone,
-    current: isDelivering,
-  });
-
-  const isCompleted = order.status === 'RETURNED';
-  timeline.push({
-    status: 'Hoàn thành',
-    date: isCompleted ? formatDate(baseDate, 3, '17:00') : `Dự kiến ${formatDate(baseDate, 2, '18:00').split(',')[0]}`,
-    icon: 'check_circle',
-    completed: isCompleted,
-    current: isCompleted,
-  });
 
   return timeline;
 };
