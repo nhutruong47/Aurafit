@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useCallback } from 'react';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
 import Account from './pages/Account';
@@ -17,133 +18,144 @@ import ProductDetail from './pages/ProductDetail';
 import Shop from './pages/Shop';
 import StaffDashboard from './pages/StaffDashboard';
 import Yearbook from './pages/Yearbook';
-import { logUserInteraction } from './services/api';
+import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from './routing/navigation';
+import { logUserInteraction } from './services/interactionsService';
 import { selectCurrentUser, setCurrentUser } from './store/authSlice';
 import { addCartItem, removeCartItem, selectCartCount, selectCartItems, updateCartQuantity } from './store/cartSlice';
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { useNavigationStore } from './store/useNavigationStore';
 import { hasUserRole } from './utils/roles';
 
-function App() {
-  const dispatch = useAppDispatch();
-  const currentUser = useAppSelector(selectCurrentUser);
-  const cartItems = useAppSelector(selectCartItems);
-  const cartCount = useAppSelector(selectCartCount);
-  const currentPage = useNavigationStore((state) => state.currentPage);
-  const currentProduct = useNavigationStore((state) => state.currentProduct);
-  const chatContext = useNavigationStore((state) => state.chatContext);
-  const searchFocusToken = useNavigationStore((state) => state.searchFocusToken);
-  const handleNavigate = useNavigationStore((state) => state.navigate);
-  const handleSearchOpen = useNavigationStore((state) => state.openSearch);
-
-  useEffect(() => {
-    if (hasUserRole(currentUser, 'ADMIN') && !['adminDashboard', 'account'].includes(currentPage)) {
-      handleNavigate('adminDashboard');
-    }
-  }, [currentPage, currentUser, handleNavigate]);
-
-  const handleAuthChange = (user) => {
-    dispatch(setCurrentUser(user));
-  };
-
-  const handleAddToCart = (item) => {
-    if (currentUser?.id && item?.id) {
-      logUserInteraction({
-        userId: currentUser.id,
-        actionType: 'ADD_TO_CART',
-        targetType: 'COSTUME',
-        targetId: item.id,
-        metadata: JSON.stringify({
-          category: item.rawCategory || item.category,
-          subcategory: item.subcategory,
-          tag: item.tag,
-        }),
-      }).catch(() => {});
-    }
-
-    dispatch(addCartItem(item));
-    if (currentPage !== 'checkout') {
-      handleNavigate('checkout');
-    }
-  };
-
-  const handleUpdateCartQuantity = (cartId, quantity) => {
-    dispatch(updateCartQuantity({ cartId, quantity }));
-  };
-
-  const handleRemoveFromCart = (cartId) => {
-    dispatch(removeCartItem(cartId));
-  };
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'catalog':
-        return <Catalog onNavigate={handleNavigate} onAddToCart={handleAddToCart} searchFocusToken={searchFocusToken} />;
-      case 'shop':
-        return <Shop currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />;
-      case 'checkout':
-        return (
-          <Checkout
-            cartItems={cartItems}
-            onAddToCart={handleAddToCart}
-            onRemoveFromCart={handleRemoveFromCart}
-            onUpdateCartQuantity={handleUpdateCartQuantity}
-            onNavigate={handleNavigate}
-          />
-        );
-      case 'payment':
-        return <Payment cartItems={cartItems} currentUser={currentUser} onNavigate={handleNavigate} />;
-      case 'success':
-        return <OrderSuccess cartItems={cartItems} onNavigate={handleNavigate} />;
-      case 'chat':
-        return <Chat onNavigate={handleNavigate} contextProduct={chatContext} cartItems={cartItems} />;
-      case 'orders':
-        return <Orders currentUser={currentUser} onNavigate={handleNavigate} />;
-      case 'adminDashboard':
-        return <AdminDashboard currentUser={currentUser} onNavigate={handleNavigate} />;
-      case 'staffDashboard':
-        return <StaffDashboard currentUser={currentUser} onNavigate={handleNavigate} />;
-      case 'yearbook':
-        return <Yearbook onNavigate={handleNavigate} onAddToCart={handleAddToCart} />;
-      case 'cosplay':
-        return <Cosplay onNavigate={handleNavigate} onAddToCart={handleAddToCart} />;
-      case 'events':
-        return <Events onNavigate={handleNavigate} onAddToCart={handleAddToCart} />;
-      case 'care':
-        return <CustomerCare onNavigate={handleNavigate} />;
-      case 'account':
-        return <Account currentUser={currentUser} onAuthChange={handleAuthChange} onNavigate={handleNavigate} />;
-      case 'productDetail':
-        return <ProductDetail product={currentProduct} currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />;
-      case 'shopDetail':
-      case 'becomeLessor':
-      case 'sellerDashboard':
-        return <Catalog onNavigate={handleNavigate} onAddToCart={handleAddToCart} searchFocusToken={searchFocusToken} />;
-      case 'home':
-      default:
-        return <Home onNavigate={handleNavigate} onAddToCart={handleAddToCart} />;
-    }
-  };
-
-  const usesCustomShell = currentPage === 'payment' || currentPage === 'success';
-  const hidesFooter = usesCustomShell || currentPage === 'chat' || currentPage === 'adminDashboard' || currentPage === 'staffDashboard';
+function DefaultLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
+  const location = useLocation();
+  const currentPage = getCurrentPageFromPath(location.pathname);
+  const hidesFooter = currentPage === 'chat' || currentPage === 'adminDashboard' || currentPage === 'staffDashboard';
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f9f9f9]">
-      {!usesCustomShell && (
-        <Navbar
-          currentPage={currentPage}
-          onNavigate={handleNavigate}
-          onSearchOpen={handleSearchOpen}
-          cartCount={cartCount}
-          currentUser={currentUser}
-          isAdmin={hasUserRole(currentUser, 'ADMIN')}
-          isStaff={hasUserRole(currentUser, 'STAFF')}
-        />
-      )}
-      <main className="flex-1">{renderPage()}</main>
-      {!hidesFooter && <Footer onNavigate={handleNavigate} />}
+      <Navbar
+        currentPage={currentPage}
+        onNavigate={onNavigate}
+        onSearchOpen={onSearchOpen}
+        cartCount={cartCount}
+        currentUser={currentUser}
+        isAdmin={hasUserRole(currentUser, 'ADMIN')}
+        isStaff={hasUserRole(currentUser, 'STAFF')}
+      />
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      {!hidesFooter && <Footer onNavigate={onNavigate} />}
     </div>
+  );
+}
+
+function BareLayout() {
+  return <Outlet />;
+}
+
+function App() {
+  const dispatch = useAppDispatch();
+  const location = useLocation();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const cartItems = useAppSelector(selectCartItems);
+  const cartCount = useAppSelector(selectCartCount);
+  const handleNavigate = useLegacyNavigate();
+  const handleSearchOpen = useSearchNavigation();
+
+  const handleAuthChange = useCallback(
+    (user) => {
+      dispatch(setCurrentUser(user));
+    },
+    [dispatch]
+  );
+
+  const handleAddToCart = useCallback(
+    (item) => {
+      if (currentUser?.id && item?.id) {
+        logUserInteraction({
+          userId: currentUser.id,
+          actionType: 'ADD_TO_CART',
+          targetType: 'COSTUME',
+          targetId: item.id,
+          metadata: JSON.stringify({
+            category: item.rawCategory || item.category,
+            subcategory: item.subcategory,
+            tag: item.tag,
+          }),
+        }).catch(() => {});
+      }
+
+      dispatch(addCartItem(item));
+      if (location.pathname !== '/checkout') {
+        handleNavigate('checkout');
+      }
+    },
+    [currentUser, dispatch, handleNavigate, location.pathname]
+  );
+
+  const handleUpdateCartQuantity = useCallback(
+    (cartId, quantity) => {
+      dispatch(updateCartQuantity({ cartId, quantity }));
+    },
+    [dispatch]
+  );
+
+  const handleRemoveFromCart = useCallback(
+    (cartId) => {
+      dispatch(removeCartItem(cartId));
+    },
+    [dispatch]
+  );
+
+  return (
+    <Routes>
+      <Route
+        element={
+          <DefaultLayout
+            currentUser={currentUser}
+            cartCount={cartCount}
+            onNavigate={handleNavigate}
+            onSearchOpen={handleSearchOpen}
+          />
+        }
+      >
+        <Route path="/" element={<Home onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/catalog" element={<Catalog onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/shop" element={<Shop currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route
+          path="/checkout"
+          element={
+            <Checkout
+              cartItems={cartItems}
+              onAddToCart={handleAddToCart}
+              onRemoveFromCart={handleRemoveFromCart}
+              onUpdateCartQuantity={handleUpdateCartQuantity}
+              onNavigate={handleNavigate}
+            />
+          }
+        />
+        <Route path="/chat" element={<Chat onNavigate={handleNavigate} cartItems={cartItems} />} />
+        <Route path="/orders" element={<Orders currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/admin" element={<AdminDashboard currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/staff" element={<StaffDashboard currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/yearbook" element={<Yearbook onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/cosplay" element={<Cosplay onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/events" element={<Events onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/care" element={<CustomerCare onNavigate={handleNavigate} />} />
+        <Route path="/account" element={<Account currentUser={currentUser} onAuthChange={handleAuthChange} onNavigate={handleNavigate} />} />
+        <Route
+          path="/products/:productId"
+          element={<ProductDetail currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />}
+        />
+      </Route>
+
+      <Route element={<BareLayout />}>
+        <Route path="/payment" element={<Payment cartItems={cartItems} currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/success" element={<OrderSuccess cartItems={cartItems} onNavigate={handleNavigate} />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

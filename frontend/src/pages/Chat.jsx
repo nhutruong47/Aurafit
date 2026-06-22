@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import ChatAdminSidebar from '../components/chat/ChatAdminSidebar';
 import ChatComposer from '../components/chat/ChatComposer';
 import ChatMessageList from '../components/chat/ChatMessageList';
@@ -6,7 +7,9 @@ import ChatProductSelector from '../components/chat/ChatProductSelector';
 import { formatCurrency } from '../utils/formatCurrency';
 import { adminContact } from '../utils/shopMock';
 
-export default function Chat({ onNavigate, contextProduct, cartItems = [] }) {
+export default function Chat({ onNavigate, cartItems = [] }) {
+  const location = useLocation();
+  const contextProduct = location.state?.contextProduct || null;
   const products = useMemo(() => {
     const selectedProducts = [];
 
@@ -32,8 +35,8 @@ export default function Chat({ onNavigate, contextProduct, cartItems = [] }) {
     {
       id: 1,
       author: 'staff',
-      time: 'Bây giờ',
-      text: 'Xin chào, AuraFit Admin đang sẵn sàng tư vấn sản phẩm, đơn thuê và thanh toán cho bạn.',
+      time: 'BÃ¢y giá»',
+      text: 'Xin chÃ o, AuraFit Admin Ä‘ang sáºµn sÃ ng tÆ° váº¥n sáº£n pháº©m, Ä‘Æ¡n thuÃª vÃ  thanh toÃ¡n cho báº¡n.',
     },
   ]);
 
@@ -51,7 +54,7 @@ export default function Chat({ onNavigate, contextProduct, cartItems = [] }) {
       {
         id: Date.now(),
         author: 'user',
-        time: 'Bây giờ',
+        time: 'BÃ¢y giá»',
         text,
       },
     ]);
@@ -63,10 +66,10 @@ export default function Chat({ onNavigate, contextProduct, cartItems = [] }) {
         {
           id: Date.now() + 1,
           author: 'staff',
-          time: 'Bây giờ',
+          time: 'BÃ¢y giá»',
           text: activeProduct
-            ? `Admin đã ghi nhận yêu cầu về "${activeProduct.name}". Chúng mình sẽ kiểm tra lịch thuê và phản hồi sớm.`
-            : 'Admin đã ghi nhận tin nhắn. Chúng mình sẽ phản hồi sớm nhất có thể.',
+            ? `Admin Ä‘Ã£ ghi nháº­n yÃªu cáº§u vá» "${activeProduct.name}". ChÃºng mÃ¬nh sáº½ kiá»ƒm tra lá»‹ch thuÃª vÃ  pháº£n há»“i sá»›m.`
+            : 'Admin Ä‘Ã£ ghi nháº­n tin nháº¯n. ChÃºng mÃ¬nh sáº½ pháº£n há»“i sá»›m nháº¥t cÃ³ thá»ƒ.',
         },
       ]);
     }, 500);
@@ -80,8 +83,8 @@ export default function Chat({ onNavigate, contextProduct, cartItems = [] }) {
       {
         id: Date.now(),
         author: 'user',
-        time: 'Bây giờ',
-        text: `Mình muốn được admin tư vấn giá và lịch thuê cho "${activeProduct.name}" (${activeProduct.price}).`,
+        time: 'BÃ¢y giá»',
+        text: `MÃ¬nh muá»‘n Ä‘Æ°á»£c admin tÆ° váº¥n giÃ¡ vÃ  lá»‹ch thuÃª cho "${activeProduct.name}" (${activeProduct.price}).`,
       },
     ]);
   };
@@ -102,7 +105,7 @@ export default function Chat({ onNavigate, contextProduct, cartItems = [] }) {
                 </span>
               </div>
               <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
-                Sản phẩm chỉ do ADMIN đăng tải và quản lý
+                Sáº£n pháº©m chá»‰ do ADMIN Ä‘Äƒng táº£i vÃ  quáº£n lÃ½
               </p>
             </div>
             <button

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchCostumes } from '../services/api';
+import { fetchCostumes } from '../services/costumesService';
 import { categoryApiNames, mapCostumeToProduct } from '../utils/productMapper';
 
 export function useCostumes(categoryKey) {

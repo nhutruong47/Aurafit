@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchCostumes, fetchRecommendedCostumes, fetchSeasonalCostumes } from '../services/api';
+import { fetchCostumes, fetchRecommendedCostumes, fetchSeasonalCostumes } from '../services/costumesService';
 import { mapCostumeToProduct } from '../utils/productMapper';
 
 const PAGE_SIZE = 20;

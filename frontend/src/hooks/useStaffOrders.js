@@ -4,7 +4,7 @@ import {
   createReturnHandover,
   fetchStaffOrder,
   fetchStaffOrders,
-} from '../services/api';
+} from '../services/ordersService';
 import { getUserRoles } from '../utils/roles';
 
 export function useStaffOrders(currentUser) {

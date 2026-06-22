@@ -3,7 +3,8 @@ import PaymentFormSections from '../components/payment/PaymentFormSections';
 import PaymentHeader from '../components/payment/PaymentHeader';
 import PaymentSummary from '../components/payment/PaymentSummary';
 import { fallbackItems } from '../components/payment/paymentData';
-import { createPayment, logUserInteraction } from '../services/api';
+import { logUserInteraction } from '../services/interactionsService';
+import { createPayment } from '../services/paymentsService';
 
 export default function Payment({ cartItems = [], currentUser, onNavigate }) {
   const [delivery, setDelivery] = useState('standard');

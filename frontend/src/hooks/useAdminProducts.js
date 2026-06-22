@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createCostume, fetchCostumes, updateCostume } from '../services/api';
+import { createCostume, fetchCostumes, updateCostume } from '../services/costumesService';
 import { hasUserRole } from '../utils/roles';
 
 export const emptyProductForm = {

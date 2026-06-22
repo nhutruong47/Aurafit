@@ -1,16 +1,21 @@
 # React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Template này cung cấp cấu hình tối thiểu để chạy React trên Vite với HMR và một số rule ESLint cơ bản.
 
-Currently, two official plugins are available:
+Hiện tại có hai plugin chính thức:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) dùng [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) dùng [SWC](https://swc.rs)
 
 ## React Compiler
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+React Compiler không được bật mặc định trong template này vì ảnh hưởng tới hiệu năng lúc phát triển và build. Nếu muốn thêm, xem tài liệu tại:
 
-## Expanding the ESLint configuration
+- [React Compiler Installation](https://react.dev/learn/react-compiler/installation)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Mở rộng cấu hình ESLint
+
+Nếu bạn đang phát triển ứng dụng production, nên cân nhắc dùng TypeScript với các rule lint có nhận biết kiểu dữ liệu. Có thể tham khảo:
+
+- [Vite React TypeScript Template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts)
+- [`typescript-eslint`](https://typescript-eslint.io)

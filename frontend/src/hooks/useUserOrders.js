@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchStaffOrders } from '../services/api';
+import { fetchStaffOrders } from '../services/ordersService';
 
 export function useUserOrders(currentUser) {
   const [orders, setOrders] = useState([]);

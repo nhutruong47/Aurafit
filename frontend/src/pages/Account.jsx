@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AccountAuthForm from '../components/account/AccountAuthForm';
 import AccountProfileView from '../components/account/AccountProfileView';
-import { loginUser, registerUser } from '../services/api';
+import { loginUser, registerUser } from '../services/authService';
 import { getUserRoles } from '../utils/roles';
 
 export default function Account({ onNavigate, currentUser, onAuthChange }) {
