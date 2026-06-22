@@ -2,22 +2,22 @@ import { useCallback } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
-import Account from './pages/Account';
-import AdminDashboard from './pages/AdminDashboard';
-import Catalog from './pages/Catalog';
-import Chat from './pages/Chat';
-import Checkout from './pages/Checkout';
-import Cosplay from './pages/Cosplay';
-import CustomerCare from './pages/CustomerCare';
-import Events from './pages/Events';
-import Home from './pages/Home';
-import OrderSuccess from './pages/OrderSuccess';
-import Orders from './pages/Orders';
-import Payment from './pages/Payment';
-import ProductDetail from './pages/ProductDetail';
-import Shop from './pages/Shop';
-import StaffDashboard from './pages/StaffDashboard';
-import Yearbook from './pages/Yearbook';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import CatalogPage from './pages/CatalogPage';
+import ChatPage from './pages/ChatPage';
+import CosplayPage from './pages/CosplayPage';
+import CostumeDetailPage from './pages/CostumeDetailPage';
+import CustomerCarePage from './pages/CustomerCarePage';
+import EventsPage from './pages/EventsPage';
+import HomePage from './pages/HomePage';
+import PaymentPage from './pages/PaymentPage';
+import RentalOrderCheckoutPage from './pages/RentalOrderCheckoutPage';
+import RentalOrdersPage from './pages/RentalOrdersPage';
+import RentalOrderSuccessPage from './pages/RentalOrderSuccessPage';
+import ShopPage from './pages/ShopPage';
+import StaffDashboardPage from './pages/StaffDashboardPage';
+import UserAccountPage from './pages/UserAccountPage';
+import YearbookPage from './pages/YearbookPage';
 import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from './routing/navigation';
 import { logUserInteraction } from './services/interactionsService';
 import { selectCurrentUser, setCurrentUser } from './store/authSlice';
@@ -119,13 +119,13 @@ function App() {
           />
         }
       >
-        <Route path="/" element={<Home onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
-        <Route path="/catalog" element={<Catalog onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
-        <Route path="/shop" element={<Shop currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/" element={<HomePage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/catalog" element={<CatalogPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/shop" element={<ShopPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route
           path="/checkout"
           element={
-            <Checkout
+            <RentalOrderCheckoutPage
               cartItems={cartItems}
               currentUser={currentUser}
               onAddToCart={handleAddToCart}
@@ -135,24 +135,24 @@ function App() {
             />
           }
         />
-        <Route path="/chat" element={<Chat onNavigate={handleNavigate} cartItems={cartItems} />} />
-        <Route path="/orders" element={<Orders currentUser={currentUser} onNavigate={handleNavigate} />} />
-        <Route path="/admin" element={<AdminDashboard currentUser={currentUser} onNavigate={handleNavigate} />} />
-        <Route path="/staff" element={<StaffDashboard currentUser={currentUser} onNavigate={handleNavigate} />} />
-        <Route path="/yearbook" element={<Yearbook onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
-        <Route path="/cosplay" element={<Cosplay onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
-        <Route path="/events" element={<Events onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
-        <Route path="/care" element={<CustomerCare onNavigate={handleNavigate} />} />
-        <Route path="/account" element={<Account currentUser={currentUser} onAuthChange={handleAuthChange} onNavigate={handleNavigate} />} />
+        <Route path="/chat" element={<ChatPage onNavigate={handleNavigate} cartItems={cartItems} />} />
+        <Route path="/orders" element={<RentalOrdersPage currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/admin" element={<AdminDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/staff" element={<StaffDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/yearbook" element={<YearbookPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/cosplay" element={<CosplayPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/events" element={<EventsPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/care" element={<CustomerCarePage onNavigate={handleNavigate} />} />
+        <Route path="/account" element={<UserAccountPage currentUser={currentUser} onAuthChange={handleAuthChange} onNavigate={handleNavigate} />} />
         <Route
           path="/products/:productId"
-          element={<ProductDetail currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />}
+          element={<CostumeDetailPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />}
         />
       </Route>
 
       <Route element={<BareLayout />}>
-        <Route path="/payment" element={<Payment cartItems={cartItems} currentUser={currentUser} onNavigate={handleNavigate} />} />
-        <Route path="/success" element={<OrderSuccess cartItems={cartItems} onNavigate={handleNavigate} />} />
+        <Route path="/payment" element={<PaymentPage cartItems={cartItems} currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/success" element={<RentalOrderSuccessPage cartItems={cartItems} onNavigate={handleNavigate} />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -3,7 +3,7 @@ import EventsCollectionHeader from '../components/events/EventsCollectionHeader'
 import EventServicesSection from '../components/events/EventServicesSection';
 import EventsHero from '../components/events/EventsHero';
 import EventsSidebar from '../components/events/EventsSidebar';
-import { useCostumes } from '../hooks/useCostumes';
+import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 
 const occasions = ['Gala', 'Wedding Guest', 'Prom Night', 'Red Carpet'];
 const silhouettes = ['Gown', 'Tuxedo', 'Cocktail', 'Suit'];
@@ -15,8 +15,8 @@ const eventServices = [
   ['local_shipping', 'White glove', 'Giao nhận tận nơi cho gala, cưới hỏi và sự kiện tối.'],
 ];
 
-export default function Events({ onAddToCart, onNavigate }) {
-  const { costumes: eventProducts, isLoading, error } = useCostumes('events');
+export default function EventsPage({ onAddToCart, onNavigate }) {
+  const { costumes: eventProducts, isLoading, error } = useCatalogCostumes('events');
 
   return (
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">

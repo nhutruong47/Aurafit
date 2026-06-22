@@ -5,13 +5,13 @@ import CatalogFilterSidebar from '../components/catalog/CatalogFilterSidebar';
 import CatalogProductCard from '../components/catalog/CatalogProductCard';
 import CatalogSearchBar from '../components/catalog/CatalogSearchBar';
 import EmptyState from '../components/ui/EmptyState';
-import { useCostumes } from '../hooks/useCostumes';
+import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 import { useCatalogFilters } from '../hooks/useCatalogFilters';
 
-export default function Catalog({ onNavigate, onAddToCart }) {
+export default function CatalogPage({ onNavigate, onAddToCart }) {
   const searchInputRef = useRef(null);
   const [searchParams] = useSearchParams();
-  const { costumes, isLoading, error } = useCostumes();
+  const { costumes, isLoading, error } = useCatalogCostumes();
   const {
     searchTerm,
     selectedFilter,

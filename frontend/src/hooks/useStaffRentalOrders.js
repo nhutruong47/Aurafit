@@ -4,10 +4,10 @@ import {
   createReturnHandover,
   fetchStaffOrder,
   fetchStaffOrders,
-} from '../services/ordersService';
+} from '../services/rentalOrderService';
 import { getUserRoles } from '../utils/roles';
 
-export function useStaffOrders(currentUser) {
+export function useStaffRentalOrders(currentUser) {
   const [orders, setOrders] = useState([]);
   const [activeOrderId, setActiveOrderId] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);

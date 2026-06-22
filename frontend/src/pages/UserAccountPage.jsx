@@ -30,7 +30,7 @@ const normalizeAuthUser = (payload) => {
   };
 };
 
-export default function Account({ onNavigate, currentUser, onAuthChange }) {
+export default function UserAccountPage({ onNavigate, currentUser, onAuthChange }) {
   const [mode, setMode] = useState('login');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -4,7 +4,7 @@ import AdminProductsSection from '../components/admin/AdminProductsSection';
 import AdminReportsSection from '../components/admin/AdminReportsSection';
 import { StatusBadge } from '../components/admin/AdminDashboardShared';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
-import { useAdminProducts } from '../hooks/useAdminProducts';
+import { useAdminCostumes } from '../hooks/useAdminCostumes';
 
 const supportTickets = [
   { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chưa nhận hoàn cọc', channel: 'Chat', status: 'Đang xử lý', owner: 'Admin' },
@@ -19,7 +19,7 @@ const metricCards = [
   { label: 'Sản phẩm active', value: '180', delta: 'admin quản lý' },
 ];
 
-export default function AdminDashboard({ currentUser, onNavigate }) {
+export default function AdminDashboardPage({ currentUser, onNavigate }) {
   const [activeTab, setActiveTab] = useState('overview');
   const {
     isAdmin,
@@ -40,7 +40,7 @@ export default function AdminDashboard({ currentUser, onNavigate }) {
     hydrateProductForm,
     resetProductForm,
     submitProduct,
-  } = useAdminProducts(currentUser);
+  } = useAdminCostumes(currentUser);
 
   const ticketCount = useMemo(() => supportTickets.length, []);
 

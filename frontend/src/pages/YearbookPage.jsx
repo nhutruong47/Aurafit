@@ -3,14 +3,14 @@ import YearbookCollectionHeader from '../components/yearbook/YearbookCollectionH
 import YearbookHero from '../components/yearbook/YearbookHero';
 import YearbookQuoteSection from '../components/yearbook/YearbookQuoteSection';
 import YearbookSidebar from '../components/yearbook/YearbookSidebar';
-import { useCostumes } from '../hooks/useCostumes';
+import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 
 const styles = ['Học thuật', 'Truyền thống', 'Thanh xuân', 'Concept Hàn Quốc'];
 const materials = ['Lụa', 'Cotton', 'Kaki', 'Tuytsi'];
 const genders = ['Tất cả', 'Nữ', 'Nam', 'Cặp đôi'];
 
-export default function Yearbook({ onAddToCart, onNavigate }) {
-  const { costumes: yearbookProducts, isLoading, error } = useCostumes('yearbook');
+export default function YearbookPage({ onAddToCart, onNavigate }) {
+  const { costumes: yearbookProducts, isLoading, error } = useCatalogCostumes('yearbook');
 
   return (
     <div className="bg-[#f9f9f9] text-[#151515]">

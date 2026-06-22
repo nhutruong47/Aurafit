@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import ProductHero from '../components/product/ProductHero';
 import ProductReviewsSection from '../components/product/ProductReviewsSection';
-import { useCostumes } from '../hooks/useCostumes';
+import AlertMessage from '../components/ui/AlertMessage';
+import { fetchCostumeById } from '../services/costumeService';
+import { mapCostumeToProduct } from '../utils/productMapper';
 import { hasUserRole } from '../utils/roles';
 
 const initialMockReviews = [
@@ -10,7 +12,7 @@ const initialMockReviews = [
     id: 1,
     author: 'Nguyen Minh Anh',
     rating: 5,
-    date: '10/05/2026',
+    date: '10/05/2026', 
     comment: 'Trang phuc rat dep, chat lieu vai cao cap va len form cuc chuan. Dich vu tu van nhiet tinh, giao hang nhanh chong.',
   },
   {
@@ -43,32 +45,55 @@ const initialMockReviews = [
   },
 ];
 
-export default function ProductDetail({ onAddToCart, onNavigate, currentUser }) {
-  const location = useLocation();
+export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser }) {
   const { productId } = useParams();
-  const { costumes, isLoading } = useCostumes();
+  const [product, setProduct] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [reviews, setReviews] = useState(initialMockReviews);
   const [filterRating, setFilterRating] = useState('all');
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReviewData, setNewReviewData] = useState({ rating: 5, comment: '' });
 
-  const routeProduct = location.state?.product;
-  const product = useMemo(() => {
-    if (routeProduct && String(routeProduct.id) === productId) {
-      return routeProduct;
-    }
-
-    return costumes.find((item) => String(item.id) === productId) || null;
-  }, [costumes, productId, routeProduct]);
-
   const isAdmin = useMemo(() => hasUserRole(currentUser, 'ADMIN'), [currentUser]);
 
   useEffect(() => {
-    if (!isLoading && !product) {
+    if (!productId) {
+      onNavigate?.('catalog');
+      return undefined;
+    }
+
+    let isMounted = true;
+    setIsLoading(true);
+    setLoadError('');
+
+    fetchCostumeById(productId)
+      .then((costume) => {
+        if (!isMounted) return;
+        setProduct(costume ? mapCostumeToProduct(costume) : null);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setLoadError(error.message || 'Khong the tai chi tiet san pham.');
+        setProduct(null);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [onNavigate, productId]);
+
+  useEffect(() => {
+    if (!isLoading && !product && !loadError) {
       onNavigate?.('catalog');
     }
-  }, [isLoading, product, onNavigate]);
+  }, [isLoading, loadError, onNavigate, product]);
 
   const stats = useMemo(() => {
     const total = reviews.length;
@@ -114,7 +139,7 @@ export default function ProductDetail({ onAddToCart, onNavigate, currentUser }) 
     setFilterRating('all');
   };
 
-  if (!product) {
+  if (!product && !isLoading && !loadError) {
     return null;
   }
 
@@ -129,6 +154,8 @@ export default function ProductDetail({ onAddToCart, onNavigate, currentUser }) 
           Quay lai
         </button>
 
+        {loadError && <AlertMessage text={loadError} className="mb-6" />}
+
         <ProductHero
           product={product}
           isAdmin={isAdmin}
@@ -137,20 +164,22 @@ export default function ProductDetail({ onAddToCart, onNavigate, currentUser }) 
           onNavigate={onNavigate}
         />
 
-        <ProductReviewsSection
-          stats={stats}
-          filterRating={filterRating}
-          filteredReviews={filteredReviews}
-          displayedReviews={displayedReviews}
-          showAllReviews={showAllReviews}
-          showReviewForm={showReviewForm}
-          newReviewData={newReviewData}
-          onFilterRatingChange={setFilterRating}
-          onToggleShowAll={setShowAllReviews}
-          onToggleReviewForm={setShowReviewForm}
-          onReviewDataChange={setNewReviewData}
-          onSubmitReview={handleSubmitReview}
-        />
+        {product && (
+          <ProductReviewsSection
+            stats={stats}
+            filterRating={filterRating}
+            filteredReviews={filteredReviews}
+            displayedReviews={displayedReviews}
+            showAllReviews={showAllReviews}
+            showReviewForm={showReviewForm}
+            newReviewData={newReviewData}
+            onFilterRatingChange={setFilterRating}
+            onToggleShowAll={setShowAllReviews}
+            onToggleReviewForm={setShowReviewForm}
+            onReviewDataChange={setNewReviewData}
+            onSubmitReview={handleSubmitReview}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchCostumes, fetchRecommendedCostumes, fetchSeasonalCostumes } from '../services/costumesService';
+import { fetchCostumes, fetchRecommendedCostumes, fetchSeasonalCostumes } from '../services/costumeService';
 import { mapCostumeToProduct } from '../utils/productMapper';
 
 const PAGE_SIZE = 20;
@@ -13,7 +13,7 @@ function uniqueProducts(products) {
   });
 }
 
-export function useShopProducts(currentUserId) {
+export function useShopCostumes(currentUserId) {
   const [activeTab, setActiveTab] = useState('recommended');
   const [pageByTab, setPageByTab] = useState({ recommended: 1, trending: 1, all: 1 });
   const [recommendedProducts, setRecommendedProducts] = useState([]);
@@ -26,11 +26,13 @@ export function useShopProducts(currentUserId) {
   useEffect(() => {
     let isMounted = true;
     const requestKey = currentUserId || '__guest__';
+    setIsLoading(true);
+    setError('');
 
     Promise.all([
       fetchRecommendedCostumes(currentUserId),
       fetchSeasonalCostumes(),
-      fetchCostumes(),
+      fetchCostumes({ pageSize: 100 }),
     ])
       .then(([recommendedData, seasonalData, allData]) => {
         if (!isMounted) return;
@@ -44,7 +46,7 @@ export function useShopProducts(currentUserId) {
       })
       .catch((requestError) => {
         if (!isMounted) return;
-        setError(requestError.message || 'Không thể tải dữ liệu shop chung.');
+        setError(requestError.message || 'Khong the tai du lieu shop chung.');
         setIsLoading(false);
         setLoadedUserKey(requestKey);
       });

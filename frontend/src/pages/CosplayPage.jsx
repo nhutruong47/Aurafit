@@ -5,7 +5,7 @@ import CosplayProductCard from '../components/cosplay/CosplayProductCard';
 import CosplayStepsSection from '../components/cosplay/CosplayStepsSection';
 import EmptyState from '../components/ui/EmptyState';
 import { useCosplayFilters } from '../hooks/useCosplayFilters';
-import { useCostumes } from '../hooks/useCostumes';
+import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 
 const filterGroups = [
   { key: 'subcategory', title: 'Thể loại' },
@@ -22,8 +22,8 @@ const processSteps = [
   ['04', 'Return sạch gọn', 'Trả đồ sau event, VIBE xử lý vệ sinh và bảo quản.'],
 ];
 
-export default function Cosplay({ onAddToCart, onNavigate }) {
-  const { costumes: cosplayProducts, isLoading, error } = useCostumes('cosplay');
+export default function CosplayPage({ onAddToCart, onNavigate }) {
+  const { costumes: cosplayProducts, isLoading, error } = useCatalogCostumes('cosplay');
   const {
     selectedFilters,
     quickFilter,

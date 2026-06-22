@@ -4,10 +4,10 @@ import OrdersList from '../components/orders/OrdersList';
 import OrdersLoadingState from '../components/orders/OrdersLoadingState';
 import AlertMessage from '../components/ui/AlertMessage';
 import EmptyState from '../components/ui/EmptyState';
-import { useUserOrders } from '../hooks/useUserOrders';
+import { useRentalOrders } from '../hooks/useRentalOrders';
 
-export default function Orders({ currentUser, onNavigate }) {
-  const { orders, selectedOrder, isLoading, error, loadOrders, selectOrder } = useUserOrders(currentUser);
+export default function RentalOrdersPage({ currentUser, onNavigate }) {
+  const { orders, selectedOrder, isLoading, error, loadOrders, selectOrder } = useRentalOrders(currentUser);
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">

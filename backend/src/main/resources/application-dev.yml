@@ -7,7 +7,7 @@
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/aurafit_db
+    url: jdbc:postgresql://localhost:5432/aurafit_db
     username: aurafit
     password: aurafit123
     driver-class-name: org.postgresql.Driver

@@ -3,9 +3,9 @@ import StaffOrderDetails from '../components/staff/StaffOrderDetails';
 import StaffOrderList from '../components/staff/StaffOrderList';
 import { Metric, Skeleton } from '../components/staff/StaffDashboardShared';
 import AlertMessage from '../components/ui/AlertMessage';
-import { useStaffOrders } from '../hooks/useStaffOrders';
+import { useStaffRentalOrders } from '../hooks/useStaffRentalOrders';
 
-export default function StaffDashboard({ currentUser, onNavigate }) {
+export default function StaffDashboardPage({ currentUser, onNavigate }) {
   const {
     canUseStaffTools,
     orders,
@@ -33,7 +33,7 @@ export default function StaffDashboard({ currentUser, onNavigate }) {
     setPreviewImage,
     handleFileChange,
     submitHandover,
-  } = useStaffOrders(currentUser);
+  } = useStaffRentalOrders(currentUser);
 
   const handleSubmit = async (event) => {
     event.preventDefault();

@@ -2,16 +2,16 @@ import { requestJson } from './http/request';
 
 export const fetchPublicCategories = async () =>
   requestJson({
-    url: '/public/catalog/categories',
+    url: '/categories',
     method: 'GET',
   });
 
 export const fetchPublicCostumes = async ({ categoryId, keyword, pageNo = 0, pageSize = 12, sortBy, sortDir } = {}) =>
   requestJson({
-    url: '/public/catalog/costumes',
+    url: '/costumes',
     method: 'GET',
     params: {
-      ...(categoryId ? { categoryId } : {}),
+      ...(categoryId ? { category: categoryId } : {}),
       ...(keyword ? { keyword } : {}),
       ...(sortBy ? { sortBy } : {}),
       ...(sortDir ? { sortDir } : {}),
@@ -22,6 +22,6 @@ export const fetchPublicCostumes = async ({ categoryId, keyword, pageNo = 0, pag
 
 export const fetchPublicCostumeDetail = async (id) =>
   requestJson({
-    url: `/public/catalog/costumes/${encodeURIComponent(id)}`,
+    url: `/costumes/${encodeURIComponent(id)}`,
     method: 'GET',
   });

@@ -1,19 +1,76 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PaymentFormSections from '../components/payment/PaymentFormSections';
 import PaymentHeader from '../components/payment/PaymentHeader';
 import PaymentSummary from '../components/payment/PaymentSummary';
-import { fallbackItems } from '../components/payment/paymentData';
 import { logUserInteraction } from '../services/interactionsService';
-import { createPayment } from '../services/paymentsService';
+import { fetchOrderDetail } from '../services/rentalOrderService';
+import { createPayment } from '../services/paymentService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
+import { formatCurrency } from '../utils/formatCurrency';
+import { fallbackProductImage } from '../utils/productMapper';
 
-export default function Payment({ cartItems = [], currentUser, onNavigate }) {
+export default function PaymentPage({ cartItems = [], currentUser, onNavigate }) {
   const { pendingOrderId } = useCheckoutStore();
   const [delivery, setDelivery] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState('VNPAY');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState('');
-  const items = cartItems.length ? cartItems : fallbackItems;
+  const [order, setOrder] = useState(null);
+  const [isLoadingOrder, setIsLoadingOrder] = useState(false);
+
+  useEffect(() => {
+    if (!pendingOrderId) {
+      setOrder(null);
+      return undefined;
+    }
+
+    let isMounted = true;
+    setIsLoadingOrder(true);
+    setPaymentError('');
+
+    fetchOrderDetail(pendingOrderId)
+      .then((orderData) => {
+        if (!isMounted) return;
+        setOrder(orderData || null);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setPaymentError(error.message || 'Khong the tai thong tin don hang.');
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingOrder(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pendingOrderId]);
+
+  const items = useMemo(() => {
+    if (order?.details?.length) {
+      return order.details.map((detail) => ({
+        id: detail.id,
+        name: detail.costumeName || 'Trang phuc AuraFit',
+        meta: [detail.sku, detail.size, detail.color].filter(Boolean).join(' • ') || 'Rental item',
+        price: formatCurrency(detail.subtotal || 0),
+        image: fallbackProductImage,
+      }));
+    }
+
+    return cartItems;
+  }, [cartItems, order]);
+
+  const summary = useMemo(
+    () => ({
+      rentalSubtotal: Number(order?.totalRentalPrice || 0),
+      deliveryFee: 0,
+      refundableDeposit: Number(order?.totalDeposit || 0),
+      orderTotal: Number(order?.finalAmount || 0) + Number(order?.totalDeposit || 0),
+    }),
+    [order]
+  );
 
   const handleCompletePayment = async () => {
     if (!pendingOrderId) {
@@ -25,7 +82,7 @@ export default function Payment({ cartItems = [], currentUser, onNavigate }) {
     setPaymentError('');
 
     try {
-      await createPayment({ orderId: pendingOrderId });
+      await createPayment({ orderId: pendingOrderId, method: paymentMethod });
 
       if (currentUser?.id) {
         await Promise.allSettled(
@@ -68,6 +125,8 @@ export default function Payment({ cartItems = [], currentUser, onNavigate }) {
         />
         <PaymentSummary
           items={items}
+          summary={summary}
+          isLoading={isLoadingOrder}
           paymentError={paymentError}
           isSubmitting={isSubmitting}
           onCompletePayment={handleCompletePayment}

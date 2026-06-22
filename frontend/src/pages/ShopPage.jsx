@@ -4,9 +4,9 @@ import { shopTabs } from '../components/shop/shopTabs';
 import AlertMessage from '../components/ui/AlertMessage';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingGrid from '../components/ui/LoadingGrid';
-import { useShopProducts } from '../hooks/useShopProducts';
+import { useShopCostumes } from '../hooks/useShopCostumes';
 
-export default function Shop({ currentUser, onNavigate, onAddToCart }) {
+export default function ShopPage({ currentUser, onNavigate, onAddToCart }) {
   const {
     activeTab,
     productsByTab,
@@ -18,7 +18,7 @@ export default function Shop({ currentUser, onNavigate, onAddToCart }) {
     error,
     handleTabChange,
     setActivePage,
-  } = useShopProducts(currentUser?.id);
+  } = useShopCostumes(currentUser?.id);
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">

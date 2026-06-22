@@ -44,7 +44,7 @@ const careChannels = [
   { icon: 'straighten', label: 'Fit advice', copy: 'Measurement checks before you lock the final size.' },
 ];
 
-export default function CustomerCare({ onNavigate }) {
+export default function CustomerCarePage({ onNavigate }) {
   const [openQuestion, setOpenQuestion] = useState('shipping-0');
 
   const toggleQuestion = (sectionId, index) => {

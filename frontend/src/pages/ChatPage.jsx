@@ -6,7 +6,7 @@ import ChatMessageList from '../components/chat/ChatMessageList';
 import ChatProductSelector from '../components/chat/ChatProductSelector';
 import { formatCurrency } from '../utils/formatCurrency';
 
-export default function Chat({ onNavigate, cartItems = [] }) {
+export default function ChatPage({ onNavigate, cartItems = [] }) {
   const location = useLocation();
   const contextProduct = location.state?.contextProduct || null;
   const products = useMemo(() => {

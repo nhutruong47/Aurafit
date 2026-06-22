@@ -7,14 +7,14 @@ import HomeServicesSection from '../components/home/HomeServicesSection';
 import HomeStyleSlider from '../components/home/HomeStyleSlider';
 import HomeTrendingSection from '../components/home/HomeTrendingSection';
 import HomeTrustSection from '../components/home/HomeTrustSection';
-import { useCostumes } from '../hooks/useCostumes';
+import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 
-export default function Home({ onNavigate, onAddToCart }) {
+export default function HomePage({ onNavigate, onAddToCart }) {
   const [activeTab, setActiveTab] = useState('event');
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const sliderRef = useRef(null);
-  const { costumes, isLoading } = useCostumes();
+  const { costumes, isLoading } = useCatalogCostumes();
 
   const products = useMemo(
     () => ({

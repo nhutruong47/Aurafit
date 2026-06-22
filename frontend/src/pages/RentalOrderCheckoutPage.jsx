@@ -5,13 +5,13 @@ import CheckoutSuggestionCard from '../components/checkout/CheckoutSuggestionCar
 import CheckoutSummary from '../components/checkout/CheckoutSummary';
 import RentalItemCard from '../components/checkout/RentalItemCard';
 import { multiItemSummaryRows, singleItemSummaryRows, suggestions, toRentalItem } from '../components/checkout/checkoutData';
-import { useCostumes } from '../hooks/useCostumes';
-import { createOrder } from '../services/ordersService';
+import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
+import { createOrder } from '../services/rentalOrderService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 
 const PAGE_SIZE = 20;
 
-export default function Checkout({
+export default function RentalOrderCheckoutPage({
   cartItems = [],
   currentUser,
   onAddToCart,
@@ -20,7 +20,7 @@ export default function Checkout({
   onCheckoutSuccess,
   onNavigate,
 }) {
-  const { costumes } = useCostumes();
+  const { costumes } = useCatalogCostumes();
   const { setPendingOrderId } = useCheckoutStore();
   const accessoriesSliderRef = useRef(null);
   const [voucherCode, setVoucherCode] = useState('');

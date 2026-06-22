@@ -6,7 +6,7 @@ import OrderSelectionSection from '../components/order-success/OrderSelectionSec
 import OrderSuccessSidebar from '../components/order-success/OrderSuccessSidebar';
 import OrderSuccessStorySection from '../components/order-success/OrderSuccessStorySection';
 import { footerColumns, mobileNavLinks, navLinks, storyLinks } from '../components/order-success/orderSuccessData';
-import { fetchOrderDetail } from '../services/ordersService';
+import { fetchOrderDetail } from '../services/rentalOrderService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 
 const fallbackItemImage =
@@ -22,7 +22,7 @@ const formatDateRange = (start, end) => {
   return `${formatDate(start)} -> ${formatDate(end)}`;
 };
 
-export default function OrderSuccess({ cartItems = [], onNavigate }) {
+export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
   const { pendingOrderId, clearPendingOrderId } = useCheckoutStore();
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);

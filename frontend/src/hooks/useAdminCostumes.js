@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createCostume, fetchCostumes, updateCostume } from '../services/costumesService';
+import { createCostume, fetchAdminCostumes, updateCostume } from '../services/costumeService';
 import { hasUserRole } from '../utils/roles';
 
 export const emptyProductForm = {
@@ -11,7 +11,7 @@ export const emptyProductForm = {
   categoryId: 1,
 };
 
-export function useAdminProducts(currentUser) {
+export function useAdminCostumes(currentUser) {
   const [products, setProducts] = useState([]);
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [editingProductId, setEditingProductId] = useState(null);
@@ -46,13 +46,11 @@ export function useAdminProducts(currentUser) {
   useEffect(() => {
     if (!isAdmin) return;
 
-    fetchCostumes()
+    fetchAdminCostumes()
       .then((data) => {
-        // Backend returns paginated response with `content` array
-        const list = Array.isArray(data) ? data : data?.content || [];
-        setProducts(list);
+        setProducts(Array.isArray(data) ? data : []);
       })
-      .catch(() => setProductError('Không thể tải danh sách sản phẩm.'));
+      .catch(() => setProductError('Khong the tai danh sach san pham.'));
   }, [isAdmin]);
 
   const handleProductFieldChange = (event) => {
@@ -106,18 +104,18 @@ export function useAdminProducts(currentUser) {
             product.id === updatedProduct.id ? updatedProduct : product
           )
         );
-        setProductMessage('Sản phẩm đã được cập nhật thành công.');
+        setProductMessage('San pham da duoc cap nhat thanh cong.');
       } else {
         const createdProduct = await createCostume(payload);
         setProducts((currentProducts) => [createdProduct, ...currentProducts]);
-        setProductMessage('Sản phẩm đã được admin đăng tải thành công.');
+        setProductMessage('San pham da duoc admin dang tai thanh cong.');
       }
 
       setEditingProductId(null);
       setProductForm(emptyProductForm);
       return true;
     } catch (error) {
-      setProductError(error.message || 'Không thể lưu sản phẩm.');
+      setProductError(error.message || 'Khong the luu san pham.');
       return false;
     } finally {
       setIsSavingProduct(false);

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchOrders } from '../services/ordersService';
+import { fetchOrders } from '../services/rentalOrderService';
 
-export function useUserOrders(currentUser) {
+export function useRentalOrders(currentUser) {
   const [orders, setOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
