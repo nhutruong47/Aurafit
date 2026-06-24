@@ -31,7 +31,7 @@ spring:
 # These are safe defaults for LOCAL development only.
 # In production, inject via environment variables or a secrets manager.
 jwt:
-  secret: "0ZgnYV0N/IuRZuKZGPV4kNazFFEv3KetkLsXc51E5Qo="
+  secret: ${JWT_SECRET}
   access-token-expiration: 900000         # 15 minutes (ms)
   refresh-token-expiration: 604800000     # 7 days     (ms)
 

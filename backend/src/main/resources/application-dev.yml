@@ -7,9 +7,9 @@
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/aurafit_db
-    username: aurafit
-    password: aurafit123
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -24,8 +24,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: hoangbui317000@gmail.com
-    password: eoqyyurgrdvttqct
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
