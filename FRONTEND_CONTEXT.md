@@ -1,115 +1,145 @@
-# FRONTEND_CONTEXT.md
+﻿# FRONTEND_CONTEXT.md
 
 ## Tổng quan frontend
-- Stack: React 19 + Vite + Tailwind CSS.
-- Có sử dụng React Router.
-- Điều hướng theo page được điều khiển bằng URL routing.
-- Auth và cart được lưu trong Redux và persist xuống localStorage.
+- Stack:
+  - React 19
+  - Vite 8
+  - Tailwind CSS 3
+  - React Router 7
+  - Redux Toolkit
+  - Zustand
+  - Axios
+- Base API mặc định:
+  - `VITE_API_BASE_URL=http://localhost:8080/api`
 
-## Cấu trúc frontend chính
-| Đường dẫn | Mục đích |
+## Cấu trúc thư mục chính
+| Đường dẫn | Vai trò |
 | --- | --- |
-| `src/App.jsx` | App shell chính và route tree |
-| `src/pages/` | Component cấp màn hình |
-| `src/components/` | UI section có thể tái sử dụng |
-| `src/hooks/` | Hook nạp dữ liệu và quản lý page state |
-| `src/services/` | Tầng gọi API theo từng domain |
-| `src/store/` | Redux + helper localStorage |
-| `src/utils/` | Mapping, format, helper role |
-| `src/routing/` | Helper điều hướng và mapping route |
+| `src/App.jsx` | route tree và orchestration tổng |
+| `src/pages/` | page-level screens |
+| `src/components/` | UI sections / shared components |
+| `src/hooks/` | hook data + page orchestration |
+| `src/services/` | API layer theo domain |
+| `src/store/` | Redux slices, browser storage, zustand store |
+| `src/utils/` | product mapping, role helper, currency |
+| `src/routing/` | mapping page key -> route |
 
-## Mô hình route hiện tại
-- Các route chính:
+## Routes thực tế
+- Main routes:
   - `/`
   - `/catalog`
   - `/shop`
+  - `/products/:productId`
   - `/checkout`
+  - `/orders`
+  - `/account`
+- Operational / secondary routes:
   - `/payment`
   - `/success`
-  - `/chat`
-  - `/orders`
   - `/admin`
   - `/staff`
+  - `/chat`
   - `/yearbook`
   - `/cosplay`
   - `/events`
   - `/care`
-  - `/account`
-  - `/products/:productId`
 
-## Tóm tắt pages / routes
-| Trang | Nguồn dữ liệu | Ghi chú |
-| --- | --- | --- |
-| `Home` | `useCostumes()` | Dùng dữ liệu catalog cho featured/trending |
-| `Catalog` | `useCostumes()` + filter local | Frontend vẫn cần đồng bộ shape response với backend |
-| `Shop` | `useShopProducts()` | Gọi recommendation/seasonal API hiện backend còn thiếu |
-| `Yearbook` | `useCostumes('yearbook')` | Filter đặc thù UI |
-| `Cosplay` | `useCostumes('cosplay')` | Filter group thuần UI |
-| `Events` | `useCostumes('events')` | Filter group thuần UI |
-| `Account` | `loginUser` / `registerUser` | Vẫn có nguy cơ lệch response shape với backend |
-| `Checkout` | Redux cart + `useCostumes()` | Pricing flow còn nghiêng về local/mock |
-| `Payment` | State local + `createPayment` | Vẫn đang dùng demo order id và payload chưa khớp hoàn toàn |
-| `Orders` | `useUserOrders()` | Hiện vẫn load nhầm staff endpoint |
-| `AdminDashboard` | `useAdminProducts()` | Backend CRUD còn thiếu |
-| `StaffDashboard` | `useStaffOrders()` | Backend staff API còn thiếu |
-| `Chat` | state local | Chưa tích hợp backend |
-| `ProductDetail` | route param + state điều hướng + review local | Review hiện chỉ tồn tại ở frontend |
-
-## Component tái sử dụng
-- UI dùng chung:
-  - `components/ui/AlertMessage.jsx`
-  - `components/ui/EmptyState.jsx`
-  - `components/ui/LoadingGrid.jsx`
-- Layout:
-  - `components/layout/Navbar.jsx`
-  - `components/layout/Footer.jsx`
-- Card catalog/shop/product được dùng lại ở nhiều page.
-
-## Hooks và state management
-| Khu vực | Cách triển khai |
+## State management
+| Khu vực | Cách lưu |
 | --- | --- |
-| Auth state | Redux `authSlice` |
-| Cart state | Redux `cartSlice` |
-| Local persistence | `browserStorage.js` |
-| Catalog data | `useCostumes` |
-| Shop tabs | `useShopProducts` |
-| Admin products | `useAdminProducts` |
-| Staff orders | `useStaffOrders` |
-| User orders | `useUserOrders` |
+| Auth | Redux `authSlice`, persist localStorage key `aurafitCurrentUser` |
+| Cart | Redux `cartSlice`, persist localStorage key `aurafitCartItems` |
+| Pending payment order | Zustand `useCheckoutStore`, persist key `aurafitPendingOrderId` |
 
-## Quy tắc gọi API trong code hiện tại
-- Tầng service frontend hiện dùng `axios`.
-- Service đã được tách theo domain:
-  - `authService.js`
-  - `costumesService.js`
-  - `ordersService.js`
-  - `paymentsService.js`
-  - `interactionsService.js`
-  - `http/` cho client và request helper
-- Các vấn đề service layer hiện tại:
-  - chưa có auth header management hoàn chỉnh cho API protected
-  - chưa có refresh-token/session handling đầy đủ
-  - một số path vẫn chưa khớp backend thật
-  - một số payload vẫn chưa khớp DTO backend
-- Pattern loading/error:
-  - hook thường expose `isLoading` và `error`
-  - UI thường dùng `AlertMessage`, text inline hoặc `EmptyState`
-  - một vài flow vẫn dùng `alert(...)`
+## Services đang tồn tại
+| Service | Trạng thái |
+| --- | --- |
+| `authService.js` | Đã dùng thật |
+| `catalogService.js` | Đã dùng thật cho `/api/public/catalog/*` |
+| `costumeService.js` | Đã dùng thật cho compatibility catalog + admin APIs |
+| `cartService.js` | Đã dùng thật |
+| `rentalOrderService.js` | Đã dùng thật cho customer + staff order APIs; có helper timeline nhưng backend chưa có |
+| `paymentService.js` | Đã dùng thật |
+| `uploadService.js` | Đã dùng thật |
+| `interactionsService.js` | Gọi backend chưa tồn tại (`/api/ai/track`) |
 
-## Component / page có khả năng quá lớn
-| File | Số dòng xấp xỉ | Khuyến nghị |
-| --- | ---: | --- |
-| `src/pages/Checkout.jsx` | 223 | Tách phần chuẩn bị dữ liệu, voucher, related-items |
-| `src/components/layout/Navbar.jsx` | 198 | Tách mobile/menu/search/cart/auth |
-| `src/components/product/ProductReviewsSection.jsx` | 171 | Tách stats, filter bar, form, list |
-| `src/components/admin/AdminProductsSection.jsx` | 165 | Tách filters, table/list, form |
-| `src/pages/CustomerCare.jsx` | 159 | Tách FAQ, size guide, stylist CTA |
-| `src/pages/StaffDashboard.jsx` | 145 | Tách container và panel orchestration |
-| `src/pages/AdminDashboard.jsx` | 144 | Tách shell và tab container |
+## Hooks thực tế
+| Hook | Vai trò |
+| --- | --- |
+| `useCatalogCostumes` | Tải và map catalog costumes qua compatibility endpoint |
+| `useCatalogFilters` | Filter UI catalog |
+| `useShopCostumes` | Tải all / seasonal / recommended costumes |
+| `useRentalOrders` | Customer order list + detail |
+| `useStaffRentalOrders` | Staff order list/detail + handover |
+| `useAdminCostumes` | Admin list/create/update costume |
+| `useCosplayFilters` | Filter UI cosplay |
 
-## Rủi ro frontend quan trọng
-- `getUserRoles` kỳ vọng `user.role` là string, nhưng auth response backend thực tế được bọc khác.
-- `mapCostumeToProduct` kỳ vọng category là string, trong khi backend có thể trả category object.
-- Cart vẫn là local-first; chưa tích hợp thật với backend cart.
-- Payment page đang dùng `demoOrderId = 1`.
-- Lịch sử đơn hàng đang dùng nhầm staff endpoint thay vì customer order endpoint.
+## Mức độ tích hợp theo page
+| Page | Trạng thái |
+| --- | --- |
+| `UserAccountPage` | Login + OTP register đã nối backend thật |
+| `RentalOrderCheckoutPage` | Tạo order thật, nhưng pricing UI vẫn hard-code |
+| `PaymentPage` | Đã lấy order detail và init payment thật |
+| `RentalOrdersPage` | Đã dùng customer order APIs thật |
+| `AdminDashboardPage` | Product tab đã nối backend thật; overview/support/reports vẫn hard-code |
+| `StaffDashboardPage` | Đã nối backend thật cho list/detail/handover; upload ảnh có thể fail với pure `STAFF` do role backend upload đang lệch |
+| `CatalogPage` / `HomePage` / `ShopPage` | Đã tải dữ liệu thật từ backend |
+| `ChatPage` | Frontend-only |
+| `CostumeDetailPage` | Product detail đã có, review vẫn local-only |
+
+## Hành vi frontend quan trọng
+- `apiClient` tự động thêm `Authorization: Bearer <token>` nếu localStorage có `accessToken`.
+- `apiClient` bật `withCredentials: true` để refresh cookie chạy được.
+- Auth service có `unwrapApiResponse` cho endpoint auth wrapper.
+- Register UI hiện tại chỉ hỗ trợ Gmail OTP flow, không dùng direct register non-Gmail dù service đã có.
+- Cart flow:
+  - nếu user đăng nhập và item có `costumeItemId + rentalStartDate + rentalEndDate` thì gọi backend cart
+  - nếu không, frontend fallback sang local cart
+- `cartSlice` có `quantity` cho local UX, nhưng backend cart và checkout thật vẫn xoay quanh physical `CostumeItem` / `sku`.
+- Checkout page lưu `pendingOrderId` vào Zustand để đưa sang payment page.
+- Payment page tự tính `orderTotal = finalAmount + totalDeposit` để hiển thị tổng thanh toán.
+
+## Mock / placeholder / partial integration
+- `ChatPage` hiện chưa có backend.
+- `ProductReviewsSection` hiện là local UI.
+- `rentalOrderService.fetchOrderTimeline()` gọi endpoint backend chưa tồn tại.
+- Voucher `AURA20WELCOME` và tổng tiền trên checkout page hiện là UI hard-code.
+- `AdminDashboardPage` có:
+  - `supportTickets` hard-code
+  - `metricCards` hard-code
+
+## Lệch hoặc giới hạn hiện tại
+- Frontend đang dùng song song:
+  - `catalogService` -> `/api/public/catalog/*`
+  - `costumeService` -> `/api/costumes*`
+- `useCatalogCostumes` và `useShopCostumes` đang dùng compatibility endpoints, không dùng public namespaced endpoints.
+- Cart source of truth chưa thuần backend-first vì còn local fallback.
+- Staff handover form có upload component, nhưng backend upload chỉ authorize `ADMIN` và `CUSTOMER`.
+- Frontend không nhận `refreshToken` trong JSON auth response; refresh flow phụ thuộc cookie thật.
+
+## Need verify in code
+- Có nên bỏ local cart fallback sau khi customer flow ổn định hay không.
+- Có nên hợp nhất catalog API layer về một bộ endpoint duy nhất hay không.
+
+## AI Recommendation MVP da co tren frontend
+- Service moi:
+  - `aiRecommendationService.js`
+- Hook moi:
+  - `useAiRecommendations`
+  - `useAdminAiManagement`
+- UI moi:
+  - `AiStylistBox`
+  - `PersonalizedRecommendationSection`
+  - `OutfitComboSection`
+  - `AdminProductAiMetadataForm`
+  - `AdminTrendManagerSection`
+- Tich hop page:
+  - `HomePage`: personalized recommendation section cho user da login
+  - `ShopPage`: AI Stylist Box + recommendation co reason
+  - `CostumeDetailPage`: outfit combo section
+  - `AdminDashboardPage`: metadata AI form + trend manager
+- `interactionsService` da noi that voi backend `/api/ai/track`
+  - product view
+  - catalog search/filter
+  - add to cart
+  - recommendation click

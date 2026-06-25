@@ -1,9 +1,12 @@
+import OutfitComboSection from '../components/ai/OutfitComboSection';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ProductHero from '../components/product/ProductHero';
 import ProductReviewsSection from '../components/product/ProductReviewsSection';
 import AlertMessage from '../components/ui/AlertMessage';
+import { useAiRecommendations } from '../hooks/useAiRecommendations';
 import { fetchCostumeById } from '../services/costumeService';
+import { trackProductView, trackRecommendationClick } from '../services/interactionsService';
 import { mapCostumeToProduct } from '../utils/productMapper';
 import { hasUserRole } from '../utils/roles';
 
@@ -55,6 +58,7 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReviewData, setNewReviewData] = useState({ rating: 5, comment: '' });
+  const { outfitCombos, isLoadingCombo, loadOutfitCombos } = useAiRecommendations({ currentUserId: currentUser?.id });
 
   const isAdmin = useMemo(() => hasUserRole(currentUser, 'ADMIN'), [currentUser]);
 
@@ -71,7 +75,19 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
     fetchCostumeById(productId)
       .then((costume) => {
         if (!isMounted) return;
-        setProduct(costume ? mapCostumeToProduct(costume) : null);
+        const mappedProduct = costume ? mapCostumeToProduct(costume) : null;
+        setProduct(mappedProduct);
+        if (mappedProduct?.id) {
+          trackProductView({
+            productId: mappedProduct.id,
+            sourcePage: 'product-detail',
+            sourceModule: 'product-hero',
+          });
+          loadOutfitCombos({
+            anchorCostumeId: mappedProduct.id,
+            limit: 3,
+          }).catch(() => {});
+        }
       })
       .catch((error) => {
         if (!isMounted) return;
@@ -165,20 +181,36 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
         />
 
         {product && (
-          <ProductReviewsSection
-            stats={stats}
-            filterRating={filterRating}
-            filteredReviews={filteredReviews}
-            displayedReviews={displayedReviews}
-            showAllReviews={showAllReviews}
-            showReviewForm={showReviewForm}
-            newReviewData={newReviewData}
-            onFilterRatingChange={setFilterRating}
-            onToggleShowAll={setShowAllReviews}
-            onToggleReviewForm={setShowReviewForm}
-            onReviewDataChange={setNewReviewData}
-            onSubmitReview={handleSubmitReview}
-          />
+          <>
+            <OutfitComboSection
+              title={outfitCombos.anchorLabel ? `Combo quanh ${outfitCombos.anchorLabel}` : 'Combo goi y'}
+              items={outfitCombos.items}
+              isLoading={isLoadingCombo}
+              onNavigate={onNavigate}
+              onTrackClick={(item) =>
+                trackRecommendationClick({
+                  productId: item.product.id,
+                  sourcePage: 'product-detail',
+                  sourceModule: 'outfit-combo',
+                  reason: item.reason,
+                })
+              }
+            />
+            <ProductReviewsSection
+              stats={stats}
+              filterRating={filterRating}
+              filteredReviews={filteredReviews}
+              displayedReviews={displayedReviews}
+              showAllReviews={showAllReviews}
+              showReviewForm={showReviewForm}
+              newReviewData={newReviewData}
+              onFilterRatingChange={setFilterRating}
+              onToggleShowAll={setShowAllReviews}
+              onToggleReviewForm={setShowReviewForm}
+              onReviewDataChange={setNewReviewData}
+              onSubmitReview={handleSubmitReview}
+            />
+          </>
         )}
       </div>
     </div>

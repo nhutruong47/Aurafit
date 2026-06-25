@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import AdminOverviewSection from '../components/admin/AdminOverviewSection';
+import AdminProductAiMetadataForm from '../components/admin/AdminProductAiMetadataForm';
 import AdminProductsSection from '../components/admin/AdminProductsSection';
 import AdminReportsSection from '../components/admin/AdminReportsSection';
+import AdminTrendManagerSection from '../components/admin/AdminTrendManagerSection';
 import { StatusBadge } from '../components/admin/AdminDashboardShared';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
+import { useAdminAiManagement } from '../hooks/useAdminAiManagement';
 import { useAdminCostumes } from '../hooks/useAdminCostumes';
 
 const supportTickets = [
@@ -21,6 +24,7 @@ const metricCards = [
 
 export default function AdminDashboardPage({ currentUser, onNavigate }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedAiProduct, setSelectedAiProduct] = useState(null);
   const {
     isAdmin,
     products,
@@ -43,6 +47,26 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     resetProductForm,
     submitProduct,
   } = useAdminCostumes(currentUser);
+  const {
+    metadataForm,
+    metadataMessage,
+    metadataError,
+    isLoadingMetadata,
+    isSavingMetadata,
+    metadataStatus,
+    trends,
+    trendForm,
+    editingTrendId,
+    trendMessage,
+    trendError,
+    isSavingTrend,
+    handleMetadataFieldChange,
+    submitMetadata,
+    handleTrendFieldChange,
+    hydrateTrendForm,
+    resetTrendForm,
+    submitTrend,
+  } = useAdminAiManagement(currentUser, selectedAiProduct);
 
   const ticketCount = useMemo(() => supportTickets.length, []);
 
@@ -132,10 +156,40 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               onProductStatusFilterChange={setProductStatusFilter}
               onProductFieldChange={handleProductFieldChange}
               onProductImageUploaded={handleProductImageUploaded}
-              onEditProduct={hydrateProductForm}
+              onEditProduct={(product) => {
+                hydrateProductForm(product);
+                setSelectedAiProduct(product);
+              }}
               onResetProductForm={resetProductForm}
               onSubmitProduct={handleSubmitProduct}
             />
+          )}
+          {activeTab === 'products' && (
+            <div className="mt-8 grid gap-8">
+              <AdminProductAiMetadataForm
+                selectedProduct={selectedAiProduct}
+                metadataForm={metadataForm}
+                metadataStatus={metadataStatus}
+                metadataMessage={metadataMessage}
+                metadataError={metadataError}
+                isLoadingMetadata={isLoadingMetadata}
+                isSavingMetadata={isSavingMetadata}
+                onFieldChange={handleMetadataFieldChange}
+                onSubmit={submitMetadata}
+              />
+              <AdminTrendManagerSection
+                trends={trends}
+                trendForm={trendForm}
+                editingTrendId={editingTrendId}
+                trendMessage={trendMessage}
+                trendError={trendError}
+                isSavingTrend={isSavingTrend}
+                onFieldChange={handleTrendFieldChange}
+                onEditTrend={hydrateTrendForm}
+                onResetTrendForm={resetTrendForm}
+                onSubmitTrend={submitTrend}
+              />
+            </div>
           )}
           {activeTab === 'support' && <AdminSupportSection supportTickets={supportTickets} />}
           {activeTab === 'reports' && (

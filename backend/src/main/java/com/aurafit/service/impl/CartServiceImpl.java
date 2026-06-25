@@ -8,11 +8,14 @@ import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.User;
 import com.aurafit.enums.CartStatus;
 import com.aurafit.enums.ItemStatus;
+import com.aurafit.exception.BadRequestException;
+import com.aurafit.exception.ConflictException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CartItemRepository;
 import com.aurafit.repository.CartRepository;
 import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.BehaviorTrackingService;
 import com.aurafit.service.CartService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +30,18 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final CostumeItemRepository costumeItemRepository;
     private final UserRepository userRepository;
+    private final BehaviorTrackingService behaviorTrackingService;
 
     public CartServiceImpl(CartRepository cartRepository,
                            CartItemRepository cartItemRepository,
                            CostumeItemRepository costumeItemRepository,
-                           UserRepository userRepository) {
+                           UserRepository userRepository,
+                           BehaviorTrackingService behaviorTrackingService) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.costumeItemRepository = costumeItemRepository;
         this.userRepository = userRepository;
+        this.behaviorTrackingService = behaviorTrackingService;
     }
 
     @Override
@@ -50,7 +56,7 @@ public class CartServiceImpl implements CartService {
     public CartDTO addToCart(Long userId, AddToCartRequestDTO request) {
         // 1. Validate rental dates
         if (!request.rentalEndDate().isAfter(request.rentalStartDate())) {
-            throw new IllegalArgumentException("rentalEndDate must be after rentalStartDate");
+            throw new BadRequestException("rentalEndDate must be after rentalStartDate");
         }
 
         // 2. Fetch the CostumeItem with its parent Costume (single query via JOIN FETCH)
@@ -59,7 +65,7 @@ public class CartServiceImpl implements CartService {
 
         // 3. Validate item availability
         if (costumeItem.getStatus() != ItemStatus.AVAILABLE) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "CostumeItem [SKU: " + costumeItem.getSku() + "] is currently " + costumeItem.getStatus()
                             + " and cannot be added to cart");
         }
@@ -69,7 +75,7 @@ public class CartServiceImpl implements CartService {
 
         // 5. Prevent duplicate items in the same cart
         if (cartItemRepository.existsByCartIdAndCostumeItemId(cart.getId(), costumeItem.getId())) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "CostumeItem [SKU: " + costumeItem.getSku() + "] is already in your cart");
         }
 
@@ -96,6 +102,7 @@ public class CartServiceImpl implements CartService {
         // 8. Re-fetch with full JOIN FETCH graph for the response DTO
         Cart refreshedCart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
+        behaviorTrackingService.recordAddToCart(cart.getUser(), costumeItem.getCostume().getId(), "cart-service");
 
         return CartDTO.fromEntity(refreshedCart);
     }

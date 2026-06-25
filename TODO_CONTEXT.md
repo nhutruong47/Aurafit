@@ -1,103 +1,160 @@
-# TODO_CONTEXT.md
+﻿# TODO_CONTEXT.md
 
-## P0: Cực kỳ quan trọng
+## P0: Cần ưu tiên cao
 
-### Đồng bộ service layer frontend với backend thật
+### Chuẩn hóa secret management qua env
 - Module:
-  - `frontend/src/services/`
-  - auth/cart/orders/payment hooks/pages
-- Checklist:
-  - [ ] Thay path sai bằng endpoint backend thật
-  - [ ] Normalize wrapped backend response trước khi UI dùng
-  - [ ] Thêm bearer token + cookie-aware request handling
-  - [ ] Cập nhật flow order/payment theo DTO thật
-
-### Loại bỏ secret đã commit
-- Module:
-  - `backend/src/main/resources/application-dev.yml`
+  - `backend/.env.example`
   - `backend/src/main/resources/application.yml`
+  - `backend/src/main/resources/application-dev.yml`
 - Checklist:
-  - [ ] Rotate Gmail password đã lộ và các secret liên quan
-  - [ ] Chuyển secret sang env vars
-  - [ ] Bổ sung hướng dẫn tải `.env` / secret
+  - [ ] Tài liệu hóa đầy đủ env vars bắt buộc
+  - [ ] Xác nhận local `.env` không bị chia sẻ / commit nhầm
+  - [ ] Tách các secret thật khỏi mọi kênh chia sẻ tài liệu / source khác nếu còn sót
 
-### Sửa bất nhất giữa quantity và mô hình SKU vật lý
+### Sửa lệch setup Postgres local
 - Module:
-  - domain checkout/order ở `backend`
+  - `docker-compose.yml`
+  - `backend/.env.example`
 - Checklist:
-  - [ ] Quyết định một `CostumeItem` có thể đại diện cho quantity > 1 hay không
-  - [ ] Bỏ hoặc thiết kế lại `quantity`
-  - [ ] Cập nhật DTO, service, order detail model, tài liệu
+  - [ ] Chốt host port chính thức cho local dev
+  - [ ] Đồng bộ lại Docker compose và sample `DATABASE_URL`
+  - [ ] Cập nhật README / context setup
 
-### Sửa exception hướng API trong cart flow
+### Chốt lại semantics pricing order / payment
+- Module:
+  - `OrderResponse`
+  - `RentalOrder`
+  - `PaymentServiceImpl`
+  - `frontend/src/pages/RentalOrderCheckoutPage.jsx`
+  - `frontend/src/pages/PaymentPage.jsx`
+- Checklist:
+  - [ ] Chốt `finalAmount` là gì
+  - [ ] Chốt tổng khách phải trả có gồm deposit hay không
+  - [ ] Đồng bộ FE/BE và tài liệu
+
+### Xử lý lệch `quantity` với inventory model
+- Module:
+  - checkout / order domain
+- Checklist:
+  - [ ] Quyết định có giữ `quantity` hay bỏ
+  - [ ] Nếu giữ, thiết kế lại model cho phù hợp
+  - [ ] Nếu bỏ, cập nhật DTO / UI / docs
+
+### Chuẩn hóa exception hướng API trong cart
 - Module:
   - `CartServiceImpl`
   - `GlobalExceptionHandler`
 - Checklist:
-  - [ ] Thay generic runtime exception
-  - [ ] Trả `4xx` ổn định cho validation/conflict nghiệp vụ
+  - [ ] Thay runtime exception generic bằng custom exception
+  - [ ] Đảm bảo trả 4xx ổn định cho conflict / validation
 
 ## P1: Nên làm sớm
 
-### Thêm test profile đúng nghĩa
+### Chốt cart source of truth
+- Module:
+  - `App.jsx`
+  - `cartSlice.js`
+  - `RentalOrderCheckoutPage.jsx`
+- Checklist:
+  - [ ] Quyết định backend-first hay hybrid
+  - [ ] Nếu backend-first, bỏ local fallback không cần thiết
+  - [ ] Đồng bộ pricing cart theo backend
+
+### Hoàn thiện workflow staff
+- Module:
+  - `StaffServiceImpl`
+  - `StaffDashboardPage`
+- Checklist:
+  - [ ] Xác nhận order status cần đổi khi pickup / return
+  - [ ] Cập nhật service nếu cần
+  - [ ] Đồng bộ UI status và docs
+
+### Căn chỉnh upload role giữa staff UI và backend
+- Module:
+  - `UploadController`
+  - `StaffDashboardPage`
+  - `ImageUploadField`
+- Checklist:
+  - [ ] Quyết định staff có được upload ảnh handover hay không
+  - [ ] Nếu có, mở quyền backend và test lại
+  - [ ] Nếu không, ẩn / đổi UX staff cho rõ
+
+### Chốt chiến lược catalog API
+- Module:
+  - `CatalogController`
+  - `PublicCatalogController`
+  - frontend catalog services
+- Checklist:
+  - [ ] Quyết định giữ hay bỏ compatibility endpoints
+  - [ ] Hợp nhất service layer frontend nếu cần
+  - [ ] Cập nhật context docs
+
+### Làm rõ auth/register UX
+- Module:
+  - `UserController`
+  - `AccountAuthForm.jsx`
+- Checklist:
+  - [ ] Xác nhận có cần direct register non-Gmail trên frontend hay không
+  - [ ] Nếu có, bổ sung UI
+  - [ ] Nếu không, tài liệu hóa rõ hạn chế
+
+### Thêm test profile backend
 - Module:
   - `backend/src/test`
-  - cấu hình Spring
+  - spring test config
 - Checklist:
-  - [ ] Thêm test DB cô lập hoặc in-memory nếu phù hợp
-  - [ ] Không để `mvn test` phụ thuộc Docker local thủ công
+  - [ ] Tách khỏi DB local thật
+  - [ ] Làm `.\\mvnw.cmd test` ổn định hơn
 
-### Thêm database migration
+### Thêm migration tool
 - Module:
-  - persistence/infrastructure backend
+  - backend persistence
 - Checklist:
-  - [ ] Đưa Flyway hoặc Liquibase vào dự án
+  - [ ] Chọn Flyway hoặc Liquibase
   - [ ] Baseline schema hiện tại
-  - [ ] Ngừng phụ thuộc vào `ddl-auto: update`
+  - [ ] Giảm phụ thuộc `ddl-auto: update`
 
-### Quyết định phạm vi staff/admin
+## P2: Cải thiện / refactor
+
+### Làm thật hoặc đánh dấu mock cho các vùng UI chưa có backend
 - Module:
-  - dashboard staff/admin ở frontend
-  - endpoint backend còn thiếu
+  - chat
+  - reviews
+  - interactions
+  - admin overview/support/reports
+  - order timeline helper
 - Checklist:
-  - [ ] Xác nhận UI là mock/demo hay bắt buộc phải chạy thật
-  - [ ] Triển khai API còn thiếu hoặc ẩn action chưa hỗ trợ
-  - [ ] Đồng bộ vocabulary status giữa FE/BE
+  - [ ] Ghi rõ "mock/prototype" trên UI nếu cần
+  - [ ] Hoặc ẩn action chưa support
 
-### Làm rõ chính sách đăng ký
+### Tách nhỏ page / component lớn
 - Module:
-  - auth/user flows
-- Checklist:
-  - [ ] Xác nhận yêu cầu OTP chỉ cho Gmail
-  - [ ] Xác nhận luật đăng ký trực tiếp với non-Gmail
-  - [ ] Tài liệu hóa hành vi `emailVerified`
-
-## P2: Cải thiện / Refactor
-
-### Tách nhỏ các page/component frontend quá lớn
-- Module:
-  - `Checkout.jsx`
-  - `AdminDashboard.jsx`
-  - `StaffDashboard.jsx`
   - `Navbar.jsx`
+  - `RentalOrderCheckoutPage.jsx`
+  - `AdminDashboardPage.jsx`
+  - `StaffDashboardPage.jsx`
   - `ProductReviewsSection.jsx`
-- Checklist:
-  - [ ] Tách hook có state
-  - [ ] Tách presentational subcomponent
-  - [ ] Giảm độ phức tạp orchestration ở page level
 
-### Chuẩn hóa domain dictionary
-- Module:
-  - mapping status ở frontend
-  - enum ở backend
-  - context docs
+### Chuẩn hóa docs sau mỗi thay đổi lớn
 - Checklist:
-  - [ ] Dùng enum backend làm nguồn chân lý
-  - [ ] Loại bỏ status cũ như `PENDING_CONFIRMATION`
+  - [ ] Cập nhật `API_CONTEXT.md` khi endpoint đổi
+  - [ ] Cập nhật `DATABASE_CONTEXT.md` khi entity / enum đổi
+  - [ ] Cập nhật `user-flow.md` khi FE/BE flow đổi
 
-### Cải thiện hygiene cho prompting
-- Module:
-  - các file context ở root
-- Checklist:
-  - [ ] Giữ tài liệu luôn được cập nhật khi endpoint/model thay đổi
-  - [ ] Thêm changelog section sau nếu team muốn
+## AI Recommendation roadmap
+
+### Phase 1 - da xong
+- [x] Admin product AI metadata CRUD
+- [x] Admin fashion trend CRUD
+- [x] User behavior tracking API
+- [x] Personalized/query/outfit combo APIs
+- [x] Frontend AI Stylist Box + personalized section + outfit combo section
+- [x] Fallback local embedding + rule-based reason
+
+### Phase 2 - tiep theo
+- [ ] Danh gia va bat `pgvector` neu catalog tang
+- [ ] Them migration tool truoc khi baseline schema AI
+- [ ] Mở rong behavior signal tu wishlist khi domain nay ton tai
+- [ ] Batch refresh profile/embedding thay vi chi lazy compute
+- [ ] Quan tri prompt/versioning ro hon cho AI provider

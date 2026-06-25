@@ -51,6 +51,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/costumes/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/ai/track").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/ai/recommendations/query").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/ai/recommendations/outfit-combos").permitAll()
 
                 // Swagger UI & OpenAPI docs
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

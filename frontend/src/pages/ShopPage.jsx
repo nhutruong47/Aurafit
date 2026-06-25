@@ -1,9 +1,13 @@
+import AiStylistBox from '../components/ai/AiStylistBox';
+import PersonalizedRecommendationSection from '../components/ai/PersonalizedRecommendationSection';
 import ShopPagination from '../components/shop/ShopPagination';
 import ShopProductCard from '../components/shop/ShopProductCard';
 import { shopTabs } from '../components/shop/shopTabs';
 import AlertMessage from '../components/ui/AlertMessage';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingGrid from '../components/ui/LoadingGrid';
+import { useAiRecommendations } from '../hooks/useAiRecommendations';
+import { trackRecommendationClick } from '../services/interactionsService';
 import { useShopCostumes } from '../hooks/useShopCostumes';
 
 export default function ShopPage({ currentUser, onNavigate, onAddToCart }) {
@@ -19,6 +23,18 @@ export default function ShopPage({ currentUser, onNavigate, onAddToCart }) {
     handleTabChange,
     setActivePage,
   } = useShopCostumes(currentUser?.id);
+  const {
+    personalized,
+    queryResult,
+    isLoadingPersonalized,
+    isLoadingQuery,
+    error: aiError,
+    submitAiQuery,
+  } = useAiRecommendations({
+    autoLoadPersonalized: Boolean(currentUser?.id),
+    personalizedLimit: 4,
+    currentUserId: currentUser?.id,
+  });
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
@@ -54,6 +70,35 @@ export default function ShopPage({ currentUser, onNavigate, onAddToCart }) {
       </section>
 
       <main className="mx-auto max-w-[1440px] px-5 py-10 md:px-20">
+        <div className="mb-8 grid gap-6 xl:grid-cols-[420px_1fr]">
+          <AiStylistBox
+            title="AI Stylist Box"
+            description="Nhap nhu cau, style, mau va budget de AI chon cac mon do thue phu hop nhat."
+            isLoading={isLoadingQuery}
+            onSubmit={submitAiQuery}
+          />
+          <PersonalizedRecommendationSection
+            title="Goi y co ly do"
+            subtitle={
+              queryResult.items.length
+                ? queryResult.queryText || 'Ket qua truy van AI tu nhu cau hien tai.'
+                : personalized.profileSummary || 'Tab recommendation mac dinh van giu nguyen, phan nay them ly do AI de de so sanh.'
+            }
+            items={queryResult.items.length ? queryResult.items : personalized.items}
+            isLoading={isLoadingPersonalized && !queryResult.items.length}
+            emptyMessage="Hay nhap nhu cau o AI Stylist Box de nhan goi y chi tiet."
+            onNavigate={onNavigate}
+            onTrackClick={(item) =>
+              trackRecommendationClick({
+                productId: item.product.id,
+                sourcePage: 'shop',
+                sourceModule: queryResult.items.length ? 'ai-query' : 'personalized-section',
+                reason: item.reason,
+              })
+            }
+          />
+        </div>
+
         <div className="mb-8 grid gap-3 border border-[#cfc4c5] bg-white p-3 md:grid-cols-3">
           {shopTabs.map((tab) => {
             const count = productsByTab[tab.id]?.length || 0;
@@ -93,7 +138,7 @@ export default function ShopPage({ currentUser, onNavigate, onAddToCart }) {
           </p>
         </div>
 
-        {error && <AlertMessage text={error} className="mb-6" />}
+        {(error || aiError) && <AlertMessage text={error || aiError} className="mb-6" />}
 
         {isLoading ? (
           <LoadingGrid />
