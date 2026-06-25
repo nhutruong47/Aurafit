@@ -1,10 +1,10 @@
 package com.aurafit.controller;
 
+import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.UploadAssetResponse;
-import com.aurafit.entity.User;
-import com.aurafit.exception.ResourceNotFoundException;
-import com.aurafit.repository.UserRepository;
+
 import com.aurafit.service.UploadService;
+import com.aurafit.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -28,11 +28,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class UploadController {
 
     private final UploadService uploadService;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public UploadController(UploadService uploadService, UserRepository userRepository) {
+    public UploadController(UploadService uploadService, UserService userService) {
         this.uploadService = uploadService;
-        this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -42,19 +42,17 @@ public class UploadController {
             description = "Accepts jpg, jpeg, png, or webp image files and stores their metadata in the database.",
             requestBody = @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
     )
-    public ResponseEntity<UploadAssetResponse> uploadImage(
+    public ResponseEntity<ApiResponse<UploadAssetResponse>> uploadImage(
             Authentication authentication,
             @RequestParam("file") MultipartFile file
     ) {
         Long userId = extractUserId(authentication);
         UploadAssetResponse response = uploadService.uploadImage(userId, file);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Image uploaded successfully.", response, HttpStatus.CREATED));
     }
 
     private Long extractUserId(Authentication authentication) {
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
-        return user.getId();
+        return userService.getUserIdByEmail(authentication.getName());
     }
 }

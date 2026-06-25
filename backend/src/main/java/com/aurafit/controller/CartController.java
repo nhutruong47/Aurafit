@@ -1,11 +1,10 @@
 package com.aurafit.controller;
 
 import com.aurafit.dto.request.AddToCartRequestDTO;
+import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.CartDTO;
-import com.aurafit.entity.User;
-import com.aurafit.exception.ResourceNotFoundException;
-import com.aurafit.repository.UserRepository;
 import com.aurafit.service.CartService;
+import com.aurafit.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,41 +25,41 @@ import org.springframework.web.bind.annotation.*;
 public class CartController {
 
     private final CartService cartService;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public CartController(CartService cartService, UserRepository userRepository) {
+    public CartController(CartService cartService, UserService userService) {
         this.cartService = cartService;
-        this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     @GetMapping
     @Operation(summary = "Get current cart",
             description = "Returns the authenticated user's ACTIVE cart. Creates a new empty cart if none exists.")
-    public ResponseEntity<CartDTO> getCart(Authentication authentication) {
+    public ResponseEntity<ApiResponse<CartDTO>> getCart(Authentication authentication) {
         Long userId = extractUserId(authentication);
-        return ResponseEntity.ok(cartService.getCart(userId));
+        return ResponseEntity.ok(ApiResponse.success("Cart retrieved successfully.", cartService.getCart(userId)));
     }
 
-    @PostMapping("/add")
+    @PostMapping("/items")
     @Operation(summary = "Add item to cart",
             description = "Adds a physical costume item to the cart with the specified rental period.")
-    public ResponseEntity<CartDTO> addToCart(
+    public ResponseEntity<ApiResponse<CartDTO>> addToCart(
             Authentication authentication,
             @Valid @RequestBody AddToCartRequestDTO request
     ) {
         Long userId = extractUserId(authentication);
-        return ResponseEntity.ok(cartService.addToCart(userId, request));
+        return ResponseEntity.ok(ApiResponse.success("Item added to cart.", cartService.addToCart(userId, request)));
     }
 
-    @DeleteMapping("/remove/{cartItemId}")
+    @DeleteMapping("/items/{cartItemId}")
     @Operation(summary = "Remove item from cart",
             description = "Removes a CartItem from the cart and recalculates the total.")
-    public ResponseEntity<CartDTO> removeItemFromCart(
+    public ResponseEntity<ApiResponse<CartDTO>> removeItemFromCart(
             Authentication authentication,
             @PathVariable Long cartItemId
     ) {
         Long userId = extractUserId(authentication);
-        return ResponseEntity.ok(cartService.removeItemFromCart(userId, cartItemId));
+        return ResponseEntity.ok(ApiResponse.success("Item removed from cart.", cartService.removeItemFromCart(userId, cartItemId)));
     }
 
     // ── Private helpers ──────────────────────────────────────────────────
@@ -71,9 +70,6 @@ public class CartController {
      * This ensures the userId is NEVER sourced from the frontend payload (anti-IDOR).
      */
     private Long extractUserId(Authentication authentication) {
-        String email = authentication.getName(); // JWT subject = email
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
-        return user.getId();
+        return userService.getUserIdByEmail(authentication.getName());
     }
 }

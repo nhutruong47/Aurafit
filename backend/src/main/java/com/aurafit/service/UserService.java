@@ -11,4 +11,6 @@ public interface UserService {
     AuthResponseDTO login(AuthRequest request);
 
     AuthResponseDTO refresh(String refreshToken);
+
+    Long getUserIdByEmail(String email);
 }

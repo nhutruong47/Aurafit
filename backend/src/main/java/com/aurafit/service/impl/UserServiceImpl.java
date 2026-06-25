@@ -81,6 +81,13 @@ public class UserServiceImpl implements UserService {
         return buildAuthResponse(user);
     }
 
+    @Override
+    public Long getUserIdByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        return user.getId();
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------

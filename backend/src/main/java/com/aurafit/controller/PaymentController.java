@@ -1,6 +1,7 @@
 package com.aurafit.controller;
 
 import com.aurafit.dto.request.PaymentCreateRequest;
+import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.PaymentInitResponse;
 import com.aurafit.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,7 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/payment")
+@RequestMapping("/api/payments")
 @Tag(name = "Payment", description = "Payment initiation via VietQR")
 @SecurityRequirement(name = "bearerAuth")
 public class PaymentController {
@@ -24,18 +25,18 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
-    @PostMapping("/create")
+    @PostMapping
     @Operation(
             summary = "Initialize a VietQR payment",
             description = "Creates or reuses a PENDING Payment record for the authenticated user's order "
                     + "and returns a VietQR image URL for the customer to scan."
     )
-    public ResponseEntity<PaymentInitResponse> createPayment(
+    public ResponseEntity<ApiResponse<PaymentInitResponse>> createPayment(
             Authentication authentication,
             @Valid @RequestBody PaymentCreateRequest request
     ) {
         String email = authentication.getName();
         PaymentInitResponse response = paymentService.initializePayment(request, email);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        return ResponseEntity.ok(ApiResponse.success("Payment initialized successfully.", response));
     }
 }

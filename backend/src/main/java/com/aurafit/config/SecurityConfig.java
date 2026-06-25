@@ -43,9 +43,8 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             .authorizeHttpRequests(auth -> auth
-                // Public auth endpoints (register, login, refresh)
+                // Public auth endpoints (register, login, refresh, OTP)
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/users/register", "/api/users/login", "/api/users/refresh").permitAll()
 
                 // Public product browsing (future catalog endpoints)
                 .requestMatchers("/api/public/**").permitAll()
