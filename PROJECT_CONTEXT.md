@@ -1,139 +1,89 @@
-﻿# PROJECT_CONTEXT.md
+# PROJECT_CONTEXT.md
 
 ## Tổng quan dự án
-- `AuraFit` là monorepo gồm:
-  - `backend/`: Spring Boot REST API
-  - `frontend/`: React + Vite SPA
-  - `docker-compose.yml`: Postgres + pgAdmin cho local dev
-- Domain hiện tại tập trung vào:
-  - catalog trang phục
-  - auth / register / login / refresh
-  - cart
-  - checkout / rental order
-  - payment qua VietQR + webhook SePay
-  - admin costume management
-  - staff handover pickup / return
-  - upload hình ảnh lên Cloudinary
+- `AuraFit` là một nền tảng cho thuê trang phục.
+- Backend hiện tại đã triển khai:
+  - catalog công khai
+  - đăng ký/đăng nhập/JWT
+  - luồng đăng ký OTP Gmail
+  - giỏ hàng
+  - checkout/tạo đơn hàng
+  - khởi tạo thanh toán VietQR + xác nhận webhook SePay
+- Frontend hiện tại đã có giao diện hoàn chỉnh cho:
+  - duyệt sản phẩm
+  - giỏ hàng/checkout/thanh toán
+  - tài khoản
+  - lịch sử đơn hàng
+  - dashboard admin
+  - dashboard staff
+  - chat
+- Quan trọng: frontend và backend mới chỉ tích hợp một phần.
 
-## Trạng thái thực tế của hệ thống
-
-### Backend đã có
-- Đăng ký Gmail qua OTP:
-  - `POST /api/auth/register/request-otp`
-  - `POST /api/auth/register/verify-otp`
-- Đăng ký qua `POST /api/users/register`:
-  - email Gmail -> không tạo user trực tiếp, trả OTP-sent response
-  - email non-Gmail -> tạo user trực tiếp
-- Đăng nhập / refresh:
-  - `POST /api/users/login`
-  - `POST /api/users/refresh`
-- Catalog public:
-  - `GET /api/public/catalog/categories`
-  - `GET /api/public/catalog/costumes`
-  - `GET /api/public/catalog/costumes/{id}`
-- Catalog compatibility layer:
-  - `GET /api/categories`
-  - `GET /api/costumes`
-  - `GET /api/costumes/{id}`
-  - `GET /api/costumes/seasonal`
-  - `GET /api/costumes/recommendations`
-- Cart:
-  - `GET /api/cart`
-  - `POST /api/cart/add`
-  - `DELETE /api/cart/remove/{cartItemId}`
-- Orders / checkout:
-  - `POST /api/orders/checkout`
-  - `GET /api/orders`
-  - `GET /api/orders/{orderId}`
-- Payment:
-  - `POST /api/payment/create`
-  - `POST /api/public/payment/sepay-webhook`
-- Upload:
-  - `POST /api/uploads/images`
-- Admin:
-  - `GET /api/admin/costumes`
-  - `POST /api/admin/costumes`
-  - `PUT /api/admin/costumes/{id}`
-- Staff / admin handover:
-  - `GET /api/orders/staff`
-  - `GET /api/orders/staff/{orderId}`
-  - `POST /api/orders/{orderId}/handover/pickup`
-  - `POST /api/orders/{orderId}/handover/return`
-
-### Frontend đã có
-- Route customer:
-  - `/`, `/catalog`, `/shop`, `/products/:productId`
-  - `/checkout`, `/payment`, `/success`, `/orders`
-  - `/account`
-- Route operational / marketing:
-  - `/admin`, `/staff`, `/chat`
-  - `/yearbook`, `/cosplay`, `/events`, `/care`
-- State management:
-  - Redux Toolkit cho `auth` và `cart`
-  - Zustand cho `pendingOrderId` trong payment flow
-- Service layer đã tách theo domain:
-  - auth
-  - catalog public
-  - catalog compatibility + admin costume
-  - cart
-  - orders / staff handover
-  - payment
-  - upload
-  - interactions
-
-## Mức độ tích hợp hiện tại
-
-### Đã tích hợp thật
-- Login / refresh / OTP register đã gọi backend thật.
-- Cart ưu tiên đồng bộ backend khi user đăng nhập và item đủ dữ liệu backend.
-- Checkout tạo `RentalOrder` thật và lưu `pendingOrderId`.
-- Payment page gọi `POST /api/payment/create` thật.
-- Orders page gọi `GET /api/orders` và `GET /api/orders/{id}` thật.
-- Admin product page gọi API admin thật.
-- Staff dashboard gọi API staff/handover thật.
-
-### Vẫn còn mock / partial / gap
-- Chat UI chưa có backend.
-- `interactionsService` gọi `/api/ai/track`, backend chưa có.
-- `rentalOrderService.fetchOrderTimeline()` gọi `/api/orders/{id}/timeline`, backend chưa có.
-- Product review hiện là frontend-only.
-- Checkout UI vẫn tính voucher / tổng tiền theo hard-code UI, không lấy từ pricing backend.
-- Cart vẫn có local fallback nếu item thiếu `costumeItemId`, `sku`, hoặc rental window.
-- Admin overview / support / reports vẫn dùng data hard-code trong frontend.
-- Frontend register UI chỉ hỗ trợ Gmail OTP flow, dù backend còn có direct register.
-- Staff UI có upload ảnh handover, nhưng backend upload endpoint chỉ cho `ADMIN` và `CUSTOMER`, không cho `STAFF`.
-
-## Vai trò trong hệ thống
-| Role | Nguồn chân lý |
+## Tech stack
+| Phần | Công nghệ |
 | --- | --- |
-| `CUSTOMER` | `backend/src/main/java/com/aurafit/enums/Role.java` |
-| `STAFF` | `backend/src/main/java/com/aurafit/enums/Role.java` |
-| `ADMIN` | `backend/src/main/java/com/aurafit/enums/Role.java` |
+| Backend | Java 17, Spring Boot 3.2.5, Spring Web, Spring Data JPA, Spring Security, Validation, Mail |
+| Auth | JWT access token + refresh token cookie |
+| Tài liệu API | springdoc OpenAPI / Swagger UI |
+| Database | PostgreSQL 15 |
+| Frontend | React 19, Vite 8, Tailwind CSS 3 |
+| State frontend | Redux Toolkit, React Redux |
+| Hạ tầng | Docker Compose cho Postgres + pgAdmin |
 
-## Đặc điểm quan trọng cần nhớ
-- User ownership ở backend được suy ra từ JWT / SecurityContext, không lấy từ payload.
-- OTP được persist trong bảng `otp_verifications`, không còn là in-memory cache.
-- `AuthResponseDTO` chỉ serialize `accessToken` và `user`; `refreshToken` đi qua HttpOnly cookie.
-- Recommendations hiện tại không phải AI; backend đang shuffle random active costumes.
-- Payment amount = `totalRentalPrice + totalDeposit - discountAmount`.
-- `OrderResponse.finalAmount` hiện chỉ là `totalRentalPrice - discountAmount`.
-- `RentalOrder.totalPrice` được set bằng rental subtotal khi checkout, không cộng deposit.
-- Staff handover hiện lưu biên bản và cập nhật `returnStatus`, nhưng không đổi `RentalOrder.status` sang `PICKED_UP`, `RETURNED`, hoặc `COMPLETED`.
+## Cấu trúc thư mục chính
+| Đường dẫn | Mục đích |
+| --- | --- |
+| `backend/` | API Spring Boot và logic domain |
+| `frontend/` | Ứng dụng React |
+| `docker-compose.yml` | Postgres và pgAdmin local |
+| `memory.md` | Lịch sử phát triển / kế hoạch theo phase |
+| `user-flow.md` | Tài liệu luồng người dùng, đã được chuẩn hóa theo code hiện tại |
 
-## AI Recommendation MVP status
-- Phase hien tai: `Phase 1 - AI Recommendation MVP da duoc implement`.
-- Da co:
-  - admin nhap `product_ai_metadata` cho tung costume
-  - admin CRUD `fashion_trends`
-  - behavior tracking qua `/api/ai/track`
-  - recommendation theo query, personalized, va outfit combo
-  - fallback local embedding + rule-based ranking khi khong co AI provider key
-- Chua co:
-  - wishlist domain yet
-  - pgvector native search
-  - auto-sync trend tu external source
+## Module backend chính
+- Auth / OTP
+- Xác thực người dùng / refresh session
+- Catalog công khai
+- Cart
+- Checkout / orders
+- Payment / webhook
+- Security / JWT
+- Seed data
 
-## Need verify in code / business
-- Luồng đăng ký non-Gmail có phải policy dài hạn hay chỉ là fallback tạm.
-- Có nên tiếp tục giữ 2 lớp endpoint catalog song song hay hợp nhất.
-- `finalAmount` có được xem là tổng tiền khách phải thanh toán hay chỉ là rental subtotal.
+## Module frontend chính
+- App shell với điều hướng theo URL
+- Các trang mua sắm công khai: home, catalog, shop, cosplay, events, yearbook
+- Trang tài khoản/xác thực
+- Các trang checkout/thanh toán/thành công đơn hàng
+- Trang lịch sử đơn hàng
+- UI dashboard admin
+- UI dashboard staff
+- UI chat
+
+## Vai trò người dùng tìm thấy trong code
+| Vai trò | Nguồn |
+| --- | --- |
+| `CUSTOMER` | enum `Role` ở backend |
+| `STAFF` | enum `Role` ở backend |
+| `ADMIN` | enum `Role` ở backend |
+
+- Không tìm thấy role `patient` / `doctor` trong mã nguồn. Cần xác nhận nếu các tên này đến từ domain hoặc dự án khác.
+
+## Luồng nghiệp vụ quan trọng
+- Khách vãng lai duyệt catalog mà không cần đăng nhập.
+- Người dùng đăng ký:
+  - Gmail có thể dùng OTP flow qua `/api/auth/register/...`
+  - email không phải Gmail có thể đăng ký trực tiếp qua `/api/users/register`
+- Người dùng đăng nhập qua `/api/users/login`, nhận:
+  - access token trong body response
+  - refresh token trong cookie HttpOnly
+- Người dùng đã xác thực thêm một `CostumeItem` vật lý vào giỏ hàng.
+- Checkout tạo `RentalOrder` từ danh sách SKU và khóa tồn kho.
+- Khởi tạo thanh toán sinh dữ liệu VietQR cho đơn hàng đang ở trạng thái `PENDING`.
+- SePay webhook đánh dấu thanh toán `PAID` và đơn hàng `CONFIRMED`.
+
+## Phần còn thiếu hoặc mới làm dở
+- Backend CRUD sản phẩm cho admin: chưa có
+- Backend workflow pickup/return cho staff: chưa có
+- Backend API AI recommendation/chat: chưa có
+- Frontend đang gọi một số endpoint chưa tồn tại ở backend
+- Một số flow frontend vẫn còn mang tính demo/mock

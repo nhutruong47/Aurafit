@@ -1,42 +1,28 @@
-﻿# DATABASE_CONTEXT.md
+# DATABASE_CONTEXT.md
 
 ## Tổng quan
-- Database chính: PostgreSQL
-- JPA auditing bật qua `BaseEntity`
-- Dev:
-  - `ddl-auto: update`
-  - `spring.profiles.active=dev` mặc định
-- Prod:
-  - `ddl-auto: validate`
-- Chưa thấy Flyway / Liquibase
+- Database là PostgreSQL.
+- JPA auditing được bật qua `BaseEntity`.
+- Chiến lược schema cho dev: `ddl-auto: update`
+- Chiến lược schema cho prod: `ddl-auto: validate`
+- Không tìm thấy migration tool. Cần xác minh xem schema có được quản lý bên ngoài repo hay không.
 
-## Local infra và cấu hình hiện tại
-- `docker-compose.yml`:
-  - Postgres container nghe `5432`
-  - host map `5433:5432`
-- `application-dev.yml`:
-  - datasource đọc từ `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`
-- `backend/.env.example`:
-  - `DATABASE_URL=jdbc:postgresql://<host>:5432/postgres`
-- Nghĩa là sample env mặc định vẫn để `5432`, trong khi Docker compose local expose `5433`.
-
-## Entity / bảng chính
-| Entity | Bảng | Ghi chú |
+## Bảng / entity chính
+| Entity | Field chính | Ghi chú |
 | --- | --- | --- |
-| `User` | `"User"` | Bảng bị quote, role/status theo enum |
-| `Category` | `categories` | Danh mục costume |
-| `Costume` | `costumes` | Product cấp catalog |
-| `CostumeItem` | `costume_items` | Đơn vị vật lý có SKU |
-| `Cart` | `carts` | Cart theo user |
-| `CartItem` | `cart_items` | Snapshot rental window + pricing |
-| `RentalOrder` | `rental_orders` | Đơn thuê |
-| `RentalOrderDetail` | `rental_order_details` | Mỗi dòng map vào 1 `CostumeItem` |
-| `Payment` | `payments` | One-to-one với order |
-| `OtpVerification` | `otp_verifications` | Lưu OTP + registration payload |
-| `UploadAsset` | `upload_assets` | Metadata file upload |
-| `HandoverRecord` | `handover_records` | Biên bản pickup / return |
+| `User` | `id`, `fullName`, `email`, `emailVerified`, `phone`, `phoneVerified`, `passwordHash`, `role`, `status` | Tên bảng được quote là `"User"` |
+| `Category` | `id`, `name`, `description` | Quan hệ một-nhiều với `Costume` |
+| `Costume` | `id`, `name`, `description`, `rentalPrice`, `depositPrice`, `imageUrl`, `status`, `category_id` | Sản phẩm cấp catalog |
+| `CostumeItem` | `id`, `sku`, `size`, `color`, `status`, `costume_id` | Đơn vị tồn kho vật lý |
+| `Cart` | `id`, `user_id`, `status`, `totalValue` | Hàm ý mỗi user có một active cart, nhưng chưa bị enforce bằng unique constraint |
+| `CartItem` | `id`, `cart_id`, `costume_item_id`, `rentalStartDate`, `rentalEndDate`, `rentalDays`, `unitPrice`, `subtotal` | Không lưu quantity |
+| `RentalOrder` | `id`, `user_id`, các field người nhận, rental window, totals, `status` | Entity checkout chính |
+| `RentalOrderDetail` | `id`, `rental_order_id`, `costume_item_id`, pricing fields, `returnStatus` | Một dòng cho mỗi món đồ vật lý đã đặt |
+| `Payment` | `id`, `rental_order_id`, `amount`, `method`, `status`, `transactionId` | Quan hệ một-một với order |
+| `UploadAsset` | `id`, `original_file_name`, `url`, `secure_url`, `public_id`, `resource_type`, `format`, `size`, `uploaded_by_user_id` | Metadata ảnh upload lên Cloudinary |
+| `OtpEntry` | chỉ in-memory | Không phải bảng DB |
 
-## Quan hệ chính
+## Quan hệ
 - `Category 1 -> many Costume`
 - `Costume 1 -> many CostumeItem`
 - `User 1 -> many Cart`
@@ -47,79 +33,6 @@
 - `RentalOrderDetail many -> 1 CostumeItem`
 - `RentalOrder 1 -> 1 Payment`
 - `User 1 -> many UploadAsset`
-- `RentalOrderDetail 1 -> many HandoverRecord`
-- `User (staff/admin) 1 -> many HandoverRecord`
-
-## Field domain quan trọng
-
-### User
-- `email` unique
-- `passwordHash` lưu mật khẩu đã hash
-- `emailVerified`:
-  - `true` sau OTP register thành công
-  - direct register non-Gmail hiện không set field này thành `true`
-- `role` mặc định `CUSTOMER`
-- `status` mặc định `ACTIVE`
-
-### Costume / inventory
-- `Costume` giữ thông tin product:
-  - `name`
-  - `description`
-  - `rentalPrice`
-  - `depositPrice`
-  - `imageUrl`
-  - `status`
-- `CostumeItem` giữ:
-  - `sku`
-  - `size`
-  - `color`
-  - `status`
-
-### Cart
-- `Cart.totalValue` được recalculate từ `CartItem.subtotal`
-- `CartItem` lưu:
-  - `rentalStartDate`
-  - `rentalEndDate`
-  - `rentalDays`
-  - `unitPrice`
-  - `subtotal`
-
-### Rental order
-- `RentalOrder` lưu:
-  - thông tin người nhận
-  - rental window tổng
-  - `totalRentalPrice`
-  - `totalDeposit`
-  - `discountAmount`
-  - `totalPrice`
-  - `status`
-- `RentalOrder.totalPrice` hiện được set bằng rental subtotal lúc checkout, không cộng deposit.
-- `RentalOrderDetail` lưu:
-  - `pricePerDay`
-  - `rentalDays`
-  - `subtotal`
-  - `deposit`
-  - `price`
-  - `returnStatus`
-
-### OTP
-- `OtpVerification` không chỉ lưu OTP:
-  - `email`
-  - `otpCode`
-  - `expiresAt`
-  - `fullName`
-  - `phone`
-  - `passwordHash`
-- Có unique index trên `email`.
-
-### Handover
-- `HandoverRecord` lưu:
-  - `handoverType`
-  - `returnStatus`
-  - `imageUrl`
-  - `note`
-  - `staffUser`
-  - `rentalOrderDetail`
 
 ## Enum quan trọng
 | Enum | Giá trị |
@@ -133,36 +46,47 @@
 | `ReturnStatus` | `NOT_RETURNED`, `RETURNED`, `DAMAGED`, `LOST` |
 | `PaymentMethod` | `CASH`, `BANKING`, `MOMO`, `VN_PAY` |
 | `PaymentStatus` | `PENDING`, `PAID`, `FAILED`, `REFUNDED` |
-| `HandoverType` | `PICKUP`, `RETURN` |
 
-## Seed data
-- `DataInitializer` chỉ chạy dưới profile `dev`
-- Tạo:
-  - 3 categories
-  - 8 costumes
-  - 2 `CostumeItem` / costume
-  - tổng cộng 16 `CostumeItem`
+## Field domain quan trọng
 
-## Rủi ro schema / data model
-- Không có migration history.
-- Bảng `"User"` có thể gây bất tiện cho tooling / SQL script.
-- Không thấy DB constraint đảm bảo mỗi user chỉ có 1 active cart.
-- `CheckoutItemRequest.quantity` tồn tại, nhưng `RentalOrderDetail` vẫn map vào 1 `CostumeItem` vật lý.
-- Handover flow cập nhật `RentalOrderDetail.returnStatus`, nhưng order-level status machine chưa được enforce đầy đủ trong service.
+### Auth
+- `User.email` là unique.
+- `User.passwordHash` lưu mật khẩu đã mã hóa.
+- `emailVerified` được set qua OTP flow cho luồng đăng ký Gmail.
 
-## AI Recommendation MVP schema
-| Entity | Bang | Ghi chu |
-| --- | --- | --- |
-| `ProductAiMetadata` | `product_ai_metadata` | Metadata AI theo `costume_id`, luu tags + searchable text |
-| `ProductEmbedding` | `product_embeddings` | Embedding cua costume, hien dang luu vector o `embedding_payload` dang text/JSON |
-| `UserBehaviorEvent` | `user_behavior_events` | Event view/search/filter/cart/order/recommendation click |
-| `UserPreferenceProfile` | `user_preference_profiles` | Profile tong hop tu behavior va rental history |
-| `FashionTrend` | `fashion_trends` | Trend do admin nhap tay hoac sync sau nay |
+### Cart
+- `Cart.totalValue` được suy ra từ `CartItem.subtotal`.
+- `CartItem` lưu rental window và price snapshot.
 
-## Ghi chu AI database
-- Hien tai chua dung `pgvector`.
-- Retrieval MVP dung `embedding_payload` + cosine similarity o application layer.
-- `product_ai_metadata`, `product_embeddings`, `user_preference_profiles` deu co unique relation theo owner key:
-  - `costume_id`
-  - `costume_id`
-  - `user_id`
+### Rental Order
+- `RentalOrder.receiverName`
+- `RentalOrder.receiverPhone`
+- `RentalOrder.deliveryAddress`
+- `RentalOrder.rentalStartDate`
+- `RentalOrder.rentalEndDate`
+- `RentalOrder.totalRentalPrice`
+- `RentalOrder.totalDeposit`
+- `RentalOrder.discountAmount`
+- `RentalOrder.totalPrice`
+
+### Payment
+- `Payment.amount`
+- `Payment.method`
+- `Payment.status`
+- `Payment.transactionId`
+
+## Khu vực được yêu cầu nhưng không tìm thấy trong code
+| Khu vực yêu cầu | Thực tế |
+| --- | --- |
+| `booking` | Gần nhất là `RentalOrder` |
+| `appointment` | Không có |
+| `rating` | Không có ở backend; UI review ở frontend chỉ là local |
+| `upload` | Đã có `UploadAsset`; rating/review chưa có entity liên kết |
+
+## Rủi ro schema / migration
+- Không có lịch sử migration bằng Flyway/Liquibase.
+- Dev dùng `ddl-auto: update`, dễ lệch với schema mong muốn.
+- Test cần Postgres thật trên `localhost:5433`.
+- OTP state không được persist; restart app sẽ mất OTP.
+- `RentalOrderDetail` không lưu quantity rõ ràng dù checkout request có field này.
+- Cần xác minh liệu bảng `"User"` có gây friction cho tooling hoặc script SQL bên ngoài hay không.

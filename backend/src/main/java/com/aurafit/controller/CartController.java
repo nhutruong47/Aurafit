@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/cart")
 @Tag(name = "Shopping Cart", description = "Authenticated endpoints for cart management")
 @SecurityRequirement(name = "bearerAuth")
-public class    CartController {
+public class CartController {
 
     private final CartService cartService;
     private final UserRepository userRepository;

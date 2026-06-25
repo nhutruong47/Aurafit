@@ -31,16 +31,3 @@ export const saveString = (key, value) => {
 
   window.localStorage.setItem(key, value);
 };
-
-export const loadString = (key, fallback = null) => {
-  if (typeof window === 'undefined') {
-    return fallback;
-  }
-
-  try {
-    const value = window.localStorage.getItem(key);
-    return value ?? fallback;
-  } catch {
-    return fallback;
-  }
-};

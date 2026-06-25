@@ -3,29 +3,18 @@ import HomeCategoryMosaic from '../components/home/HomeCategoryMosaic';
 import HomeFeaturedSection from '../components/home/HomeFeaturedSection';
 import HomeHero from '../components/home/HomeHero';
 import HomeInsiderSection from '../components/home/HomeInsiderSection';
-import PersonalizedRecommendationSection from '../components/ai/PersonalizedRecommendationSection';
 import HomeServicesSection from '../components/home/HomeServicesSection';
 import HomeStyleSlider from '../components/home/HomeStyleSlider';
 import HomeTrendingSection from '../components/home/HomeTrendingSection';
 import HomeTrustSection from '../components/home/HomeTrustSection';
-import { useAiRecommendations } from '../hooks/useAiRecommendations';
-import { trackRecommendationClick } from '../services/interactionsService';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 
-export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
+export default function HomePage({ onNavigate, onAddToCart }) {
   const [activeTab, setActiveTab] = useState('event');
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const sliderRef = useRef(null);
   const { costumes, isLoading } = useCatalogCostumes();
-  const {
-    personalized,
-    isLoadingPersonalized,
-  } = useAiRecommendations({
-    autoLoadPersonalized: Boolean(currentUser?.id),
-    personalizedLimit: 3,
-    currentUserId: currentUser?.id,
-  });
 
   const products = useMemo(
     () => ({
@@ -78,25 +67,6 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
         onAddToCart={onAddToCart}
         onNavigate={onNavigate}
       />
-      {currentUser?.id && (
-        <div className="mx-auto max-w-[1440px] px-5 py-8 md:px-20">
-          <PersonalizedRecommendationSection
-            title="Ca nhan hoa cho ban"
-            subtitle={personalized.profileSummary || 'AI dang uu tien cac san pham co metadata khop voi lich su duyet va hanh vi thue cua ban.'}
-            items={personalized.items}
-            isLoading={isLoadingPersonalized}
-            onNavigate={onNavigate}
-            onTrackClick={(item) =>
-              trackRecommendationClick({
-                productId: item.product.id,
-                sourcePage: 'home',
-                sourceModule: 'personalized-section',
-                reason: item.reason,
-              })
-            }
-          />
-        </div>
-      )}
       <HomeTrustSection />
       <HomeTrendingSection trending={trending} onNavigate={onNavigate} />
       <HomeInsiderSection

@@ -98,15 +98,15 @@ function App() {
     async (item) => {
       if (currentUser?.id && item?.id) {
         logUserInteraction({
-          eventType: 'ADD_TO_CART',
-          costumeId: item.id,
-          sourcePage: location.pathname,
-          sourceModule: 'app-add-to-cart',
-          metadata: {
+          userId: currentUser.id,
+          actionType: 'ADD_TO_CART',
+          targetType: 'COSTUME',
+          targetId: item.id,
+          metadata: JSON.stringify({
             category: item.rawCategory || item.category,
             subcategory: item.subcategory,
             tag: item.tag,
-          },
+          }),
         }).catch(() => {});
       }
 
@@ -170,7 +170,7 @@ function App() {
           />
         }
       >
-        <Route path="/" element={<HomePage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/" element={<HomePage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/catalog" element={<CatalogPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/shop" element={<ShopPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route

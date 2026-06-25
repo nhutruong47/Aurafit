@@ -1,78 +1,21 @@
-﻿# AuraFit Frontend
+# React + Vite
 
-## Tổng quan
-- Frontend của AuraFit được xây dựng bằng:
-  - React 19
-  - Vite 8
-  - Tailwind CSS 3
-  - React Router 7
-  - Redux Toolkit
-  - Zustand
-- App này không còn là template mặc định; nó đã được tích hợp thật với nhiều flow backend AuraFit.
+Template này cung cấp cấu hình tối thiểu để chạy React trên Vite với HMR và một số rule ESLint cơ bản.
 
-## Chạy local
+Hiện tại có hai plugin chính thức:
 
-### Yêu cầu
-- Node.js phù hợp với Vite hiện tại
-- Backend AuraFit chạy tại `http://localhost:8080`
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) dùng [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) dùng [SWC](https://swc.rs)
 
-### Biến môi trường
-Tạo `.env` từ `.env.example`:
+## React Compiler
 
-```env
-VITE_APP_NAME=AuraFit
-VITE_API_BASE_URL=http://localhost:8080/api
-VITE_API_TIMEOUT_MS=10000
-```
+React Compiler không được bật mặc định trong template này vì ảnh hưởng tới hiệu năng lúc phát triển và build. Nếu muốn thêm, xem tài liệu tại:
 
-### Lệnh chạy
-```bash
-npm install
-npm run dev
-```
+- [React Compiler Installation](https://react.dev/learn/react-compiler/installation)
 
-### Build
-```bash
-npm exec vite build
-```
+## Mở rộng cấu hình ESLint
 
-## Cấu trúc quan trọng
-| Thư mục / file | Vai trò |
-| --- | --- |
-| `src/App.jsx` | route tree và orchestration app |
-| `src/pages/` | page-level screens |
-| `src/components/` | UI sections và shared components |
-| `src/services/` | API layer theo domain |
-| `src/hooks/` | data hooks |
-| `src/store/` | Redux và zustand stores |
-| `src/utils/` | mapping / helper / formatter |
+Nếu bạn đang phát triển ứng dụng production, nên cân nhắc dùng TypeScript với các rule lint có nhận biết kiểu dữ liệu. Có thể tham khảo:
 
-## Tích hợp backend hiện tại
-
-### Đã nối thật
-- Auth
-- Cart
-- Checkout
-- Payment
-- Customer orders
-- Admin costume management
-- Staff handover
-- Upload image
-
-### Vẫn còn partial / mock / gap
-- Chat
-- Product reviews
-- Interaction tracking `/api/ai/track`
-- Order timeline `/api/orders/{id}/timeline`
-- Admin overview / support / reports
-- Checkout pricing summary UI
-- Staff upload image role gap với backend upload API
-
-## Ghi chú kỹ thuật
-- Axios client bật `withCredentials: true` để refresh token cookie chạy được.
-- Access token được đọc từ localStorage và gắn vào header `Authorization`.
-- Frontend hiện dùng song song:
-  - `catalogService` cho `/api/public/catalog/*`
-  - `costumeService` cho `/api/costumes*`
-- Register UI hiện tại chỉ hỗ trợ Gmail OTP flow.
-- Auth response body không có `refreshToken`; refresh flow phụ thuộc cookie thật.
+- [Vite React TypeScript Template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts)
+- [`typescript-eslint`](https://typescript-eslint.io)

@@ -14,7 +14,6 @@ import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.PaymentRepository;
 import com.aurafit.repository.RentalOrderRepository;
 import com.aurafit.repository.UserRepository;
-import com.aurafit.service.BehaviorTrackingService;
 import com.aurafit.service.PaymentService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -39,19 +38,16 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final RentalOrderRepository rentalOrderRepository;
     private final UserRepository userRepository;
-    private final BehaviorTrackingService behaviorTrackingService;
 
     @Value("${sepay.webhook-token}")
     private String sepayWebhookToken;
 
     public PaymentServiceImpl(PaymentRepository paymentRepository,
                               RentalOrderRepository rentalOrderRepository,
-                              UserRepository userRepository,
-                              BehaviorTrackingService behaviorTrackingService) {
+                              UserRepository userRepository) {
         this.paymentRepository    = paymentRepository;
         this.rentalOrderRepository = rentalOrderRepository;
         this.userRepository       = userRepository;
-        this.behaviorTrackingService = behaviorTrackingService;
     }
 
     @Override
@@ -154,7 +150,6 @@ public class PaymentServiceImpl implements PaymentService {
         RentalOrder order = payment.getRentalOrder();
         order.setStatus(OrderStatus.CONFIRMED);
         rentalOrderRepository.save(order);
-        behaviorTrackingService.recordCompletedRental(order.getUser(), order);
     }
 
     private String buildVietQrUrl(String paymentContent, BigDecimal amount) {

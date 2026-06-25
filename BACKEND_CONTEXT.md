@@ -1,172 +1,101 @@
-﻿# BACKEND_CONTEXT.md
+# BACKEND_CONTEXT.md
 
 ## Tổng quan backend
-- Root package: `com.aurafit`
-- Stack chính:
-  - Java 17
-  - Spring Boot 3.2.5
-  - Spring Web
-  - Spring Data JPA
-  - Spring Security
-  - Jakarta Validation
-  - Java Mail
-  - spring-dotenv
-  - springdoc-openapi
-  - Cloudinary
+- Ứng dụng Spring Boot có root package là `com.aurafit`.
+- Trọng tâm hiện tại là luồng thương mại cho thuê:
+  - auth
+  - catalog
+  - cart
+  - checkout
+  - payment
 
-## Module backend hiện có
-| Module | Mô tả |
+## Cấu trúc
+| Package | Mục đích |
 | --- | --- |
-| Auth / User | OTP register, hybrid register, login, refresh |
-| Catalog | Public listing, detail, categories, seasonal, recommendations |
-| Cart | Active cart per user, add/remove item |
-| Checkout / Orders | Tạo rental order và lấy lịch sử / chi tiết |
-| Payment | Tạo payment VietQR và xử lý webhook SePay |
-| Upload | Upload ảnh lên Cloudinary và lưu metadata |
-| Admin | List/create/update costume |
-| Staff | List order staff, detail, pickup handover, return handover |
+| `controller` | REST endpoint |
+| `service` | Service và interface nghiệp vụ |
+| `service.impl` | Triển khai cụ thể của nghiệp vụ |
+| `repository` | JPA repository |
+| `entity` | Persistence model |
+| `dto.request` | Request contract có validate |
+| `dto.response` | Response DTO |
+| `security` | JWT filter/token/user details |
+| `config` | Security, OpenAPI, seed data |
+| `exception` | Loại exception + global handler |
 
-## Controllers và endpoint thật
-| Controller | Endpoint chính |
+## Controllers
+| Controller | Endpoint |
 | --- | --- |
-| `AuthController` | `POST /api/auth/register/request-otp`, `POST /api/auth/register/verify-otp` |
-| `UserController` | `POST /api/users/register`, `POST /api/users/login`, `POST /api/users/refresh` |
-| `PublicCatalogController` | `/api/public/catalog/...` |
-| `CatalogController` | `/api/costumes`, `/api/categories`, `/api/costumes/seasonal`, `/api/costumes/recommendations` |
-| `CartController` | `GET /api/cart`, `POST /api/cart/add`, `DELETE /api/cart/remove/{cartItemId}` |
-| `CheckoutController` | `POST /api/orders/checkout`, `GET /api/orders`, `GET /api/orders/{orderId}` |
-| `PaymentController` | `POST /api/payment/create` |
-| `SePayWebhookController` | `POST /api/public/payment/sepay-webhook` |
-| `UploadController` | `POST /api/uploads/images` |
-| `AdminController` | `GET/POST/PUT /api/admin/costumes...` |
-| `StaffController` | `GET /api/orders/staff`, `GET /api/orders/staff/{orderId}`, handover pickup/return |
+| `AuthController` | request OTP / verify register |
+| `UserController` | register, login, refresh |
+| `PublicCatalogController` | categories, costumes list, costume detail |
+| `CartController` | lấy giỏ hàng, thêm item, xóa item |
+| `CheckoutController` | checkout, danh sách đơn, chi tiết đơn |
+| `PaymentController` | khởi tạo thanh toán |
+| `SePayWebhookController` | webhook thanh toán |
+| `UploadController` | upload ảnh lên Cloudinary và lưu metadata |
 
-## Security
-- `SecurityConfig` permit public cho:
-  - `/api/auth/**`
-  - `/api/users/register`, `/api/users/login`, `/api/users/refresh`
-  - `/api/public/**`
-  - `GET /api/costumes/**`
-  - `GET /api/categories/**`
-  - Swagger docs
-- Còn lại yêu cầu JWT.
-- Method security được bật qua `@EnableMethodSecurity`.
-- Role guard hiện được đặt trên:
-  - `AdminController`: `hasRole('ADMIN')`
-  - `StaffController`: `hasAnyRole('STAFF', 'ADMIN')`
-  - `UploadController`: `hasAnyRole('ADMIN', 'CUSTOMER')`
-
-## Services và business logic
+## Service chính
 | Service | Trách nhiệm |
 | --- | --- |
-| `AuthService` | Request OTP, verify OTP, tạo auth response |
-| `UserServiceImpl` | Hybrid register, login, refresh |
-| `CostumeServiceImpl` | Catalog public, seasonal, recommendations |
-| `CartServiceImpl` | Active cart, validate ngày thuê, pricing cart |
-| `CheckoutServiceImpl` | Tạo `RentalOrder`, khóa inventory, xóa cart item đã order |
-| `PaymentServiceImpl` | Init/reuse `Payment`, sinh VietQR, xử lý webhook |
-| `UploadServiceImpl` | Validate file, upload Cloudinary, rollback remote nếu DB fail |
-| `AdminServiceImpl` | List/create/update costume |
-| `StaffServiceImpl` | Staff order detail, pickup handover, return handover |
+| `AuthService` | Luồng đăng ký Gmail OTP và tạo auth response |
+| `UserServiceImpl` | Đăng ký trực tiếp, đăng nhập, refresh |
+| `CartServiceImpl` | Vòng đời giỏ hàng active và tính giá cart item |
+| `CheckoutServiceImpl` | Tạo đơn hàng có transaction và khóa tồn kho |
+| `PaymentServiceImpl` | Khởi tạo VietQR và đối soát webhook SePay |
+| `OtpService` | Lưu trữ và validate OTP in-memory |
+| `EmailService` | Gửi email OTP HTML |
+| `CostumeServiceImpl` | Endpoint đọc catalog |
+| `UploadServiceImpl` | Validate ảnh, upload Cloudinary, rollback remote khi lưu metadata DB fail |
 
-## Hành vi nghiệp vụ đã xác nhận trong code
-- Đăng ký Gmail:
-  - frontend hiện dùng `POST /api/auth/register/request-otp` + `POST /api/auth/register/verify-otp`
-  - `POST /api/users/register` cũng có thể nhận Gmail và delegate sang OTP flow
-- Đăng ký non-Gmail:
-  - được support qua `POST /api/users/register`
-  - user được tạo trực tiếp
-  - `emailVerified` không được set `true` trong flow này
-- Auth response:
-  - body JSON chỉ có `accessToken` và `user`
-  - `refreshToken` được tạo nhưng bị `@JsonIgnore`
-  - refresh token đi qua HttpOnly cookie do controller set
-- Cart:
-  - chỉ chấp nhận `CostumeItem` đang `AVAILABLE`
-  - cấm thêm trùng cùng một `CostumeItem` vào cùng cart
-  - tính `subtotal` theo `rentalPrice * rentalDays`
-- Checkout:
-  - nhận danh sách SKU vật lý
-  - set `CostumeItem.status = RENTED` ngay trong transaction
-  - tạo `RentalOrder.status = PENDING`
-  - xóa khỏi cart các SKU vừa đặt
-  - có field `quantity`, nhưng service chỉ lock 1 `CostumeItem` và chỉ tạo 1 `RentalOrderDetail` cho mỗi SKU
-- Payment:
-  - chỉ cho order của user hiện tại
-  - chỉ init payment khi order `PENDING`
-  - amount = rental + deposit - discount
-  - webhook thành công sẽ set:
-    - `Payment.status = PAID`
-    - `RentalOrder.status = CONFIRMED`
-- Staff handover:
-  - pickup tạo `HandoverRecord`
-  - return cập nhật `RentalOrderDetail.returnStatus`
-  - nếu `returnStatus = RETURNED` thì set `CostumeItem.status = AVAILABLE`
-  - service hiện không đổi `RentalOrder.status`
+## Security / Guard / Middleware
+- `SecurityConfig`
+  - `/api/auth/**`, `/api/users/register|login|refresh`, `/api/public/**`, Swagger là public
+  - tất cả endpoint còn lại yêu cầu JWT
+- `JwtAuthenticationFilter`
+  - đọc `Authorization: Bearer <token>`
+  - load user details và set Spring Security context
+- `JwtTokenProvider`
+  - sinh access và refresh JWT
+  - lưu claim `userId`, `role`, `tokenType`
+- Không tìm thấy custom authorization guard theo role trên endpoint.
 
-## Các điểm cần lưu ý khi đọc code backend
-- `AuthController` vẫn có comment cũ mô tả OTP là in-memory cache, nhưng implementation thật đang lưu DB.
-- `UserController.register` là hybrid endpoint, không chỉ là direct register non-Gmail.
-- `OrderResponse.finalAmount` không cộng `totalDeposit`.
-- `RentalOrder.totalPrice` hiện được set bằng `totalRentalPrice` khi checkout.
-- `CartServiceImpl` vẫn ném `IllegalArgumentException` / `IllegalStateException`.
-- `PaymentServiceImpl` đang hard-code thông tin tài khoản VietQR.
-- `UploadController` không cấp quyền cho `STAFF`, trong khi frontend staff form vẫn có image uploader.
+## Ghi chú về validation / DTO
+- Request DTO dùng `jakarta.validation`.
+- Kiểu response đang bị trộn:
+  - endpoint auth/user bọc trong `ApiResponse`
+  - catalog/cart/order/payment chủ yếu trả DTO trực tiếp
+- DTO quan trọng:
+  - `VerifyOtpRequestDTO`
+  - `AddToCartRequestDTO`
+  - `CheckoutRequest`
+  - `PaymentCreateRequest`
+  - `OrderResponse`
+  - `CartDTO`
 
-## Phần đã có nhưng chưa đầy đủ
-- Admin costume:
-  - có list/create/update
-  - chưa có delete
-- Staff workflow:
-  - có handover record
-  - chưa thấy order-state machine đầy đủ
-- Recommendations:
-  - endpoint có tồn tại
-  - implementation hiện tại là shuffle random, không phải AI
+## Background / scheduled work
+- Không tìm thấy cron hay scheduled job.
+- `DataInitializer` chạy khi app startup dưới `dev` profile.
+- OTP cache là in-memory, không phải background worker.
 
-## Chưa có trong backend
-| Khu vực | Trạng thái |
+## Quy tắc nghiệp vụ quan trọng tìm thấy trong code
+- Ownership của người dùng đã xác thực được suy ra từ JWT email, không lấy từ request body.
+- Gmail OTP flow được enforce trong `AuthService.requestOtp`.
+- Đăng ký trực tiếp không phải Gmail vẫn được cho phép qua `UserController.register`.
+- Cart chỉ chấp nhận `CostumeItem` đang ở trạng thái `AVAILABLE`.
+- Không thể thêm cùng một món đồ vật lý hai lần vào cùng một giỏ hàng.
+- Checkout khóa từng `CostumeItem` đã đặt bằng cách set status thành `RENTED`.
+- Chỉ có thể khởi tạo thanh toán cho đơn hàng đang `PENDING`.
+- SePay webhook sẽ set:
+  - `Payment.status = PAID`
+  - `RentalOrder.status = CONFIRMED`
+
+## Cần xác minh / phần chưa có trong code
+| Chủ đề | Trạng thái |
 | --- | --- |
-| Review / rating | Chưa có |
-| Chat assistant | Chưa có |
-| User profile update / change password | Chưa có |
-| Order timeline endpoint | Chưa có |
-| Admin delete costume | Chưa có |
-
-## AI Recommendation MVP da co trong backend
-
-### Controller moi
-- `AdminAiController`
-  - `GET /api/admin/costumes/{costumeId}/ai-metadata`
-  - `PUT /api/admin/costumes/{costumeId}/ai-metadata`
-  - `GET /api/admin/fashion-trends`
-  - `POST /api/admin/fashion-trends`
-  - `PUT /api/admin/fashion-trends/{trendId}`
-- `AiTrackingController`
-  - `POST /api/ai/track`
-- `AiRecommendationController`
-  - `POST /api/ai/recommendations/query`
-  - `GET /api/ai/recommendations/me`
-  - `GET /api/ai/recommendations/users/{userId}`
-  - `POST /api/ai/recommendations/outfit-combos`
-
-### Service moi
-- `AiAdminServiceImpl`
-  - luu AI metadata
-  - build searchable text
-  - tao/upsert embedding
-- `BehaviorTrackingServiceImpl`
-  - nhan event tu frontend
-  - ghi them event server-side khi add-to-cart va payment confirmed
-- `UserPreferenceProfileServiceImpl`
-  - tong hop profile so thich tu behavior + order history
-- `AiRecommendationServiceImpl`
-  - semantic retrieve
-  - rule filter
-  - optional LLM explanation
-  - fallback deterministic reason
-
-### Hanh vi da thay doi
-- `GET /api/costumes/recommendations` khong con shuffle random; da bridge sang AI recommendation layer.
-- `CartServiceImpl` da doi cart validation conflict sang exception huong API (`BadRequestException` / `ConflictException`).
-- Payment webhook thanh cong se ghi them `COMPLETE_RENTAL` events cho AI profile.
+| API pickup/return cho staff | Chưa có |
+| API quản lý sản phẩm cho admin | Chưa có |
+| Cập nhật profile / đổi mật khẩu | Chưa có |
+| Lưu trữ rating/review | Chưa có |
+| Upload/media storage | Đã có module upload ảnh Cloudinary + metadata DB; chưa nối review/rating |
+| Engine AI recommendation/chat | Chưa có ở backend |

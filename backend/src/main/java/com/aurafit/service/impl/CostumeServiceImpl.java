@@ -3,13 +3,11 @@ package com.aurafit.service.impl;
 import com.aurafit.dto.response.CategoryDTO;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.PaginatedResponse;
-import com.aurafit.dto.response.RecommendationItemResponse;
 import com.aurafit.entity.Costume;
 import com.aurafit.enums.CostumeStatus;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CategoryRepository;
 import com.aurafit.repository.CostumeRepository;
-import com.aurafit.service.AiRecommendationService;
 import com.aurafit.service.CostumeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,14 +25,11 @@ public class CostumeServiceImpl implements CostumeService {
 
     private final CostumeRepository costumeRepository;
     private final CategoryRepository categoryRepository;
-    private final AiRecommendationService aiRecommendationService;
 
     public CostumeServiceImpl(CostumeRepository costumeRepository,
-                              CategoryRepository categoryRepository,
-                              AiRecommendationService aiRecommendationService) {
+                              CategoryRepository categoryRepository) {
         this.costumeRepository = costumeRepository;
         this.categoryRepository = categoryRepository;
-        this.aiRecommendationService = aiRecommendationService;
     }
 
     @Override
@@ -88,10 +83,12 @@ public class CostumeServiceImpl implements CostumeService {
 
     @Override
     public List<CostumeDTO> getRecommendedCostumes(Long userId, int limit) {
-        return aiRecommendationService.getRecommendationPreview(userId, limit)
-                .items()
-                .stream()
-                .map(RecommendationItemResponse::costume)
+        List<Costume> costumes = costumeRepository
+                .findActiveCostumesForRecommendations(CostumeStatus.ACTIVE);
+        Collections.shuffle(costumes);
+        return costumes.stream()
+                .limit(limit)
+                .map(CostumeDTO::fromEntity)
                 .toList();
     }
 }
