@@ -10,7 +10,7 @@ export default function ShopPagination({ currentPage, totalPages, onPageChange }
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className="flex h-10 w-10 items-center justify-center border border-[#cfc4c5] bg-white disabled:cursor-not-allowed disabled:text-[#cfc4c5]"
-        aria-label="Previous page"
+        aria-label="Trang trước"
       >
         <span className="material-symbols-outlined text-[18px]">west</span>
       </button>
@@ -31,7 +31,7 @@ export default function ShopPagination({ currentPage, totalPages, onPageChange }
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className="flex h-10 w-10 items-center justify-center border border-[#cfc4c5] bg-white disabled:cursor-not-allowed disabled:text-[#cfc4c5]"
-        aria-label="Next page"
+        aria-label="Trang sau"
       >
         <span className="material-symbols-outlined text-[18px]">east</span>
       </button>

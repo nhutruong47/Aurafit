@@ -49,7 +49,7 @@ export default function HomeFeaturedSection({
       <div className="mx-auto max-w-[1440px] px-5 md:px-20">
         <div className="mb-16 flex flex-col items-baseline justify-between gap-10 md:flex-row">
           <div>
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">The Collection</p>
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
             <h2 className="font-serif text-4xl font-normal md:text-5xl">Sản phẩm nổi bật</h2>
           </div>
           <div className="flex flex-wrap gap-6 md:gap-8">
@@ -70,11 +70,16 @@ export default function HomeFeaturedSection({
         </div>
 
         {isLoading ? (
-          <p className="text-sm italic text-[#5f5e5e]">Đang tải sản phẩm từ database...</p>
+          <p className="text-sm italic text-[#5f5e5e]">Đang tải sản phẩm...</p>
         ) : (
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
             {products[activeTab].map((product) => (
-              <ProductCard key={product.id || product.name} product={product} onAddToCart={onAddToCart} onNavigate={onNavigate} />
+              <ProductCard
+                key={product.id || product.name}
+                product={product}
+                onAddToCart={onAddToCart}
+                onNavigate={onNavigate}
+              />
             ))}
           </div>
         )}
@@ -84,7 +89,7 @@ export default function HomeFeaturedSection({
             onClick={() => onNavigate?.('catalog')}
             className="group flex items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:text-[#99854e]"
           >
-            <span>Khám phá toàn bộ sưu tập</span>
+            <span>Khám phá toàn bộ bộ sưu tập</span>
             <span className="material-symbols-outlined text-[16px]">east</span>
           </button>
         </div>

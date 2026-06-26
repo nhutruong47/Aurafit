@@ -9,14 +9,14 @@ import { useAdminCostumes } from '../hooks/useAdminCostumes';
 const supportTickets = [
   { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chưa nhận hoàn cọc', channel: 'Chat', status: 'Đang xử lý', owner: 'Admin' },
   { id: 'SP-2187', customer: 'Quốc Huy', subject: 'Muốn đổi lịch nhận đồ', channel: 'Hotline', status: 'Mới', owner: 'Admin' },
-  { id: 'SP-2172', customer: 'Bảo Trân', subject: 'Lỗi thanh toán banking', channel: 'Email', status: 'Đã phản hồi', owner: 'Admin' },
+  { id: 'SP-2172', customer: 'Bảo Trân', subject: 'Lỗi thanh toán chuyển khoản', channel: 'Email', status: 'Đã phản hồi', owner: 'Admin' },
 ];
 
 const metricCards = [
   { label: 'Đơn đang xử lý', value: '47', delta: '+8 hôm nay' },
   { label: 'Doanh thu hôm nay', value: '18.6M', delta: '+12.4%' },
-  { label: 'Ticket mở', value: '11', delta: '3 ưu tiên cao' },
-  { label: 'Sản phẩm active', value: '180', delta: 'admin quản lý' },
+  { label: 'Yêu cầu mở', value: '11', delta: '3 ưu tiên cao' },
+  { label: 'Sản phẩm đang hiển thị', value: '180', delta: 'Admin quản lý' },
 ];
 
 export default function AdminDashboardPage({ currentUser, onNavigate }) {
@@ -57,16 +57,16 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
         <section className="mx-auto min-h-[calc(100dvh-80px)] max-w-[900px] px-5 py-20 md:px-20">
           <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#7f7041]">Admin</p>
           <h1 className="font-serif text-[46px] font-normal italic leading-tight md:text-[70px]">
-            Cần tài khoản ADMIN để truy cập.
+            Cần tài khoản Admin để truy cập.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-[#5f5e5e]">
-            Chỉ admin mới có quyền đăng tải và quản lý sản phẩm trên AuraFit.
+            Chỉ Admin mới có quyền đăng tải và quản lý sản phẩm trên AuraFit.
           </p>
           <button
             onClick={() => onNavigate?.('account')}
             className="mt-9 bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
           >
-            Đăng nhập admin
+            Đăng nhập Admin
           </button>
         </section>
       </div>
@@ -84,9 +84,9 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
             </h1>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm md:flex md:items-center">
-            <StatusBadge label={`${ticketCount} ticket`} tone="warning" />
+            <StatusBadge label={`${ticketCount} yêu cầu`} tone="warning" />
             <StatusBadge label={`${products.length} sản phẩm`} tone="good" />
-            <StatusBadge label="Admin only publish" tone="default" />
+            <StatusBadge label="Chỉ Admin đăng tải" tone="default" />
           </div>
         </div>
       </div>

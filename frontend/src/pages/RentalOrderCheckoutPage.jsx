@@ -36,7 +36,7 @@ export default function RentalOrderCheckoutPage({
   const rentalItems = cartItems.map(toRentalItem);
   const hasCartItems = rentalItems.length > 0;
   const isSingleRentalItem = rentalItems.length === 1;
-  const selectedItemName = rentalItems[0]?.name || 'your selected piece';
+  const selectedItemName = rentalItems[0]?.name || 'sản phẩm đã chọn';
   const selectedCategory = cartItems[0]?.rawCategory || cartItems[0]?.category || cartItems[0]?.meta;
 
   const handleApplyVoucher = () => {
@@ -78,7 +78,7 @@ export default function RentalOrderCheckoutPage({
     }
 
     return filtered.slice(0, 4).map((item) => ({
-      category: item.rawCategory || 'Costume',
+      category: item.rawCategory || 'Trang phục',
       name: item.name,
       price: item.price,
       badge: '-10%',
@@ -170,10 +170,10 @@ export default function RentalOrderCheckoutPage({
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#99854e]">
-                Your Selection
+                Sản phẩm đã chọn
               </p>
               <h1 className="mb-2 font-serif text-[40px] font-normal italic leading-tight md:text-[64px]">
-                The Rental Edit
+                Tóm tắt đơn thuê
               </h1>
               <button
                 onClick={() => onNavigate?.('orders')}
@@ -184,10 +184,10 @@ export default function RentalOrderCheckoutPage({
               </button>
             </div>
             <div className="flex items-center gap-4 text-[#5f5e5e]">
-              <span className="text-[12px] font-semibold uppercase tracking-[0.15em]">Step 01 / Bag</span>
+              <span className="text-[12px] font-semibold uppercase tracking-[0.15em]">Bước 01 / Giỏ hàng</span>
               <span className="h-px w-12 bg-[#cfc4c5]" />
               <span className="text-[12px] font-semibold uppercase tracking-[0.15em] opacity-40">
-                Step 02 / Delivery
+                Bước 02 / Giao hàng
               </span>
             </div>
           </div>
@@ -335,7 +335,7 @@ export default function RentalOrderCheckoutPage({
               </a>
             </div>
             <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
-              {relatedItems.map((item) => (
+              {relatedItems.slice(0, PAGE_SIZE).map((item) => (
                 <CheckoutSuggestionCard key={item.name} item={item} onAddToCart={onAddToCart} />
               ))}
             </div>

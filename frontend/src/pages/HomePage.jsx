@@ -47,7 +47,7 @@ export default function HomePage({ onNavigate, onAddToCart }) {
     navigator.clipboard.writeText('AURA20WELCOME');
     const button = event.currentTarget;
     const originalText = button.innerHTML;
-    button.innerHTML = '<span class="material-symbols-outlined text-[14px]">check</span>Đã copy';
+    button.innerHTML = '<span class="material-symbols-outlined text-[14px]">check</span>Đã sao chép';
     window.setTimeout(() => {
       button.innerHTML = originalText;
     }, 2000);

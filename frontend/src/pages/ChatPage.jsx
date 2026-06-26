@@ -46,13 +46,13 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
     if (!text) return;
 
     setMessages((currentMessages) => [
-        ...currentMessages,
-        {
-          id: Date.now(),
-          author: 'user',
-          time: 'Bây giờ',
-          text,
-        },
+      ...currentMessages,
+      {
+        id: Date.now(),
+        author: 'user',
+        time: 'Bây giờ',
+        text,
+      },
     ]);
     setDraft('');
 
@@ -73,7 +73,7 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
 
   const sendPriceRequest = () => {
     if (!activeProduct) return;
-    sendMessage(`Mình muốn được admin tư vấn giá và lịch thuê cho "${activeProduct.name}" (${activeProduct.price}).`);
+    sendMessage(`Mình muốn được Admin tư vấn giá và lịch thuê cho "${activeProduct.name}" (${activeProduct.price}).`);
   };
 
   const handleCloseSession = () => {
@@ -96,7 +96,7 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
                 </span>
               </div>
               <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
-                Sản phẩm chỉ do ADMIN đăng tải và quản lý
+                Sản phẩm chỉ do Admin đăng tải và quản lý
               </p>
             </div>
             <div className="flex gap-2">

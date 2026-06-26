@@ -19,7 +19,7 @@ const formatDateRange = (start, end) => {
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleDateString('vi-VN');
   };
-  return `${formatDate(start)} -> ${formatDate(end)}`;
+  return `${formatDate(start)} → ${formatDate(end)}`;
 };
 
 export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {

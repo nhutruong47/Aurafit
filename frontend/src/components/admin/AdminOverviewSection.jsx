@@ -13,7 +13,7 @@ export default function AdminOverviewSection({ metricCards }) {
         <div className="grid gap-4 md:grid-cols-3">
           <RuleCard icon="admin_panel_settings" title="Admin" text="Đăng tải, chỉnh sửa và quản lý sản phẩm." />
           <RuleCard icon="support_agent" title="Liên hệ" text="Khách hàng chỉ liên hệ AuraFit Admin." />
-          <RuleCard icon="block" title="Chủ xưởng" text="Luồng lessor/seller/shop-owner đã bị tắt." />
+          <RuleCard icon="block" title="Chủ xưởng" text="Luồng chủ cho thuê riêng đã được tắt." />
         </div>
       </Panel>
     </section>

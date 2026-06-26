@@ -33,14 +33,14 @@ export default function ShopPage({ currentUser, onNavigate, onAddToCart }) {
                 Shop chung cho tất cả trang phục
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-7 text-[#5f5e5e]">
-                Tất cả sản phẩm đều do AuraFit Admin quản lý. Xem nhanh theo đề xuất cá nhân,
-                xu hướng theo mùa, hoặc toàn bộ kho trang phục.
+                Tất cả sản phẩm đều do AuraFit Admin quản lý. Xem nhanh theo đề xuất cá nhân, xu hướng theo mùa
+                hoặc toàn bộ kho trang phục.
               </p>
             </div>
             <div className="border border-[#cfc4c5] bg-[#f9f9f9] p-5">
               <div className="mb-4 flex items-center justify-between gap-4">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#5f5e5e]">
-                  Pagination
+                  Phân trang
                 </span>
                 <span className="material-symbols-outlined text-[#99854e]">view_module</span>
               </div>

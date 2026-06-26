@@ -1,8 +1,8 @@
 export const fallbackItems = [
   {
-    name: 'Couture Gala Gown',
-    meta: 'Event Rental | 4 Days',
-    price: '10,000,000₫',
+    name: 'Đầm dạ hội cao cấp',
+    meta: 'Thuê sự kiện | 4 ngày',
+    price: '10,000,000đ',
     image:
       'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=500&q=85',
   },
@@ -11,20 +11,20 @@ export const fallbackItems = [
 export const deliveryOptions = [
   {
     id: 'standard',
-    title: 'Standard Premiere (Free)',
-    price: '0₫',
-    copy: '3-5 business days. Sustainable archival packaging included. Free for orders over 1,000,000₫.',
+    title: 'Giao tiêu chuẩn (Miễn phí)',
+    price: '0đ',
+    copy: '3-5 ngày làm việc. Bao gồm đóng gói bảo quản bền vững. Miễn phí cho đơn hàng trên 1.000.000đ.',
   },
   {
     id: 'express',
-    title: 'Express Elite',
-    price: '250,000₫',
-    copy: 'Delivery within 2 hours. Priority handling and premium packaging.',
+    title: 'Giao nhanh ưu tiên',
+    price: '250,000đ',
+    copy: 'Giao trong 2 giờ. Ưu tiên xử lý và đóng gói cao cấp.',
   },
   {
     id: 'concierge',
-    title: 'White-Glove Concierge',
-    price: '3,000,000₫',
-    copy: 'Next-day arrival. On-site fitting and immediate alterations if required. Professional steaming and setup.',
+    title: 'Giao nhận tận nơi cao cấp',
+    price: '3,000,000đ',
+    copy: 'Nhận hàng vào ngày hôm sau. Hỗ trợ thử đồ tại chỗ và chỉnh sửa nhanh nếu cần. Hấp là và chuẩn bị chuyên nghiệp.',
   },
 ];

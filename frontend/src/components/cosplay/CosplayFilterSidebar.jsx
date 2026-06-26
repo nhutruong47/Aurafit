@@ -18,7 +18,7 @@ export default function CosplayFilterSidebar({
             onClick={onClearFilters}
             className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#99854e] hover:text-black"
           >
-            Xóa lọc
+            Xóa bộ lọc
           </button>
         )}
       </div>

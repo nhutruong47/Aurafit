@@ -8,7 +8,7 @@ export default function OrderSuccessHero({ orderId, status, totalLabel, onContin
         <img
           className="h-full w-full animate-[subtleZoom_20s_linear_infinite_alternate] object-cover opacity-20 grayscale"
           src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=85"
-          alt="Minimalist fashion atelier"
+          alt="Xưởng thời trang tối giản"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#f9f9f9]/0 to-[#f9f9f9]" />
       </div>
@@ -22,7 +22,7 @@ export default function OrderSuccessHero({ orderId, status, totalLabel, onContin
         </div>
         <h1 className="mb-4 font-serif text-[64px] font-normal leading-tight">Đặt hàng thành công</h1>
         <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
-          {orderId ? `Đơn hàng #ARF${String(orderId).padStart(4, '0')}` : 'AuraFit Order'}
+          {orderId ? `Đơn hàng #ARF${String(orderId).padStart(4, '0')}` : 'Đơn hàng AuraFit'}
         </p>
         {status && (
           <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5f5e5e]">
@@ -35,7 +35,8 @@ export default function OrderSuccessHero({ orderId, status, totalLabel, onContin
           </p>
         )}
         <p className="mx-auto mt-6 max-w-lg text-lg font-light leading-8 text-[#5f5e5e]">
-          Cảm ơn bạn đã chọn AuraFit. Đội ngũ của chúng tôi sẽ chuẩn bị đơn hàng và sớm liên hệ xác nhận thanh toán.
+          Cảm ơn bạn đã chọn AuraFit. Đội ngũ của chúng tôi sẽ chuẩn bị đơn hàng và sớm liên hệ xác nhận thanh
+          toán.
         </p>
         {onContinue && (
           <button

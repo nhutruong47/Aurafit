@@ -57,7 +57,7 @@ export default function OrderSuccessSidebar({ order }) {
 
         <div className="px-10">
           {subtotal && <SmallSummary label="Tổng tiền thuê" value={formatCurrency(subtotal)} />}
-          {deposit && <SmallSummary label="Tiền cọc (hoàn trả)" value={formatCurrency(deposit)} />}
+          {deposit && <SmallSummary label="Tiền cọc (Hoàn trả)" value={formatCurrency(deposit)} />}
           {discount && Number(discount) > 0 && <SmallSummary label="Giảm giá" value={`-${formatCurrency(discount)}`} />}
           <div className="mt-4 flex items-center justify-between border-t border-[#cfc4c5] pt-4">
             <span className="text-[12px] font-bold uppercase tracking-[0.15em]">Tổng thanh toán</span>

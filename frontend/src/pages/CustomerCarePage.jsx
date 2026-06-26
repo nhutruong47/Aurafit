@@ -5,43 +5,43 @@ const faqSections = [
   {
     id: 'shipping',
     number: '01',
-    title: 'Shipping & Returns',
+    title: 'Giao nhận & hoàn trả',
     questions: [
       {
-        question: 'What is the rental duration?',
+        question: 'Thời gian thuê tiêu chuẩn là bao lâu?',
         answer:
-          'Our standard rental period is 4 days. We also support 8 and 12 day rentals for destination events, long shoots, and multi-day celebrations.',
+          'Thời gian thuê tiêu chuẩn là 4 ngày. AuraFit cũng hỗ trợ gói thuê 8 và 12 ngày cho sự kiện xa, buổi chụp kéo dài hoặc lịch trình nhiều ngày.',
       },
       {
-        question: 'How do I return my item?',
+        question: 'Tôi hoàn trả sản phẩm như thế nào?',
         answer:
-          'Place every piece back into the reusable VIBE garment bag, attach the prepaid return label, then drop it at the assigned carrier before noon on the return date.',
+          'Hãy đặt toàn bộ sản phẩm trở lại túi trang phục tái sử dụng của VIBE, dán nhãn hoàn trả đã thanh toán trước và gửi tại đơn vị vận chuyển được chỉ định trước 12 giờ trưa vào ngày trả.',
       },
     ],
   },
   {
     id: 'damages',
     number: '03',
-    title: 'Damages & Insurance',
+    title: 'Hư hỏng & bảo hiểm',
     questions: [
       {
-        question: 'What does the insurance cover?',
+        question: 'Bảo hiểm bao gồm những gì?',
         answer:
-          'The standard protection fee covers minor spills, small snags, and replaceable trims. Major damage, theft, or missing pieces may require an additional replacement fee.',
+          'Phí bảo vệ tiêu chuẩn bao gồm các vết bẩn nhẹ, vết xước nhỏ và phụ kiện có thể thay thế. Hư hỏng lớn, mất cắp hoặc thất lạc chi tiết có thể phát sinh thêm phí bồi hoàn.',
       },
       {
-        question: 'What if the item arrives with an issue?',
+        question: 'Nếu sản phẩm giao đến gặp vấn đề thì sao?',
         answer:
-          'Message our care team within 2 hours of delivery with photos. We will arrange a replacement, repair support, or a styling alternative depending on your event timing.',
+          'Hãy nhắn cho đội ngũ chăm sóc trong vòng 2 giờ sau khi nhận hàng kèm hình ảnh. Chúng tôi sẽ hỗ trợ đổi sản phẩm, xử lý chỉnh sửa hoặc đề xuất lựa chọn khác tùy thời gian sự kiện của bạn.',
       },
     ],
   },
 ];
 
 const careChannels = [
-  { icon: 'forum', label: 'Live chat', copy: 'Fast styling and order help during rental hours.' },
-  { icon: 'local_shipping', label: 'Delivery support', copy: 'Track arrivals, pickups, returns, and date changes.' },
-  { icon: 'straighten', label: 'Fit advice', copy: 'Measurement checks before you lock the final size.' },
+  { icon: 'forum', label: 'Chat trực tiếp', copy: 'Hỗ trợ tư vấn phong cách và đơn thuê nhanh chóng trong giờ làm việc.' },
+  { icon: 'local_shipping', label: 'Hỗ trợ giao nhận', copy: 'Theo dõi giao hàng, nhận hàng, hoàn trả và thay đổi lịch thuê.' },
+  { icon: 'straighten', label: 'Tư vấn form dáng', copy: 'Kiểm tra số đo trước khi bạn chốt size cuối cùng.' },
 ];
 
 export default function CustomerCarePage({ onNavigate }) {
@@ -55,12 +55,13 @@ export default function CustomerCarePage({ onNavigate }) {
   return (
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
       <section className="mx-auto max-w-[1440px] px-5 py-20 text-center md:px-20 md:py-28">
-        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Client Services</p>
+        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Hỗ trợ khách hàng</p>
         <h1 className="font-serif text-[42px] font-normal leading-[1.12] md:text-[72px]">
-          How can we assist you?
+          AuraFit có thể hỗ trợ bạn điều gì?
         </h1>
         <p className="mx-auto mt-7 max-w-2xl text-lg font-light leading-8 text-[#5f5e5e]">
-          Dedicated care for every rental moment, from fit checks and delivery timing to returns after the event.
+          Đồng hành cùng bạn trong mọi giai đoạn thuê đồ, từ kiểm tra form dáng và lịch giao nhận đến hoàn trả
+          sau sự kiện.
         </p>
 
         <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -87,24 +88,24 @@ export default function CustomerCarePage({ onNavigate }) {
         <section id="size-guide" className="scroll-mt-28">
           <div className="mb-8 flex items-center gap-4">
             <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#99854e]">02</span>
-            <h2 className="font-serif text-3xl font-normal md:text-4xl">Size Guide</h2>
+            <h2 className="font-serif text-3xl font-normal md:text-4xl">Bảng size</h2>
           </div>
 
           <div className="border border-[#cfc4c5] bg-[#eeeeee] p-7 md:p-12">
             <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-2">
               <div>
-                <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.18em]">Find your perfect fit</p>
+                <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.18em]">Tìm form dáng phù hợp</p>
                 <p className="mb-8 leading-7 text-[#5f5e5e]">
-                  Designer sizing can shift across brands. Every VIBE listing includes garment measurements, fit notes,
-                  and stylist comments so you can choose with confidence.
+                  Size của từng thương hiệu có thể khác nhau. Mỗi sản phẩm trên AuraFit đều có số đo, ghi chú form
+                  dáng và nhận xét từ stylist để bạn chọn tự tin hơn.
                 </p>
                 <button className="bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#99854e]">
-                  View conversion chart
+                  Xem bảng quy đổi size
                 </button>
               </div>
               <div className="aspect-[4/5] overflow-hidden bg-[#f7f7f7]">
                 <img
-                  alt="Tailor measuring luxury fabric"
+                  alt="Thợ may đang đo vải"
                   className="h-full w-full object-cover grayscale-[0.35] transition duration-700 hover:scale-105 hover:grayscale-0"
                   src="https://images.unsplash.com/photo-1593032465175-481ac7f401a0?auto=format&fit=crop&w=900&q=85"
                 />
@@ -126,28 +127,28 @@ export default function CustomerCarePage({ onNavigate }) {
           <div className="grid grid-cols-1 overflow-hidden bg-black text-white md:grid-cols-2">
             <div className="min-h-[360px] overflow-hidden">
               <img
-                alt="Stylist preparing a luxury rental wardrobe"
+                alt="Stylist đang chuẩn bị tủ đồ thuê cao cấp"
                 className="h-full w-full object-cover opacity-90 transition duration-700 hover:scale-105"
                 src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1000&q=85"
               />
             </div>
             <div className="flex flex-col justify-center p-8 md:p-16">
               <p className="mb-6 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#99854e]">
-                Personal Shopping
+                Tư vấn cá nhân
               </p>
               <h2 className="font-serif text-4xl font-normal leading-tight md:text-5xl">
-                Expert guidance for your next event.
+                Đồng hành cùng bạn cho sự kiện sắp tới.
               </h2>
               <p className="mt-7 text-base font-light leading-8 text-white/75">
-                Our stylists can help you choose the right silhouette, size, accessory set, and delivery timing before
-                you confirm the rental.
+                Stylist của AuraFit có thể hỗ trợ bạn chọn dáng, size, bộ phụ kiện và thời gian giao nhận phù hợp
+                trước khi chốt đơn thuê.
               </p>
               <div className="mt-10">
                 <button
                   onClick={() => onNavigate?.('chat')}
                   className="border border-white px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white hover:text-black"
                 >
-                  Book a styling consultation
+                  Đặt lịch tư vấn phong cách
                 </button>
               </div>
             </div>

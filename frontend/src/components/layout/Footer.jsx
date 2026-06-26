@@ -1,19 +1,19 @@
 // Footer dung chung cua ung dung voi cac lien ket dieu huong.
 const footerColumns = [
   {
-    title: 'Company',
+    title: 'Công ty',
     links: [
-      { label: 'About', page: 'home' },
-      { label: 'Sustainability', page: 'home' },
-      { label: 'Terms', page: 'care' },
+      { label: 'Giới thiệu', page: 'home' },
+      { label: 'Bền vững', page: 'home' },
+      { label: 'Điều khoản', page: 'care' },
     ],
   },
   {
-    title: 'Client Services',
+    title: 'Hỗ trợ khách hàng',
     links: [
-      { label: 'Contact', page: 'care', section: 'stylists' },
+      { label: 'Liên hệ', page: 'care', section: 'stylists' },
       { label: 'FAQ', page: 'care' },
-      { label: 'Shipping', page: 'care', section: 'shipping' },
+      { label: 'Giao nhận', page: 'care', section: 'shipping' },
     ],
   },
 ];
@@ -35,7 +35,8 @@ export default function Footer({ onNavigate }) {
         <div className="max-w-xs">
           <h2 className="mb-8 font-serif text-3xl uppercase tracking-[0.2em] text-black">AuraFit</h2>
           <p className="leading-relaxed text-[#5f5e5e]">
-            Redefining luxury through the lens of curation and circularity. Wear the extraordinary, every day.
+            Tái định nghĩa trải nghiệm thuê đồ cao cấp bằng tuyển chọn tinh tế và vòng đời bền vững. Tỏa sáng
+            trong mọi khoảnh khắc.
           </p>
         </div>
 
@@ -56,7 +57,7 @@ export default function Footer({ onNavigate }) {
           ))}
 
           <div className="col-span-2 flex flex-col gap-4 md:col-span-1">
-            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.15em] text-black">Connect</p>
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.15em] text-black">Kết nối</p>
             <div className="flex gap-4">
               {['share', 'mail'].map((icon) => (
                 <a key={icon} className="cursor-pointer text-[#5f5e5e] transition hover:text-[#99854e]" href="#">
@@ -69,7 +70,7 @@ export default function Footer({ onNavigate }) {
 
         <div className="w-full border-t border-[#cfc4c5] pt-8 md:hidden">
           <p className="text-[10px] uppercase tracking-[0.2em] text-[#999999]">
-            © 2026 AuraFit. Designed for the extraordinary.
+            © 2026 AuraFit. Thiết kế cho những khoảnh khắc khác biệt.
           </p>
         </div>
       </div>

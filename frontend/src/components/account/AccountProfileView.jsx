@@ -17,12 +17,13 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
       <section className="mx-auto grid min-h-[calc(100dvh-80px)] max-w-[1440px] grid-cols-1 gap-12 px-5 py-16 md:grid-cols-12 md:px-20 md:py-24">
         <div className="flex flex-col justify-center md:col-span-5">
-          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">AuraFit Profile</p>
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Hồ sơ AuraFit</p>
           <h1 className="font-serif text-[44px] font-normal italic leading-[1.12] md:text-[68px]">
             Hồ sơ tài khoản
           </h1>
           <p className="mt-7 max-w-lg text-base leading-8 text-[#5f5e5e]">
-            Đây là thông tin tài khoản đang đăng nhập. Khi chưa có tài khoản, màn hình này sẽ hiện form đăng nhập/đăng ký.
+            Đây là thông tin tài khoản đang đăng nhập. Khi chưa có tài khoản, màn hình này sẽ hiển thị form đăng
+            nhập/đăng ký.
           </p>
         </div>
 
@@ -35,7 +36,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                 </div>
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">Đang đăng nhập</p>
-                  <h2 className="mt-2 font-serif text-3xl italic">{currentUser.fullName || 'AuraFit User'}</h2>
+                  <h2 className="mt-2 font-serif text-3xl italic">{currentUser.fullName || 'Người dùng AuraFit'}</h2>
                   <p className="mt-1 text-sm text-[#5f5e5e]">{currentUser.email}</p>
                 </div>
               </div>
@@ -58,7 +59,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                   onClick={() => onNavigate?.('adminDashboard')}
                   className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
                 >
-                  Vào admin dashboard
+                  Vào dashboard Admin
                 </button>
               )}
               {roles.includes('STAFF') && (
@@ -67,7 +68,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                   onClick={() => onNavigate?.('staffDashboard')}
                   className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
                 >
-                  Vào staff dashboard
+                  Vào dashboard nhân viên
                 </button>
               )}
               {!roles.includes('ADMIN') && !roles.includes('STAFF') && (
@@ -92,7 +93,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                   onAuthChange?.(null);
                   onNavigate?.('account');
                 }}
-                className="md:col-span-2 border border-[#ba1a1a]/40 px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#93000a] transition hover:bg-[#ffdad6]"
+                className="border border-[#ba1a1a]/40 px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#93000a] transition hover:bg-[#ffdad6] md:col-span-2"
               >
                 Đăng xuất
               </button>

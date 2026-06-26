@@ -19,7 +19,7 @@ export default function CosplayProductCard({ product, index, onAddToCart }) {
       </div>
       <div className="flex flex-col justify-between p-7">
         <div>
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">Rental Set</p>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">Set thuê</p>
           <h3 className="font-serif text-3xl font-normal italic leading-tight">{product.name}</h3>
           <p className="mt-4 text-sm leading-6 text-[#5f5e5e]">{product.meta}</p>
           <div className="mt-5 flex flex-wrap gap-2">

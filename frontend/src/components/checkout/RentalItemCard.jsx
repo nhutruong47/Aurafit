@@ -2,11 +2,11 @@
 function QuantityControl({ quantity, onDecrease, onIncrease }) {
   return (
     <div className="flex items-center gap-4 border border-[#cfc4c5] bg-[#f3f3f4] px-3 py-1">
-      <button onClick={onDecrease} className="text-black transition hover:text-[#99854e]" aria-label="Decrease quantity">
+      <button onClick={onDecrease} className="text-black transition hover:text-[#99854e]" aria-label="Giảm số lượng">
         <span className="material-symbols-outlined text-sm">remove</span>
       </button>
       <span className="text-sm">{quantity}</span>
-      <button onClick={onIncrease} className="text-black transition hover:text-[#99854e]" aria-label="Increase quantity">
+      <button onClick={onIncrease} className="text-black transition hover:text-[#99854e]" aria-label="Tăng số lượng">
         <span className="material-symbols-outlined text-sm">add</span>
       </button>
     </div>
@@ -65,7 +65,7 @@ export default function RentalItemCard({ item, delay, onRemoveFromCart, onUpdate
             <button
               onClick={() => onRemoveFromCart?.(item.id)}
               className="text-black transition hover:text-[#ba1a1a]"
-              aria-label="Remove item"
+              aria-label="Xóa sản phẩm"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
@@ -73,7 +73,7 @@ export default function RentalItemCard({ item, delay, onRemoveFromCart, onUpdate
 
           <div className="grid grid-cols-2 gap-4 pt-4">
             <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">Rental Period</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">Thời gian thuê</p>
               <p className="mt-1 italic">{item.period}</p>
             </div>
             <div>
@@ -87,19 +87,19 @@ export default function RentalItemCard({ item, delay, onRemoveFromCart, onUpdate
 
         <div className="mt-8 flex items-end justify-between border-t border-[#cfc4c5] pt-8">
           <div className="space-y-1">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">Item Total</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">Thành tiền</p>
             <p className="font-serif text-3xl">
               <span className="mr-2 text-xl text-[#999999] line-through">{item.original}</span>
               {item.total}
             </p>
             {item.quantity > 1 && (
               <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">
-                Quantity x {item.quantity}
+                Số lượng x {item.quantity}
               </p>
             )}
           </div>
           <button className="border border-black px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition hover:bg-black hover:text-white">
-            Edit Dates
+            Chỉnh sửa thời gian thuê
           </button>
         </div>
       </div>

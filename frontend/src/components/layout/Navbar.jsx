@@ -21,7 +21,7 @@ export default function Navbar({
     : [
         { label: 'Shop', page: 'shop', action: () => goPage('shop') },
         { label: 'Cosplay', page: 'cosplay', action: () => goPage('cosplay') },
-        { label: 'Events', page: 'events', action: () => goPage('events') },
+        { label: 'Sự kiện', page: 'events', action: () => goPage('events') },
         { label: 'Yearbook', page: 'yearbook', action: () => goPage('yearbook') },
       ];
 
@@ -63,14 +63,14 @@ export default function Navbar({
                   setMobileMenuOpen(false);
                 }}
                 className={`${iconButtonClass} ${currentPage === 'catalog' ? 'text-[#99854e]' : ''}`}
-                aria-label="Search"
+                aria-label="Tìm kiếm"
               >
                 <span className="material-symbols-outlined">search</span>
               </button>
               <button
                 onClick={() => goPage('checkout')}
                 className={`${iconButtonClass} group relative ${currentPage === 'checkout' ? 'text-[#99854e]' : ''}`}
-                aria-label="Shopping bag"
+                aria-label="Giỏ hàng"
               >
                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
                   shopping_bag
@@ -84,19 +84,25 @@ export default function Navbar({
               <button
                 onClick={() => goPage('chat')}
                 className={`${iconButtonClass} ${currentPage === 'chat' ? 'text-[#99854e]' : ''}`}
-                aria-label="Contact admin"
-                title="Contact admin"
+                aria-label="Liên hệ Admin"
+                title="Liên hệ Admin"
               >
-                <span className="material-symbols-outlined" style={currentPage === 'chat' ? { fontVariationSettings: "'FILL' 1" } : undefined}>
+                <span
+                  className="material-symbols-outlined"
+                  style={currentPage === 'chat' ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                >
                   support_agent
                 </span>
               </button>
               <button
                 onClick={() => goPage('orders')}
                 className={`${iconButtonClass} ${currentPage === 'orders' ? 'text-[#99854e]' : ''}`}
-                aria-label="Orders"
+                aria-label="Đơn hàng"
               >
-                <span className="material-symbols-outlined" style={currentPage === 'orders' ? { fontVariationSettings: "'FILL' 1" } : undefined}>
+                <span
+                  className="material-symbols-outlined"
+                  style={currentPage === 'orders' ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                >
                   receipt_long
                 </span>
               </button>
@@ -106,8 +112,8 @@ export default function Navbar({
             <button
               onClick={() => goPage('adminDashboard')}
               className={`${iconButtonClass} hidden md:flex ${currentPage === 'adminDashboard' ? 'text-[#99854e]' : ''}`}
-              aria-label="Admin dashboard"
-              title="Admin dashboard"
+              aria-label="Bảng điều khiển Admin"
+              title="Bảng điều khiển Admin"
             >
               <span
                 className="material-symbols-outlined"
@@ -121,8 +127,8 @@ export default function Navbar({
             <button
               onClick={() => goPage('staffDashboard')}
               className={`${iconButtonClass} hidden md:flex ${currentPage === 'staffDashboard' ? 'text-[#99854e]' : ''}`}
-              aria-label="Staff handover"
-              title="Staff handover"
+              aria-label="Bàn giao nhân viên"
+              title="Bàn giao nhân viên"
             >
               <span
                 className="material-symbols-outlined"
@@ -135,7 +141,7 @@ export default function Navbar({
           <button
             onClick={() => goPage('account')}
             className={`${iconButtonClass} hidden md:flex ${currentPage === 'account' ? 'text-[#99854e]' : ''}`}
-            aria-label="Account"
+            aria-label="Tài khoản"
           >
             <span
               className="material-symbols-outlined"
@@ -147,7 +153,7 @@ export default function Navbar({
           <button
             onClick={() => setMobileMenuOpen((open) => !open)}
             className="md:hidden"
-            aria-label="Open mobile menu"
+            aria-label="Mở menu di động"
           >
             <span className="material-symbols-outlined">{mobileMenuOpen ? 'close' : 'menu'}</span>
           </button>
@@ -181,14 +187,14 @@ export default function Navbar({
                 onClick={() => goPage('staffDashboard')}
                 className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e]"
               >
-                Staff
+                Nhân viên
               </button>
             )}
             <button
               onClick={() => goPage('account')}
               className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e]"
             >
-              Account
+              Tài khoản
             </button>
           </div>
         </div>

@@ -13,8 +13,8 @@ export default function ChatComposer({
           className="min-h-[56px] flex-1 resize-none border-none bg-[#f3f3f4] px-5 py-4 outline-none transition placeholder:text-[#999999] focus:border-b-2 focus:border-[#99854e] focus:ring-0"
           placeholder={
             activeProduct
-              ? `Nhan admin ve "${activeProduct.name}"...`
-              : 'Nhap tin nhan cho admin...'
+              ? `Nhắn Admin về "${activeProduct.name}"...`
+              : 'Nhập tin nhắn cho Admin...'
           }
           rows="1"
           value={draft}
@@ -32,13 +32,13 @@ export default function ChatComposer({
               onClick={onSendPriceRequest}
               className="hidden border border-black px-5 py-2 text-[12px] font-semibold uppercase tracking-[0.15em] transition hover:bg-black hover:text-white md:block"
             >
-              Hoi gia
+              Hỏi giá
             </button>
           )}
           <button
             onClick={onSendMessage}
             className="flex h-10 w-10 items-center justify-center bg-black text-white transition hover:bg-[#99854e]"
-            aria-label="Send message"
+            aria-label="Gửi tin nhắn"
           >
             <span className="material-symbols-outlined">send</span>
           </button>

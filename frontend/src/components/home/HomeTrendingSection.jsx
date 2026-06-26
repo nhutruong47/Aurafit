@@ -6,14 +6,21 @@ export default function HomeTrendingSection({ trending, onNavigate }) {
     <section className="bg-[#f7f7f7] py-24 md:py-[120px]">
       <div className="mx-auto max-w-[1440px] px-5 md:px-20">
         <div className="mb-16 flex items-end justify-between gap-8">
-          <h2 className="font-serif text-4xl font-normal md:text-5xl">Trending This Week</h2>
-          <a className="border-b border-[#99854e] pb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]" href="#featured">
-            View All
+          <h2 className="font-serif text-4xl font-normal md:text-5xl">Xu hướng tuần này</h2>
+          <a
+            className="border-b border-[#99854e] pb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]"
+            href="#featured"
+          >
+            Xem tất cả
           </a>
         </div>
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {trending.map((item) => (
-            <article key={item.id || item.name} className="group cursor-pointer" onClick={() => onNavigate?.('productDetail', item)}>
+            <article
+              key={item.id || item.name}
+              className="group cursor-pointer"
+              onClick={() => onNavigate?.('productDetail', item)}
+            >
               <div className="mb-6 aspect-square overflow-hidden border border-[#cfc4c5]/20 bg-white">
                 <img
                   src={item.image}

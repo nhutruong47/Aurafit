@@ -69,7 +69,7 @@ export default function PaymentFormSections({ order, paymentInit }) {
           <DetailRow label="Thời gian thuê" value={formatDateRange(order?.rentalStartDate, order?.rentalEndDate)} />
           <DetailRow
             label="Số sản phẩm"
-            value={order?.details?.length ? `${order.details.length} item` : 'Đang cập nhật'}
+            value={order?.details?.length ? `${order.details.length} sản phẩm` : 'Đang cập nhật'}
           />
         </div>
       </CheckoutSection>
@@ -80,23 +80,23 @@ export default function PaymentFormSections({ order, paymentInit }) {
         <div className="space-y-6">
           <div className="border border-[#cfc4c5] bg-white p-5">
             <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
-              Payment flow
+              Quy trình thanh toán
             </p>
             <p className="font-serif text-3xl italic">RO-{String(displayOrderId).padStart(4, '0')}</p>
             <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
-              Frontend chỉ tạo mã VietQR từ backend. Đơn hàng chỉ chuyển sang CONFIRMED sau khi
-              backend nhận webhook thanh toán thành công.
+              Frontend chỉ tạo mã VietQR từ backend. Đơn hàng chỉ chuyển sang CONFIRMED sau khi backend nhận
+              webhook thanh toán thành công.
             </p>
           </div>
           <div className="border border-[#cfc4c5] bg-[#f7f7f7] p-5 text-sm leading-7">
             <p>
-              <strong>Phương thức:</strong> Banking / VietQR
+              <strong>Phương thức:</strong> Chuyển khoản / VietQR
             </p>
             <p>
-              <strong>Request body:</strong> {'{ orderId }'}
+              <strong>Dữ liệu gửi lên:</strong> {'{ orderId }'}
             </p>
             <p>
-              <strong>Response:</strong> qrImageUrl, paymentContent, amount, orderId
+              <strong>Dữ liệu phản hồi:</strong> qrImageUrl, paymentContent, amount, orderId
             </p>
           </div>
           {paymentInit && (

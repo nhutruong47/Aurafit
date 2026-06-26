@@ -33,7 +33,7 @@ export default function PaymentSummary({
       <aside className="lg:w-96">
         <div className="sticky top-32 border border-[#cfc4c5] bg-white p-8">
           <h3 className="mb-8 border-b border-[#cfc4c5] pb-4 font-serif text-3xl font-normal">
-            Summary
+            Tóm tắt đơn thuê
           </h3>
           <div className="mb-8 space-y-6">
             {isLoading ? (
@@ -50,7 +50,7 @@ export default function PaymentSummary({
                         {item.name}
                       </p>
                       <p className="text-xs uppercase tracking-tight text-[#999999]">
-                        {item.meta || 'Rental item'}
+                        {item.meta || 'Sản phẩm thuê'}
                       </p>
                     </div>
                     <p>{item.price || formatCurrency(0)}</p>
@@ -61,16 +61,16 @@ export default function PaymentSummary({
           </div>
           <hr className="mb-8 border-[#cfc4c5]" />
           <div className="space-y-4 text-sm">
-            <SummaryRow label="Rental Subtotal" value={formatCurrency(summary?.rentalSubtotal || 0)} />
-            <SummaryRow label="Delivery" value={formatCurrency(summary?.deliveryFee || 0)} />
+            <SummaryRow label="Tiền thuê" value={formatCurrency(summary?.rentalSubtotal || 0)} />
+            <SummaryRow label="Phí giao hàng" value={formatCurrency(summary?.deliveryFee || 0)} />
             <SummaryRow
-              label="Refundable Deposit"
+              label="Tiền đặt cọc (Hoàn trả)"
               value={formatCurrency(summary?.refundableDeposit || 0)}
               accent
             />
             <div className="flex justify-between border-t border-[#cfc4c5] pt-4 text-lg">
               <span className="self-center text-[12px] font-semibold uppercase tracking-[0.15em]">
-                Order Total
+                Tổng thanh toán
               </span>
               <span className="font-serif text-3xl">{formatCurrency(summary?.orderTotal || 0)}</span>
             </div>
@@ -88,7 +88,7 @@ export default function PaymentSummary({
               {paymentInit.qrImageUrl ? (
                 <img
                   src={paymentInit.qrImageUrl}
-                  alt="VietQR payment"
+                  alt="Mã VietQR thanh toán"
                   className="mx-auto mb-4 h-56 w-56 border border-[#cfc4c5] bg-white object-contain p-2"
                 />
               ) : null}
@@ -99,8 +99,7 @@ export default function PaymentSummary({
                 <strong>Số tiền:</strong> {formatCurrency(paymentInit.amount || 0)}
               </p>
               <p className="mt-3 text-xs leading-6">
-                Sau khi chuyển khoản thành công, backend sẽ đối soát webhook và cập nhật trạng thái
-                đơn hàng.
+                Sau khi chuyển khoản thành công, backend sẽ đối soát webhook và cập nhật trạng thái đơn hàng.
               </p>
             </div>
           )}
@@ -120,16 +119,16 @@ export default function PaymentSummary({
             </button>
           )}
           <p className="mt-6 text-center text-[10px] font-semibold uppercase leading-relaxed tracking-[0.12em] text-[#999999]">
-            Tạo QR không đồng nghĩa đơn đã thanh toán. Trạng thái đơn sẽ được cập nhật bởi backend
-            sau khi đối soát giao dịch.
+            Tạo QR không đồng nghĩa đơn đã thanh toán. Trạng thái đơn sẽ được cập nhật bởi backend sau khi đối
+            soát giao dịch.
           </p>
         </div>
       </aside>
 
       <div className="mt-12 flex w-full flex-col items-center justify-center gap-4 border-t border-[#cfc4c5] py-10 opacity-60 md:flex-row md:gap-12">
-        <TrustItem icon="verified" label="Encrypted Payment" />
-        <TrustItem icon="local_shipping" label="Global Concierge" />
-        <TrustItem icon="history" label="Sustainable Heritage" />
+        <TrustItem icon="verified" label="Thanh toán mã hóa" />
+        <TrustItem icon="local_shipping" label="Hỗ trợ giao nhận" />
+        <TrustItem icon="history" label="Trải nghiệm bền vững" />
       </div>
     </>
   );

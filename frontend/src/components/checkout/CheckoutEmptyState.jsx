@@ -5,9 +5,9 @@ export default function CheckoutEmptyState({ onNavigate }) {
   return (
     <EmptyState
       icon="shopping_bag"
-      title="Your bag is empty"
-      message="Add a statement rental piece first, then we will suggest matching accessories to complete the look."
-      actionLabel="Browse Collection"
+      title="Giỏ hàng của bạn đang trống"
+      message="Hãy thêm một sản phẩm thuê trước, sau đó AuraFit sẽ gợi ý phụ kiện phù hợp để hoàn thiện diện mạo."
+      actionLabel="Xem bộ sưu tập"
       onAction={() => onNavigate?.('home')}
     />
   );

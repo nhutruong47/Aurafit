@@ -5,14 +5,14 @@ import EventsHero from '../components/events/EventsHero';
 import EventsSidebar from '../components/events/EventsSidebar';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 
-const occasions = ['Gala', 'Wedding Guest', 'Prom Night', 'Red Carpet'];
-const silhouettes = ['Gown', 'Tuxedo', 'Cocktail', 'Suit'];
-const rentalWindows = ['4 Days', '8 Days', '12 Days'];
+const occasions = ['Gala', 'Khách dự tiệc cưới', 'Prom', 'Thảm đỏ'];
+const silhouettes = ['Đầm dài', 'Tuxedo', 'Cocktail', 'Suit'];
+const rentalWindows = ['4 ngày', '8 ngày', '12 ngày'];
 
 const eventServices = [
-  ['event_available', 'Date lock', 'Giữ lịch thuê theo ngày sự kiện và nhắc lịch trả đồ.'],
-  ['straighten', 'Fit check', 'Stylist kiểm tra form, chiều dài tà và phụ kiện đi kèm.'],
-  ['local_shipping', 'White glove', 'Giao nhận tận nơi cho gala, cưới hỏi và sự kiện tối.'],
+  ['event_available', 'Giữ lịch thuê', 'Giữ lịch thuê theo ngày sự kiện và nhắc lịch hoàn trả.'],
+  ['straighten', 'Kiểm tra form dáng', 'Stylist kiểm tra form, chiều dài tà và phụ kiện đi kèm.'],
+  ['local_shipping', 'Giao nhận tận nơi', 'Giao nhận tận nơi cho gala, tiệc cưới và sự kiện buổi tối.'],
 ];
 
 export default function EventsPage({ onAddToCart, onNavigate }) {

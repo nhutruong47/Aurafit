@@ -10,39 +10,39 @@ export const categoryTaxonomy = [
       },
       {
         id: 'game',
-        label: 'Game',
+        label: 'Trò chơi',
         tags: ['Genshin Impact', 'Honkai Star Rail', 'League of Legends', 'Valorant', 'Identity V'],
       },
       {
         id: 'fantasy',
-        label: 'Fantasy',
-        tags: ['Elf', 'Witch', 'Mage', 'Fairy', 'Angel', 'Demon'],
+        label: 'Giả tưởng',
+        tags: ['Tiên tộc', 'Phù thủy', 'Pháp sư', 'Tiên nữ', 'Thiên thần', 'Ác quỷ'],
       },
       {
         id: 'royal',
-        label: 'Royal Court',
-        tags: ['Hoàng tử', 'Công chúa', 'Hoàng hậu', 'Hiệp sĩ', 'Quý tộc Châu Âu'],
+        label: 'Hoàng gia',
+        tags: ['Hoàng tử', 'Công chúa', 'Hoàng hậu', 'Hiệp sĩ', 'Quý tộc châu Âu'],
       },
       {
         id: 'movie',
-        label: 'Movie & Series',
+        label: 'Phim & sê-ri',
         tags: ['Harry Potter', 'Marvel', 'DC', 'Star Wars'],
       },
     ],
   },
   {
     id: 'event',
-    label: 'Event',
+    label: 'Sự kiện',
     subcategories: [
       {
         id: 'vest-formal',
-        label: 'Vest & Formal',
+        label: 'Vest & trang trọng',
         tags: ['Vest nam', 'Vest nữ', 'Tuxedo', 'Blazer'],
       },
       {
         id: 'da-hoi',
         label: 'Dạ hội',
-        tags: ['Evening Gown', 'Prom Dress', 'Cocktail Dress'],
+        tags: ['Đầm dạ hội', 'Đầm prom', 'Đầm cocktail'],
       },
       {
         id: 'le-hoi',
@@ -61,7 +61,7 @@ export const categoryTaxonomy = [
       },
       {
         id: 'team-building',
-        label: 'Team Building',
+        label: 'Gắn kết đội nhóm',
         tags: ['Đồng phục sự kiện', 'Áo nhóm', 'Trang phục trò chơi'],
       },
     ],
@@ -93,7 +93,7 @@ export const categoryTaxonomy = [
       {
         id: 'concept',
         label: 'Concept chụp ảnh',
-        tags: ['Vintage', 'Thanh xuân', 'Hàn Quốc', 'Châu Âu'],
+        tags: ['Cổ điển', 'Thanh xuân', 'Hàn Quốc', 'Châu Âu'],
       },
     ],
   },
@@ -104,12 +104,12 @@ export const categoryTaxonomy = [
       {
         id: 'toc-gia',
         label: 'Tóc giả',
-        tags: ['Anime', 'Fantasy', 'Idol'],
+        tags: ['Anime', 'Giả tưởng', 'Idol'],
       },
       {
         id: 'giay',
         label: 'Giày',
-        tags: ['Boots', 'Giày tây', 'Giày cosplay'],
+        tags: ['Bốt', 'Giày tây', 'Giày cosplay'],
       },
       {
         id: 'vu-khi',
@@ -128,8 +128,8 @@ export const categoryTaxonomy = [
       },
       {
         id: 'makeup',
-        label: 'Makeup',
-        tags: ['Makeup cosplay', 'Makeup kỷ yếu', 'Makeup dạ hội'],
+        label: 'Trang điểm',
+        tags: ['Trang điểm cosplay', 'Trang điểm kỷ yếu', 'Trang điểm dạ hội'],
       },
     ],
   },

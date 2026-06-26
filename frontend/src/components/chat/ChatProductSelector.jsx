@@ -7,7 +7,7 @@ export default function ChatProductSelector({ products, activeProduct, onSelectP
   return (
     <div className="border-b border-[#cfc4c5] bg-white px-6 py-4 md:px-8">
       <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.15em] text-[#99854e]">
-        Sản phẩm cần admin tư vấn
+        Sản phẩm cần Admin tư vấn
       </p>
       <div className="flex gap-4 overflow-x-auto pb-2">
         {products.map((product) => {

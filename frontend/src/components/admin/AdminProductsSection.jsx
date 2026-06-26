@@ -42,7 +42,7 @@ export default function AdminProductsSection({
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
-                Category
+                Danh mục
               </span>
               <select
                 name="categoryId"
@@ -60,7 +60,7 @@ export default function AdminProductsSection({
             <AdminField label="Size" name="size" value={productForm.size} onChange={onProductFieldChange} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <AdminField label="Subcategory" name="subcategory" value={productForm.subcategory} onChange={onProductFieldChange} />
+            <AdminField label="Phân nhóm" name="subcategory" value={productForm.subcategory} onChange={onProductFieldChange} />
             <AdminField label="Tag" name="tag" value={productForm.tag} onChange={onProductFieldChange} />
           </div>
           <label className="flex items-center gap-3 border border-[#ebe7df] bg-[#fafaf8] p-3 text-sm">
@@ -113,7 +113,7 @@ export default function AdminProductsSection({
             onChange={(event) => onProductCategoryFilterChange(event.target.value)}
             className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
           >
-            <option value="all">Tất cả category</option>
+            <option value="all">Tất cả danh mục</option>
             {categories.map((category) => (
               <option key={category.id} value={category.name}>
                 {category.name}
@@ -144,14 +144,14 @@ export default function AdminProductsSection({
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">
-                  {product.category?.name || 'Costume'}
+                  {product.category?.name || 'Trang phục'}
                 </p>
                 <h3 className="mt-1 line-clamp-2 font-serif text-xl italic">{product.name}</h3>
                 <p className="mt-2 text-xs text-[#5f5e5e]">
                   Giá thuê: <strong>{formatCurrency(product.rentalPrice || 0)}</strong>
                 </p>
                 <p className="mt-1 text-xs text-[#5f5e5e]">
-                  Trạng thái: <strong>{product.status === 'ACTIVE' ? 'Đang bán/thuê' : 'Tạm ẩn'}</strong>
+                  Trạng thái: <strong>{product.status === 'ACTIVE' ? 'Đang hiển thị' : 'Tạm ẩn'}</strong>
                 </p>
                 <button
                   onClick={() => onEditProduct(product)}

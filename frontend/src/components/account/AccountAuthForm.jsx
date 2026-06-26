@@ -137,19 +137,19 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
       <section className="mx-auto grid min-h-[calc(100dvh-80px)] max-w-[1440px] grid-cols-1 gap-12 px-5 py-16 md:grid-cols-12 md:px-20 md:py-24">
         <div className="flex flex-col justify-center md:col-span-5">
-          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">AuraFit Account</p>
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Tài khoản AuraFit</p>
           <h1 className="font-serif text-[44px] font-normal italic leading-[1.12] md:text-[68px]">
-            Your rental wardrobe, one sign in away.
+            Tủ đồ thuê của bạn chỉ cách một lần đăng nhập.
           </h1>
           <p className="mt-7 max-w-lg text-base leading-8 text-[#5f5e5e]">
-            Đăng nhập để theo dõi đơn thuê, quản lý giỏ hàng và liên hệ AuraFit Admin khi cần tư vấn.
-            Sản phẩm trên hệ thống chỉ do tài khoản ADMIN đăng tải và quản lý.
+            Đăng nhập để theo dõi đơn thuê, quản lý giỏ hàng và liên hệ AuraFit Admin khi cần tư vấn. Sản phẩm
+            trên hệ thống chỉ do tài khoản Admin đăng tải và quản lý.
           </p>
           <div className="mt-10 grid max-w-md grid-cols-3 gap-4">
             {[
-              ['verified_user', 'Secure'],
-              ['local_shipping', 'Tracked'],
-              ['admin_panel_settings', 'Admin Managed'],
+              ['verified_user', 'An toàn'],
+              ['local_shipping', 'Theo dõi được'],
+              ['admin_panel_settings', 'Admin quản lý'],
             ].map(([icon, label]) => (
               <div key={label} className="border border-[#cfc4c5] bg-white p-4">
                 <span className="material-symbols-outlined text-[#99854e]">{icon}</span>
@@ -203,7 +203,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   ? stage === 'verify-otp'
                     ? `Mã xác thực đã gửi tới ${form.email}. Nhập mã OTP để kích hoạt tài khoản của bạn.`
                     : 'Điền đầy đủ thông tin rồi nhấn Đăng ký. Hệ thống sẽ gửi mã OTP xác thực email Gmail trước khi hoàn tất đăng ký.'
-                  : 'Admin đăng nhập sẽ vào dashboard quản lý sản phẩm. Staff đăng nhập sẽ vào màn hình bàn giao.'}
+                  : 'Admin đăng nhập sẽ vào dashboard quản lý sản phẩm. Nhân viên đăng nhập sẽ vào màn hình bàn giao.'}
               </p>
             </div>
 

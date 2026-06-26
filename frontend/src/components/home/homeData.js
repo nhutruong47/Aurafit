@@ -1,55 +1,55 @@
 export const services = [
   {
     icon: 'checkroom',
-    title: 'Select Your Style',
-    copy: 'Browse our curated collection and choose the piece that matches your personality.',
+    title: 'Chọn phong cách của bạn',
+    copy: 'Khám phá bộ sưu tập được tuyển chọn và chọn trang phục phù hợp với cá tính của bạn.',
   },
   {
     icon: 'calendar_month',
-    title: 'Book Your Dates',
-    copy: 'Pick your event dates. We ensure the item is perfectly tailored and ready for you.',
+    title: 'Đặt lịch thuê',
+    copy: 'Chọn thời gian thuê phù hợp. Chúng tôi chuẩn bị trang phục chỉn chu và sẵn sàng cho bạn.',
   },
   {
     icon: 'autorenew',
-    title: 'Flaunt & Return',
-    copy: "Shine at your event. After you're done, just pack it back. We handle the cleaning.",
+    title: 'Tỏa sáng và hoàn trả',
+    copy: 'Tự tin xuất hiện tại sự kiện. Sau khi sử dụng, chỉ cần hoàn trả, việc vệ sinh đã có AuraFit xử lý.',
   },
 ];
 
 export const mosaicCategories = [
   {
-    title: 'Elite Tech',
-    copy: 'Latest releases from Sony, Apple & Leica',
-    cta: 'Explore Tech',
+    title: 'Sự kiện',
+    copy: 'Váy dạ hội, suit và trang phục nổi bật cho những dịp quan trọng',
+    cta: 'Xem bộ sưu tập',
     wide: true,
     image:
       'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=85',
   },
   {
-    title: 'Signature Fashion',
-    copy: 'Designer gowns and bespoke tailoring',
-    cta: 'View Wardrobe',
+    title: 'Cosplay',
+    copy: 'Trang phục nhân vật cùng phụ kiện đồng bộ cho concept nổi bật',
+    cta: 'Khám phá ngay',
     wide: true,
     image:
       'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=85',
   },
   {
-    title: 'Timepieces',
+    title: 'Kỷ yếu',
     image:
       'https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=800&q=85',
   },
   {
-    title: 'Gaming Gear',
+    title: 'Phụ kiện',
     image:
       'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=800&q=85',
   },
   {
-    title: 'Events',
+    title: 'Dạ tiệc',
     image:
       'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=800&q=85',
   },
   {
-    title: 'Travel',
+    title: 'Concept chụp ảnh',
     image:
       'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=85',
   },
@@ -58,31 +58,31 @@ export const mosaicCategories = [
 export const styleCategories = [
   {
     title: 'Sự kiện',
-    copy: 'Gala - Wedding - Red Carpet',
+    copy: 'Gala - Tiệc cưới - Thảm đỏ',
     image:
       'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=900&q=85',
   },
   {
     title: 'Cosplay',
-    copy: 'Fantasy - Avant-Garde - Artistic',
+    copy: 'Fantasy - Cá tính - Nghệ thuật',
     image:
       'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=85',
   },
   {
     title: 'Kỷ yếu',
-    copy: 'Academic - Vintage - Modern Grad',
+    copy: 'Học đường - Vintage - Hiện đại',
     image:
       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=85',
   },
   {
     title: 'Phụ kiện',
-    copy: 'Bags - Jewelry - Heritage Items',
+    copy: 'Túi xách - Trang sức - Điểm nhấn nổi bật',
     image:
       'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=900&q=85',
   },
   {
     title: 'Concept',
-    copy: 'Editorial - High Fashion - Studio',
+    copy: 'Biên tập - Thời trang cao cấp - Studio',
     image:
       'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=900&q=85',
   },
@@ -113,7 +113,7 @@ export const trustMarkers = [
   },
   {
     icon: 'support_agent',
-    title: 'Cố vấn 24/7',
+    title: 'Tư vấn 24/7',
     copy: 'Tư vấn phong cách từ chuyên gia',
   },
 ];

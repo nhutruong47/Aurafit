@@ -6,14 +6,17 @@ const categoryKeyByName = {
   cosplay: 'cosplay',
   'anime cosplay': 'cosplay',
   'gaming characters': 'cosplay',
+  'sự kiện': 'events',
   events: 'events',
   event: 'events',
   'event & formal': 'events',
-  yearbook: 'yearbook',
+  'dạ tiệc': 'events',
   'kỷ yếu': 'yearbook',
+  yearbook: 'yearbook',
   'traditional & vintage': 'yearbook',
-  accessories: 'accessories',
   'phụ kiện': 'accessories',
+  accessories: 'accessories',
+  'concept chụp ảnh': 'yearbook',
 };
 
 const placeholderImage =
@@ -44,7 +47,7 @@ function CategoryTile({ category, wide = false, onClick }) {
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60">{category.copy}</p>
         )}
         <span className="inline-block border-b border-white pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition group-hover:border-[#99854e] group-hover:text-[#99854e]">
-          {category.cta || 'Shop'}
+          {category.cta || 'Xem ngay'}
         </span>
       </div>
     </article>
@@ -93,8 +96,8 @@ export default function HomeCategoryMosaic({ onNavigate }) {
     <section className="bg-[#f9f9f9] py-24 md:py-[120px]" id="categories">
       <div className="mx-auto max-w-[1440px] px-5 md:px-20">
         <div className="mb-16 text-center">
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Kham pha</p>
-          <h2 className="font-serif text-4xl font-normal md:text-5xl">Shop by Category</h2>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Khám phá</p>
+          <h2 className="font-serif text-4xl font-normal md:text-5xl">Khám phá theo danh mục</h2>
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">

@@ -22,7 +22,7 @@ export default function OrderSuccessFooter({ footerColumns, mobileNavLinks, onNa
       <footer className="mt-40 flex w-full flex-col items-start justify-between border-t border-[#cfc4c5] bg-[#f9f9f9] px-5 py-20 md:flex-row md:px-20">
         <div className="mb-12 md:mb-0">
           <div className="mb-8 font-serif text-3xl text-black">AuraFit</div>
-          <div className="text-sm uppercase tracking-widest text-gray-500">© 2026 AuraFit. Designed for the extraordinary.</div>
+          <div className="text-sm uppercase tracking-widest text-gray-500">© 2026 AuraFit. Thiết kế cho những khoảnh khắc khác biệt.</div>
         </div>
         <div className="grid grid-cols-2 gap-x-16 gap-y-8 md:grid-cols-3 md:gap-x-24">
           {footerColumns.map((column) => (
@@ -35,7 +35,7 @@ export default function OrderSuccessFooter({ footerColumns, mobileNavLinks, onNa
         {mobileNavLinks.map(([icon, label]) => (
           <button
             key={label}
-            onClick={() => onNavigate?.(label === 'Shop' ? 'shop' : label.toLowerCase())}
+            onClick={() => onNavigate?.(label === 'Shop' ? 'shop' : label === 'Sự kiện' ? 'events' : label.toLowerCase())}
             className="flex flex-col items-center justify-center p-2 text-[#5f5e5e]"
           >
             <span className="material-symbols-outlined">{icon}</span>

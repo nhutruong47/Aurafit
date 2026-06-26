@@ -13,13 +13,13 @@ const filterGroups = [
   { key: 'size', title: 'Size' },
 ];
 
-const accessoryHints = ['Wig', 'Weapon Prop', 'Jewelry', 'Boot Cover'];
+const accessoryHints = ['Tóc giả', 'Vũ khí mô phỏng', 'Trang sức', 'Bọc ủng'];
 
 const processSteps = [
   ['01', 'Chọn nhân vật', 'Tìm set theo nguồn cảm hứng hoặc gửi reference cho stylist.'],
-  ['02', 'Khóa phụ kiện', 'Thêm wig, prop, boot cover và jewelry ngay trong giỏ hàng.'],
+  ['02', 'Khóa phụ kiện', 'Thêm tóc giả, prop, bọc ủng và trang sức ngay trong giỏ hàng.'],
   ['03', 'Fitting nhanh', 'Đội ngũ kiểm tra form, độ dài tà và khả năng di chuyển.'],
-  ['04', 'Return sạch gọn', 'Trả đồ sau event, VIBE xử lý vệ sinh và bảo quản.'],
+  ['04', 'Hoàn trả gọn gàng', 'Trả đồ sau sự kiện, AuraFit xử lý vệ sinh và bảo quản.'],
 ];
 
 export default function CosplayPage({ onAddToCart, onNavigate }) {
@@ -74,8 +74,8 @@ export default function CosplayPage({ onAddToCart, onNavigate }) {
               <EmptyState
                 icon="filter_alt_off"
                 title="Không có set phù hợp"
-                message="Thử bỏ bớt filter hoặc chọn nhóm trang phục khác để xem thêm lựa chọn."
-                actionLabel="Xóa toàn bộ filter"
+                message="Thử bỏ bớt bộ lọc hoặc chọn nhóm trang phục khác để xem thêm lựa chọn."
+                actionLabel="Xóa toàn bộ bộ lọc"
                 onAction={clearFilters}
                 className="px-8 py-16"
               />

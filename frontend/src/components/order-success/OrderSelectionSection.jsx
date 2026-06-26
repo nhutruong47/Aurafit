@@ -20,8 +20,8 @@ function ConfirmedItem({ item }) {
           <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">{item.size}</p>
         </div>
         <div className="space-y-2">
-          <IconText icon="calendar_today" text="Rental: Oct 24 - Oct 28" />
-          <IconText icon="assignment_return" text="Return by: Oct 29, 11:00 AM" accent />
+          <IconText icon="calendar_today" text={`Thời gian thuê: ${item.rental || 'Đang cập nhật'}`} />
+          <IconText icon="assignment_return" text="Hoàn trả đúng hẹn theo hướng dẫn" accent />
         </div>
       </div>
     </div>
@@ -32,7 +32,7 @@ export default function OrderSelectionSection({ items }) {
   return (
     <div className="space-y-12 md:col-span-7">
       <div className="border-b border-[#cfc4c5] pb-4">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.2em]">Your Selection</h2>
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.2em]">Sản phẩm đã chọn</h2>
       </div>
       <div className="space-y-16">
         {items.map((item) => (

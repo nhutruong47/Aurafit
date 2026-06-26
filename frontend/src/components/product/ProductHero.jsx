@@ -65,7 +65,7 @@ export default function ProductHero({ product, isAdmin, isLoading = false, isAdd
         <div className="mb-10">
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.1em] text-black">Mô tả sản phẩm</h3>
           <p className="text-base leading-7 text-[#5f5e5e]">
-            {product.description || 'Trang phục cao cấp mang đến trải nghiệm tuyệt vời cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu cao cấp và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
+            {product.description || 'Trang phục cao cấp mang đến trải nghiệm nổi bật cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu chỉn chu và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
           </p>
         </div>
 
@@ -92,7 +92,7 @@ export default function ProductHero({ product, isAdmin, isLoading = false, isAdd
             onClick={() => onNavigate?.('chat', product)}
             className="border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
           >
-            Liên hệ admin
+            Liên hệ Admin
           </button>
         </div>
 
@@ -130,7 +130,7 @@ export default function ProductHero({ product, isAdmin, isLoading = false, isAdd
                 onClick={() => onNavigate?.('chat', product)}
                 className="w-full border border-black py-5 text-[13px] font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 hover:bg-black hover:text-white"
               >
-                Liên hệ admin
+                Liên hệ Admin
               </button>
             </>
           )}

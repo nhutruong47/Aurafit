@@ -25,7 +25,7 @@ export default function ChatMessageList({ messages }) {
       <div className="flex items-center justify-center">
         <span className="h-px flex-1 bg-[#cfc4c5]" />
         <span className="px-4 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#999999]">
-          Hội thoại với admin
+          Hội thoại với Admin
         </span>
         <span className="h-px flex-1 bg-[#cfc4c5]" />
       </div>

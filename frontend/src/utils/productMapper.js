@@ -9,8 +9,8 @@ const UI_CATEGORY_BY_KEYWORD = [
 
 export const categoryLabels = {
   Cosplay: 'Cosplay',
-  Events: 'Event',
-  Event: 'Event',
+  Events: 'Sự kiện',
+  Event: 'Sự kiện',
   Yearbook: 'Kỷ yếu',
   'Kỷ yếu': 'Kỷ yếu',
   Accessories: 'Phụ kiện',

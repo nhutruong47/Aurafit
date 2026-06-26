@@ -9,7 +9,7 @@ export default function HomeServicesSection() {
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">
             Dịch vụ của chúng tôi
           </p>
-          <h2 className="font-serif text-4xl font-normal md:text-5xl">Seamless Rental Experience</h2>
+          <h2 className="font-serif text-4xl font-normal md:text-5xl">Trải nghiệm thuê đồ liền mạch</h2>
         </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {services.map((service) => (

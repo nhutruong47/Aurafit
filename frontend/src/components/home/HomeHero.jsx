@@ -22,13 +22,14 @@ export default function HomeHero({ onNavigate }) {
       <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 py-24 md:px-20">
         <div className="max-w-3xl text-center text-white md:text-left">
           <p className="mb-6 text-[11px] font-semibold uppercase tracking-[0.4em] text-[#99854e]">
-            Haute Couture Rentals
+            Trang phục cao cấp cho thuê
           </p>
           <h1 className="font-serif text-[44px] font-normal italic leading-[1.08] md:text-[72px]">
-            The Vibe <br /> Rental Edit
+            Tuyển tập thuê đồ <br /> đậm chất riêng
           </h1>
           <p className="mt-8 max-w-xl text-lg font-light italic leading-8 text-white/80">
-            Nền tảng cho thuê trang phục cao cấp dành cho những cá tính khác biệt. Biến mọi khoảnh khắc thành một tác phẩm nghệ thuật.
+            Nền tảng cho thuê trang phục cao cấp dành cho những cá tính khác biệt. Biến mọi khoảnh khắc thành
+            một dấu ấn đáng nhớ.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-8 md:justify-start">
             <button
@@ -41,7 +42,7 @@ export default function HomeHero({ onNavigate }) {
               <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/35 transition group-hover:border-[#99854e]">
                 <span className="material-symbols-outlined text-[20px]">play_arrow</span>
               </span>
-              Showreel
+              Video giới thiệu
             </button>
           </div>
         </div>

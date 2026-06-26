@@ -3,9 +3,10 @@ export default function OrderSuccessStorySection({ links }) {
   return (
     <section className="bg-[#f7f7f7] px-5 py-28 text-center md:px-20">
       <div className="mx-auto max-w-2xl">
-        <h2 className="mb-8 font-serif text-5xl font-normal">Extend your story.</h2>
+        <h2 className="mb-8 font-serif text-5xl font-normal">Kéo dài câu chuyện của bạn.</h2>
         <p className="mb-12 text-lg font-light leading-8 text-[#5f5e5e]">
-          Capture your journey and tag us. Exceptional entries are featured in our seasonal Yearbook.
+          Ghi lại hành trình của bạn và gắn thẻ AuraFit. Những khoảnh khắc nổi bật có thể xuất hiện trong
+          Yearbook theo mùa của chúng tôi.
         </p>
         <div className="flex justify-center gap-12">
           {links.map((link) => (

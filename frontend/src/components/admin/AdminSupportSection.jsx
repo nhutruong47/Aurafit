@@ -1,14 +1,14 @@
-// Khu vuc theo doi ticket ho tro khach hang trong admin dashboard.
+// Khu vuc theo doi yeu cau ho tro khach hang trong admin dashboard.
 import { Panel } from './AdminDashboardShared';
 
 export default function AdminSupportSection({ supportTickets }) {
   return (
-    <Panel title="Hỗ trợ khách hàng" action={`${supportTickets.length} ticket`}>
+    <Panel title="Hỗ trợ khách hàng" action={`${supportTickets.length} yêu cầu`}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-[#d7d2c8] text-[11px] uppercase tracking-[0.16em] text-[#777777]">
-              <th className="py-3 pr-4 font-semibold">Ticket</th>
+              <th className="py-3 pr-4 font-semibold">Mã</th>
               <th className="py-3 pr-4 font-semibold">Khách hàng</th>
               <th className="py-3 pr-4 font-semibold">Nội dung</th>
               <th className="py-3 pr-4 font-semibold">Kênh</th>
