@@ -1,6 +1,14 @@
 import { apiClient } from './http/apiClient';
 import { getErrorMessage } from './http/request';
 
+const unwrapApiResponse = (payload) => {
+  if (payload && typeof payload === 'object' && 'success' in payload && 'data' in payload) {
+    return payload.data;
+  }
+
+  return payload;
+};
+
 export const uploadImage = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -12,7 +20,7 @@ export const uploadImage = async (file) => {
       },
     });
 
-    return response.data;
+    return unwrapApiResponse(response.data);
   } catch (error) {
     throw new Error(getErrorMessage(error, 'Không thể tải ảnh lên backend.'));
   }

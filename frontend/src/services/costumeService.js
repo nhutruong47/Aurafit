@@ -1,5 +1,4 @@
-import { apiClient } from './http/apiClient';
-import { getErrorMessage, requestJson } from './http/request';
+import { requestJson } from './http/request';
 
 const normalizeListResponse = (payload) => {
   if (Array.isArray(payload)) {
@@ -15,9 +14,9 @@ const normalizeListResponse = (payload) => {
 
 export const fetchCostumes = async (options = {}) => {
   const requestOptions =
-    typeof options === 'object' && options !== null ? options : options ? { category: options } : {};
+    typeof options === 'object' && options !== null ? options : options ? { categoryId: options } : {};
   const {
-    category,
+    categoryId,
     keyword,
     pageNo = 0,
     pageSize = 100,
@@ -25,55 +24,87 @@ export const fetchCostumes = async (options = {}) => {
     sortDir = 'desc',
   } = requestOptions;
 
-  try {
-    const response = await apiClient.get('/costumes', {
+  const payload = await requestJson(
+    {
+      url: '/costumes',
+      method: 'GET',
       params: {
-        ...(category ? { category } : {}),
+        ...(categoryId ? { categoryId } : {}),
         ...(keyword ? { keyword } : {}),
         pageNo,
         pageSize,
         sortBy,
         sortDir,
       },
-    });
-    return normalizeListResponse(response.data);
-  } catch (error) {
-    throw new Error(getErrorMessage(error, 'Không thể tải dữ liệu sản phẩm từ database.'));
-  }
+    },
+    'Không thể tải dữ liệu sản phẩm từ database.'
+  );
+
+  return normalizeListResponse(payload);
 };
 
 export const fetchCostumeById = async (id) =>
-  requestJson({
-    url: `/costumes/${encodeURIComponent(id)}`,
-    method: 'GET',
-  });
+  requestJson(
+    {
+      url: `/costumes/${encodeURIComponent(id)}`,
+      method: 'GET',
+    },
+    'Không thể tải chi tiết sản phẩm.'
+  );
 
 export const fetchSeasonalCostumes = async () =>
-  requestJson({ url: '/costumes/seasonal', method: 'GET' });
+  requestJson(
+    {
+      url: '/costumes/seasonal',
+      method: 'GET',
+    },
+    'Không thể tải danh sách sản phẩm theo mùa.'
+  );
 
 export const fetchRecommendedCostumes = async (userId) =>
-  requestJson({
-    url: '/costumes/recommendations',
-    method: 'GET',
-    params: userId ? { userId } : undefined,
-  });
+  requestJson(
+    {
+      url: '/costumes/recommendations',
+      method: 'GET',
+      params: userId ? { userId } : undefined,
+    },
+    'Không thể tải danh sách gợi ý sản phẩm.'
+  );
 
-export const fetchAdminCostumes = async () =>
-  requestJson({
-    url: '/admin/costumes',
-    method: 'GET',
-  });
+export const fetchAdminCostumes = async () => {
+  const payload = await requestJson(
+    {
+      url: '/costumes',
+      method: 'GET',
+      params: {
+        pageNo: 0,
+        pageSize: 100,
+        sortBy: 'id',
+        sortDir: 'desc',
+      },
+    },
+    'Không thể tải danh sách sản phẩm.'
+  );
+
+  return normalizeListResponse(payload);
+};
 
 export const createCostume = async (costumeData) =>
-  requestJson({
-    url: '/admin/costumes',
-    method: 'POST',
-    data: costumeData,
-  });
+  requestJson(
+    {
+      url: '/costumes',
+      method: 'POST',
+      data: costumeData,
+    },
+    'Không thể tạo sản phẩm.'
+  );
 
 export const updateCostume = async (id, costumeData) =>
-  requestJson({
-    url: `/admin/costumes/${encodeURIComponent(id)}`,
-    method: 'PUT',
-    data: costumeData,
-  });
+  requestJson(
+    {
+      url: `/costumes/${encodeURIComponent(id)}`,
+      method: 'PUT',
+      data: costumeData,
+    },
+    'Không thể cập nhật sản phẩm.'
+  );

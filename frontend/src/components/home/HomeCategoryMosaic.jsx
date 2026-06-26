@@ -1,23 +1,35 @@
-// Luoi danh muc noi bat trong khu vuc kham pha cua trang chu.
 import { useEffect, useState } from 'react';
 import { fetchPublicCategories } from '../../services/catalogService';
 import { mosaicCategories } from './homeData';
 
 const categoryKeyByName = {
-  Cosplay: 'cosplay',
-  Events: 'events',
-  Event: 'events',
-  Yearbook: 'yearbook',
-  'Kỷ yếu': 'yearbook',
-  Accessories: 'accessories',
-  'Phụ kiện': 'accessories',
+  cosplay: 'cosplay',
+  'anime cosplay': 'cosplay',
+  'gaming characters': 'cosplay',
+  events: 'events',
+  event: 'events',
+  'event & formal': 'events',
+  yearbook: 'yearbook',
+  'kỷ yếu': 'yearbook',
+  'traditional & vintage': 'yearbook',
+  accessories: 'accessories',
+  'phụ kiện': 'accessories',
 };
 
-const placeholderImage = 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=85';
+const placeholderImage =
+  'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=85';
+
+function resolveCategoryKey(name) {
+  if (!name) return null;
+  return categoryKeyByName[String(name).trim().toLowerCase()] || null;
+}
 
 function CategoryTile({ category, wide = false, onClick }) {
   return (
-    <article onClick={onClick} className={`group relative cursor-pointer overflow-hidden bg-black ${wide ? 'aspect-[16/10]' : 'aspect-square'}`}>
+    <article
+      onClick={onClick}
+      className={`group relative cursor-pointer overflow-hidden bg-black ${wide ? 'aspect-[16/10]' : 'aspect-square'}`}
+    >
       <img
         src={category.image || placeholderImage}
         alt={category.title}
@@ -60,11 +72,8 @@ export default function HomeCategoryMosaic({ onNavigate }) {
   }, []);
 
   const mergedCategories = mosaicCategories.map((mosaic) => {
-    const match = categories.find((category) => {
-      const apiKey = categoryKeyByName[category.name] || categoryKeyByName[category.name?.toLowerCase()];
-      const mosaicKey = categoryKeyByName[mosaic.title] || categoryKeyByName[mosaic.title?.toLowerCase()];
-      return apiKey && mosaicKey && apiKey === mosaicKey;
-    });
+    const mosaicKey = resolveCategoryKey(mosaic.title);
+    const match = categories.find((category) => resolveCategoryKey(category.name) === mosaicKey);
 
     return {
       ...mosaic,
@@ -73,7 +82,7 @@ export default function HomeCategoryMosaic({ onNavigate }) {
   });
 
   const handleClick = (mergedCategory) => {
-    const key = categoryKeyByName[mergedCategory.apiCategory?.name] || categoryKeyByName[mergedCategory.title];
+    const key = resolveCategoryKey(mergedCategory.apiCategory?.name) || resolveCategoryKey(mergedCategory.title);
     onNavigate?.('catalog', { categoryKey: key, categoryId: mergedCategory.apiCategory?.id });
   };
 

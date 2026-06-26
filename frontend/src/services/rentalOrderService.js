@@ -13,14 +13,17 @@ const normalizeOrderDetail = (order) => ({
         ...detail,
         skuCode: detail?.skuCode || detail?.sku || '',
         rentalPrice: Number(detail?.rentalPrice ?? detail?.pricePerDay ?? 0),
-        depositPrice: Number(detail?.depositPrice ?? 0),
+        depositPrice: Number(detail?.depositPrice ?? detail?.deposit ?? 0),
       }))
     : [],
 });
 
 const normalizeStaffOrderDetailItem = (detail) => ({
   ...detail,
+  skuCode: detail?.skuCode || detail?.sku || '',
   costumeImageUrl: detail?.costumeImageUrl || detail?.imageUrl || '',
+  rentalPrice: Number(detail?.rentalPrice ?? detail?.pricePerDay ?? 0),
+  depositPrice: Number(detail?.depositPrice ?? detail?.deposit ?? 0),
 });
 
 const normalizeStaffOrder = (order) => {
@@ -33,6 +36,7 @@ const normalizeStaffOrder = (order) => {
         return {
           ...handover,
           type: handover?.type || handover?.handoverType || '',
+          handoverType: handover?.handoverType || handover?.type || '',
           staffName: handover?.staffName || handover?.staffUserName || '',
           handoverImageUrl: handover?.handoverImageUrl || handover?.imageUrl || '',
           costumeName: handover?.costumeName || matchedDetail?.costumeName || '',
@@ -49,43 +53,61 @@ const normalizeStaffOrder = (order) => {
 };
 
 export const fetchOrders = async () => {
-  const payload = await requestJson({ url: '/orders', method: 'GET' });
+  const payload = await requestJson(
+    { url: '/orders', method: 'GET' },
+    'Không thể tải danh sách lịch sử đơn hàng.'
+  );
   return Array.isArray(payload) ? payload.map(normalizeOrderSummary) : [];
 };
 
 export const createOrder = async (orderData) =>
-  requestJson({
-    url: '/orders/checkout',
-    method: 'POST',
-    data: orderData,
-  });
+  requestJson(
+    {
+      url: '/orders',
+      method: 'POST',
+      data: orderData,
+    },
+    'Không thể tạo đơn hàng.'
+  );
 
 export const fetchOrderDetail = async (orderId) =>
-  requestJson({ url: `/orders/${encodeURIComponent(orderId)}`, method: 'GET' }).then(normalizeOrderDetail);
-
-export const fetchOrderTimeline = async (orderId) =>
-  requestJson({ url: `/orders/${encodeURIComponent(orderId)}/timeline`, method: 'GET' });
+  requestJson(
+    { url: `/orders/${encodeURIComponent(orderId)}`, method: 'GET' },
+    'Không thể tải chi tiết đơn hàng.'
+  ).then(normalizeOrderDetail);
 
 export const fetchStaffOrders = async () => {
-  const payload = await requestJson({ url: '/orders/staff', method: 'GET' });
+  const payload = await requestJson(
+    { url: '/orders/management', method: 'GET' },
+    'Không thể tải danh sách đơn cho staff.'
+  );
   return Array.isArray(payload) ? payload.map(normalizeStaffOrder) : [];
 };
 
 export const fetchStaffOrder = async (orderId) => {
-  const payload = await requestJson({ url: `/orders/staff/${encodeURIComponent(orderId)}`, method: 'GET' });
+  const payload = await requestJson(
+    { url: `/orders/${encodeURIComponent(orderId)}/management`, method: 'GET' },
+    'Không thể tải chi tiết đơn cho staff.'
+  );
   return normalizeStaffOrder(payload);
 };
 
 export const createPickupHandover = async (orderId, handoverData) =>
-  requestJson({
-    url: `/orders/${encodeURIComponent(orderId)}/handover/pickup`,
-    method: 'POST',
-    data: handoverData,
-  });
+  requestJson(
+    {
+      url: `/orders/${encodeURIComponent(orderId)}/pickup-handovers`,
+      method: 'POST',
+      data: handoverData,
+    },
+    'Không thể lưu biên bản bàn giao.'
+  );
 
 export const createReturnHandover = async (orderId, handoverData) =>
-  requestJson({
-    url: `/orders/${encodeURIComponent(orderId)}/handover/return`,
-    method: 'POST',
-    data: handoverData,
-  });
+  requestJson(
+    {
+      url: `/orders/${encodeURIComponent(orderId)}/return-handovers`,
+      method: 'POST',
+      data: handoverData,
+    },
+    'Không thể lưu biên bản trả đồ.'
+  );
