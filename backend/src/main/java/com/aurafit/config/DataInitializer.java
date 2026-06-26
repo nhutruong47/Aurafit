@@ -1,11 +1,14 @@
 package com.aurafit.config;
 
 import com.aurafit.entity.Category;
+import com.aurafit.entity.Club;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.CostumeItem;
+import com.aurafit.enums.ClubStatus;
 import com.aurafit.enums.CostumeStatus;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.repository.CategoryRepository;
+import com.aurafit.repository.ClubRepository;
 import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.CostumeRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Seeds the database with realistic test data for Categories and Costumes.
+ * Seeds the database with realistic test data for Categories, Costumes, and Clubs.
  * Only active under the "dev" profile and is idempotent — skips if data already exists.
  */
 @Component
@@ -32,17 +35,22 @@ public class DataInitializer implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final CostumeRepository costumeRepository;
     private final CostumeItemRepository costumeItemRepository;
+    private final ClubRepository clubRepository;
 
     @Override
     @Transactional
     public void run(String... args) {
-        // ── Idempotency check ────────────────────────────────────────────
+        seedCategoriesAndCostumes();
+        seedClubs();
+    }
+
+    private void seedCategoriesAndCostumes() {
         if (categoryRepository.count() > 0) {
-            log.info("Database already contains data — skipping seed.");
+            log.info("Database already contains Category/Costume data — skipping category seed.");
             return;
         }
 
-        log.info("Seeding database with initial test data...");
+        log.info("Seeding database with Category and Costume data...");
 
         // ── Categories ───────────────────────────────────────────────────
         Category animeCosplay = categoryRepository.save(
@@ -155,7 +163,6 @@ public class DataInitializer implements CommandLineRunner {
         List<Costume> savedCostumes = costumeRepository.saveAll(costumes);
 
         // ── CostumeItems (Physical Inventory) ────────────────────────────
-        // Each costume gets 2 physical units with different sizes
         String[][] sizes = {{"S", "M"}, {"M", "L"}, {"S", "L"}, {"M", "XL"},
                             {"S", "M"}, {"M", "L"}, {"S", "M"}, {"M", "L"}};
         String[][] colors = {{"Xanh Đen", "Xanh Đen"}, {"Đen", "Đen"},
@@ -180,5 +187,43 @@ public class DataInitializer implements CommandLineRunner {
 
         log.info("✅ Database initialized with {} categories, {} costumes, and {} physical items.",
                 3, savedCostumes.size(), allItems.size());
+    }
+
+    private void seedClubs() {
+        if (clubRepository.count() > 0) {
+            log.info("Database already contains Club data — skipping club seed.");
+            return;
+        }
+
+        log.info("Seeding database with Club data...");
+
+        List<Club> clubs = List.of(
+                Club.builder()
+                        .name("Silver Club")
+                        .description("Gói thành viên Bạc với nhiều ưu đãi cơ bản cho người mới bắt đầu.")
+                        .membershipFee(new BigDecimal("100000"))
+                        .discountRate(0.05)
+                        .status(ClubStatus.ACTIVE)
+                        .build(),
+
+                Club.builder()
+                        .name("Gold Club")
+                        .description("Gói thành viên Vàng nhận ưu đãi lớn và hỗ trợ đặc biệt.")
+                        .membershipFee(new BigDecimal("250000"))
+                        .discountRate(0.10)
+                        .status(ClubStatus.ACTIVE)
+                        .build(),
+
+                Club.builder()
+                        .name("Platinum Club")
+                        .description("Gói thành viên Bạch Kim cao cấp nhất với đặc quyền tối đa.")
+                        .membershipFee(new BigDecimal("500000"))
+                        .discountRate(0.20)
+                        .status(ClubStatus.ACTIVE)
+                        .build()
+        );
+
+        clubRepository.saveAll(clubs);
+        log.info("✅ Database initialized with {} clubs.", clubs.size());
     }
 }
