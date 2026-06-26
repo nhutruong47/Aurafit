@@ -48,6 +48,7 @@ public class SecurityConfig {
 
                 // Public product browsing (future catalog endpoints)
                 .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/interactions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/costumes/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/clubs/**").permitAll()

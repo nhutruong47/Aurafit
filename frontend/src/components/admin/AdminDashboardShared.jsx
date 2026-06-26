@@ -1,5 +1,7 @@
 // Tap hop component dung chung cho cac khu vuc trong admin dashboard.
-export function AdminField({ label, name, value, onChange, type = 'text', multiline = false }) {
+export function AdminField({ label, name, value, onChange, type = 'text', multiline = false, required }) {
+  const isRequired = required ?? ['name', 'rentalPrice', 'depositPrice'].includes(name);
+
   return (
     <label className="block">
       <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">{label}</span>
@@ -8,6 +10,7 @@ export function AdminField({ label, name, value, onChange, type = 'text', multil
           name={name}
           value={value}
           onChange={onChange}
+          required={isRequired}
           className="min-h-24 w-full resize-none border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
         />
       ) : (
@@ -16,7 +19,7 @@ export function AdminField({ label, name, value, onChange, type = 'text', multil
           value={value}
           onChange={onChange}
           type={type}
-          required={['name', 'rentalPrice', 'depositPrice'].includes(name)}
+          required={isRequired}
           className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
         />
       )}

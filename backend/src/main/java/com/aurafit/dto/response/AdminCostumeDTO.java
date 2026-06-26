@@ -14,6 +14,7 @@ public record AdminCostumeDTO(
         String imageUrl,
         CostumeStatus status,
         CategoryDTO category,
+        CostumeMetadataDTO metadata,
         int availableItemCount,
         String createdAt,
         String updatedAt
@@ -32,6 +33,7 @@ public record AdminCostumeDTO(
                 costume.getImageUrl(),
                 costume.getStatus(),
                 CategoryDTO.fromEntity(costume.getCategory()),
+                CostumeMetadataDTO.fromEntity(costume.getMetadata()),
                 (int) availableCount,
                 costume.getCreatedAt() != null ? costume.getCreatedAt().toString() : null,
                 costume.getUpdatedAt() != null ? costume.getUpdatedAt().toString() : null

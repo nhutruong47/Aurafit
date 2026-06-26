@@ -4,6 +4,7 @@ import ProductHero from '../components/product/ProductHero';
 import ProductReviewsSection from '../components/product/ProductReviewsSection';
 import AlertMessage from '../components/ui/AlertMessage';
 import { fetchCostumeById } from '../services/costumeService';
+import { logUserInteraction } from '../services/interactionsService';
 import { mapCostumeToProduct } from '../utils/productMapper';
 import { hasUserRole } from '../utils/roles';
 
@@ -94,6 +95,22 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
       onNavigate?.('catalog');
     }
   }, [isLoading, loadError, onNavigate, product]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+
+    logUserInteraction({
+      eventType: 'VIEW_PRODUCT',
+      targetType: 'COSTUME',
+      targetId: product.id,
+      metadata: {
+        category: product.apiCategoryName || product.category,
+        style: product.style,
+        occasion: product.occasion,
+        season: product.season,
+      },
+    }).catch(() => {});
+  }, [product]);
 
   const stats = useMemo(() => {
     const total = reviews.length;

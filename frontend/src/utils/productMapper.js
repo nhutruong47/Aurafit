@@ -60,6 +60,8 @@ export const mapCostumeToProduct = (costume) => {
   const rawCategory = extractCategoryName(costume.category);
   const normalizedCategory = normalizeUiCategory(costume);
   const subcategory = extractCategoryName(costume.subcategory) || rawCategory;
+  const metadata = costume.metadata || null;
+  const metadataTags = Array.isArray(metadata?.tags) ? metadata.tags : [];
 
   return {
     id: costume.id,
@@ -71,8 +73,9 @@ export const mapCostumeToProduct = (costume) => {
     apiCategoryName: rawCategory,
     category: categoryLabels[normalizedCategory] || normalizedCategory,
     subcategory,
-    tag: costume.tag || '',
-    size: costume.size || '',
+    tag: costume.tag || metadataTags[0] || '',
+    size: costume.size || metadata?.size || '',
+    color: costume.color || metadata?.color || '',
     available: String(costume.status || '').toUpperCase() !== 'INACTIVE' && costume.available !== false,
     status: costume.status,
     rentalPrice,
@@ -83,6 +86,11 @@ export const mapCostumeToProduct = (costume) => {
     deposit: formatCurrency(depositPrice),
     categoryId: costume.category?.id ?? costume.categoryId ?? null,
     meta: buildMeta(costume, rawCategory, normalizedCategory),
+    metadata,
+    style: metadata?.style || '',
+    occasion: metadata?.occasion || '',
+    season: metadata?.season || '',
+    tags: metadataTags,
   };
 };
 

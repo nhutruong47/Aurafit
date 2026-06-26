@@ -31,3 +31,12 @@ export const saveString = (key, value) => {
 
   window.localStorage.setItem(key, value);
 };
+
+export const loadString = (key, fallback = '') => {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  const value = window.localStorage.getItem(key);
+  return value ?? fallback;
+};

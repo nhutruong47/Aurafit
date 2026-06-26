@@ -54,6 +54,7 @@ pgdata/
 
 # AI Agent config (do not push to repo)
 .agent/
+.ai-context/
 GEMINI.md
 ERRORS.md
 

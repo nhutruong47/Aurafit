@@ -31,6 +31,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
     @Query(value = """
             SELECT c FROM Costume c
             JOIN FETCH c.category
+            LEFT JOIN FETCH c.metadata
             WHERE c.status = :status
               AND (:categoryId IS NULL OR c.category.id = :categoryId)
               AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -52,7 +53,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Fetches a single Costume by ID with its Category eagerly loaded.
      * Avoids an extra query when mapping to CostumeDTO.
      */
-    @Query("SELECT c FROM Costume c JOIN FETCH c.category WHERE c.id = :id")
+    @Query("SELECT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata WHERE c.id = :id")
     Optional<Costume> findByIdWithCategory(@Param("id") Long id);
 
     /**
@@ -62,6 +63,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
     @Query(value = """
             SELECT c FROM Costume c
             JOIN FETCH c.category
+            LEFT JOIN FETCH c.metadata
             WHERE c.status = :status
             ORDER BY SIZE(c.items) DESC
             """)
@@ -72,12 +74,12 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Currently returns random active costumes as a simple baseline.
      * TODO: Replace with ML-based collaborative filtering using user interaction history.
      */
-    @Query("SELECT c FROM Costume c JOIN FETCH c.category WHERE c.status = :status")
+    @Query("SELECT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata WHERE c.status = :status")
     List<Costume> findActiveCostumesForRecommendations(@Param("status") CostumeStatus status);
 
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.items WHERE c.id = :id")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id")
     Optional<Costume> findByIdWithItems(@Param("id") Long id);
 
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.items ORDER BY c.id DESC")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items ORDER BY c.id DESC")
     List<Costume> findAllWithItems();
 }

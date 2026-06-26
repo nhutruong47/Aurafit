@@ -5,13 +5,12 @@ import com.aurafit.dto.request.CostumeUpdateRequest;
 import com.aurafit.dto.response.AdminCostumeDTO;
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
-import com.aurafit.entity.CostumeItem;
 import com.aurafit.enums.CostumeStatus;
-import com.aurafit.enums.ItemStatus;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CategoryRepository;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.service.AdminService;
+import com.aurafit.service.CostumeMetadataService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +22,14 @@ public class AdminServiceImpl implements AdminService {
 
     private final CostumeRepository costumeRepository;
     private final CategoryRepository categoryRepository;
+    private final CostumeMetadataService costumeMetadataService;
 
     public AdminServiceImpl(CostumeRepository costumeRepository,
-                            CategoryRepository categoryRepository) {
+                            CategoryRepository categoryRepository,
+                            CostumeMetadataService costumeMetadataService) {
         this.costumeRepository = costumeRepository;
         this.categoryRepository = categoryRepository;
+        this.costumeMetadataService = costumeMetadataService;
     }
 
     @Override
@@ -53,7 +55,12 @@ public class AdminServiceImpl implements AdminService {
                 .category(category)
                 .build();
 
-        return AdminCostumeDTO.fromEntity(costumeRepository.save(costume));
+        Costume savedCostume = costumeRepository.save(costume);
+        if (request.metadata() != null) {
+            costumeMetadataService.upsertMetadata(savedCostume, request.metadata());
+        }
+
+        return AdminCostumeDTO.fromEntity(costumeRepository.findByIdWithItems(savedCostume.getId()).orElse(savedCostume));
     }
 
     @Override
@@ -74,6 +81,9 @@ public class AdminServiceImpl implements AdminService {
         }
         if (request.status() != null) {
             costume.setStatus(CostumeStatus.valueOf(request.status().toUpperCase()));
+        }
+        if (request.metadata() != null) {
+            costumeMetadataService.upsertMetadata(costume, request.metadata());
         }
 
         return AdminCostumeDTO.fromEntity(costumeRepository.save(costume));

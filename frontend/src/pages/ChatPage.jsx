@@ -4,6 +4,7 @@ import ChatAdminSidebar from '../components/chat/ChatAdminSidebar';
 import ChatComposer from '../components/chat/ChatComposer';
 import ChatMessageList from '../components/chat/ChatMessageList';
 import ChatProductSelector from '../components/chat/ChatProductSelector';
+import { logUserInteraction } from '../services/interactionsService';
 import { formatCurrency } from '../utils/formatCurrency';
 
 export default function ChatPage({ onNavigate, cartItems = [] }) {
@@ -44,6 +45,16 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
   const sendMessage = (textOverride) => {
     const text = (textOverride ?? draft).trim();
     if (!text) return;
+
+    logUserInteraction({
+      eventType: 'CHAT_QUERY',
+      targetType: 'CHAT',
+      targetId: activeProduct?.id || activeProduct?.name || null,
+      queryText: text,
+      metadata: {
+        productName: activeProduct?.name || null,
+      },
+    }).catch(() => {});
 
     setMessages((currentMessages) => [
       ...currentMessages,

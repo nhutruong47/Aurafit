@@ -3,6 +3,7 @@ package com.aurafit.config;
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Club;
 import com.aurafit.entity.Costume;
+import com.aurafit.entity.CostumeMetadata;
 import com.aurafit.entity.CostumeItem;
 import com.aurafit.enums.ClubStatus;
 import com.aurafit.enums.CostumeStatus;
@@ -10,6 +11,7 @@ import com.aurafit.enums.ItemStatus;
 import com.aurafit.repository.CategoryRepository;
 import com.aurafit.repository.ClubRepository;
 import com.aurafit.repository.CostumeItemRepository;
+import com.aurafit.repository.CostumeMetadataRepository;
 import com.aurafit.repository.CostumeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class DataInitializer implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final CostumeRepository costumeRepository;
     private final CostumeItemRepository costumeItemRepository;
+    private final CostumeMetadataRepository costumeMetadataRepository;
     private final ClubRepository clubRepository;
 
     @Override
@@ -161,6 +164,7 @@ public class DataInitializer implements CommandLineRunner {
         );
 
         List<Costume> savedCostumes = costumeRepository.saveAll(costumes);
+        seedCostumeMetadata(savedCostumes);
 
         // ── CostumeItems (Physical Inventory) ────────────────────────────
         String[][] sizes = {{"S", "M"}, {"M", "L"}, {"S", "L"}, {"M", "XL"},
@@ -225,5 +229,37 @@ public class DataInitializer implements CommandLineRunner {
 
         clubRepository.saveAll(clubs);
         log.info("✅ Database initialized with {} clubs.", clubs.size());
+    }
+
+    private void seedCostumeMetadata(List<Costume> costumes) {
+        List<CostumeMetadata> metadataList = new ArrayList<>();
+
+        String[][] metadataSeed = {
+                {"Heroic Anime", "Convention", "All Season", "Green", "anime,hero,festival"},
+                {"Modern Sorcerer", "Convention", "Autumn", "Black", "anime,dark,minimal"},
+                {"Elegant Fantasy", "Photoshoot", "Spring", "Purple", "gaming,regal,statement"},
+                {"Rebel Street", "Convention", "Summer", "Blue", "gaming,edgy,street"},
+                {"Traditional Grace", "Yearbook", "Spring", "Red", "traditional,formal,portrait"},
+                {"Cultural Classic", "Event", "Autumn", "Navy", "traditional,elegant,ceremony"},
+                {"Soft Pastel", "Photoshoot", "Spring", "Pink", "traditional,soft,romantic"},
+                {"Shonen Hero", "Convention", "Summer", "Orange", "anime,energetic,iconic"}
+        };
+
+        for (int i = 0; i < costumes.size() && i < metadataSeed.length; i++) {
+            Costume costume = costumes.get(i);
+            String[] seed = metadataSeed[i];
+            CostumeMetadata metadata = CostumeMetadata.builder()
+                    .costume(costume)
+                    .style(seed[0])
+                    .occasion(seed[1])
+                    .season(seed[2])
+                    .color(seed[3])
+                    .tags(new ArrayList<>(List.of(seed[4].split(","))))
+                    .build();
+            costume.setMetadata(metadata);
+            metadataList.add(metadata);
+        }
+
+        costumeMetadataRepository.saveAll(metadataList);
     }
 }

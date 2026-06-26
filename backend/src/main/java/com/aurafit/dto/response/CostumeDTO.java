@@ -18,7 +18,8 @@ public record CostumeDTO(
         BigDecimal depositPrice,
         String imageUrl,
         CostumeStatus status,
-        CategoryDTO category
+        CategoryDTO category,
+        CostumeMetadataDTO metadata
 ) {
     /**
      * Maps a Costume entity (with its Category already fetched via JOIN FETCH)
@@ -36,7 +37,8 @@ public record CostumeDTO(
                 costume.getDepositPrice(),
                 costume.getImageUrl(),
                 costume.getStatus(),
-                CategoryDTO.fromEntity(costume.getCategory())
+                CategoryDTO.fromEntity(costume.getCategory()),
+                CostumeMetadataDTO.fromEntity(costume.getMetadata())
         );
     }
 }

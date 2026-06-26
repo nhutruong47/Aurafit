@@ -1,6 +1,6 @@
 package com.aurafit.dto.request;
 
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
 
@@ -11,5 +11,8 @@ public record CostumeUpdateRequest(
         BigDecimal depositPrice,
         String imageUrl,
         Long categoryId,
-        String status
+        String status,
+
+        @Valid
+        CostumeMetadataUpsertRequest metadata
 ) {}

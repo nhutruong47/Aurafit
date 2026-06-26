@@ -10,7 +10,38 @@ export const emptyProductForm = {
   rentalPrice: '',
   depositPrice: '',
   categoryId: 1,
+  status: 'ACTIVE',
+  style: '',
+  occasion: '',
+  season: '',
+  color: '',
+  tags: '',
+  skinTone: '',
+  bodyType: '',
+  gender: '',
+  size: '',
+  material: '',
+  fitNote: '',
 };
+
+const metadataTagsToInput = (tags) => (Array.isArray(tags) ? tags.join(', ') : '');
+
+const buildMetadataPayload = (productForm) => ({
+  style: productForm.style.trim(),
+  occasion: productForm.occasion.trim(),
+  season: productForm.season.trim(),
+  color: productForm.color.trim(),
+  tags: productForm.tags
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean),
+  skinTone: productForm.skinTone.trim() || null,
+  bodyType: productForm.bodyType.trim() || null,
+  gender: productForm.gender.trim() || null,
+  size: productForm.size.trim() || null,
+  material: productForm.material.trim() || null,
+  fitNote: productForm.fitNote.trim() || null,
+});
 
 export function useAdminCostumes(currentUser) {
   const [products, setProducts] = useState([]);
@@ -30,7 +61,15 @@ export function useAdminCostumes(currentUser) {
     return products.filter((product) => {
       const matchesSearch =
         !query ||
-        [product.name, product.description]
+        [
+          product.name,
+          product.description,
+          product.metadata?.style,
+          product.metadata?.occasion,
+          product.metadata?.season,
+          product.metadata?.color,
+          Array.isArray(product.metadata?.tags) ? product.metadata.tags.join(' ') : '',
+        ]
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(query));
       const matchesCategory =
@@ -79,6 +118,8 @@ export function useAdminCostumes(currentUser) {
   };
 
   const hydrateProductForm = (product) => {
+    const metadata = product.metadata || {};
+
     setEditingProductId(product.id);
     setProductForm({
       name: product.name || '',
@@ -87,6 +128,18 @@ export function useAdminCostumes(currentUser) {
       rentalPrice: product.rentalPrice ?? '',
       depositPrice: product.depositPrice ?? '',
       categoryId: product.category?.id || categories[0]?.id || 1,
+      status: product.status || 'ACTIVE',
+      style: metadata.style || '',
+      occasion: metadata.occasion || '',
+      season: metadata.season || '',
+      color: metadata.color || '',
+      tags: metadataTagsToInput(metadata.tags),
+      skinTone: metadata.skinTone || '',
+      bodyType: metadata.bodyType || '',
+      gender: metadata.gender || '',
+      size: metadata.size || '',
+      material: metadata.material || '',
+      fitNote: metadata.fitNote || '',
     });
     setProductMessage('');
     setProductError('');
@@ -115,10 +168,14 @@ export function useAdminCostumes(currentUser) {
         rentalPrice: Number(productForm.rentalPrice),
         depositPrice: Number(productForm.depositPrice),
         categoryId: Number(productForm.categoryId),
+        metadata: buildMetadataPayload(productForm),
       };
 
       if (editingProductId) {
-        const updatedProduct = await updateCostume(editingProductId, payload);
+        const updatedProduct = await updateCostume(editingProductId, {
+          ...payload,
+          status: productForm.status,
+        });
         setProducts((currentProducts) =>
           currentProducts.map((product) =>
             product.id === updatedProduct.id ? updatedProduct : product

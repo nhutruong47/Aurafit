@@ -7,6 +7,7 @@ import CatalogSearchBar from '../components/catalog/CatalogSearchBar';
 import EmptyState from '../components/ui/EmptyState';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 import { useCatalogFilters } from '../hooks/useCatalogFilters';
+import { logUserInteraction } from '../services/interactionsService';
 
 export default function CatalogPage({ onNavigate, onAddToCart }) {
   const searchInputRef = useRef(null);
@@ -32,6 +33,28 @@ export default function CatalogPage({ onNavigate, onAddToCart }) {
       window.setTimeout(() => searchInputRef.current?.focus(), 120);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const normalizedSearch = searchTerm.trim();
+    if (normalizedSearch.length < 2) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      logUserInteraction({
+        eventType: 'SEARCH',
+        targetType: 'SEARCH',
+        queryText: normalizedSearch,
+        metadata: {
+          category: selectedFilter.category,
+          subcategory: selectedFilter.subcategory,
+          tag: selectedFilter.tag,
+        },
+      }).catch(() => {});
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [searchTerm, selectedFilter]);
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8">

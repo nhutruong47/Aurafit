@@ -3,6 +3,7 @@ package com.aurafit.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
 
@@ -23,5 +24,8 @@ public record CostumeCreateRequest(
         String imageUrl,
 
         @NotNull(message = "Category ID is required")
-        Long categoryId
+        Long categoryId,
+
+        @Valid
+        CostumeMetadataUpsertRequest metadata
 ) {}

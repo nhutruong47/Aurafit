@@ -6,6 +6,7 @@ import CheckoutSummary from '../components/checkout/CheckoutSummary';
 import RentalItemCard from '../components/checkout/RentalItemCard';
 import { multiItemSummaryRows, singleItemSummaryRows, suggestions, toRentalItem } from '../components/checkout/checkoutData';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
+import { logUserInteraction } from '../services/interactionsService';
 import { createOrder } from '../services/rentalOrderService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 
@@ -152,6 +153,16 @@ export default function RentalOrderCheckoutPage({
         deliveryAddress: deliveryInfo.deliveryAddress,
         items,
       });
+
+      logUserInteraction({
+        eventType: 'RENT',
+        targetType: 'ORDER',
+        targetId: orderResponse.id,
+        metadata: {
+          itemCount: items.length,
+          costumeIds: rentalItems.map((item) => item.costumeItemId || item.id),
+        },
+      }).catch(() => {});
 
       setPendingOrderId(orderResponse.id);
       onCheckoutSuccess?.(orderResponse.id);

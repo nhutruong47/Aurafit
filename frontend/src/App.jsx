@@ -20,7 +20,7 @@ import UserAccountPage from './pages/UserAccountPage';
 import YearbookPage from './pages/YearbookPage';
 import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from './routing/navigation';
 import { addItemToCart as addItemToCartApi, fetchCart, removeCartItem as removeCartItemApi } from './services/cartService';
-import { logUserInteraction } from './services/interactionsService';
+import { attachGuestSessionToCurrentUser, logUserInteraction } from './services/interactionsService';
 import { selectCurrentUser, setCurrentUser } from './store/authSlice';
 import {
   addCartItem,
@@ -74,6 +74,8 @@ function App() {
     if (!currentUser?.id) return undefined;
 
     let isMounted = true;
+
+    attachGuestSessionToCurrentUser().catch(() => {});
 
     fetchCart()
       .then((cart) => {
