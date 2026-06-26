@@ -14,6 +14,6 @@ export const uploadImage = async (file) => {
 
     return response.data;
   } catch (error) {
-    throw new Error(getErrorMessage(error, 'Khong the tai anh len backend.'));
+    throw new Error(getErrorMessage(error, 'Không thể tải ảnh lên backend.'));
   }
 };

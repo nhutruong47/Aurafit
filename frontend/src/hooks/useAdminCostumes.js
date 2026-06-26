@@ -60,7 +60,7 @@ export function useAdminCostumes(currentUser) {
           }));
         }
       })
-      .catch(() => setProductError('Khong the tai danh sach san pham.'));
+      .catch(() => setProductError('Không thể tải danh sách sản phẩm.'));
   }, [isAdmin]);
 
   const handleProductFieldChange = (event) => {
@@ -124,11 +124,11 @@ export function useAdminCostumes(currentUser) {
             product.id === updatedProduct.id ? updatedProduct : product
           )
         );
-        setProductMessage('San pham da duoc cap nhat thanh cong.');
+        setProductMessage('Sản phẩm đã được cập nhật thành công.');
       } else {
         const createdProduct = await createCostume(payload);
         setProducts((currentProducts) => [createdProduct, ...currentProducts]);
-        setProductMessage('San pham da duoc admin dang tai thanh cong.');
+        setProductMessage('Sản phẩm đã được admin đăng tải thành công.');
       }
 
       setEditingProductId(null);
@@ -138,7 +138,7 @@ export function useAdminCostumes(currentUser) {
       });
       return true;
     } catch (error) {
-      setProductError(error.message || 'Khong the luu san pham.');
+      setProductError(error.message || 'Không thể lưu sản phẩm.');
       return false;
     } finally {
       setIsSavingProduct(false);

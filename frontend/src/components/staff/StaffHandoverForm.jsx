@@ -22,7 +22,7 @@ export default function StaffHandoverForm({
 }) {
   return (
     <aside className="border border-[#cfc4c5] bg-white p-5 lg:col-span-3">
-      <h2 className="mb-5 text-[11px] font-semibold uppercase tracking-[0.2em]">Tao bien ban</h2>
+      <h2 className="mb-5 text-[11px] font-semibold uppercase tracking-[0.2em]">Tạo biên bản</h2>
       <form className="space-y-5" onSubmit={onSubmit}>
         <div className="grid grid-cols-2 border border-[#cfc4c5] bg-[#f3f3f4] p-1">
           {['PICKUP', 'RETURN'].map((value) => (
@@ -39,7 +39,7 @@ export default function StaffHandoverForm({
           ))}
         </div>
 
-        <Field label="Trang phuc">
+        <Field label="Trang phục">
           <select
             value={selectedDetailId}
             onChange={(event) => onSelectDetail(event.target.value)}
@@ -62,7 +62,7 @@ export default function StaffHandoverForm({
         )}
 
         {mode === 'RETURN' && (
-          <Field label="Tinh trang tra">
+          <Field label="Tình trạng trả">
             <div className="space-y-2">
               {returnStatuses.map((status) => (
                 <label key={status.value} className="flex cursor-pointer items-center justify-between border border-[#cfc4c5] px-3 py-3">
@@ -79,7 +79,7 @@ export default function StaffHandoverForm({
           </Field>
         )}
 
-        <Field label="URL anh ban giao">
+        <Field label="URL ảnh bàn giao">
           <input
             value={handoverImageUrl}
             onChange={(event) => onImageUrlChange(event.target.value)}
@@ -90,10 +90,10 @@ export default function StaffHandoverForm({
         </Field>
 
         <ImageUploadField
-          label="Anh ban giao"
+          label="Ảnh bàn giao"
           value={handoverImageUrl}
           disabled={isSubmitting}
-          readyLabel="Anh da san sang cho bien ban."
+          readyLabel="Ảnh đã sẵn sàng cho biên bản."
           onUploaded={onImageUploaded}
         />
 
@@ -107,12 +107,12 @@ export default function StaffHandoverForm({
           </button>
         )}
 
-        <Field label="Ghi chu">
+        <Field label="Ghi chú">
           <textarea
             value={note}
             onChange={(event) => onNoteChange(event.target.value)}
             className="min-h-28 w-full border border-[#cfc4c5] bg-[#f9f9f9] px-3 py-3 text-sm outline-none focus:border-[#99854e]"
-            placeholder="Kiem tra tinh trang, phu kien, vet hong neu co..."
+            placeholder="Kiểm tra tình trạng, phụ kiện, vết hỏng nếu có..."
           />
         </Field>
 
@@ -120,7 +120,7 @@ export default function StaffHandoverForm({
           disabled={isSubmitting || !handoverImageUrl || !selectedDetailId}
           className="w-full bg-black px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
         >
-          {isSubmitting ? 'Dang luu...' : mode === 'PICKUP' ? 'Xac nhan ban giao' : 'Xac nhan tra do'}
+          {isSubmitting ? 'Đang lưu...' : mode === 'PICKUP' ? 'Xác nhận bàn giao' : 'Xác nhận trả đồ'}
         </button>
       </form>
     </aside>

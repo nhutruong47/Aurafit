@@ -13,10 +13,10 @@ const formatFileSize = (sizeInBytes) => {
 };
 
 export default function ImageUploadField({
-  label = 'Anh',
+  label = 'Ảnh',
   value,
   disabled = false,
-  readyLabel = 'Anh da san sang de su dung.',
+  readyLabel = 'Ảnh đã sẵn sàng để sử dụng.',
   onUploaded,
 }) {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -61,16 +61,16 @@ export default function ImageUploadField({
 
   const validateSelectedFile = (file) => {
     if (!file) {
-      throw new Error('Vui long chon mot anh de tai len.');
+      throw new Error('Vui lòng chọn một ảnh để tải lên.');
     }
 
     const extension = file.name.split('.').pop()?.toLowerCase() || '';
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      throw new Error('Chi chap nhan anh jpg, jpeg, png hoac webp.');
+      throw new Error('Chỉ chấp nhận ảnh jpg, jpeg, png hoặc webp.');
     }
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      throw new Error('Anh vuot qua gioi han 5 MB.');
+      throw new Error('Ảnh vượt quá giới hạn 5 MB.');
     }
   };
 
@@ -89,13 +89,13 @@ export default function ImageUploadField({
       setSelectedFile(nextFile);
     } catch (validationError) {
       setSelectedFile(null);
-      setError(validationError.message || 'Tep anh khong hop le.');
+      setError(validationError.message || 'Tệp ảnh không hợp lệ.');
     }
   };
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setError('Vui long chon anh truoc khi tai len.');
+      setError('Vui lòng chọn ảnh trước khi tải lên.');
       return;
     }
 
@@ -107,7 +107,7 @@ export default function ImageUploadField({
       setUploadedAsset(asset);
       onUploaded?.(asset);
     } catch (uploadError) {
-      setError(uploadError.message || 'Khong the tai anh len.');
+      setError(uploadError.message || 'Không thể tải ảnh lên.');
     } finally {
       setIsUploading(false);
     }
@@ -129,7 +129,7 @@ export default function ImageUploadField({
       {selectedFile && (
         <div className="border border-[#ebe7df] bg-[#fafaf8] p-3 text-xs text-[#5f5e5e]">
           <p className="font-medium text-black">{selectedFile.name}</p>
-          <p className="mt-1">Kich thuoc: {formatFileSize(selectedFile.size)}</p>
+          <p className="mt-1">Kích thước: {formatFileSize(selectedFile.size)}</p>
         </div>
       )}
 
@@ -145,7 +145,7 @@ export default function ImageUploadField({
         disabled={disabled || isUploading || !selectedFile}
         className="bg-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777]"
       >
-        {isUploading ? 'Dang tai anh...' : 'Tai anh len'}
+        {isUploading ? 'Đang tải ảnh...' : 'Tải ảnh lên'}
       </button>
 
       {(uploadedAsset?.secureUrl || value) && (

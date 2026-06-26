@@ -7,16 +7,16 @@ import AdminSupportSection from '../components/admin/AdminSupportSection';
 import { useAdminCostumes } from '../hooks/useAdminCostumes';
 
 const supportTickets = [
-  { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chua nhan hoan coc', channel: 'Chat', status: 'Dang xu ly', owner: 'Admin' },
-  { id: 'SP-2187', customer: 'Quoc Huy', subject: 'Muon doi lich nhan do', channel: 'Hotline', status: 'Moi', owner: 'Admin' },
-  { id: 'SP-2172', customer: 'Bao Tran', subject: 'Loi thanh toan banking', channel: 'Email', status: 'Da phan hoi', owner: 'Admin' },
+  { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chưa nhận hoàn cọc', channel: 'Chat', status: 'Đang xử lý', owner: 'Admin' },
+  { id: 'SP-2187', customer: 'Quốc Huy', subject: 'Muốn đổi lịch nhận đồ', channel: 'Hotline', status: 'Mới', owner: 'Admin' },
+  { id: 'SP-2172', customer: 'Bảo Trân', subject: 'Lỗi thanh toán banking', channel: 'Email', status: 'Đã phản hồi', owner: 'Admin' },
 ];
 
 const metricCards = [
-  { label: 'Don dang xu ly', value: '47', delta: '+8 hom nay' },
-  { label: 'Doanh thu hom nay', value: '18.6M', delta: '+12.4%' },
-  { label: 'Ticket mo', value: '11', delta: '3 uu tien cao' },
-  { label: 'San pham active', value: '180', delta: 'admin quan ly' },
+  { label: 'Đơn đang xử lý', value: '47', delta: '+8 hôm nay' },
+  { label: 'Doanh thu hôm nay', value: '18.6M', delta: '+12.4%' },
+  { label: 'Ticket mở', value: '11', delta: '3 ưu tiên cao' },
+  { label: 'Sản phẩm active', value: '180', delta: 'admin quản lý' },
 ];
 
 export default function AdminDashboardPage({ currentUser, onNavigate }) {
@@ -57,16 +57,16 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
         <section className="mx-auto min-h-[calc(100dvh-80px)] max-w-[900px] px-5 py-20 md:px-20">
           <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#7f7041]">Admin</p>
           <h1 className="font-serif text-[46px] font-normal italic leading-tight md:text-[70px]">
-            Can tai khoan ADMIN de truy cap.
+            Cần tài khoản ADMIN để truy cập.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-[#5f5e5e]">
-            Chi admin moi co quyen dang tai va quan ly san pham tren AuraFit.
+            Chỉ admin mới có quyền đăng tải và quản lý sản phẩm trên AuraFit.
           </p>
           <button
             onClick={() => onNavigate?.('account')}
             className="mt-9 bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
           >
-            Dang nhap admin
+            Đăng nhập admin
           </button>
         </section>
       </div>
@@ -80,12 +80,12 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7f7041]">AuraFit Admin</p>
             <h1 className="mt-2 font-serif text-4xl font-normal italic leading-[1.15] md:text-5xl">
-              Trung tam quan ly san pham va van hanh
+              Trung tâm quản lý sản phẩm và vận hành
             </h1>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm md:flex md:items-center">
             <StatusBadge label={`${ticketCount} ticket`} tone="warning" />
-            <StatusBadge label={`${products.length} san pham`} tone="good" />
+            <StatusBadge label={`${products.length} sản phẩm`} tone="good" />
             <StatusBadge label="Admin only publish" tone="default" />
           </div>
         </div>
@@ -94,10 +94,10 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
       <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-8 px-5 py-8 md:px-10 xl:grid-cols-[240px_1fr]">
         <aside className="h-fit border border-[#d7d2c8] bg-[#111111] p-3 text-white">
           {[
-            ['overview', 'Tong quan', 'dashboard'],
-            ['products', 'San pham', 'inventory_2'],
-            ['support', 'Ho tro', 'support_agent'],
-            ['reports', 'Bao cao', 'monitoring'],
+            ['overview', 'Tổng quan', 'dashboard'],
+            ['products', 'Sản phẩm', 'inventory_2'],
+            ['support', 'Hỗ trợ', 'support_agent'],
+            ['reports', 'Báo cáo', 'monitoring'],
           ].map(([id, label, icon]) => (
             <button
               key={id}

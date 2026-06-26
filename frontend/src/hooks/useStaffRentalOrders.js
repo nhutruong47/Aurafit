@@ -62,7 +62,7 @@ export function useStaffRentalOrders(currentUser) {
       setError('');
       setLoadedUserKey(requestKey);
     } catch (loadError) {
-      setError(loadError.message || 'Khong the tai danh sach don.');
+      setError(loadError.message || 'Không thể tải danh sách đơn.');
       setLoadedUserKey(requestKey);
     } finally {
       setIsLoading(false);
@@ -99,7 +99,7 @@ export function useStaffRentalOrders(currentUser) {
         setError('');
       } catch (loadError) {
         if (!mounted) return;
-        setError(loadError.message || 'Khong the tai danh sach don.');
+        setError(loadError.message || 'Không thể tải danh sách đơn.');
       } finally {
         if (!mounted) return;
         setIsLoading(false);
@@ -124,7 +124,7 @@ export function useStaffRentalOrders(currentUser) {
       setActiveOrder(order);
       setSelectedDetailId(order.details?.[0]?.id || '');
     } catch (loadError) {
-      setError(loadError.message || 'Khong the tai chi tiet don.');
+      setError(loadError.message || 'Không thể tải chi tiết đơn.');
     }
   };
 
@@ -158,11 +158,11 @@ export function useStaffRentalOrders(currentUser) {
       setSelectedDetailId(refreshedOrder.details?.[0]?.id || '');
       setHandoverImageUrl('');
       setNote('');
-      setMessage(mode === 'PICKUP' ? 'Da tao bien ban ban giao PICKUP.' : 'Da ghi nhan khach tra do.');
+      setMessage(mode === 'PICKUP' ? 'Đã tạo biên bản bàn giao PICKUP.' : 'Đã ghi nhận khách trả đồ.');
 
       await loadOrders(activeOrder.id);
     } catch (submitError) {
-      setError(submitError.message || 'Khong the luu bien ban.');
+      setError(submitError.message || 'Không thể lưu biên bản.');
     } finally {
       setIsSubmitting(false);
     }

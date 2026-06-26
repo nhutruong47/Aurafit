@@ -43,7 +43,7 @@ export default function RentalOrderCheckoutPage({
     if (voucherCode.toUpperCase() === 'AURA20WELCOME') {
       setVoucherApplied(true);
     } else {
-      alert('Voucher khong hop le hoac da het han.');
+      alert('Voucher không hợp lệ hoặc đã hết hạn.');
     }
   };
 
@@ -121,7 +121,7 @@ export default function RentalOrderCheckoutPage({
     }
 
     if (!isDeliveryValid()) {
-      setCheckoutError('Vui long dien day du thong tin giao hang.');
+      setCheckoutError('Vui lòng điền đầy đủ thông tin giao hàng.');
       return;
     }
 
@@ -135,7 +135,7 @@ export default function RentalOrderCheckoutPage({
 
       if (invalidItems.length > 0) {
         throw new Error(
-          'Gio hang chua du du lieu backend de checkout. Moi san pham can co SKU va khoang ngay thue hop le.'
+          'Giỏ hàng chưa đủ dữ liệu backend để checkout. Mỗi sản phẩm cần có SKU và khoảng ngày thuê hợp lệ.'
         );
       }
 
@@ -157,7 +157,7 @@ export default function RentalOrderCheckoutPage({
       onCheckoutSuccess?.(orderResponse.id);
       onNavigate?.('payment');
     } catch (err) {
-      setCheckoutError(err.message || 'Khong the tao don hang. Vui long thu lai.');
+      setCheckoutError(err.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -180,7 +180,7 @@ export default function RentalOrderCheckoutPage({
                 className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#99854e] transition-colors hover:text-black"
               >
                 <span className="material-symbols-outlined text-[16px]">receipt_long</span>
-                Lich su don hang
+                Lịch sử đơn hàng
               </button>
             </div>
             <div className="flex items-center gap-4 text-[#5f5e5e]">
@@ -213,21 +213,21 @@ export default function RentalOrderCheckoutPage({
               <div className="border-t border-[#cfc4c5] pt-12">
                 <div className="mb-8 flex items-end justify-between">
                   <div>
-                    <h2 className="font-serif text-2xl font-normal uppercase italic">Phu kien di kem pho bien</h2>
-                    <p className="mt-2 text-sm text-[#5f5e5e]">Hoan thien outfit cua ban voi cac phu kien duoc yeu thich nhat.</p>
+                    <h2 className="font-serif text-2xl font-normal uppercase italic">Phụ kiện đi kèm phổ biến</h2>
+                    <p className="mt-2 text-sm text-[#5f5e5e]">Hoàn thiện outfit của bạn với các phụ kiện được yêu thích nhất.</p>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => scrollAccessories('left')}
                       className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#cfc4c5]/40 transition hover:bg-[#99854e] hover:text-white"
-                      aria-label="Cuon trai"
+                      aria-label="Cuộn trái"
                     >
                       <span className="material-symbols-outlined text-sm">west</span>
                     </button>
                     <button
                       onClick={() => scrollAccessories('right')}
                       className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#cfc4c5]/40 transition hover:bg-[#99854e] hover:text-white"
-                      aria-label="Cuon phai"
+                      aria-label="Cuộn phải"
                     >
                       <span className="material-symbols-outlined text-sm">east</span>
                     </button>
@@ -248,21 +248,21 @@ export default function RentalOrderCheckoutPage({
 
             {hasCartItems && (
               <div className="border-t border-[#cfc4c5] pt-12">
-                <h2 className="mb-6 font-serif text-2xl font-normal uppercase italic">Thong tin giao hang</h2>
+                <h2 className="mb-6 font-serif text-2xl font-normal uppercase italic">Thông tin giao hàng</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Ten nguoi nhan *</label>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Tên người nhận *</label>
                     <input
                       type="text"
                       name="receiverName"
                       value={deliveryInfo.receiverName}
                       onChange={handleDeliveryChange}
-                      placeholder="Ho va ten"
+                      placeholder="Họ và tên"
                       className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">So dien thoai *</label>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Số điện thoại *</label>
                     <input
                       type="tel"
                       name="receiverPhone"
@@ -273,13 +273,13 @@ export default function RentalOrderCheckoutPage({
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Dia chi giao hang *</label>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Địa chỉ giao hàng *</label>
                     <input
                       type="text"
                       name="deliveryAddress"
                       value={deliveryInfo.deliveryAddress}
                       onChange={handleDeliveryChange}
-                      placeholder="So nha, duong, phuong/xa, quan/huyen, tinh/thanh pho"
+                      placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
                       className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                     />
                   </div>
@@ -287,14 +287,14 @@ export default function RentalOrderCheckoutPage({
                 {checkoutError && <p className="mt-3 text-sm text-red-600">{checkoutError}</p>}
                 {!currentUser?.id && (
                   <p className="mt-3 text-sm text-[#99854e]">
-                    Vui long{' '}
+                    Vui lòng{' '}
                     <button
                       onClick={() => onNavigate?.('account')}
                       className="underline hover:text-black"
                     >
-                      dang nhap
+                      đăng nhập
                     </button>{' '}
-                    de tiep tuc thanh toan.
+                    để tiếp tục thanh toán.
                   </p>
                 )}
               </div>
@@ -322,15 +322,15 @@ export default function RentalOrderCheckoutPage({
           <section className="mt-32 md:mt-40">
             <div className="mb-12 flex items-baseline justify-between border-b border-[#cfc4c5] pb-4">
               <div>
-                <h2 className="font-serif text-3xl font-normal uppercase italic">Cac bo do lien quan</h2>
+                <h2 className="font-serif text-3xl font-normal uppercase italic">Các bộ đồ liên quan</h2>
                 {isSingleRentalItem && (
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5f5e5e]">
-                    Goi y them cac trang phuc cung chu de voi {selectedItemName}.
+                    Gợi ý thêm các trang phục cùng chủ đề với {selectedItemName}.
                   </p>
                 )}
               </div>
               <a className="group flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]" href="#">
-                Xem tat ca
+                Xem tất cả
                 <span className="h-px w-12 bg-[#5f5e5e] transition-all group-hover:w-20" />
               </a>
             </div>

@@ -72,12 +72,12 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
     setInfoMessage('');
 
     if (form.password !== form.confirmPassword) {
-      setLocalError('Mat khau xac nhan chua khop. Vui long kiem tra lai.');
+      setLocalError('Mật khẩu xác nhận chưa khớp. Vui lòng kiểm tra lại.');
       return;
     }
 
     if (!form.email || !form.fullName || !form.phone || !form.password) {
-      setLocalError('Vui long dien day du ho ten, so dien thoai, email va mat khau.');
+      setLocalError('Vui lòng điền đầy đủ họ tên, số điện thoại, email và mật khẩu.');
       return;
     }
 
@@ -90,10 +90,10 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
       });
       setStage('verify-otp');
       setOtpCountdown(OTP_TTL_SECONDS);
-      const fallbackMsg = `Da dang ky tam. Ma OTP da gui toi ${form.email}. Vui long kiem tra hop thu va nhap ma de kich hoat tai khoan.`;
+      const fallbackMsg = `Đã đăng ký tạm. Mã OTP đã gửi tới ${form.email}. Vui lòng kiểm tra hộp thư và nhập mã để kích hoạt tài khoản.`;
       setInfoMessage(response?.message || fallbackMsg);
     } catch (err) {
-      setLocalError(err.message || 'Khong the dang ky va gui ma OTP. Vui long thu lai.');
+      setLocalError(err.message || 'Không thể đăng ký và gửi mã OTP. Vui lòng thử lại.');
     }
   };
 
@@ -110,9 +110,9 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
         password: form.password,
       });
       setOtpCountdown(OTP_TTL_SECONDS);
-      setInfoMessage('Da gui lai ma OTP. Vui long kiem tra email.');
+      setInfoMessage('Đã gửi lại mã OTP. Vui lòng kiểm tra email.');
     } catch (err) {
-      setLocalError(err.message || 'Khong the gui lai ma OTP.');
+      setLocalError(err.message || 'Không thể gửi lại mã OTP.');
     }
   };
 
@@ -121,7 +121,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
     setLocalError('');
 
     if (!form.otpCode || form.otpCode.length !== 6) {
-      setLocalError('Vui long nhap du 6 chu so cua ma OTP.');
+      setLocalError('Vui lòng nhập đủ 6 chữ số của mã OTP.');
       return;
     }
 
@@ -142,8 +142,8 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
             Your rental wardrobe, one sign in away.
           </h1>
           <p className="mt-7 max-w-lg text-base leading-8 text-[#5f5e5e]">
-            Dang nhap de theo doi don thue, quan ly gio hang va lien he AuraFit Admin khi can tu van.
-            San pham tren he thong chi do tai khoan ADMIN dang tai va quan ly.
+            Đăng nhập để theo dõi đơn thuê, quản lý giỏ hàng và liên hệ AuraFit Admin khi cần tư vấn.
+            Sản phẩm trên hệ thống chỉ do tài khoản ADMIN đăng tải và quản lý.
           </p>
           <div className="mt-10 grid max-w-md grid-cols-3 gap-4">
             {[
@@ -173,7 +173,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   !isRegister ? 'bg-black text-white' : 'text-[#5f5e5e] hover:text-black'
                 }`}
               >
-                Dang nhap
+                Đăng nhập
               </button>
               <button
                 type="button"
@@ -186,7 +186,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   isRegister ? 'bg-black text-white' : 'text-[#5f5e5e] hover:text-black'
                 }`}
               >
-                Dang ky
+                Đăng ký
               </button>
             </div>
 
@@ -194,23 +194,23 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
               <h2 className="font-serif text-3xl font-normal italic md:text-4xl">
                 {isRegister
                   ? stage === 'verify-otp'
-                    ? 'Xac thuc OTP de hoan tat dang ky'
-                    : 'Dang ky tai khoan'
-                  : 'Chao mung tro lai'}
+                    ? 'Xác thực OTP để hoàn tất đăng ký'
+                    : 'Đăng ký tài khoản'
+                  : 'Chào mừng trở lại'}
               </h2>
               <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
                 {isRegister
                   ? stage === 'verify-otp'
-                    ? `Ma xac thuc da gui toi ${form.email}. Nhap ma OTP de kich hoat tai khoan cua ban.`
-                    : 'Dien day du thong tin roi nhan Dang ky. He thong se gui ma OTP xac thuc email Gmail truoc khi hoan tat dang ky.'
-                  : 'Admin dang nhap se vao dashboard quan ly san pham. Staff dang nhap se vao man hinh ban giao.'}
+                    ? `Mã xác thực đã gửi tới ${form.email}. Nhập mã OTP để kích hoạt tài khoản của bạn.`
+                    : 'Điền đầy đủ thông tin rồi nhấn Đăng ký. Hệ thống sẽ gửi mã OTP xác thực email Gmail trước khi hoàn tất đăng ký.'
+                  : 'Admin đăng nhập sẽ vào dashboard quản lý sản phẩm. Staff đăng nhập sẽ vào màn hình bàn giao.'}
               </p>
             </div>
 
             {!isRegister ? (
               <form className="space-y-5" onSubmit={onSubmit}>
                 <TextField label="Email" name="email" type="email" placeholder="you@aurafit.vn" autoComplete="email" />
-                <TextField label="Mat khau" name="password" type="password" placeholder="********" autoComplete="current-password" />
+                <TextField label="Mật khẩu" name="password" type="password" placeholder="********" autoComplete="current-password" />
 
                 {displayError && (
                   <div className="border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
@@ -223,21 +223,21 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   disabled={isSubmitting}
                   className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
                 >
-                  {isSubmitting ? 'Dang xu ly...' : 'Dang nhap'}
+                  {isSubmitting ? 'Đang xử lý...' : 'Đăng nhập'}
                 </button>
               </form>
             ) : stage === 'details' ? (
               <form className="space-y-5" onSubmit={handleSendOtp}>
                 <TextField
-                  label="Ho ten"
+                  label="Họ tên"
                   name="fullName"
-                  placeholder="Nguyen Thanh An"
+                  placeholder="Nguyễn Thành An"
                   value={form.fullName}
                   onChange={updateField('fullName')}
                   autoComplete="name"
                 />
                 <TextField
-                  label="So dien thoai"
+                  label="Số điện thoại"
                   name="phone"
                   type="tel"
                   placeholder="0901 234 567"
@@ -255,7 +255,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   autoComplete="email"
                 />
                 <TextField
-                  label="Mat khau"
+                  label="Mật khẩu"
                   name="password"
                   type="password"
                   placeholder="********"
@@ -264,7 +264,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   autoComplete="new-password"
                 />
                 <TextField
-                  label="Xac nhan mat khau"
+                  label="Xác nhận mật khẩu"
                   name="confirmPassword"
                   type="password"
                   placeholder="********"
@@ -284,21 +284,21 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   disabled={isSubmitting}
                   className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
                 >
-                  {isSubmitting ? 'Dang dang ky...' : 'Dang ky'}
+                  {isSubmitting ? 'Đang đăng ký...' : 'Đăng ký'}
                 </button>
               </form>
             ) : (
               <form className="space-y-5" onSubmit={handleVerifyAndRegister}>
                 <div className="border border-[#cfc4c5] bg-[#f9f9f9] p-4 text-sm leading-6 text-[#5f5e5e]">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#99854e]">Thong tin da dang ky</p>
-                  <p className="mt-2"><strong>Ho ten:</strong> {form.fullName}</p>
-                  <p><strong>So dien thoai:</strong> {form.phone}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#99854e]">Thông tin đã đăng ký</p>
+                  <p className="mt-2"><strong>Họ tên:</strong> {form.fullName}</p>
+                  <p><strong>Số điện thoại:</strong> {form.phone}</p>
                   <p><strong>Email:</strong> {form.email}</p>
                 </div>
 
                 <div>
                   <TextField
-                    label="Ma OTP (6 chu so)"
+                    label="Mã OTP (6 chữ số)"
                     name="otpCode"
                     placeholder="123456"
                     value={form.otpCode}
@@ -307,8 +307,8 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   <div className="mt-2 flex items-center justify-between text-[11px] text-[#5f5e5e]">
                     <span>
                       {otpCountdown > 0
-                        ? `Ma het han sau ${Math.floor(otpCountdown / 60)}:${String(otpCountdown % 60).padStart(2, '0')}`
-                        : 'Ma da het han, vui long gui lai.'}
+                        ? `Mã hết hạn sau ${Math.floor(otpCountdown / 60)}:${String(otpCountdown % 60).padStart(2, '0')}`
+                        : 'Mã đã hết hạn, vui lòng gửi lại.'}
                     </span>
                     <button
                       type="button"
@@ -316,7 +316,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                       disabled={otpCountdown > 0}
                       className="font-semibold uppercase tracking-[0.16em] text-[#99854e] transition hover:text-black disabled:cursor-not-allowed disabled:text-[#999999]"
                     >
-                      Gui lai ma
+                      Gửi lại mã
                     </button>
                   </div>
                 </div>
@@ -338,7 +338,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   disabled={isSubmitting}
                   className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
                 >
-                  {isSubmitting ? 'Dang xu ly...' : 'Xac thuc va tao tai khoan'}
+                  {isSubmitting ? 'Đang xử lý...' : 'Xác thực và tạo tài khoản'}
                 </button>
 
                 <button
@@ -350,7 +350,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   }}
                   className="block w-full text-center text-[11px] uppercase tracking-[0.18em] text-[#5f5e5e] transition hover:text-black"
                 >
-                  ← Chinh sua thong tin
+                  ← Chỉnh sửa thông tin
                 </button>
               </form>
             )}

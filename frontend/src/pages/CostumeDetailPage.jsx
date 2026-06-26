@@ -10,38 +10,38 @@ import { hasUserRole } from '../utils/roles';
 const initialMockReviews = [
   {
     id: 1,
-    author: 'Nguyen Minh Anh',
+    author: 'Nguyễn Minh Anh',
     rating: 5,
     date: '10/05/2026', 
-    comment: 'Trang phuc rat dep, chat lieu vai cao cap va len form cuc chuan. Dich vu tu van nhiet tinh, giao hang nhanh chong.',
+    comment: 'Trang phục rất đẹp, chất liệu vải cao cấp và lên form cực chuẩn. Dịch vụ tư vấn nhiệt tình, giao hàng nhanh chóng.',
   },
   {
     id: 2,
-    author: 'Tran Hai Dang',
+    author: 'Trần Hải Đăng',
     rating: 4,
     date: '02/06/2026',
-    comment: 'Do len form chuan, mau sac y nhu hinh chup. Co mot chut vet nhan nho do van chuyen nhung ui so la dep ngay.',
+    comment: 'Đồ lên form chuẩn, màu sắc y như hình chụp. Có một chút vết nhăn nhỏ do vận chuyển nhưng ủi sơ là đẹp ngay.',
   },
   {
     id: 3,
-    author: 'Le Ngoc Diep',
+    author: 'Lê Ngọc Diệp',
     rating: 5,
     date: '12/06/2026',
-    comment: 'Tuyet voi! Minh thue do di du da hoi ai cung khen. Se tiep tuc ung ho AuraFit trong nhung su kien toi.',
+    comment: 'Tuyệt vời! Mình thuê đồ đi dự dạ hội ai cũng khen. Sẽ tiếp tục ủng hộ AuraFit trong những sự kiện tới.',
   },
   {
     id: 4,
-    author: 'Pham Thu Ha',
+    author: 'Phạm Thu Hà',
     rating: 3,
     date: '15/06/2026',
-    comment: 'Do tam on nhung form hoi rong so voi bang size. Phai dung them kep phia sau moi vua.',
+    comment: 'Đồ tạm ổn nhưng form hơi rộng so với bảng size. Phải dùng thêm kẹp phía sau mới vừa.',
   },
   {
     id: 5,
-    author: 'Hoang Van Thai',
+    author: 'Hoàng Văn Thái',
     rating: 5,
     date: '20/06/2026',
-    comment: 'Qua ung y. Do giat thom tho sach se, boc trong tui xach rat chuyen nghiep.',
+    comment: 'Quá ưng ý. Đồ giặt thơm tho sạch sẽ, bọc trong túi xách rất chuyên nghiệp.',
   },
 ];
 
@@ -75,7 +75,7 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
       })
       .catch((error) => {
         if (!isMounted) return;
-        setLoadError(error.message || 'Khong the tai chi tiet san pham.');
+        setLoadError(error.message || 'Không thể tải chi tiết sản phẩm.');
         setProduct(null);
       })
       .finally(() => {
@@ -127,7 +127,7 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
 
     const newReview = {
       id: Date.now(),
-      author: 'Ban (Khach hang)',
+      author: 'Bạn (Khách hàng)',
       rating: newReviewData.rating,
       date: new Date().toLocaleDateString('vi-VN'),
       comment: newReviewData.comment,
@@ -151,7 +151,7 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
           className="mb-8 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:text-black"
         >
           <span className="material-symbols-outlined text-[16px]">west</span>
-          Quay lai
+          Quay lại
         </button>
 
         {loadError && <AlertMessage text={loadError} className="mb-6" />}

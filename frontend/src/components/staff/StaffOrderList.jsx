@@ -1,4 +1,3 @@
-// Danh sach don hang ben trai trong staff dashboard.
 import { StatusBadge } from './StaffDashboardShared';
 
 export default function StaffOrderList({ orders, activeOrderId, onOpenOrder }) {

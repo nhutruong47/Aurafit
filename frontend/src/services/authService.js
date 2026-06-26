@@ -15,7 +15,7 @@ export const requestRegistrationOtp = async ({ email, fullName, phone, password 
         method: 'POST',
         data: { email, fullName, phone, password },
       },
-      'Khong the dang ky va gui ma OTP.'
+      'Không thể đăng ký và gửi mã OTP.'
     )
   );
 
@@ -27,7 +27,7 @@ export const verifyOtpAndRegister = async ({ email, otpCode }) =>
         method: 'POST',
         data: { email, otpCode },
       },
-      'Khong the hoan tat dang ky.'
+      'Không thể hoàn tất đăng ký.'
     )
   );
 
@@ -39,7 +39,7 @@ export const registerUser = async (userData) =>
         method: 'POST',
         data: userData,
       },
-      'Khong the dang ky tai khoan.'
+      'Không thể đăng ký tài khoản.'
     )
   );
 
@@ -51,7 +51,7 @@ export const loginUser = async (credentials) =>
         method: 'POST',
         data: credentials,
       },
-      'Khong the dang nhap.'
+      'Không thể đăng nhập.'
     )
   );
 
@@ -62,6 +62,6 @@ export const refreshAccessToken = async () =>
         url: '/users/refresh',
         method: 'POST',
       },
-      'Khong the lam moi phien dang nhap.'
+      'Không thể làm mới phiên đăng nhập.'
     )
   );

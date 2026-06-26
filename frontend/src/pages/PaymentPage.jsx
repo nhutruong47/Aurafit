@@ -35,7 +35,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       })
       .catch((error) => {
         if (!isMounted) return;
-        setPaymentError(error.message || 'Khong the tai thong tin don hang.');
+        setPaymentError(error.message || 'Không thể tải thông tin đơn hàng.');
       })
       .finally(() => {
         if (isMounted) {
@@ -52,7 +52,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
     if (order?.details?.length) {
       return order.details.map((detail) => ({
         id: detail.id,
-        name: detail.costumeName || 'Trang phuc AuraFit',
+        name: detail.costumeName || 'Trang phục AuraFit',
         meta: [detail.skuCode || detail.sku, detail.size, detail.color].filter(Boolean).join(' • ') || 'Rental item',
         price: formatCurrency(detail.subtotal || detail.rentalPrice || 0),
         image: fallbackProductImage,
@@ -74,7 +74,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
 
   const handleCompletePayment = async () => {
     if (!pendingOrderId) {
-      setPaymentError('Khong tim thay don hang. Vui long quay lai buoc checkout.');
+      setPaymentError('Không tìm thấy đơn hàng. Vui lòng quay lại bước checkout.');
       return;
     }
 
@@ -85,7 +85,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       const paymentPayload = await createPayment({ orderId: pendingOrderId });
       setPaymentInit(paymentPayload || null);
     } catch (error) {
-      setPaymentError(error.message || 'Khong the tao thanh toan.');
+      setPaymentError(error.message || 'Không thể tạo thanh toán.');
     } finally {
       setIsSubmitting(false);
     }

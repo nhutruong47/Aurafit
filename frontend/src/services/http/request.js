@@ -10,7 +10,7 @@ export const getErrorMessage = (error, fallbackMessage) => {
   return responseMessage || fallbackMessage;
 };
 
-export const requestJson = async (config, fallbackMessage = 'Khong the ket noi backend/database.') => {
+export const requestJson = async (config, fallbackMessage = 'Không thể kết nối backend/database.') => {
   try {
     const response = await apiClient.request(config);
     return response.data;

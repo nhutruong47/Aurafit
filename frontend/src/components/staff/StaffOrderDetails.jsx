@@ -1,4 +1,3 @@
-// Khu vuc chi tiet don hang va item staff dang xu ly.
 import { formatCurrency } from '../../utils/formatCurrency';
 import { SmallFact, StatusBadge } from './StaffDashboardShared';
 

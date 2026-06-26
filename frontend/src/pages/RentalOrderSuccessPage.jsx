@@ -13,7 +13,7 @@ const fallbackItemImage =
   'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=85';
 
 const formatDateRange = (start, end) => {
-  if (!start || !end) return 'Ngay thue dang cap nhat';
+  if (!start || !end) return 'Ngày thuê đang cập nhật';
   const formatDate = (value) => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
@@ -45,7 +45,7 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
       })
       .catch((requestError) => {
         if (!isMounted) return;
-        setError(requestError.message || 'Khong the tai chi tiet don hang vua tao.');
+        setError(requestError.message || 'Không thể tải chi tiết đơn hàng vừa tạo.');
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -59,8 +59,8 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
   const items = useMemo(() => {
     if (order?.details?.length) {
       return order.details.map((detail) => ({
-        name: detail.costumeName || 'Trang phuc AuraFit',
-        size: detail.size ? `Size: ${detail.size}${detail.color ? ` • ${detail.color}` : ''}` : detail.sku || 'Trang phuc thue',
+        name: detail.costumeName || 'Trang phục AuraFit',
+        size: detail.size ? `Size: ${detail.size}${detail.color ? ` • ${detail.color}` : ''}` : detail.sku || 'Trang phục thuê',
         image: fallbackItemImage,
         rental: formatDateRange(order.rentalStartDate, order.rentalEndDate),
         sku: detail.sku,
@@ -70,9 +70,9 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
 
     return (cartItems || []).map((item) => ({
       name: item.name,
-      size: item.size || item.meta || 'Trang phuc thue',
+      size: item.size || item.meta || 'Trang phục thuê',
       image: item.image || fallbackItemImage,
-      rental: 'Ngay thue dang cap nhat',
+      rental: 'Ngày thuê đang cập nhật',
     }));
   }, [order, cartItems]);
 
@@ -107,7 +107,7 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
         )}
 
         {isLoading ? (
-          <div className="mx-5 py-20 text-center text-sm text-[#5f5e5e] md:mx-20">Dang tai chi tiet don hang...</div>
+          <div className="mx-5 py-20 text-center text-sm text-[#5f5e5e] md:mx-20">Đang tải chi tiết đơn hàng...</div>
         ) : (
           <section className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-5 py-20 md:grid-cols-12 md:px-20">
             <OrderSelectionSection items={items} />

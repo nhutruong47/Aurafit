@@ -12,7 +12,7 @@ export default function OrderDetailsPanel({ order }) {
   return (
     <div className="sticky top-28 border border-[#cfc4c5] bg-white p-8 md:p-10">
       <div className="mb-8 flex items-baseline justify-between border-b border-[#cfc4c5] pb-6">
-        <h2 className="font-serif text-3xl font-normal">Chi tiet: {getOrderCode(order.id)}</h2>
+        <h2 className="font-serif text-3xl font-normal">Chi tiết: {getOrderCode(order.id)}</h2>
         <span className={`text-[12px] font-bold uppercase tracking-[0.2em] ${statusInfo.color}`}>
           {statusInfo.text}
         </span>
@@ -20,14 +20,14 @@ export default function OrderDetailsPanel({ order }) {
 
       <div className="mb-12">
         <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
-          Tien trinh don hang
+          Tiến trình đơn hàng
         </h3>
         <OrderTimeline timeline={timeline} />
       </div>
 
       <div className="border-t border-[#cfc4c5] pt-8">
         <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
-          San pham da thue
+          Sản phẩm đã thuê
         </h3>
         <div className="space-y-4">
           {order.details?.map((item, index) => (
@@ -60,8 +60,8 @@ export default function OrderDetailsPanel({ order }) {
                 </p>
                 <p className="mt-0.5 text-[9px] text-[#999999]">
                   {item.rentalDays
-                    ? `${item.rentalDays} ngay thue`
-                    : `Gia/ngay: ${formatCurrency(item.rentalPrice || 0)}`}
+                    ? `${item.rentalDays} ngày thuê`
+                    : `Giá/ngày: ${formatCurrency(item.rentalPrice || 0)}`}
                 </p>
               </div>
             </div>

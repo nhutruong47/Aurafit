@@ -37,7 +37,7 @@ export default function PaymentSummary({
           </h3>
           <div className="mb-8 space-y-6">
             {isLoading ? (
-              <p className="text-sm text-[#5f5e5e]">Dang tai thong tin don hang...</p>
+              <p className="text-sm text-[#5f5e5e]">Đang tải thông tin đơn hàng...</p>
             ) : (
               items.map((item) => (
                 <div key={item.cartId || item.id || item.name} className="flex gap-4">
@@ -83,7 +83,7 @@ export default function PaymentSummary({
           {paymentInit && (
             <div className="mt-6 border border-[#99854e]/30 bg-[#f8f4e8] p-4 text-sm text-[#5f5e5e]">
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#725f2f]">
-                Ma thanh toan da tao
+                Mã thanh toán đã tạo
               </p>
               {paymentInit.qrImageUrl ? (
                 <img
@@ -93,14 +93,14 @@ export default function PaymentSummary({
                 />
               ) : null}
               <p>
-                <strong>Noi dung:</strong> {paymentInit.paymentContent}
+                <strong>Nội dung:</strong> {paymentInit.paymentContent}
               </p>
               <p>
-                <strong>So tien:</strong> {formatCurrency(paymentInit.amount || 0)}
+                <strong>Số tiền:</strong> {formatCurrency(paymentInit.amount || 0)}
               </p>
               <p className="mt-3 text-xs leading-6">
-                Sau khi chuyen khoan thanh cong, backend se doi soat webhook va cap nhat trang thai
-                don hang.
+                Sau khi chuyển khoản thành công, backend sẽ đối soát webhook và cập nhật trạng thái
+                đơn hàng.
               </p>
             </div>
           )}
@@ -109,19 +109,19 @@ export default function PaymentSummary({
             disabled={isSubmitting || isLoading}
             className="mt-10 w-full bg-black py-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
           >
-            {isSubmitting ? 'Dang tao ma thanh toan' : paymentInit ? 'Tao lai ma QR' : 'Tao ma QR thanh toan'}
+            {isSubmitting ? 'Đang tạo mã thanh toán' : paymentInit ? 'Tạo lại mã QR' : 'Tạo mã QR thanh toán'}
           </button>
           {onViewOrders && (
             <button
               onClick={onViewOrders}
               className="mt-4 w-full border border-black py-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-black hover:text-white"
             >
-              Xem chi tiet don hang
+              Xem chi tiết đơn hàng
             </button>
           )}
           <p className="mt-6 text-center text-[10px] font-semibold uppercase leading-relaxed tracking-[0.12em] text-[#999999]">
-            Tao QR khong dong nghia don da thanh toan. Trang thai don se duoc cap nhat boi backend
-            sau khi doi soat giao dich.
+            Tạo QR không đồng nghĩa đơn đã thanh toán. Trạng thái đơn sẽ được cập nhật bởi backend
+            sau khi đối soát giao dịch.
           </p>
         </div>
       </aside>

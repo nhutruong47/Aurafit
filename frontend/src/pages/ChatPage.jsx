@@ -31,8 +31,8 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
     {
       id: 1,
       author: 'staff',
-      time: 'Bay gio',
-      text: 'Xin chao, AuraFit Admin dang san sang tu van san pham, don thue va thanh toan cho ban.',
+      time: 'Bây giờ',
+      text: 'Xin chào, AuraFit Admin đang sẵn sàng tư vấn sản phẩm, đơn thuê và thanh toán cho bạn.',
     },
   ]);
 
@@ -46,13 +46,13 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
     if (!text) return;
 
     setMessages((currentMessages) => [
-      ...currentMessages,
-      {
-        id: Date.now(),
-        author: 'user',
-        time: 'Bay gio',
-        text,
-      },
+        ...currentMessages,
+        {
+          id: Date.now(),
+          author: 'user',
+          time: 'Bây giờ',
+          text,
+        },
     ]);
     setDraft('');
 
@@ -62,10 +62,10 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
         {
           id: Date.now() + 1,
           author: 'staff',
-          time: 'Bay gio',
+          time: 'Bây giờ',
           text: activeProduct
-            ? `Admin da ghi nhan yeu cau ve "${activeProduct.name}". Chung minh se kiem tra lich thue va phan hoi som.`
-            : 'Admin da ghi nhan tin nhan. Chung minh se phan hoi som nhat co the.',
+            ? `Admin đã ghi nhận yêu cầu về "${activeProduct.name}". Chúng mình sẽ kiểm tra lịch thuê và phản hồi sớm.`
+            : 'Admin đã ghi nhận tin nhắn. Chúng mình sẽ phản hồi sớm nhất có thể.',
         },
       ]);
     }, 700);
@@ -73,7 +73,7 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
 
   const sendPriceRequest = () => {
     if (!activeProduct) return;
-    sendMessage(`Minh muon duoc admin tu van gia va lich thue cho "${activeProduct.name}" (${activeProduct.price}).`);
+    sendMessage(`Mình muốn được admin tư vấn giá và lịch thuê cho "${activeProduct.name}" (${activeProduct.price}).`);
   };
 
   const handleCloseSession = () => {
@@ -96,7 +96,7 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
                 </span>
               </div>
               <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
-                San pham chi do ADMIN dang tai va quan ly
+                Sản phẩm chỉ do ADMIN đăng tải và quản lý
               </p>
             </div>
             <div className="flex gap-2">
@@ -104,7 +104,7 @@ export default function ChatPage({ onNavigate, cartItems = [] }) {
                 onClick={handleCloseSession}
                 className="border border-[#cfc4c5] px-4 py-2 text-xs font-semibold uppercase tracking-wider transition hover:bg-black hover:text-white"
               >
-                Dong phien
+                Đóng phiên
               </button>
               <button
                 onClick={() => onNavigate?.('catalog')}

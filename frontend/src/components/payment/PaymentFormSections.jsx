@@ -24,7 +24,7 @@ function DetailRow({ label, value }) {
       <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
         {label}
       </p>
-      <p className="text-sm leading-6 text-[#1a1c1c]">{value || 'Dang cap nhat'}</p>
+      <p className="text-sm leading-6 text-[#1a1c1c]">{value || 'Đang cập nhật'}</p>
     </div>
   );
 }
@@ -34,7 +34,7 @@ function GoldDivider() {
 }
 
 function formatDateRange(start, end) {
-  if (!start || !end) return 'Dang cap nhat';
+  if (!start || !end) return 'Đang cập nhật';
 
   const formatDate = (value) => {
     const date = new Date(value);
@@ -50,33 +50,33 @@ export default function PaymentFormSections({ order, paymentInit }) {
 
   return (
     <div className="space-y-16 lg:max-w-3xl">
-      <CheckoutSection number="01" title="Thong tin giao hang" meta="Da tao tu checkout">
+      <CheckoutSection number="01" title="Thông tin giao hàng" meta="Đã tạo từ checkout">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <DetailRow label="Nguoi nhan" value={order?.receiverName} />
-          <DetailRow label="So dien thoai" value={order?.receiverPhone} />
+          <DetailRow label="Người nhận" value={order?.receiverName} />
+          <DetailRow label="Số điện thoại" value={order?.receiverPhone} />
           <div className="md:col-span-2">
-            <DetailRow label="Dia chi giao hang" value={order?.deliveryAddress} />
+            <DetailRow label="Địa chỉ giao hàng" value={order?.deliveryAddress} />
           </div>
         </div>
       </CheckoutSection>
 
       <GoldDivider />
 
-      <CheckoutSection number="02" title="Thong tin don thue" meta="Doc tu backend">
+      <CheckoutSection number="02" title="Thông tin đơn thuê" meta="Đọc từ backend">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <DetailRow label="Ma don" value={`RO-${String(displayOrderId).padStart(4, '0')}`} />
-          <DetailRow label="Trang thai hien tai" value={order?.status || 'PENDING'} />
-          <DetailRow label="Thoi gian thue" value={formatDateRange(order?.rentalStartDate, order?.rentalEndDate)} />
+          <DetailRow label="Mã đơn" value={`RO-${String(displayOrderId).padStart(4, '0')}`} />
+          <DetailRow label="Trạng thái hiện tại" value={order?.status || 'PENDING'} />
+          <DetailRow label="Thời gian thuê" value={formatDateRange(order?.rentalStartDate, order?.rentalEndDate)} />
           <DetailRow
-            label="So san pham"
-            value={order?.details?.length ? `${order.details.length} item` : 'Dang cap nhat'}
+            label="Số sản phẩm"
+            value={order?.details?.length ? `${order.details.length} item` : 'Đang cập nhật'}
           />
         </div>
       </CheckoutSection>
 
       <GoldDivider />
 
-      <CheckoutSection number="03" title="Thanh toan chuyen khoan" icon="verified_user">
+      <CheckoutSection number="03" title="Thanh toán chuyển khoản" icon="verified_user">
         <div className="space-y-6">
           <div className="border border-[#cfc4c5] bg-white p-5">
             <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
@@ -84,13 +84,13 @@ export default function PaymentFormSections({ order, paymentInit }) {
             </p>
             <p className="font-serif text-3xl italic">RO-{String(displayOrderId).padStart(4, '0')}</p>
             <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
-              Frontend chi tao ma VietQR tu backend. Don hang chi chuyen sang CONFIRMED sau khi
-              backend nhan webhook thanh toan thanh cong.
+              Frontend chỉ tạo mã VietQR từ backend. Đơn hàng chỉ chuyển sang CONFIRMED sau khi
+              backend nhận webhook thanh toán thành công.
             </p>
           </div>
           <div className="border border-[#cfc4c5] bg-[#f7f7f7] p-5 text-sm leading-7">
             <p>
-              <strong>Phuong thuc:</strong> Banking / VietQR
+              <strong>Phương thức:</strong> Banking / VietQR
             </p>
             <p>
               <strong>Request body:</strong> {'{ orderId }'}
@@ -102,10 +102,10 @@ export default function PaymentFormSections({ order, paymentInit }) {
           {paymentInit && (
             <div className="border border-[#cfc4c5] bg-white p-5 text-sm leading-7">
               <p>
-                <strong>Noi dung chuyen khoan:</strong> {paymentInit.paymentContent}
+                <strong>Nội dung chuyển khoản:</strong> {paymentInit.paymentContent}
               </p>
               <p>
-                <strong>So tien can chuyen:</strong>{' '}
+                <strong>Số tiền cần chuyển:</strong>{' '}
                 {Number(paymentInit.amount || 0).toLocaleString('vi-VN')} VND
               </p>
             </div>

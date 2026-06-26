@@ -38,9 +38,9 @@ export default function CatalogPage({ onNavigate, onAddToCart }) {
       <div className="mx-auto max-w-[1440px]">
         <div className="mb-10">
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">The Collection</p>
-          <h1 className="mb-4 font-serif text-4xl font-normal italic text-black sm:text-5xl">Bá»™ sÆ°u táº­p trang phá»¥c</h1>
+          <h1 className="mb-4 font-serif text-4xl font-normal italic text-black sm:text-5xl">Bộ sưu tập trang phục</h1>
           <p className="max-w-2xl text-lg leading-8 text-[#5f5e5e]">
-            KhÃ¡m phÃ¡ hÃ ng ngÃ n sáº£n pháº©m Ä‘a dáº¡ng tá»« Cosplay, Sá»± kiá»‡n, Ká»· yáº¿u Ä‘áº¿n Phá»¥ kiá»‡n.
+            Khám phá hàng ngàn sản phẩm đa dạng từ Cosplay, Sự kiện, Kỷ yếu đến Phụ kiện.
           </p>
         </div>
 
@@ -70,16 +70,16 @@ export default function CatalogPage({ onNavigate, onAddToCart }) {
             <div className="mb-6">
               <p className="text-sm text-[#5f5e5e]">
                 {isLoading ? (
-                  'Äang táº£i sáº£n pháº©m tá»« database...'
+                  'Đang tải sản phẩm từ database...'
                 ) : (
                   <>
-                    TÃ¬m tháº¥y <span className="font-medium text-black">{filteredCostumes.length}</span> trang phá»¥c
+                    Tìm thấy <span className="font-medium text-black">{filteredCostumes.length}</span> trang phục
                   </>
                 )}
               </p>
               {error && (
                 <p className="mt-2 text-sm text-red-600">
-                  ChÆ°a káº¿t ná»‘i Ä‘Æ°á»£c backend/database. Vui lÃ²ng cháº¡y BE á»Ÿ port 8080 rá»“i táº£i láº¡i trang.
+                  Chưa kết nối được backend/database. Vui lòng chạy BE ở port 8080 rồi tải lại trang.
                 </p>
               )}
             </div>
@@ -99,9 +99,9 @@ export default function CatalogPage({ onNavigate, onAddToCart }) {
               <EmptyState
                 className="py-20"
                 icon="search_off"
-                title="KhÃ´ng tÃ¬m tháº¥y trang phá»¥c"
-                message="Thá»­ chá»n danh má»¥c khÃ¡c hoáº·c xÃ³a bá»™ lá»c Ä‘á»ƒ xem thÃªm."
-                actionLabel="XÃ³a táº¥t cáº£ bá»™ lá»c"
+                title="Không tìm thấy trang phục"
+                message="Thử chọn danh mục khác hoặc xóa bộ lọc để xem thêm."
+                actionLabel="Xóa tất cả bộ lọc"
                 onAction={clearFilters}
               />
             )}

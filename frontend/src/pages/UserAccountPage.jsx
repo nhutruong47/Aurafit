@@ -50,7 +50,7 @@ export default function UserAccountPage({ onNavigate, currentUser, onAuthChange 
       onAuthChange?.(user);
       onNavigate?.(resolveRolePage(user));
     } catch (error) {
-      setFormError(error.message || 'Khong the xu ly yeu cau. Vui long thu lai.');
+      setFormError(error.message || 'Không thể xử lý yêu cầu. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -67,11 +67,11 @@ export default function UserAccountPage({ onNavigate, currentUser, onAuthChange 
         onAuthChange?.(user);
         onNavigate?.(resolveRolePage(user));
       } else {
-        setFormError('Dang ky thanh cong nhung chua nhan duoc phien dang nhap. Vui long dang nhap lai.');
+        setFormError('Đăng ký thành công nhưng chưa nhận được phiên đăng nhập. Vui lòng đăng nhập lại.');
         setMode('login');
       }
     } catch (error) {
-      setFormError(error.message || 'Khong the hoan tat dang ky. Vui long thu lai.');
+      setFormError(error.message || 'Không thể hoàn tất đăng ký. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }

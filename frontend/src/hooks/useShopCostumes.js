@@ -46,7 +46,7 @@ export function useShopCostumes(currentUserId) {
       })
       .catch((requestError) => {
         if (!isMounted) return;
-        setError(requestError.message || 'Khong the tai du lieu shop chung.');
+        setError(requestError.message || 'Không thể tải dữ liệu shop chung.');
         setIsLoading(false);
         setLoadedUserKey(requestKey);
       });

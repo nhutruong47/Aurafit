@@ -25,19 +25,19 @@ export default function AdminProductsSection({
 }) {
   return (
     <section className="grid grid-cols-1 gap-6 xl:grid-cols-[420px_1fr]">
-      <Panel title={editingProductId ? 'Sua san pham' : 'Dang san pham'}>
+      <Panel title={editingProductId ? 'Sửa sản phẩm' : 'Đăng sản phẩm'}>
         <form className="space-y-4" onSubmit={onSubmitProduct}>
-          <AdminField label="Ten san pham" name="name" value={productForm.name} onChange={onProductFieldChange} />
-          <AdminField label="Mo ta" name="description" value={productForm.description} onChange={onProductFieldChange} multiline />
+          <AdminField label="Tên sản phẩm" name="name" value={productForm.name} onChange={onProductFieldChange} />
+          <AdminField label="Mô tả" name="description" value={productForm.description} onChange={onProductFieldChange} multiline />
           <ImageUploadField
             key={editingProductId || 'new-product'}
-            label="Anh san pham"
+            label="Ảnh sản phẩm"
             value={productForm.imageUrl}
             onUploaded={onProductImageUploaded}
           />
           <div className="grid grid-cols-2 gap-3">
-            <AdminField label="Gia thue" name="rentalPrice" type="number" value={productForm.rentalPrice} onChange={onProductFieldChange} />
-            <AdminField label="Tien coc" name="depositPrice" type="number" value={productForm.depositPrice} onChange={onProductFieldChange} />
+            <AdminField label="Giá thuê" name="rentalPrice" type="number" value={productForm.rentalPrice} onChange={onProductFieldChange} />
+            <AdminField label="Tiền cọc" name="depositPrice" type="number" value={productForm.depositPrice} onChange={onProductFieldChange} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
@@ -71,7 +71,7 @@ export default function AdminProductsSection({
               onChange={onProductFieldChange}
               className="h-4 w-4 accent-[#7f7041]"
             />
-            San pham dang co san
+            Sản phẩm đang có sẵn
           </label>
 
           {productMessage && <p className="border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{productMessage}</p>}
@@ -81,7 +81,7 @@ export default function AdminProductsSection({
             disabled={isSavingProduct}
             className="w-full bg-black py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
           >
-            {isSavingProduct ? 'Dang luu...' : editingProductId ? 'Cap nhat san pham' : 'Dang tai san pham'}
+            {isSavingProduct ? 'Đang lưu...' : editingProductId ? 'Cập nhật sản phẩm' : 'Đăng tải sản phẩm'}
           </button>
           {editingProductId && (
             <button
@@ -89,13 +89,13 @@ export default function AdminProductsSection({
               onClick={onResetProductForm}
               className="w-full border border-[#d7d2c8] py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:border-black hover:text-black"
             >
-              Huy sua
+              Hủy sửa
             </button>
           )}
         </form>
       </Panel>
 
-      <Panel title="Kho san pham" action={`${filteredProducts.length}/${products.length} san pham`}>
+      <Panel title="Kho sản phẩm" action={`${filteredProducts.length}/${products.length} sản phẩm`}>
         <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_180px_160px]">
           <label className="relative block">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
@@ -104,7 +104,7 @@ export default function AdminProductsSection({
             <input
               value={productSearch}
               onChange={(event) => onProductSearchChange(event.target.value)}
-              placeholder="Tim theo ten, mo ta, tag..."
+              placeholder="Tìm theo tên, mô tả, tag..."
               className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
             />
           </label>
@@ -113,7 +113,7 @@ export default function AdminProductsSection({
             onChange={(event) => onProductCategoryFilterChange(event.target.value)}
             className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
           >
-            <option value="all">Tat ca category</option>
+            <option value="all">Tất cả category</option>
             {categories.map((category) => (
               <option key={category.id} value={category.name}>
                 {category.name}
@@ -125,9 +125,9 @@ export default function AdminProductsSection({
             onChange={(event) => onProductStatusFilterChange(event.target.value)}
             className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
           >
-            <option value="all">Tat ca trang thai</option>
-            <option value="available">Dang hien thi</option>
-            <option value="hidden">Tam an</option>
+            <option value="all">Tất cả trạng thái</option>
+            <option value="available">Đang hiển thị</option>
+            <option value="hidden">Tạm ẩn</option>
           </select>
         </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -148,16 +148,16 @@ export default function AdminProductsSection({
                 </p>
                 <h3 className="mt-1 line-clamp-2 font-serif text-xl italic">{product.name}</h3>
                 <p className="mt-2 text-xs text-[#5f5e5e]">
-                  Gia thue: <strong>{formatCurrency(product.rentalPrice || 0)}</strong>
+                  Giá thuê: <strong>{formatCurrency(product.rentalPrice || 0)}</strong>
                 </p>
                 <p className="mt-1 text-xs text-[#5f5e5e]">
-                  Trang thai: <strong>{product.status === 'ACTIVE' ? 'Dang ban/thue' : 'Tam an'}</strong>
+                  Trạng thái: <strong>{product.status === 'ACTIVE' ? 'Đang bán/thuê' : 'Tạm ẩn'}</strong>
                 </p>
                 <button
                   onClick={() => onEditProduct(product)}
                   className="mt-3 border border-black px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition hover:bg-black hover:text-white"
                 >
-                  Sua san pham
+                  Sửa sản phẩm
                 </button>
               </div>
             </article>
@@ -165,7 +165,7 @@ export default function AdminProductsSection({
         </div>
         {filteredProducts.length === 0 && (
           <p className="border border-[#ebe7df] bg-[#fafaf8] p-6 text-sm text-[#5f5e5e]">
-            Khong co san pham nao khop bo loc hien tai.
+            Không có sản phẩm nào khớp bộ lọc hiện tại.
           </p>
         )}
       </Panel>

@@ -38,7 +38,7 @@ export const fetchCostumes = async (options = {}) => {
     });
     return normalizeListResponse(response.data);
   } catch (error) {
-    throw new Error(getErrorMessage(error, 'Khong the tai du lieu san pham tu database.'));
+    throw new Error(getErrorMessage(error, 'Không thể tải dữ liệu sản phẩm từ database.'));
   }
 };
 
