@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import EmptyState from '../components/ui/EmptyState';
 import RentalItemCard from '../components/checkout/RentalItemCard';
 import CheckoutSummary from '../components/checkout/CheckoutSummary';
-import { multiItemSummaryRows, singleItemSummaryRows, suggestions, toRentalItem } from '../components/checkout/checkoutData';
+import { toRentalItem } from '../components/checkout/checkoutData';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 import { clearAiStylistCartAttribution, logUserInteraction } from '../services/interactionsService';
 import { createOrder } from '../services/rentalOrderService';
