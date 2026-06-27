@@ -62,6 +62,8 @@ export const mapCostumeToProduct = (costume) => {
   const subcategory = extractCategoryName(costume.subcategory) || rawCategory;
   const metadata = costume.metadata || null;
   const metadataTags = Array.isArray(metadata?.tags) ? metadata.tags : [];
+  const availableItemCount = Number(costume.availableItemCount ?? 0);
+  const isActive = String(costume.status || '').toUpperCase() !== 'INACTIVE';
 
   return {
     id: costume.id,
@@ -76,7 +78,8 @@ export const mapCostumeToProduct = (costume) => {
     tag: costume.tag || metadataTags[0] || '',
     size: costume.size || metadata?.size || '',
     color: costume.color || metadata?.color || '',
-    available: String(costume.status || '').toUpperCase() !== 'INACTIVE' && costume.available !== false,
+    available: isActive && availableItemCount > 0,
+    availableItemCount,
     status: costume.status,
     rentalPrice,
     depositPrice,
@@ -91,25 +94,50 @@ export const mapCostumeToProduct = (costume) => {
     occasion: metadata?.occasion || '',
     season: metadata?.season || '',
     tags: metadataTags,
+    // Items array: each entry has id, sku, size, color, status
+    items: Array.isArray(costume.items)
+      ? costume.items.map((item) => ({
+          id: item.id,
+          sku: item.sku,
+          size: item.size,
+          color: item.color,
+          status: item.status,
+        }))
+      : [],
   };
 };
 
-export const toCartItem = (product) => ({
-  id: product.id,
-  costumeId: product.costumeId || product.id,
-  costumeItemId: product.costumeItemId || null,
-  name: product.name,
-  meta: product.meta || product.description || product.tag,
-  rawCategory: product.rawCategory,
-  category: product.category,
-  subcategory: product.subcategory,
-  tag: product.tag,
-  price: product.price,
-  deposit: product.deposit,
-  image: product.image,
-  sku: product.sku,
-  size: product.size,
-  color: product.color,
-  rentalStartDate: product.rentalStartDate,
-  rentalEndDate: product.rentalEndDate,
-});
+/**
+ * Converts a product into a cart item.
+ *
+ * @param {Object} product - The product object (from mapCostumeToProduct).
+ *   Must have: id, name, rawCategory, category, image, priceValue (rentalPrice),
+ *   depositValue, items (array of {id, sku, size, color}).
+ * @param {Object|null} selectedItem - The selected item from product.items array
+ *   (from the size/color selector). If omitted, the first available item is used.
+ * @returns {Object} Cart item ready to be added to Redux cart state.
+ */
+export const toCartItem = (product, selectedItem = null) => {
+  const item = selectedItem || product.items?.[0];
+  return {
+    id: product.id,
+    costumeId: product.costumeId || product.id,
+    costumeItemId: item?.id ?? null,
+    name: product.name,
+    meta: product.meta || product.description || product.tag,
+    rawCategory: product.rawCategory,
+    category: product.category,
+    subcategory: product.subcategory,
+    tag: product.tag,
+    price: product.price,
+    priceValue: product.priceValue ?? product.rentalPrice ?? 0,
+    deposit: product.deposit,
+    depositValue: product.depositValue ?? product.depositPrice ?? 0,
+    image: product.image,
+    sku: item?.sku ?? null,
+    size: item?.size ?? product.size ?? null,
+    color: item?.color ?? product.color ?? null,
+    rentalStartDate: product.rentalStartDate,
+    rentalEndDate: product.rentalEndDate,
+  };
+};

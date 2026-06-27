@@ -4,6 +4,7 @@ import com.aurafit.entity.Costume;
 import com.aurafit.enums.CostumeStatus;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Read-only projection of the Costume entity for API responses.
@@ -18,17 +19,16 @@ public record CostumeDTO(
         BigDecimal depositPrice,
         String imageUrl,
         CostumeStatus status,
+        int availableItemCount,
         CategoryDTO category,
-        CostumeMetadataDTO metadata
+        CostumeMetadataDTO metadata,
+        List<CostumeItemDTO> items
 ) {
-    /**
-     * Maps a Costume entity (with its Category already fetched via JOIN FETCH)
-     * to a flat, serialization-safe DTO.
-     *
-     * @param costume The entity to map. Its {@code category} must be initialized.
-     * @return A new CostumeDTO.
-     */
     public static CostumeDTO fromEntity(Costume costume) {
+        long availableCount = costume.getItems() == null ? 0 :
+                costume.getItems().stream()
+                        .filter(item -> item.getStatus() == com.aurafit.enums.ItemStatus.AVAILABLE)
+                        .count();
         return new CostumeDTO(
                 costume.getId(),
                 costume.getName(),
@@ -37,8 +37,13 @@ public record CostumeDTO(
                 costume.getDepositPrice(),
                 costume.getImageUrl(),
                 costume.getStatus(),
+                (int) availableCount,
                 CategoryDTO.fromEntity(costume.getCategory()),
-                CostumeMetadataDTO.fromEntity(costume.getMetadata())
+                CostumeMetadataDTO.fromEntity(costume.getMetadata()),
+                costume.getItems() == null ? List.of() :
+                        costume.getItems().stream()
+                                .map(CostumeItemDTO::fromEntity)
+                                .toList()
         );
     }
 }

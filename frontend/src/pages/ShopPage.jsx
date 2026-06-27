@@ -6,7 +6,7 @@ import EmptyState from '../components/ui/EmptyState';
 import LoadingGrid from '../components/ui/LoadingGrid';
 import { useShopCostumes } from '../hooks/useShopCostumes';
 
-export default function ShopPage({ currentUser, onNavigate, onAddToCart }) {
+export default function ShopPage({ currentUser, onNavigate, onAddToCart, onRentNow }) {
   const {
     activeTab,
     productsByTab,
@@ -106,6 +106,7 @@ export default function ShopPage({ currentUser, onNavigate, onAddToCart }) {
                   product={product}
                   onNavigate={onNavigate}
                   onAddToCart={onAddToCart}
+                  onRentNow={onRentNow}
                 />
               ))}
             </div>

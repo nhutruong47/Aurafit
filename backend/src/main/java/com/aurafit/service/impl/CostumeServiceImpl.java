@@ -58,7 +58,7 @@ public class CostumeServiceImpl implements CostumeService {
 
     @Override
     public CostumeDTO getCostumeById(Long id) {
-        Costume costume = costumeRepository.findByIdWithCategory(id)
+        Costume costume = costumeRepository.findByIdWithItems(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Costume", "id", id));
 
         return CostumeDTO.fromEntity(costume);

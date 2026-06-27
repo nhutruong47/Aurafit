@@ -7,7 +7,6 @@ import com.aurafit.dto.response.HandoverRecordDTO;
 import com.aurafit.dto.response.OrderResponse;
 import com.aurafit.dto.response.OrderSummaryResponse;
 import com.aurafit.dto.response.StaffOrderDetailResponse;
-import com.aurafit.service.CheckoutService;
 import com.aurafit.service.OrderService;
 import com.aurafit.service.StaffService;
 import com.aurafit.service.UserService;
@@ -29,33 +28,30 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class OrderController {
 
-    private final CheckoutService checkoutService;
-    private final StaffService staffService;
     private final OrderService orderService;
+    private final StaffService staffService;
     private final UserService userService;
 
-    public OrderController(CheckoutService checkoutService,
+    public OrderController(OrderService orderService,
                            StaffService staffService,
-                           OrderService orderService,
                            UserService userService) {
-        this.checkoutService = checkoutService;
-        this.staffService = staffService;
         this.orderService = orderService;
+        this.staffService = staffService;
         this.userService = userService;
     }
 
     // --- Customer Endpoints ---
 
     @PostMapping
-    @Operation(summary = "Checkout — create a new order")
-    public ResponseEntity<ApiResponse<OrderResponse>> checkout(
+    @Operation(summary = "Place a new rental order")
+    public ResponseEntity<ApiResponse<OrderResponse>> placeOrder(
             Authentication authentication,
             @Valid @RequestBody CheckoutRequest request
     ) {
         Long userId = extractUserId(authentication);
-        OrderResponse response = checkoutService.checkout(userId, request);
+        OrderResponse response = orderService.placeOrder(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Order created successfully.", response, HttpStatus.CREATED));
+                .body(ApiResponse.success("Order placed successfully.", response, HttpStatus.CREATED));
     }
 
     @GetMapping

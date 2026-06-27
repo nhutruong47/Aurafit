@@ -5,8 +5,11 @@ import com.aurafit.dto.request.CostumeUpdateRequest;
 import com.aurafit.dto.response.AdminCostumeDTO;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.CostumeDTO;
+import com.aurafit.dto.response.CostumeItemDTO;
 import com.aurafit.dto.response.PaginatedResponse;
+import com.aurafit.enums.ItemStatus;
 import com.aurafit.service.AdminService;
+import com.aurafit.service.CostumeItemService;
 import com.aurafit.service.CostumeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,10 +29,13 @@ public class CostumeController {
 
     private final CostumeService costumeService;
     private final AdminService adminService;
+    private final CostumeItemService costumeItemService;
 
-    public CostumeController(CostumeService costumeService, AdminService adminService) {
+    public CostumeController(CostumeService costumeService, AdminService adminService,
+                            CostumeItemService costumeItemService) {
         this.costumeService = costumeService;
         this.adminService = adminService;
+        this.costumeItemService = costumeItemService;
     }
 
     // --- Public Endpoints ---
@@ -54,6 +60,15 @@ public class CostumeController {
     @Operation(summary = "Get costume details", description = "Returns a single costume by ID")
     public ResponseEntity<ApiResponse<CostumeDTO>> getCostumeById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success("Costume retrieved successfully.", costumeService.getCostumeById(id)));
+    }
+
+    @GetMapping("/{id}/items")
+    @Operation(summary = "Get available costume items (sizes/colors with SKU) for a costume")
+    public ResponseEntity<ApiResponse<List<CostumeItemDTO>>> getCostumeItems(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Costume items retrieved successfully.",
+                costumeItemService.getAvailableItemsByCostumeId(id, ItemStatus.AVAILABLE)
+        ));
     }
 
     @GetMapping("/seasonal")

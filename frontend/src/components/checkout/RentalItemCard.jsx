@@ -13,12 +13,32 @@ function QuantityControl({ quantity, onDecrease, onIncrease }) {
   );
 }
 
-export default function RentalItemCard({ item, delay, onRemoveFromCart, onUpdateCartQuantity }) {
+export default function RentalItemCard({
+  item,
+  delay,
+  showCheckbox = false,
+  isChecked = false,
+  onToggleCheck,
+  onRemoveFromCart,
+  onUpdateCartQuantity,
+}) {
   return (
     <article
       className="group relative flex flex-col items-start gap-8 md:flex-row"
       style={{ animation: `fadeIn 0.8s ease-out ${delay * 0.1}s both` }}
     >
+      {showCheckbox && (
+        <div className="absolute left-0 top-0 z-10 flex h-full w-10 items-center justify-center bg-white/80">
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={(e) => onToggleCheck?.(e.target.checked)}
+            className="h-5 w-5 cursor-pointer accent-[#99854e]"
+            aria-label={`Chọn ${item.name}`}
+          />
+        </div>
+      )}
+
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#f7f7f7] md:w-72">
         <img
           className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
@@ -30,7 +50,7 @@ export default function RentalItemCard({ item, delay, onRemoveFromCart, onUpdate
         </div>
       </div>
 
-      <div className="flex h-full flex-1 flex-col justify-between py-2">
+      <div className={`flex h-full flex-1 flex-col justify-between py-2${showCheckbox ? ' md:ml-10' : ''}`}>
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1">

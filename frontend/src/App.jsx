@@ -2,11 +2,13 @@ import { useCallback, useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
+import ToastContainer from './components/ui/ToastContainer';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import CatalogPage from './pages/CatalogPage';
 import ChatPage from './pages/ChatPage';
 import CosplayPage from './pages/CosplayPage';
 import CostumeDetailPage from './pages/CostumeDetailPage';
+import DirectRentalPage from './pages/DirectRentalPage';
 import CustomerCarePage from './pages/CustomerCarePage';
 import EventsPage from './pages/EventsPage';
 import HomePage from './pages/HomePage';
@@ -31,6 +33,8 @@ import {
   updateCartQuantity,
 } from './store/cartSlice';
 import { useAppDispatch, useAppSelector } from './store/hooks';
+import { useDirectOrderStore } from './store/useDirectOrderStore';
+import { useToastStore } from './store/useToastStore';
 import { hasUserRole } from './utils/roles';
 
 function DefaultLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
@@ -53,6 +57,7 @@ function DefaultLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
         <Outlet />
       </main>
       {!hidesFooter && <Footer onNavigate={onNavigate} />}
+      <ToastContainer />
     </div>
   );
 }
@@ -63,12 +68,13 @@ function BareLayout() {
 
 function App() {
   const dispatch = useAppDispatch();
-  const location = useLocation();
   const currentUser = useAppSelector(selectCurrentUser);
   const cartItems = useAppSelector(selectCartItems);
   const cartCount = useAppSelector(selectCartCount);
   const handleNavigate = useLegacyNavigate();
   const handleSearchOpen = useSearchNavigation();
+  const { setDirectItem } = useDirectOrderStore();
+  const addToast = useToastStore((s) => s.addToast);
 
   useEffect(() => {
     if (!currentUser?.id) return undefined;
@@ -120,18 +126,33 @@ function App() {
             rentalEndDate: item.rentalEndDate,
           });
           dispatch(setCartItems(cart?.items || []));
+          addToast(`Đã thêm "${item.name}" vào giỏ hàng.`);
         } catch {
           dispatch(addCartItem(item));
+          addToast(`Đã thêm "${item.name}" vào giỏ hàng.`);
         }
       } else {
         dispatch(addCartItem(item));
-      }
-
-      if (location.pathname !== '/checkout') {
-        handleNavigate('checkout');
+        addToast(`Đã thêm "${item.name}" vào giỏ hàng.`);
       }
     },
-    [currentUser, dispatch, handleNavigate, location.pathname]
+    [currentUser, dispatch, addToast]
+  );
+
+  const handleRentNow = useCallback(
+    (item) => {
+      if (!currentUser?.id) {
+        handleNavigate('account');
+        return;
+      }
+      if (!item?.rentalStartDate || !item?.rentalEndDate) {
+        return;
+      }
+      setDirectItem(item);
+      addToast(`Đang chuyển đến trang thuê "${item.name}"...`);
+      handleNavigate('direct-rental');
+    },
+    [currentUser, handleNavigate, setDirectItem, addToast]
   );
 
   const handleUpdateCartQuantity = useCallback(
@@ -174,7 +195,7 @@ function App() {
       >
         <Route path="/" element={<HomePage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/catalog" element={<CatalogPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
-        <Route path="/shop" element={<ShopPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/shop" element={<ShopPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} onRentNow={handleRentNow} />} />
         <Route
           path="/checkout"
           element={
@@ -184,6 +205,15 @@ function App() {
               onAddToCart={handleAddToCart}
               onRemoveFromCart={handleRemoveFromCart}
               onUpdateCartQuantity={handleUpdateCartQuantity}
+              onNavigate={handleNavigate}
+            />
+          }
+        />
+        <Route
+          path="/direct-rental"
+          element={
+            <DirectRentalPage
+              currentUser={currentUser}
               onNavigate={handleNavigate}
             />
           }
@@ -199,7 +229,7 @@ function App() {
         <Route path="/account" element={<UserAccountPage currentUser={currentUser} onAuthChange={handleAuthChange} onNavigate={handleNavigate} />} />
         <Route
           path="/products/:productId"
-          element={<CostumeDetailPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />}
+          element={<CostumeDetailPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} onRentNow={handleRentNow} />}
         />
       </Route>
 

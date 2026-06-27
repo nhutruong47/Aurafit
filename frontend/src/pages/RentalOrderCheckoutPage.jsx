@@ -1,113 +1,46 @@
-import { useMemo, useRef, useState } from 'react';
-import CheckoutEmptyState from '../components/checkout/CheckoutEmptyState';
-import CheckoutMobileTabs from '../components/checkout/CheckoutMobileTabs';
-import CheckoutSuggestionCard from '../components/checkout/CheckoutSuggestionCard';
-import CheckoutSummary from '../components/checkout/CheckoutSummary';
+import { useMemo, useState } from 'react';
+import EmptyState from '../components/ui/EmptyState';
 import RentalItemCard from '../components/checkout/RentalItemCard';
-import { multiItemSummaryRows, singleItemSummaryRows, suggestions, toRentalItem } from '../components/checkout/checkoutData';
-import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
-import { logUserInteraction } from '../services/interactionsService';
+import CheckoutSummary from '../components/checkout/CheckoutSummary';
+import { toRentalItem } from '../components/checkout/checkoutData';
 import { createOrder } from '../services/rentalOrderService';
-import { useCheckoutStore } from '../store/useCheckoutStore';
-
-const PAGE_SIZE = 20;
+import { logUserInteraction } from '../services/interactionsService';
+import { useDirectOrderStore } from '../store/useDirectOrderStore';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function RentalOrderCheckoutPage({
   cartItems = [],
   currentUser,
-  onAddToCart,
   onRemoveFromCart,
   onUpdateCartQuantity,
   onCheckoutSuccess,
   onNavigate,
 }) {
-  const { costumes } = useCatalogCostumes();
-  const { setPendingOrderId } = useCheckoutStore();
-  const accessoriesSliderRef = useRef(null);
-  const [voucherCode, setVoucherCode] = useState('');
-  const [voucherApplied, setVoucherApplied] = useState(false);
+  const { directItem, clearDirectItem } = useDirectOrderStore();
+  const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
+  const [deliveryError, setDeliveryError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [checkoutError, setCheckoutError] = useState('');
-  const [deliveryInfo, setDeliveryInfo] = useState({
-    receiverName: '',
-    receiverPhone: '',
-    deliveryAddress: '',
+  const [submitError, setSubmitError] = useState('');
+  // Cart items that are ticked for purchase
+  const [selectedCartItemIds, setSelectedCartItemIds] = useState(() => {
+    // Default: tick all cart items when page first loads
+    const ids = cartItems.map((item) => item.cartId || item.id || item.costumeItemId);
+    return new Set(ids);
   });
 
-  const rentalItems = cartItems.map(toRentalItem);
-  const hasCartItems = rentalItems.length > 0;
-  const isSingleRentalItem = rentalItems.length === 1;
-  const selectedItemName = rentalItems[0]?.name || 'sản phẩm đã chọn';
-  const selectedCategory = cartItems[0]?.rawCategory || cartItems[0]?.category || cartItems[0]?.meta;
+  // Separate direct item (Thuê ngay) and cart items
+  const directDisplayItem = directItem ? toRentalItem(directItem, 0) : null;
+  const cartDisplayItems = cartItems.map((item, i) => toRentalItem(item, i + 1));
 
-  const handleApplyVoucher = () => {
-    if (voucherCode.toUpperCase() === 'AURA20WELCOME') {
-      setVoucherApplied(true);
-    } else {
-      alert('Voucher không hợp lệ hoặc đã hết hạn.');
-    }
-  };
+  // Items actually shown and selected
+  const hasItems = !!(directDisplayItem || cartDisplayItems.length > 0);
+  const isSingleItem = (directDisplayItem ? 1 : 0) + cartDisplayItems.length === 1;
+  const isDirectOnly = !!directItem && cartItems.length === 0;
 
-  const scrollAccessories = (direction) => {
-    const slider = accessoriesSliderRef.current;
-    if (!slider) return;
-    const amount = slider.clientWidth * 0.8;
-    slider.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
-  };
-
-  const relatedItems = useMemo(() => {
-    if (!costumes || costumes.length === 0) return [];
-
-    const cartIds = cartItems.map((item) => item.id || item.cartId || item.name);
-    let filtered = costumes.filter(
-      (costume) =>
-        (costume.rawCategory === selectedCategory ||
-          costume.category === selectedCategory ||
-          costume.meta === selectedCategory) &&
-        !cartIds.includes(costume.id) &&
-        !cartIds.includes(costume.name)
-    );
-
-    if (filtered.length < 4) {
-      const extra = costumes.filter(
-        (costume) =>
-          !cartIds.includes(costume.id) &&
-          !cartIds.includes(costume.name) &&
-          !filtered.some((current) => current.id === costume.id)
-      );
-      filtered = [...filtered, ...extra];
-    }
-
-    return filtered.slice(0, 4).map((item) => ({
-      category: item.rawCategory || 'Trang phục',
-      name: item.name,
-      price: item.price,
-      badge: '-10%',
-      image: item.image,
-      originalItem: item,
-    }));
-  }, [costumes, cartItems, selectedCategory]);
-
-  const summaryRows = useMemo(() => {
-    const rows = isSingleRentalItem ? [...singleItemSummaryRows] : [...multiItemSummaryRows];
-    if (voucherApplied) {
-      const discount = isSingleRentalItem ? 36 : 126;
-      rows.push({ label: 'Voucher (AURA20WELCOME)', value: `-$${discount}.00`, accent: true });
-    }
-    return rows;
-  }, [isSingleRentalItem, voucherApplied]);
-
-  const formattedTotalDue = useMemo(() => {
-    let totalDue = isSingleRentalItem ? 320 : 862;
-    if (voucherApplied) {
-      totalDue -= isSingleRentalItem ? 36 : 126;
-    }
-    return `$${totalDue}.00`;
-  }, [isSingleRentalItem, voucherApplied]);
-
-  const handleDeliveryChange = (event) => {
-    const { name, value } = event.target;
+  const handleDeliveryChange = (e) => {
+    const { name, value } = e.target;
     setDeliveryInfo((prev) => ({ ...prev, [name]: value }));
+    setDeliveryError('');
   };
 
   const isDeliveryValid = () =>
@@ -120,29 +53,43 @@ export default function RentalOrderCheckoutPage({
       onNavigate?.('account');
       return;
     }
-
     if (!isDeliveryValid()) {
-      setCheckoutError('Vui lòng điền đầy đủ thông tin giao hàng.');
+      setDeliveryError('Vui lòng điền đầy đủ thông tin giao hàng.');
+      return;
+    }
+
+    // Collect items to order: direct item (always included) + selected cart items
+    const itemsToOrder = [];
+    if (directDisplayItem) {
+      itemsToOrder.push(directDisplayItem);
+    }
+    cartDisplayItems.forEach((item) => {
+      const itemKey = item.id;
+      if (selectedCartItemIds.has(itemKey)) {
+        itemsToOrder.push(item);
+      }
+    });
+
+    if (itemsToOrder.length === 0) {
+      setSubmitError('Vui lòng chọn ít nhất một sản phẩm để thuê.');
+      return;
+    }
+
+    const invalidItems = itemsToOrder.filter(
+      (item) => !item?.sku || !item?.rentalStartDate || !item?.rentalEndDate
+    );
+    if (invalidItems.length > 0) {
+      setSubmitError('Một số sản phẩm chưa có đủ thông tin thuê. Vui lòng kiểm tra lại.');
       return;
     }
 
     setIsSubmitting(true);
-    setCheckoutError('');
+    setSubmitError('');
 
     try {
-      const invalidItems = rentalItems.filter(
-        (item) => !item?.sku || !item?.rentalStartDate || !item?.rentalEndDate
-      );
-
-      if (invalidItems.length > 0) {
-        throw new Error(
-          'Giỏ hàng chưa đủ dữ liệu backend để checkout. Mỗi sản phẩm cần có SKU và khoảng ngày thuê hợp lệ.'
-        );
-      }
-
-      const items = rentalItems.map((item) => ({
+      const orderItems = itemsToOrder.map((item) => ({
         sku: item.sku,
-        quantity: 1,
+        quantity: item.quantity || 1,
         rentalStartDate: item.rentalStartDate,
         rentalEndDate: item.rentalEndDate,
       }));
@@ -151,28 +98,87 @@ export default function RentalOrderCheckoutPage({
         receiverName: deliveryInfo.receiverName,
         receiverPhone: deliveryInfo.receiverPhone,
         deliveryAddress: deliveryInfo.deliveryAddress,
-        items,
+        items: orderItems,
       });
 
       logUserInteraction({
         eventType: 'RENT',
         targetType: 'ORDER',
         targetId: orderResponse.id,
-        metadata: {
-          itemCount: items.length,
-          costumeIds: rentalItems.map((item) => item.costumeItemId || item.id),
-        },
+        metadata: { itemCount: orderItems.length },
       }).catch(() => {});
 
-      setPendingOrderId(orderResponse.id);
+      clearDirectItem();
       onCheckoutSuccess?.(orderResponse.id);
       onNavigate?.('payment');
     } catch (err) {
-      setCheckoutError(err.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+      setSubmitError(err.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleRemoveFromCart = (itemId) => {
+    setSelectedCartItemIds((prev) => {
+      const next = new Set(prev);
+      next.delete(itemId);
+      return next;
+    });
+    if (directItem && (directItem.cartId === itemId || directItem.id === itemId)) {
+      clearDirectItem();
+    } else {
+      onRemoveFromCart?.(itemId);
+    }
+  };
+
+  // Summary computed only from items being ordered
+  const summaryRows = useMemo(() => {
+    const rows = [];
+    let totalRental = 0;
+    let totalDeposit = 0;
+
+    const itemsToSum = directDisplayItem
+      ? [directDisplayItem, ...cartDisplayItems.filter((i) => selectedCartItemIds.has(i.id))]
+      : cartDisplayItems.filter((i) => selectedCartItemIds.has(i.id));
+
+    itemsToSum.forEach((item) => {
+      const rentalDays = item.rentalDays || 1;
+      const unitPrice = item.unitPrice || 0;
+      const itemSubtotal = unitPrice * rentalDays;
+      totalRental += itemSubtotal;
+      const deposit = item.depositValue
+        ? item.depositValue * (item.quantity || 1)
+        : Math.round(unitPrice * 0.5);
+      totalDeposit += deposit;
+    });
+
+    if (totalRental > 0) {
+      rows.push({ label: 'Tiền thuê', value: formatCurrency(totalRental) });
+    }
+    if (totalDeposit > 0) {
+      rows.push({ label: 'Tiền đặt cọc (Hoàn trả)', value: formatCurrency(totalDeposit) });
+    }
+
+    return rows;
+  }, [directDisplayItem, cartDisplayItems, selectedCartItemIds]);
+
+  const formattedTotalDue = useMemo(() => {
+    const total = summaryRows.reduce((sum, row) => {
+      const numeric = parseFloat(String(row.value).replace(/[^\d.]/g, ''));
+      return sum + (isNaN(numeric) ? 0 : numeric);
+    }, 0);
+    return formatCurrency(total);
+  }, [summaryRows]);
+
+  const headingLabel = isSingleItem
+    ? 'Đơn thuê của bạn'
+    : isDirectOnly
+    ? 'Đơn thuê của bạn'
+    : 'Giỏ hàng thuê';
+
+  const selectedCount = cartDisplayItems.filter((i) => selectedCartItemIds.has(i.id)).length;
+  const totalDisplayCount = (directDisplayItem ? 1 : 0) + cartDisplayItems.length;
+  const selectedDisplayCount = (directDisplayItem ? 1 : 0) + selectedCount;
 
   return (
     <div className="bg-[#f9f9f9] pb-20 text-[#1a1c1c] md:pb-0">
@@ -181,180 +187,182 @@ export default function RentalOrderCheckoutPage({
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#99854e]">
-                Sản phẩm đã chọn
+                Xác nhận đơn thuê
               </p>
               <h1 className="mb-2 font-serif text-[40px] font-normal italic leading-tight md:text-[64px]">
-                Tóm tắt đơn thuê
+                {headingLabel}
               </h1>
-              <button
-                onClick={() => onNavigate?.('orders')}
-                className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#99854e] transition-colors hover:text-black"
-              >
-                <span className="material-symbols-outlined text-[16px]">receipt_long</span>
-                Lịch sử đơn hàng
-              </button>
+              {hasItems && (
+                <button
+                  onClick={() => onNavigate?.('orders')}
+                  className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#99854e] transition-colors hover:text-black"
+                >
+                  <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                  Lịch sử đơn hàng
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-4 text-[#5f5e5e]">
-              <span className="text-[12px] font-semibold uppercase tracking-[0.15em]">Bước 01 / Giỏ hàng</span>
-              <span className="h-px w-12 bg-[#cfc4c5]" />
-              <span className="text-[12px] font-semibold uppercase tracking-[0.15em] opacity-40">
-                Bước 02 / Giao hàng
-              </span>
-            </div>
+            {hasItems && (
+              <div className="flex items-center gap-4 text-[#5f5e5e]">
+                {cartDisplayItems.length > 0 && (
+                  <label className="flex cursor-pointer items-center gap-2 text-[12px] font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={selectedCount === cartDisplayItems.length && cartDisplayItems.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCartItemIds((prev) => {
+                            const next = new Set(prev);
+                            cartDisplayItems.forEach((i) => next.add(i.id));
+                            return next;
+                          });
+                        } else {
+                          setSelectedCartItemIds(new Set(directDisplayItem ? [directDisplayItem.id] : []));
+                        }
+                      }}
+                      className="h-4 w-4 accent-[#99854e]"
+                    />
+                    Chọn tất cả
+                  </label>
+                )}
+                <span className="text-[12px] font-semibold uppercase tracking-[0.15em]">
+                  {selectedDisplayCount} / {totalDisplayCount} sản phẩm
+                </span>
+              </div>
+            )}
           </div>
         </header>
 
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
           <section className="space-y-16 lg:col-span-8">
-            {hasCartItems ? (
-              rentalItems.map((item, index) => (
-                <RentalItemCard
-                  key={item.id}
-                  item={item}
-                  delay={index + 1}
-                  onRemoveFromCart={onRemoveFromCart}
-                  onUpdateCartQuantity={onUpdateCartQuantity}
-                />
-              ))
+            {!hasItems ? (
+              <EmptyState
+                icon="shopping_bag"
+                title="Chưa có sản phẩm nào"
+                message="Hãy chọn sản phẩm bạn muốn thuê từ danh mục của AuraFit."
+                actionLabel="Xem bộ sưu tập"
+                onAction={() => onNavigate?.('catalog')}
+              />
             ) : (
-              <CheckoutEmptyState onNavigate={onNavigate} />
-            )}
-
-            {hasCartItems && (
-              <div className="border-t border-[#cfc4c5] pt-12">
-                <div className="mb-8 flex items-end justify-between">
-                  <div>
-                    <h2 className="font-serif text-2xl font-normal uppercase italic">Phụ kiện đi kèm phổ biến</h2>
-                    <p className="mt-2 text-sm text-[#5f5e5e]">Hoàn thiện outfit của bạn với các phụ kiện được yêu thích nhất.</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => scrollAccessories('left')}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#cfc4c5]/40 transition hover:bg-[#99854e] hover:text-white"
-                      aria-label="Cuộn trái"
-                    >
-                      <span className="material-symbols-outlined text-sm">west</span>
-                    </button>
-                    <button
-                      onClick={() => scrollAccessories('right')}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#cfc4c5]/40 transition hover:bg-[#99854e] hover:text-white"
-                      aria-label="Cuộn phải"
-                    >
-                      <span className="material-symbols-outlined text-sm">east</span>
-                    </button>
-                  </div>
-                </div>
-                <div
-                  ref={accessoriesSliderRef}
-                  className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4"
-                >
-                  {suggestions.map((item) => (
-                    <div key={item.name} className="w-[calc(100%-1rem)] shrink-0 snap-start sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)]">
-                      <CheckoutSuggestionCard item={item} onAddToCart={onAddToCart} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {hasCartItems && (
-              <div className="border-t border-[#cfc4c5] pt-12">
-                <h2 className="mb-6 font-serif text-2xl font-normal uppercase italic">Thông tin giao hàng</h2>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Tên người nhận *</label>
-                    <input
-                      type="text"
-                      name="receiverName"
-                      value={deliveryInfo.receiverName}
-                      onChange={handleDeliveryChange}
-                      placeholder="Họ và tên"
-                      className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Số điện thoại *</label>
-                    <input
-                      type="tel"
-                      name="receiverPhone"
-                      value={deliveryInfo.receiverPhone}
-                      onChange={handleDeliveryChange}
-                      placeholder="0xxx xxx xxx"
-                      className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Địa chỉ giao hàng *</label>
-                    <input
-                      type="text"
-                      name="deliveryAddress"
-                      value={deliveryInfo.deliveryAddress}
-                      onChange={handleDeliveryChange}
-                      placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                      className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
-                    />
-                  </div>
-                </div>
-                {checkoutError && <p className="mt-3 text-sm text-red-600">{checkoutError}</p>}
-                {!currentUser?.id && (
-                  <p className="mt-3 text-sm text-[#99854e]">
-                    Vui lòng{' '}
-                    <button
-                      onClick={() => onNavigate?.('account')}
-                      className="underline hover:text-black"
-                    >
-                      đăng nhập
-                    </button>{' '}
-                    để tiếp tục thanh toán.
-                  </p>
+              <>
+                {directDisplayItem && (
+                  <RentalItemCard
+                    key={directDisplayItem.id}
+                    item={directDisplayItem}
+                    delay={1}
+                    showCheckbox={false}
+                    onRemoveFromCart={handleRemoveFromCart}
+                    onUpdateCartQuantity={onUpdateCartQuantity}
+                  />
                 )}
-              </div>
+
+                {cartDisplayItems.length > 0 && (
+                  <div className="space-y-8">
+                    {cartDisplayItems.map((item, index) => (
+                      <RentalItemCard
+                        key={item.id}
+                        item={item}
+                        delay={index + 1 + (directDisplayItem ? 1 : 0)}
+                        showCheckbox={true}
+                        isChecked={selectedCartItemIds.has(item.id)}
+                        onToggleCheck={(checked) => {
+                          setSelectedCartItemIds((prev) => {
+                            const next = new Set(prev);
+                            if (checked) {
+                              next.add(item.id);
+                            } else {
+                              next.delete(item.id);
+                            }
+                            return next;
+                          });
+                        }}
+                        onRemoveFromCart={handleRemoveFromCart}
+                        onUpdateCartQuantity={onUpdateCartQuantity}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {hasItems && (
+                  <div className="border-t border-[#cfc4c5] pt-12">
+                    <h2 className="mb-6 font-serif text-2xl font-normal uppercase italic">
+                      Thông tin giao hàng
+                    </h2>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
+                          Tên người nhận *
+                        </label>
+                        <input
+                          type="text"
+                          name="receiverName"
+                          value={deliveryInfo.receiverName}
+                          onChange={handleDeliveryChange}
+                          placeholder="Họ và tên"
+                          className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
+                          Số điện thoại *
+                        </label>
+                        <input
+                          type="tel"
+                          name="receiverPhone"
+                          value={deliveryInfo.receiverPhone}
+                          onChange={handleDeliveryChange}
+                          placeholder="0xxx xxx xxx"
+                          className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
+                          Địa chỉ giao hàng *
+                        </label>
+                        <input
+                          type="text"
+                          name="deliveryAddress"
+                          value={deliveryInfo.deliveryAddress}
+                          onChange={handleDeliveryChange}
+                          placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                          className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    {deliveryError && <p className="mt-3 text-sm text-red-600">{deliveryError}</p>}
+                    {!currentUser?.id && (
+                      <p className="mt-3 text-sm text-[#99854e]">
+                        Vui lòng{' '}
+                        <button
+                          onClick={() => onNavigate?.('account')}
+                          className="underline hover:text-black"
+                        >
+                          đăng nhập
+                        </button>{' '}
+                        để tiếp tục thanh toán.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </section>
 
           <aside className="lg:col-span-4">
-            <CheckoutSummary
-              hasCartItems={hasCartItems}
-              summaryRows={summaryRows}
-              formattedTotalDue={formattedTotalDue}
-              voucherCode={voucherCode}
-              voucherApplied={voucherApplied}
-              onVoucherCodeChange={setVoucherCode}
-              onApplyVoucher={handleApplyVoucher}
-              onNavigate={onNavigate}
-              onProceedToCheckout={handleProceedToCheckout}
-              isSubmitting={isSubmitting}
-              checkoutError={checkoutError}
-            />
+            {hasItems && (
+              <CheckoutSummary
+                summaryRows={summaryRows}
+                formattedTotalDue={formattedTotalDue}
+                onNavigate={onNavigate}
+                onProceedToCheckout={handleProceedToCheckout}
+                isSubmitting={isSubmitting}
+                submitError={submitError}
+                selectedCount={selectedDisplayCount}
+              />
+            )}
           </aside>
         </div>
-
-        {hasCartItems && (
-          <section className="mt-32 md:mt-40">
-            <div className="mb-12 flex items-baseline justify-between border-b border-[#cfc4c5] pb-4">
-              <div>
-                <h2 className="font-serif text-3xl font-normal uppercase italic">Các bộ đồ liên quan</h2>
-                {isSingleRentalItem && (
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5f5e5e]">
-                    Gợi ý thêm các trang phục cùng chủ đề với {selectedItemName}.
-                  </p>
-                )}
-              </div>
-              <a className="group flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]" href="#">
-                Xem tất cả
-                <span className="h-px w-12 bg-[#5f5e5e] transition-all group-hover:w-20" />
-              </a>
-            </div>
-            <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
-              {relatedItems.slice(0, PAGE_SIZE).map((item) => (
-                <CheckoutSuggestionCard key={item.name} item={item} onAddToCart={onAddToCart} />
-              ))}
-            </div>
-          </section>
-        )}
       </main>
-
-      <CheckoutMobileTabs />
     </div>
   );
 }

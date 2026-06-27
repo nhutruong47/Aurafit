@@ -6,6 +6,7 @@ export const pagePathMap = {
   catalog: '/catalog',
   shop: '/shop',
   checkout: '/checkout',
+  'direct-rental': '/direct-rental',
   payment: '/payment',
   success: '/success',
   chat: '/chat',
@@ -26,6 +27,10 @@ export function getCurrentPageFromPath(pathname) {
 
   if (pathname.startsWith('/products/')) {
     return 'productDetail';
+  }
+
+  if (pathname === '/direct-rental') {
+    return 'directRental';
   }
 
   const match = Object.entries(pagePathMap).find(([, path]) => path === pathname);

@@ -32,6 +32,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
             SELECT c FROM Costume c
             JOIN FETCH c.category
             LEFT JOIN FETCH c.metadata
+            LEFT JOIN FETCH c.items
             WHERE c.status = :status
               AND (:categoryId IS NULL OR c.category.id = :categoryId)
               AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -64,6 +65,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
             SELECT c FROM Costume c
             JOIN FETCH c.category
             LEFT JOIN FETCH c.metadata
+            LEFT JOIN FETCH c.items
             WHERE c.status = :status
             ORDER BY SIZE(c.items) DESC
             """)
@@ -74,7 +76,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Currently returns random active costumes as a simple baseline.
      * TODO: Replace with ML-based collaborative filtering using user interaction history.
      */
-    @Query("SELECT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata WHERE c.status = :status")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.status = :status")
     List<Costume> findActiveCostumesForRecommendations(@Param("status") CostumeStatus status);
 
     @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id")

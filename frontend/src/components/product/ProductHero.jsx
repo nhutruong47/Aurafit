@@ -1,14 +1,65 @@
 // Hero chi tiet san pham voi gia, thong tin va hanh dong them vao gio.
+import { useState } from 'react';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
 import { adminContact } from '../../utils/shopMock';
 
-export default function ProductHero({ product, isAdmin, isLoading = false, isAddingToCart = false, onAddToCart, onNavigate }) {
+export default function ProductHero({
+  product,
+  selectedItem,
+  onSelectItem,
+  isAdmin,
+  isLoading = false,
+  isAddingToCart = false,
+  onAddToCart,
+  onRentNow,
+  onNavigate,
+  rentalStartDate,
+  rentalEndDate,
+  onStartDateChange,
+  onEndDateChange,
+}) {
+  const today = new Date().toISOString().split('T')[0];
+  const [dateError, setDateError] = useState('');
+
+  const availableItems = product?.items || [];
+
   if (!product) return null;
 
-  const handleAddToCart = () => {
-    if (isAddingToCart) return;
-    onAddToCart?.(toCartItem(product));
+  const handleSelectItem = (item) => {
+    onSelectItem?.(item);
+  };
+
+  const handleStartDateChange = (e) => {
+    const val = e.target.value;
+    onStartDateChange(val);
+    setDateError('');
+    if (rentalEndDate && val >= rentalEndDate) {
+      onEndDateChange('');
+    }
+  };
+
+  const handleEndDateChange = (e) => {
+    const val = e.target.value;
+    if (rentalStartDate && val <= rentalStartDate) {
+      setDateError('Ngày trả phải sau ngày nhận.');
+      return;
+    }
+    onEndDateChange(val);
+    setDateError('');
+  };
+
+  const canRentNow = product.available && rentalStartDate && rentalEndDate && !dateError;
+
+  const handleRentNow = () => {
+    if (!canRentNow) return;
+    const item = selectedItem || product.items?.[0] || null;
+    const itemWithDates = {
+      ...toCartItem(product, item),
+      rentalStartDate,
+      rentalEndDate,
+    };
+    onRentNow?.(itemWithDates);
   };
 
   return (
@@ -62,6 +113,59 @@ export default function ProductHero({ product, isAdmin, isLoading = false, isAdd
           </div>
         </div>
 
+        {/* Size / Color Selector */}
+        {availableItems.length > 0 && (
+          <div className="mb-6">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Kích thước</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {availableItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleSelectItem(item)}
+                    className={`border px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all ${
+                      selectedItem?.id === item.id
+                        ? 'border-black bg-black text-white'
+                        : 'border-[#cfc4c5] bg-white text-black hover:border-black'
+                    }`}
+                  >
+                    {item.size || 'Freesize'}
+                    {item.color ? ` / ${item.color}` : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rental Date Picker */}
+        <div className="mb-6">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Thời gian thuê</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-[10px] uppercase tracking-wide text-[#999]">Ngày nhận</label>
+              <input
+                type="date"
+                value={rentalStartDate}
+                min={today}
+                onChange={handleStartDateChange}
+                className="w-full border border-[#cfc4c5] bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] uppercase tracking-wide text-[#999]">Ngày trả</label>
+              <input
+                type="date"
+                value={rentalEndDate}
+                min={rentalStartDate ? new Date(new Date(rentalStartDate).getTime() + 86400000).toISOString().split('T')[0] : today}
+                onChange={handleEndDateChange}
+                className="w-full border border-[#cfc4c5] bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
+              />
+            </div>
+          </div>
+          {dateError && <p className="mt-1 text-xs text-red-500">{dateError}</p>}
+        </div>
+
         <div className="mb-10">
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.1em] text-black">Mô tả sản phẩm</h3>
           <p className="text-base leading-7 text-[#5f5e5e]">
@@ -105,7 +209,7 @@ export default function ProductHero({ product, isAdmin, isLoading = false, isAdd
                   : 'border-red-200 bg-red-50 text-red-700'
               }`}
             >
-              {product.available ? 'Tình trạng: Còn hàng' : 'Tình trạng: Hết hàng'}
+              {product.available ? `Tình trạng: Còn hàng (${product.availableItemCount})` : 'Tình trạng: Hết hàng'}
             </span>
           </div>
 
@@ -117,18 +221,33 @@ export default function ProductHero({ product, isAdmin, isLoading = false, isAdd
             <>
               <button
                 disabled={!product.available || isLoading || isAddingToCart}
-                onClick={handleAddToCart}
-                className={`mb-4 w-full py-5 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
-                  product.available && !isLoading && !isAddingToCart
-                    ? 'bg-black text-white hover:bg-[#99854e]'
+                onClick={onAddToCart}
+                className={`mb-3 w-full border border-black py-4 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 hover:bg-black hover:text-white ${
+                  !product.available || isLoading || isAddingToCart
+                    ? 'cursor-not-allowed border-[#eeeeee] bg-[#eeeeee] text-[#999999]'
+                    : ''
+                }`}
+              >
+                {isAddingToCart ? 'Đang thêm...' : isLoading ? 'Đang tải...' : !product.available ? 'Tạm hết hàng' : 'Thêm vào giỏ hàng'}
+              </button>
+              <button
+                disabled={!canRentNow || isAddingToCart}
+                onClick={handleRentNow}
+                className={`mb-3 w-full py-4 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
+                  canRentNow && !isAddingToCart
+                    ? 'bg-[#99854e] text-white hover:bg-black'
                     : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
                 }`}
               >
-                {isAddingToCart ? 'Đang thêm...' : isLoading ? 'Đang tải...' : product.available ? 'Thêm vào giỏ hàng' : 'Tạm hết hàng'}
+                Thuê ngay {!canRentNow && !isAddingToCart && product.available && (
+                  <span className="ml-1 font-normal normal-case tracking-normal text-white/60">
+                    (Hãy chọn ngày thuê)
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => onNavigate?.('chat', product)}
-                className="w-full border border-black py-5 text-[13px] font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 hover:bg-black hover:text-white"
+                className="w-full border border-black py-3 text-[12px] font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 hover:bg-black hover:text-white"
               >
                 Liên hệ Admin
               </button>

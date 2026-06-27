@@ -5,7 +5,7 @@ import ProductReviewsSection from '../components/product/ProductReviewsSection';
 import AlertMessage from '../components/ui/AlertMessage';
 import { fetchCostumeById } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
-import { mapCostumeToProduct } from '../utils/productMapper';
+import { mapCostumeToProduct, toCartItem } from '../utils/productMapper';
 import { hasUserRole } from '../utils/roles';
 
 const initialMockReviews = [
@@ -46,7 +46,7 @@ const initialMockReviews = [
   },
 ];
 
-export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser }) {
+export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, currentUser }) {
   const { productId } = useParams();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +56,9 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReviewData, setNewReviewData] = useState({ rating: 5, comment: '' });
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [rentalStartDate, setRentalStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [rentalEndDate, setRentalEndDate] = useState('');
 
   const isAdmin = useMemo(() => hasUserRole(currentUser, 'ADMIN'), [currentUser]);
 
@@ -66,13 +69,19 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
     }
 
     let isMounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     setLoadError('');
+    setSelectedItem(null);
 
     fetchCostumeById(productId)
       .then((costume) => {
         if (!isMounted) return;
-        setProduct(costume ? mapCostumeToProduct(costume) : null);
+        const mapped = costume ? mapCostumeToProduct(costume) : null;
+        setProduct(mapped);
+        if (mapped?.items?.length > 0) {
+          setSelectedItem(mapped.items[0]);
+        }
       })
       .catch((error) => {
         if (!isMounted) return;
@@ -134,8 +143,21 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
       onNavigate?.('account');
       return;
     }
+    onAddToCart?.(toCartItem(product, selectedItem));
+  };
 
-    onAddToCart?.(product);
+  const handleRentNowClick = () => {
+    if (!currentUser?.id) {
+      onNavigate?.('account');
+      return;
+    }
+    if (!selectedItem) return;
+    const baseItem = toCartItem(product, selectedItem);
+    onRentNow?.({
+      ...baseItem,
+      rentalStartDate,
+      rentalEndDate,
+    });
   };
 
   const handleSubmitReview = (event) => {
@@ -175,10 +197,17 @@ export default function CostumeDetailPage({ onAddToCart, onNavigate, currentUser
 
         <ProductHero
           product={product}
+          selectedItem={selectedItem}
+          onSelectItem={setSelectedItem}
           isAdmin={isAdmin}
           isLoading={isLoading}
           onAddToCart={handleAddToCartClick}
+          onRentNow={handleRentNowClick}
           onNavigate={onNavigate}
+          rentalStartDate={rentalStartDate}
+          rentalEndDate={rentalEndDate}
+          onStartDateChange={setRentalStartDate}
+          onEndDateChange={setRentalEndDate}
         />
 
         {product && (

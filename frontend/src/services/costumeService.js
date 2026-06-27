@@ -52,6 +52,15 @@ export const fetchCostumeById = async (id) =>
     'Không thể tải chi tiết sản phẩm.'
   );
 
+export const fetchCostumeItems = async (costumeId) =>
+  requestJson(
+    {
+      url: `/costumes/${encodeURIComponent(costumeId)}/items`,
+      method: 'GET',
+    },
+    'Không thể tải danh sách kích thước / màu sắc.'
+  );
+
 export const fetchSeasonalCostumes = async () =>
   requestJson(
     {
