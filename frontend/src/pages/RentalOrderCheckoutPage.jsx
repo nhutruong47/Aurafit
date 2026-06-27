@@ -147,7 +147,6 @@ export default function RentalOrderCheckoutPage({
       });
 
       setPendingOrderId(orderResponse.id);
->>>>>>> 0896a2b19a36df5ae0e6073cb290790d92607fef
       onCheckoutSuccess?.(orderResponse.id);
       onNavigate?.('payment');
     } catch (err) {
