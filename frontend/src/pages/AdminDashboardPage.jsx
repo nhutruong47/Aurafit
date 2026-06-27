@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
+import AdminCategoriesSection from '../components/admin/AdminCategoriesSection';
 import AdminOverviewSection from '../components/admin/AdminOverviewSection';
 import AdminProductsSection from '../components/admin/AdminProductsSection';
 import AdminReportsSection from '../components/admin/AdminReportsSection';
 import { StatusBadge } from '../components/admin/AdminDashboardShared';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
 import { useAdminCostumes } from '../hooks/useAdminCostumes';
+import { useAdminCategories } from '../hooks/useAdminCategories';
 
 const supportTickets = [
   { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chưa nhận hoàn cọc', channel: 'Chat', status: 'Đang xử lý', owner: 'Admin' },
@@ -21,6 +23,7 @@ const metricCards = [
 
 export default function AdminDashboardPage({ currentUser, onNavigate }) {
   const [activeTab, setActiveTab] = useState('overview');
+
   const {
     isAdmin,
     products,
@@ -43,6 +46,21 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     resetProductForm,
     submitProduct,
   } = useAdminCostumes(currentUser);
+
+  const {
+    categories: managedCategories,
+    categoryForm,
+    editingCategoryId,
+    isLoading: isCategoryLoading,
+    isSaving: isCategorySaving,
+    message: categoryMessage,
+    error: categoryError,
+    handleFieldChange: handleCategoryFieldChange,
+    hydrateForm: hydrateCategoryForm,
+    resetForm: resetCategoryForm,
+    submitCategory,
+    handleDelete: handleDeleteCategory,
+  } = useAdminCategories(currentUser);
 
   const ticketCount = useMemo(() => supportTickets.length, []);
 
@@ -86,7 +104,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
           <div className="grid grid-cols-2 gap-3 text-sm md:flex md:items-center">
             <StatusBadge label={`${ticketCount} yêu cầu`} tone="warning" />
             <StatusBadge label={`${products.length} sản phẩm`} tone="good" />
-            <StatusBadge label="Chỉ Admin đăng tải" tone="default" />
+
+            <StatusBadge label={`${managedCategories.length} danh mục`} tone="default" />
           </div>
         </div>
       </div>
@@ -96,6 +115,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
           {[
             ['overview', 'Tổng quan', 'dashboard'],
             ['products', 'Sản phẩm', 'inventory_2'],
+            ['categories', 'Danh mục', 'category'],
             ['support', 'Hỗ trợ', 'support_agent'],
             ['reports', 'Báo cáo', 'monitoring'],
           ].map(([id, label, icon]) => (
@@ -135,6 +155,22 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               onEditProduct={hydrateProductForm}
               onResetProductForm={resetProductForm}
               onSubmitProduct={handleSubmitProduct}
+            />
+          )}
+          {activeTab === 'categories' && (
+            <AdminCategoriesSection
+              categories={managedCategories}
+              categoryForm={categoryForm}
+              editingCategoryId={editingCategoryId}
+              isLoading={isCategoryLoading}
+              isSaving={isCategorySaving}
+              message={categoryMessage}
+              error={categoryError}
+              onFieldChange={handleCategoryFieldChange}
+              onEdit={hydrateCategoryForm}
+              onReset={resetCategoryForm}
+              onSubmit={submitCategory}
+              onDelete={handleDeleteCategory}
             />
           )}
           {activeTab === 'support' && <AdminSupportSection supportTickets={supportTickets} />}

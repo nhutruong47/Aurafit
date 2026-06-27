@@ -44,7 +44,7 @@ public class DataInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         seedCategoriesAndCostumes();
-        seedClubs();
+
     }
 
     private void seedCategoriesAndCostumes() {
