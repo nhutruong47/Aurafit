@@ -16,6 +16,7 @@ export const fetchCostumes = async (options = {}) => {
   const requestOptions =
     typeof options === 'object' && options !== null ? options : options ? { categoryId: options } : {};
   const {
+    signal,
     categoryId,
     keyword,
     pageNo = 0,
@@ -36,6 +37,7 @@ export const fetchCostumes = async (options = {}) => {
         sortBy,
         sortDir,
       },
+      signal,
     },
     'Không thể tải dữ liệu sản phẩm từ database.'
   );
@@ -108,14 +110,8 @@ export const fetchHomepageRecommendations = async (sessionId, limit = 6) =>
 export const fetchAdminCostumes = async () => {
   const payload = await requestJson(
     {
-      url: '/costumes',
+      url: '/costumes/admin',
       method: 'GET',
-      params: {
-        pageNo: 0,
-        pageSize: 100,
-        sortBy: 'id',
-        sortDir: 'desc',
-      },
     },
     'Không thể tải danh sách sản phẩm.'
   );

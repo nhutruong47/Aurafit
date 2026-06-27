@@ -24,6 +24,10 @@ export const requestJson = async (config, fallbackMessage = 'Không thể kết 
     const response = await apiClient.request(config);
     return unwrapApiResponse(response.data);
   } catch (error) {
+    if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') {
+      throw error;
+    }
+
     throw new Error(getErrorMessage(error, fallbackMessage));
   }
 };

@@ -12,6 +12,7 @@ export function useCatalogCostumes(categoryKey) {
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
     const requestKey = categoryKey || '__all__';
     const resolvedCategory = categoryKey ? categoryApiNames[categoryKey] || categoryKey : null;
 
@@ -22,7 +23,7 @@ export function useCatalogCostumes(categoryKey) {
       requestKey,
     }));
 
-    fetchCostumes({ pageSize: 100 })
+    fetchCostumes({ pageSize: 100, signal: controller.signal })
       .then((data) => {
         if (!isMounted) return;
 
@@ -41,6 +42,7 @@ export function useCatalogCostumes(categoryKey) {
         });
       })
       .catch((requestError) => {
+        if (controller.signal.aborted) return;
         if (!isMounted) return;
 
         setState({
@@ -53,6 +55,7 @@ export function useCatalogCostumes(categoryKey) {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [categoryKey]);
 

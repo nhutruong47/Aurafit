@@ -36,7 +36,7 @@ const extractCategoryName = (value) => {
 };
 
 const normalizeUiCategory = (costume) => {
-  const rawCategory = extractCategoryName(costume.category);
+  const rawCategory = extractCategoryName(costume.category) || costume.categoryName || '';
   const text = [rawCategory, costume.category?.description, costume.description].filter(Boolean).join(' ').toLowerCase();
 
   const matched = UI_CATEGORY_BY_KEYWORD.find((entry) => entry.match.some((keyword) => text.includes(keyword)));
@@ -57,7 +57,7 @@ const buildMeta = (costume, rawCategory, normalizedCategory) => {
 export const mapCostumeToProduct = (costume) => {
   const rentalPrice = Number(costume.rentalPrice ?? costume.rental_price ?? costume.price ?? 0);
   const depositPrice = Number(costume.depositPrice ?? costume.deposit_price ?? costume.deposit ?? 0);
-  const rawCategory = extractCategoryName(costume.category);
+  const rawCategory = extractCategoryName(costume.category) || costume.categoryName || '';
   const normalizedCategory = normalizeUiCategory(costume);
   const subcategory = extractCategoryName(costume.subcategory) || rawCategory;
   const metadata = costume.metadata || null;

@@ -25,6 +25,7 @@ export function useShopCostumes(currentUserId) {
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
     const requestKey = currentUserId || '__guest__';
     setIsLoading(true);
     setError('');
@@ -32,10 +33,10 @@ export function useShopCostumes(currentUserId) {
     Promise.all([
       fetchRecommendedCostumes(currentUserId),
       fetchSeasonalCostumes(),
-      fetchCostumes({ pageSize: 100 }),
+      fetchCostumes({ pageSize: 100, signal: controller.signal }),
     ])
       .then(([recommendedData, seasonalData, allData]) => {
-        if (!isMounted) return;
+        if (controller.signal.aborted || !isMounted) return;
 
         setRecommendedProducts(uniqueProducts((recommendedData || []).map(mapCostumeToProduct)));
         setTrendingProducts(uniqueProducts((seasonalData || []).map(mapCostumeToProduct)));
@@ -45,7 +46,7 @@ export function useShopCostumes(currentUserId) {
         setLoadedUserKey(requestKey);
       })
       .catch((requestError) => {
-        if (!isMounted) return;
+        if (controller.signal.aborted || !isMounted) return;
         setError(requestError.message || 'Không thể tải dữ liệu shop chung.');
         setIsLoading(false);
         setLoadedUserKey(requestKey);
@@ -53,6 +54,7 @@ export function useShopCostumes(currentUserId) {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [currentUserId]);
 

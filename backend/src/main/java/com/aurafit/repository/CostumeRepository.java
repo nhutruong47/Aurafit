@@ -1,7 +1,9 @@
 package com.aurafit.repository;
 
 import com.aurafit.entity.Costume;
+import com.aurafit.dto.response.CostumeListDTO;
 import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.ItemStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,13 +31,24 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * @return A Page of Costume entities with their Category eagerly loaded.
      */
     @Query(value = """
-            SELECT c FROM Costume c
-            JOIN FETCH c.category
-            LEFT JOIN FETCH c.metadata
-            LEFT JOIN FETCH c.items
+            SELECT new com.aurafit.dto.response.CostumeListDTO(
+                c.id,
+                c.name,
+                c.rentalPrice,
+                c.depositPrice,
+                c.imageUrl,
+                c.status,
+                category.id,
+                category.name,
+                COALESCE(SUM(CASE WHEN item.status = :availableStatus THEN 1 ELSE 0 END), 0)
+            )
+            FROM Costume c
+            JOIN c.category category
+            LEFT JOIN c.items item
             WHERE c.status = :status
-              AND (:categoryId IS NULL OR c.category.id = :categoryId)
+              AND (:categoryId IS NULL OR category.id = :categoryId)
               AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            GROUP BY c.id, c.name, c.rentalPrice, c.depositPrice, c.imageUrl, c.status, category.id, category.name
             """,
             countQuery = """
             SELECT COUNT(c) FROM Costume c
@@ -43,8 +56,9 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
               AND (:categoryId IS NULL OR c.category.id = :categoryId)
               AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
             """)
-    Page<Costume> findAllWithFilters(
+    Page<CostumeListDTO> findAllSummariesWithFilters(
             @Param("status") CostumeStatus status,
+            @Param("availableStatus") ItemStatus availableStatus,
             @Param("categoryId") Long categoryId,
             @Param("keyword") String keyword,
             Pageable pageable

@@ -2,6 +2,7 @@ package com.aurafit.service;
 
 import com.aurafit.dto.response.CategoryDTO;
 import com.aurafit.dto.response.CostumeDTO;
+import com.aurafit.dto.response.CostumeListDTO;
 import com.aurafit.dto.response.PaginatedResponse;
 
 import java.util.List;
@@ -19,9 +20,9 @@ public interface CostumeService {
      * @param sortDir    Sort direction: "asc" or "desc".
      * @return A paginated response containing CostumeDTOs.
      */
-    PaginatedResponse<CostumeDTO> getAllActiveCostumes(Long categoryId, String keyword,
-                                                       int pageNo, int pageSize,
-                                                       String sortBy, String sortDir);
+    PaginatedResponse<CostumeListDTO> getAllActiveCostumes(Long categoryId, String keyword,
+                                                           int pageNo, int pageSize,
+                                                           String sortBy, String sortDir);
 
     /**
      * Fetches a single costume by ID. Throws ResourceNotFoundException if not found.

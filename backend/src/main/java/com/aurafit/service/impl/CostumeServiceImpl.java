@@ -2,9 +2,11 @@ package com.aurafit.service.impl;
 
 import com.aurafit.dto.response.CategoryDTO;
 import com.aurafit.dto.response.CostumeDTO;
+import com.aurafit.dto.response.CostumeListDTO;
 import com.aurafit.dto.response.PaginatedResponse;
 import com.aurafit.entity.Costume;
 import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.ItemStatus;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CategoryRepository;
 import com.aurafit.repository.CostumeRepository;
@@ -33,9 +35,9 @@ public class CostumeServiceImpl implements CostumeService {
     }
 
     @Override
-    public PaginatedResponse<CostumeDTO> getAllActiveCostumes(Long categoryId, String keyword,
-                                                              int pageNo, int pageSize,
-                                                              String sortBy, String sortDir) {
+    public PaginatedResponse<CostumeListDTO> getAllActiveCostumes(Long categoryId, String keyword,
+                                                                  int pageNo, int pageSize,
+                                                                  String sortBy, String sortDir) {
         // Build Sort object from parameters
         Sort sort = sortDir.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
@@ -46,14 +48,15 @@ public class CostumeServiceImpl implements CostumeService {
         // Normalize null keyword to empty string so 'LIKE %%' matches all
         String normalizedKeyword = (keyword == null) ? "" : keyword.trim();
 
-        Page<Costume> page = costumeRepository.findAllWithFilters(
+        Page<CostumeListDTO> page = costumeRepository.findAllSummariesWithFilters(
                 CostumeStatus.ACTIVE,
+                ItemStatus.AVAILABLE,
                 categoryId,
                 normalizedKeyword,
                 pageable
         );
 
-        return PaginatedResponse.from(page, CostumeDTO::fromEntity);
+        return PaginatedResponse.from(page, costume -> costume);
     }
 
     @Override

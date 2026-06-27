@@ -6,6 +6,7 @@ import com.aurafit.dto.response.AdminCostumeDTO;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.CostumeItemDTO;
+import com.aurafit.dto.response.CostumeListDTO;
 import com.aurafit.dto.response.PaginatedResponse;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.service.AdminService;
@@ -42,7 +43,7 @@ public class CostumeController {
 
     @GetMapping
     @Operation(summary = "Browse costumes", description = "Returns paginated list of ACTIVE costumes")
-    public ResponseEntity<ApiResponse<PaginatedResponse<CostumeDTO>>> getAllCostumes(
+    public ResponseEntity<ApiResponse<PaginatedResponse<CostumeListDTO>>> getAllCostumes(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int pageNo,
@@ -50,7 +51,7 @@ public class CostumeController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
-        PaginatedResponse<CostumeDTO> response = costumeService.getAllActiveCostumes(
+        PaginatedResponse<CostumeListDTO> response = costumeService.getAllActiveCostumes(
                 categoryId, keyword, pageNo, pageSize, sortBy, sortDir
         );
         return ResponseEntity.ok(ApiResponse.success("Costumes retrieved successfully.", response));
@@ -83,6 +84,14 @@ public class CostumeController {
             @RequestParam(required = false) Long userId
     ) {
         return ResponseEntity.ok(ApiResponse.success("Recommended costumes retrieved.", costumeService.getRecommendedCostumes(userId, 6)));
+    }
+
+    @GetMapping("/admin")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get all costumes for admin", description = "Returns admin-oriented costume list with metadata but without item details")
+    public ResponseEntity<ApiResponse<List<AdminCostumeDTO>>> getAllCostumesForAdmin() {
+        return ResponseEntity.ok(ApiResponse.success("Admin costumes retrieved successfully.", adminService.getAllCostumes()));
     }
 
     // --- Admin Endpoints ---
