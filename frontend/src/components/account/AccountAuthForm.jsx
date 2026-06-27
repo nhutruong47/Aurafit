@@ -90,7 +90,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
       });
       setStage('verify-otp');
       setOtpCountdown(OTP_TTL_SECONDS);
-      const fallbackMsg = `Đã đăng ký tạm. Mã OTP đã gửi tới ${form.email}. Vui lòng kiểm tra hộp thư và nhập mã để kích hoạt tài khoản.`;
+      const fallbackMsg = `Yêu cầu đăng ký đã được ghi nhận. Mã OTP đã được gửi tới ${form.email}. Vui lòng kiểm tra hộp thư và nhập mã để kích hoạt tài khoản.`;
       setInfoMessage(response?.message || fallbackMsg);
     } catch (err) {
       setLocalError(err.message || 'Không thể đăng ký và gửi mã OTP. Vui lòng thử lại.');
@@ -110,7 +110,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
         password: form.password,
       });
       setOtpCountdown(OTP_TTL_SECONDS);
-      setInfoMessage('Đã gửi lại mã OTP. Vui lòng kiểm tra email.');
+      setInfoMessage('Mã OTP đã được gửi lại. Vui lòng kiểm tra email của bạn.');
     } catch (err) {
       setLocalError(err.message || 'Không thể gửi lại mã OTP.');
     }
@@ -202,7 +202,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                 {isRegister
                   ? stage === 'verify-otp'
                     ? `Mã xác thực đã gửi tới ${form.email}. Nhập mã OTP để kích hoạt tài khoản của bạn.`
-                    : 'Điền đầy đủ thông tin rồi nhấn Đăng ký. Hệ thống sẽ gửi mã OTP xác thực email Gmail trước khi hoàn tất đăng ký.'
+                    : 'Điền đầy đủ thông tin rồi nhấn Đăng ký. Hệ thống sẽ gửi mã OTP xác thực đến email Gmail của bạn trước khi hoàn tất đăng ký.'
                   : 'Admin đăng nhập sẽ vào dashboard quản lý sản phẩm. Nhân viên đăng nhập sẽ vào màn hình bàn giao.'}
               </p>
             </div>

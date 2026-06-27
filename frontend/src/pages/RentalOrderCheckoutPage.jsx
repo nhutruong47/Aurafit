@@ -6,11 +6,37 @@ import CheckoutSummary from '../components/checkout/CheckoutSummary';
 import RentalItemCard from '../components/checkout/RentalItemCard';
 import { multiItemSummaryRows, singleItemSummaryRows, suggestions, toRentalItem } from '../components/checkout/checkoutData';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
-import { logUserInteraction } from '../services/interactionsService';
+import { clearAiStylistCartAttribution, logUserInteraction } from '../services/interactionsService';
 import { createOrder } from '../services/rentalOrderService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 
 const PAGE_SIZE = 20;
+
+const buildAiStylistAttributionSummary = (rentalItems = []) => {
+  const attributedItems = rentalItems.filter((item) => item?.attribution?.source === 'AI_STYLIST');
+  if (!attributedItems.length) {
+    return null;
+  }
+
+  return {
+    source: 'AI_STYLIST',
+    chatAttributedItemCount: attributedItems.length,
+    aiStylistSessionIds: [...new Set(attributedItems.map((item) => item.attribution?.aiStylistSessionId).filter(Boolean))],
+    attributedCostumeIds: [...new Set(attributedItems.map((item) => item.costumeItemId || item.id).filter(Boolean))],
+    attributedItems: attributedItems.map((item) => ({
+      costumeItemId: item.costumeItemId || item.id || null,
+      sku: item.sku || null,
+      rentalStartDate: item.rentalStartDate || null,
+      rentalEndDate: item.rentalEndDate || null,
+      aiStylistSessionId: item.attribution?.aiStylistSessionId || null,
+      aiStylistMessageId: item.attribution?.aiStylistMessageId || null,
+      guestSessionId: item.attribution?.guestSessionId || null,
+      interactionSessionId: item.attribution?.interactionSessionId || null,
+      recommendationPosition: item.attribution?.position || null,
+      recommendationReason: item.attribution?.reason || null,
+    })),
+  };
+};
 
 export default function RentalOrderCheckoutPage({
   cartItems = [],
@@ -153,6 +179,7 @@ export default function RentalOrderCheckoutPage({
         deliveryAddress: deliveryInfo.deliveryAddress,
         items,
       });
+      const aiStylistAttribution = buildAiStylistAttributionSummary(rentalItems);
 
       logUserInteraction({
         eventType: 'RENT',
@@ -161,8 +188,13 @@ export default function RentalOrderCheckoutPage({
         metadata: {
           itemCount: items.length,
           costumeIds: rentalItems.map((item) => item.costumeItemId || item.id),
+          aiStylistAttribution,
         },
       }).catch(() => {});
+
+      rentalItems.forEach((item) => {
+        clearAiStylistCartAttribution(item);
+      });
 
       setPendingOrderId(orderResponse.id);
       onCheckoutSuccess?.(orderResponse.id);

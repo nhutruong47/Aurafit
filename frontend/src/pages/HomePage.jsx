@@ -1,20 +1,30 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import HomeCategoryMosaic from '../components/home/HomeCategoryMosaic';
 import HomeFeaturedSection from '../components/home/HomeFeaturedSection';
 import HomeHero from '../components/home/HomeHero';
 import HomeInsiderSection from '../components/home/HomeInsiderSection';
+import HomePersonalizedSection from '../components/home/HomePersonalizedSection';
 import HomeServicesSection from '../components/home/HomeServicesSection';
 import HomeStyleSlider from '../components/home/HomeStyleSlider';
 import HomeTrendingSection from '../components/home/HomeTrendingSection';
 import HomeTrustSection from '../components/home/HomeTrustSection';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
+import { useHomepageRecommendations } from '../hooks/useHomepageRecommendations';
+import { getInteractionSessionId, logUserInteraction } from '../services/interactionsService';
 
-export default function HomePage({ onNavigate, onAddToCart }) {
+export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
   const [activeTab, setActiveTab] = useState('event');
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const sliderRef = useRef(null);
+  const homepageImpressionKeyRef = useRef('');
   const { costumes, isLoading } = useCatalogCostumes();
+  const interactionSessionIdRef = useRef(getInteractionSessionId());
+  const {
+    recommendations: homepageRecommendations,
+    isLoading: isHomepageRecommendationsLoading,
+    error: homepageRecommendationsError,
+  } = useHomepageRecommendations(interactionSessionIdRef.current, currentUser?.id);
 
   const products = useMemo(
     () => ({
@@ -26,6 +36,31 @@ export default function HomePage({ onNavigate, onAddToCart }) {
     [costumes]
   );
   const trending = useMemo(() => costumes.slice(0, 4), [costumes]);
+
+  useEffect(() => {
+    if (!homepageRecommendations.length) return;
+
+    const recommendedIds = homepageRecommendations
+      .map((item) => item?.product?.id)
+      .filter((id) => id !== undefined && id !== null);
+    const impressionKey = `home:${recommendedIds.join(',')}:${currentUser?.id || 'guest'}`;
+
+    if (!recommendedIds.length || homepageImpressionKeyRef.current === impressionKey) {
+      return;
+    }
+
+    homepageImpressionKeyRef.current = impressionKey;
+
+    logUserInteraction({
+      eventType: 'RECOMMENDATION_IMPRESSION',
+      targetType: 'HOMEPAGE',
+      metadata: {
+        slot: 'homepage_personalized',
+        recommendedCostumeIds: recommendedIds,
+        userType: currentUser?.id ? 'authenticated' : 'guest',
+      },
+    }).catch(() => {});
+  }, [currentUser?.id, homepageRecommendations]);
 
   const scrollSlider = (direction) => {
     const slider = sliderRef.current;
@@ -53,10 +88,37 @@ export default function HomePage({ onNavigate, onAddToCart }) {
     }, 2000);
   };
 
+  const handleHomepageRecommendationClick = (recommendation, index, page, product) => {
+    if (page !== 'productDetail' || !product?.id) {
+      return;
+    }
+
+    logUserInteraction({
+      eventType: 'RECOMMENDATION_CLICK',
+      targetType: 'RECOMMENDATION',
+      targetId: product.id,
+      metadata: {
+        slot: 'homepage_personalized',
+        recommendedCostumeId: product.id,
+        reason: recommendation?.reason || null,
+        position: index + 1,
+        userType: currentUser?.id ? 'authenticated' : 'guest',
+      },
+    }).catch(() => {});
+  };
+
   return (
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
       <HomeHero onNavigate={onNavigate} />
       <HomeServicesSection />
+      <HomePersonalizedSection
+        recommendations={homepageRecommendations}
+        isLoading={isHomepageRecommendationsLoading}
+        error={homepageRecommendationsError}
+        onNavigate={onNavigate}
+        onAddToCart={onAddToCart}
+        onRecommendationClick={handleHomepageRecommendationClick}
+      />
       <HomeCategoryMosaic onNavigate={onNavigate} />
       <HomeStyleSlider sliderRef={sliderRef} onNavigate={onNavigate} onScroll={scrollSlider} />
       <HomeFeaturedSection

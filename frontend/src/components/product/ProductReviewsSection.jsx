@@ -112,7 +112,7 @@ export default function ProductReviewsSection({
               onClick={() => onFilterRatingChange(star)}
               className={`px-5 py-2 text-sm border ${filterRating === star ? 'border-[#99854e] text-[#99854e] bg-white' : 'border-[#cfc4c5]/50 bg-white text-[#5f5e5e]'}`}
             >
-              {star} Sao ({stats.counts[star]})
+              {star} sao ({stats.counts[star]})
             </button>
           ))}
         </div>

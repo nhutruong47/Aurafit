@@ -60,7 +60,7 @@ export default function CatalogPage({ onNavigate, onAddToCart }) {
     <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1440px]">
         <div className="mb-10">
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">The Collection</p>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
           <h1 className="mb-4 font-serif text-4xl font-normal italic text-black sm:text-5xl">Bộ sưu tập trang phục</h1>
           <p className="max-w-2xl text-lg leading-8 text-[#5f5e5e]">
             Khám phá hàng ngàn sản phẩm đa dạng từ Cosplay, Sự kiện, Kỷ yếu đến Phụ kiện.

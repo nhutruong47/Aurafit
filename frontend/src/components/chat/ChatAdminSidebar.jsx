@@ -1,4 +1,3 @@
-// Sidebar hien thong tin admin ho tro va ngu can tu van trong man hinh chat.
 import { adminContact } from '../../utils/shopMock';
 
 function StatusChip({ children }) {
@@ -14,11 +13,11 @@ export default function ChatAdminSidebar({ products }) {
     <aside className="flex h-auto w-full flex-shrink-0 flex-col border-b border-[#cfc4c5] bg-white md:h-full md:w-[380px] md:border-b-0 md:border-r">
       <div className="border-b border-[#cfc4c5] p-6">
         <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#99854e]">
-          Hỗ trợ Admin
+          AI Stylist
         </p>
-        <h1 className="font-serif text-3xl font-normal">Liên hệ AuraFit Admin</h1>
+        <h1 className="font-serif text-3xl font-normal">AuraFit AI Stylist</h1>
         <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
-          Mọi câu hỏi về sản phẩm, giá thuê, tiền cọc và thanh toán đều được xử lý trực tiếp bởi Admin.
+          Stylist sẽ dựa trên catalog thật để gợi ý costume, giá thuê và lý do phù hợp, không tự tạo sản phẩm ngoài database.
         </p>
       </div>
 
@@ -30,11 +29,11 @@ export default function ChatAdminSidebar({ products }) {
           <div className="mb-1 flex items-start justify-between gap-3">
             <h2 className="truncate text-base font-bold">{adminContact.name}</h2>
             <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#999999]">
-              Đang online
+              Đang sẵn sàng
             </span>
           </div>
           <StatusChip>{products.length || 1} ngữ cảnh tư vấn</StatusChip>
-          <p className="mt-2 truncate text-sm text-[#5f5e5e]">Kênh liên hệ chính thức của hệ thống</p>
+          <p className="mt-2 truncate text-sm text-[#5f5e5e]">Chỉ đề xuất từ sản phẩm đang có trong hệ thống</p>
         </div>
       </button>
     </aside>

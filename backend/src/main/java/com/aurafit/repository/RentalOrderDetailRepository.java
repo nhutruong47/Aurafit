@@ -1,14 +1,33 @@
 package com.aurafit.repository;
 
+import com.aurafit.enums.OrderStatus;
 import com.aurafit.entity.RentalOrderDetail;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface RentalOrderDetailRepository extends JpaRepository<RentalOrderDetail, Long> {
 
     @Query("SELECT rd FROM RentalOrderDetail rd WHERE rd.rentalOrder.id = :orderId")
     List<RentalOrderDetail> findByRentalOrderId(@Param("orderId") Long orderId);
+
+    @Query("""
+            SELECT DISTINCT rd.costumeItem.id
+            FROM RentalOrderDetail rd
+            JOIN rd.rentalOrder ro
+            WHERE rd.costumeItem.id IN :costumeItemIds
+              AND ro.status <> :cancelledStatus
+              AND ro.rentalStartDate <= :requestedEnd
+              AND ro.rentalEndDate >= :requestedStart
+            """)
+    List<Long> findBookedCostumeItemIdsForPeriod(
+            @Param("costumeItemIds") Collection<Long> costumeItemIds,
+            @Param("requestedStart") LocalDateTime requestedStart,
+            @Param("requestedEnd") LocalDateTime requestedEnd,
+            @Param("cancelledStatus") OrderStatus cancelledStatus
+    );
 }

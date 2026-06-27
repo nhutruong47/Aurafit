@@ -71,6 +71,31 @@ export const fetchRecommendedCostumes = async (userId) =>
     'Không thể tải danh sách gợi ý sản phẩm.'
   );
 
+export const fetchSimilarCostumes = async (costumeId, limit = 4) =>
+  requestJson(
+    {
+      url: `/recommendations/similar/${encodeURIComponent(costumeId)}`,
+      method: 'GET',
+      params: {
+        limit,
+      },
+    },
+    'Không thể tải danh sách sản phẩm tương tự.'
+  );
+
+export const fetchHomepageRecommendations = async (sessionId, limit = 6) =>
+  requestJson(
+    {
+      url: '/recommendations/home',
+      method: 'GET',
+      params: {
+        ...(sessionId ? { sessionId } : {}),
+        limit,
+      },
+    },
+    'Không thể tải gợi ý cá nhân hóa cho trang chủ.'
+  );
+
 export const fetchAdminCostumes = async () => {
   const payload = await requestJson(
     {

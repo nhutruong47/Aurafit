@@ -15,7 +15,7 @@ export default function CheckoutSuggestionCard({ item, onAddToCart }) {
           <button
             onClick={() => onAddToCart?.(item.originalItem || item)}
             className="flex items-center justify-center bg-white p-2 text-black"
-            aria-label={`Add ${item.name}`}
+            aria-label={`Thêm ${item.name}`}
           >
             <span className="material-symbols-outlined">add</span>
           </button>

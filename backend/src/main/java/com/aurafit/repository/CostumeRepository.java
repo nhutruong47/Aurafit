@@ -80,6 +80,29 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
     @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id")
     Optional<Costume> findByIdWithItems(@Param("id") Long id);
 
+    @Query("""
+            SELECT DISTINCT c FROM Costume c
+            JOIN FETCH c.category
+            LEFT JOIN FETCH c.metadata
+            LEFT JOIN FETCH c.items
+            WHERE c.status = :status
+            ORDER BY c.id DESC
+            """)
+    List<Costume> findActiveWithItems(@Param("status") CostumeStatus status);
+
+    @Query("""
+            SELECT DISTINCT c FROM Costume c
+            JOIN FETCH c.category
+            LEFT JOIN FETCH c.metadata
+            LEFT JOIN FETCH c.items
+            WHERE c.status = :status
+              AND c.id <> :excludeId
+            """)
+    List<Costume> findActiveWithItemsExcludingId(
+            @Param("status") CostumeStatus status,
+            @Param("excludeId") Long excludeId
+    );
+
     @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items ORDER BY c.id DESC")
     List<Costume> findAllWithItems();
 }

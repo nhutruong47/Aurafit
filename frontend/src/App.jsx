@@ -20,7 +20,20 @@ import UserAccountPage from './pages/UserAccountPage';
 import YearbookPage from './pages/YearbookPage';
 import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from './routing/navigation';
 import { addItemToCart as addItemToCartApi, fetchCart, removeCartItem as removeCartItemApi } from './services/cartService';
-import { attachGuestSessionToCurrentUser, logUserInteraction } from './services/interactionsService';
+import {
+  attachAiStylistSessionToCurrentUser,
+  getStoredAiStylistSessionId,
+  promoteAiStylistSessionIdToUser,
+} from './services/aiStylistService';
+import {
+  attachGuestSessionToCurrentUser,
+  clearAiStylistCartAttribution,
+  consumeAiStylistRecommendationAttribution,
+  getInteractionSessionId,
+  logUserInteraction,
+  mergeAiStylistCartAttribution,
+  rememberAiStylistCartAttribution,
+} from './services/interactionsService';
 import { selectCurrentUser, setCurrentUser } from './store/authSlice';
 import {
   addCartItem,
@@ -74,13 +87,34 @@ function App() {
     if (!currentUser?.id) return undefined;
 
     let isMounted = true;
+    const guestSessionId = getInteractionSessionId();
+    const guestAiStylistSessionId = getStoredAiStylistSessionId(guestSessionId, null);
 
     attachGuestSessionToCurrentUser().catch(() => {});
+
+    if (guestAiStylistSessionId) {
+      const preferredSessionId = Number(guestAiStylistSessionId);
+
+      attachAiStylistSessionToCurrentUser({
+        guestSessionId,
+        preferredSessionId: Number.isFinite(preferredSessionId) ? preferredSessionId : null,
+      })
+        .then((response) => {
+          if (!isMounted) return;
+
+          promoteAiStylistSessionIdToUser({
+            sessionId: response?.preferredSessionId || guestAiStylistSessionId,
+            guestSessionId,
+            userId: currentUser.id,
+          });
+        })
+        .catch(() => {});
+    }
 
     fetchCart()
       .then((cart) => {
         if (!isMounted) return;
-        dispatch(setCartItems(cart?.items || []));
+        dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
       })
       .catch(() => {});
 
@@ -98,33 +132,50 @@ function App() {
 
   const handleAddToCart = useCallback(
     async (item) => {
+      const aiStylistAttribution =
+        item?.attribution || consumeAiStylistRecommendationAttribution(item?.costumeId || item?.id || null);
+
       if (currentUser?.id && item?.id) {
         logUserInteraction({
           userId: currentUser.id,
           actionType: 'ADD_TO_CART',
           targetType: 'COSTUME',
           targetId: item.id,
-          metadata: JSON.stringify({
+          metadata: {
             category: item.rawCategory || item.category,
             subcategory: item.subcategory,
             tag: item.tag,
-          }),
+            source: aiStylistAttribution?.source || null,
+            slot: aiStylistAttribution?.slot || null,
+            aiStylistSessionId: aiStylistAttribution?.aiStylistSessionId || null,
+            aiStylistMessageId: aiStylistAttribution?.aiStylistMessageId || null,
+            guestSessionId: aiStylistAttribution?.guestSessionId || null,
+            interactionSessionId: aiStylistAttribution?.interactionSessionId || null,
+            recommendationPosition: aiStylistAttribution?.position || null,
+            recommendationReason: aiStylistAttribution?.reason || null,
+            rentalStartDate: item.rentalStartDate || aiStylistAttribution?.rentalStartDate || null,
+            rentalEndDate: item.rentalEndDate || aiStylistAttribution?.rentalEndDate || null,
+          },
         }).catch(() => {});
       }
 
       if (currentUser?.id && item?.costumeItemId && item?.rentalStartDate && item?.rentalEndDate) {
         try {
+          if (aiStylistAttribution) {
+            rememberAiStylistCartAttribution(item, aiStylistAttribution);
+          }
+
           const cart = await addItemToCartApi({
             costumeItemId: item.costumeItemId,
             rentalStartDate: item.rentalStartDate,
             rentalEndDate: item.rentalEndDate,
           });
-          dispatch(setCartItems(cart?.items || []));
+          dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
         } catch {
-          dispatch(addCartItem(item));
+          dispatch(addCartItem(aiStylistAttribution ? { ...item, attribution: aiStylistAttribution } : item));
         }
       } else {
-        dispatch(addCartItem(item));
+        dispatch(addCartItem(aiStylistAttribution ? { ...item, attribution: aiStylistAttribution } : item));
       }
 
       if (location.pathname !== '/checkout') {
@@ -148,13 +199,15 @@ function App() {
       if (currentUser?.id && matchedItem?.cartItemId) {
         try {
           const cart = await removeCartItemApi(matchedItem.cartItemId);
-          dispatch(setCartItems(cart?.items || []));
+          clearAiStylistCartAttribution(matchedItem);
+          dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
           return;
         } catch {
           return;
         }
       }
 
+      clearAiStylistCartAttribution(matchedItem);
       dispatch(removeCartItem(cartId));
     },
     [cartItems, currentUser?.id, dispatch]
@@ -172,7 +225,7 @@ function App() {
           />
         }
       >
-        <Route path="/" element={<HomePage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/" element={<HomePage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/catalog" element={<CatalogPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/shop" element={<ShopPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route
@@ -188,7 +241,7 @@ function App() {
             />
           }
         />
-        <Route path="/chat" element={<ChatPage onNavigate={handleNavigate} cartItems={cartItems} />} />
+        <Route path="/chat" element={<ChatPage onNavigate={handleNavigate} cartItems={cartItems} currentUser={currentUser} />} />
         <Route path="/orders" element={<RentalOrdersPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/admin" element={<AdminDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/staff" element={<StaffDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />

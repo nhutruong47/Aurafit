@@ -43,7 +43,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
   if (!currentUser || !canUseStaffTools) {
     return (
       <section className="mx-auto flex min-h-[calc(100dvh-80px)] max-w-[900px] flex-col justify-center px-5 py-16 text-[#1a1c1c] md:px-20">
-        <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#99854e]">Staff Area</p>
+        <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#99854e]">Khu vực Staff</p>
         <h1 className="font-serif text-[44px] font-normal italic leading-[1.12] md:text-[64px]">Cần tài khoản staff.</h1>
         <p className="mt-6 text-base leading-7 text-[#5f5e5e]">
           Đăng nhập bằng tài khoản staff demo để xử lý bàn giao và nhận trả trang phục.

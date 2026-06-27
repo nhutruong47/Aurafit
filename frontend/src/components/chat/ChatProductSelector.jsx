@@ -1,4 +1,3 @@
-// Danh sach san pham de nguoi dung chon ngu can tu van trong chat.
 const fallbackProductImage = 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=900&q=85';
 
 export default function ChatProductSelector({ products, activeProduct, onSelectProduct }) {
@@ -7,7 +6,7 @@ export default function ChatProductSelector({ products, activeProduct, onSelectP
   return (
     <div className="border-b border-[#cfc4c5] bg-white px-6 py-4 md:px-8">
       <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.15em] text-[#99854e]">
-        Sản phẩm cần Admin tư vấn
+        Sản phẩm ưu tiên tham chiếu
       </p>
       <div className="flex gap-4 overflow-x-auto pb-2">
         {products.map((product) => {
