@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ProductHero from '../components/product/ProductHero';
 import ProductReviewsSection from '../components/product/ProductReviewsSection';
+import SimilarProductsSection from '../components/product/SimilarProductsSection';
+import { useSimilarProducts } from '../hooks/useSimilarProducts';
 import AlertMessage from '../components/ui/AlertMessage';
 import { fetchCostumeById } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
@@ -13,7 +15,7 @@ const initialMockReviews = [
     id: 1,
     author: 'Nguyễn Minh Anh',
     rating: 5,
-    date: '10/05/2026', 
+    date: '10/05/2026',
     comment: 'Trang phục rất đẹp, chất liệu vải cao cấp và lên form cực chuẩn. Dịch vụ tư vấn nhiệt tình, giao hàng nhanh chóng.',
   },
   {
@@ -59,8 +61,14 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   const [selectedItem, setSelectedItem] = useState(null);
   const [rentalStartDate, setRentalStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [rentalEndDate, setRentalEndDate] = useState('');
+  const impressionKeyRef = useRef('');
 
   const isAdmin = useMemo(() => hasUserRole(currentUser, 'ADMIN'), [currentUser]);
+  const {
+    recommendations: similarRecommendations,
+    isLoading: isSimilarLoading,
+    error: similarError,
+  } = useSimilarProducts(product?.id);
 
   useEffect(() => {
     if (!productId) {
@@ -121,6 +129,32 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     }).catch(() => {});
   }, [product]);
 
+  useEffect(() => {
+    if (!product?.id || !similarRecommendations.length) return;
+
+    const recommendedIds = similarRecommendations
+      .map((item) => item?.product?.id)
+      .filter((id) => id !== undefined && id !== null);
+    const impressionKey = `${product.id}:${recommendedIds.join(',')}`;
+
+    if (!recommendedIds.length || impressionKeyRef.current === impressionKey) {
+      return;
+    }
+
+    impressionKeyRef.current = impressionKey;
+
+    logUserInteraction({
+      eventType: 'RECOMMENDATION_IMPRESSION',
+      targetType: 'RECOMMENDATION',
+      targetId: product.id,
+      metadata: {
+        slot: 'similar_products',
+        sourceCostumeId: product.id,
+        recommendedCostumeIds: recommendedIds,
+      },
+    }).catch(() => {});
+  }, [product?.id, similarRecommendations]);
+
   const stats = useMemo(() => {
     const total = reviews.length;
     const avg = total > 0 ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / total).toFixed(1) : 0;
@@ -178,6 +212,25 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     setFilterRating('all');
   };
 
+  const handleRecommendationClick = (recommendation, index, page, recommendedProduct) => {
+    if (page !== 'productDetail' || !recommendedProduct?.id || !product?.id) {
+      return;
+    }
+
+    logUserInteraction({
+      eventType: 'RECOMMENDATION_CLICK',
+      targetType: 'RECOMMENDATION',
+      targetId: recommendedProduct.id,
+      metadata: {
+        slot: 'similar_products',
+        sourceCostumeId: product.id,
+        recommendedCostumeId: recommendedProduct.id,
+        reason: recommendation?.reason || null,
+        position: index + 1,
+      },
+    }).catch(() => {});
+  };
+
   if (!product && !isLoading && !loadError) {
     return null;
   }
@@ -209,6 +262,17 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
           onStartDateChange={setRentalStartDate}
           onEndDateChange={setRentalEndDate}
         />
+
+        {product && (
+          <SimilarProductsSection
+            recommendations={similarRecommendations}
+            isLoading={isSimilarLoading}
+            error={similarError}
+            onNavigate={onNavigate}
+            onAddToCart={onAddToCart}
+            onRecommendationClick={handleRecommendationClick}
+          />
+        )}
 
         {product && (
           <ProductReviewsSection

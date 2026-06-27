@@ -1,6 +1,8 @@
 package com.aurafit.enums;
 
 public enum InteractionEventType {
+    AI_CHAT_SESSION_START,
+    AI_CHAT_ASSISTANT_MESSAGE,
     VIEW_PRODUCT,
     SEARCH,
     ADD_TO_CART,

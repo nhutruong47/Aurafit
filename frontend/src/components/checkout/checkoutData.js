@@ -37,6 +37,7 @@ export function toRentalItem(item, index) {
     sku: item.sku,
     size: item.size,
     color: item.color,
+    attribution: item.attribution || null,
     quantity: item.quantity || 1,
     rentalStartDate: start,
     rentalEndDate: end,

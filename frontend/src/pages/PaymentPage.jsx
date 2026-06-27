@@ -53,7 +53,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       return order.details.map((detail) => ({
         id: detail.id,
         name: detail.costumeName || 'Trang phục AuraFit',
-        meta: [detail.skuCode || detail.sku, detail.size, detail.color].filter(Boolean).join(' • ') || 'Rental item',
+        meta: [detail.skuCode || detail.sku, detail.size, detail.color].filter(Boolean).join(' • ') || 'Sản phẩm thuê',
         price: formatCurrency(detail.subtotal || detail.rentalPrice || 0),
         image: fallbackProductImage,
       }));

@@ -7,7 +7,13 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface UserInteractionEventRepository extends JpaRepository<UserInteractionEvent, Long> {
+
+    List<UserInteractionEvent> findTop60ByUser_IdOrderByCreatedAtDesc(Long userId);
+
+    List<UserInteractionEvent> findTop60BySessionIdOrderByCreatedAtDesc(String sessionId);
 
     @Modifying
     @Query("""

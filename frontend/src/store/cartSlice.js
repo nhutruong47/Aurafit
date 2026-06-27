@@ -28,6 +28,7 @@ const mapCartItemToLocal = (cartItem) => ({
   size: cartItem.size,
   color: cartItem.color,
   quantity: 1,
+  attribution: cartItem.attribution || null,
 });
 
 const cartSlice = createSlice({

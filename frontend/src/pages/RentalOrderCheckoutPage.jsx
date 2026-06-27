@@ -2,11 +2,38 @@ import { useMemo, useState } from 'react';
 import EmptyState from '../components/ui/EmptyState';
 import RentalItemCard from '../components/checkout/RentalItemCard';
 import CheckoutSummary from '../components/checkout/CheckoutSummary';
-import { toRentalItem } from '../components/checkout/checkoutData';
+import { multiItemSummaryRows, singleItemSummaryRows, suggestions, toRentalItem } from '../components/checkout/checkoutData';
+import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
+import { clearAiStylistCartAttribution, logUserInteraction } from '../services/interactionsService';
 import { createOrder } from '../services/rentalOrderService';
-import { logUserInteraction } from '../services/interactionsService';
 import { useDirectOrderStore } from '../store/useDirectOrderStore';
 import { formatCurrency } from '../utils/formatCurrency';
+
+const buildAiStylistAttributionSummary = (rentalItems = []) => {
+  const attributedItems = rentalItems.filter((item) => item?.attribution?.source === 'AI_STYLIST');
+  if (!attributedItems.length) {
+    return null;
+  }
+
+  return {
+    source: 'AI_STYLIST',
+    chatAttributedItemCount: attributedItems.length,
+    aiStylistSessionIds: [...new Set(attributedItems.map((item) => item.attribution?.aiStylistSessionId).filter(Boolean))],
+    attributedCostumeIds: [...new Set(attributedItems.map((item) => item.costumeItemId || item.id).filter(Boolean))],
+    attributedItems: attributedItems.map((item) => ({
+      costumeItemId: item.costumeItemId || item.id || null,
+      sku: item.sku || null,
+      rentalStartDate: item.rentalStartDate || null,
+      rentalEndDate: item.rentalEndDate || null,
+      aiStylistSessionId: item.attribution?.aiStylistSessionId || null,
+      aiStylistMessageId: item.attribution?.aiStylistMessageId || null,
+      guestSessionId: item.attribution?.guestSessionId || null,
+      interactionSessionId: item.attribution?.interactionSessionId || null,
+      recommendationPosition: item.attribution?.position || null,
+      recommendationReason: item.attribution?.reason || null,
+    })),
+  };
+};
 
 export default function RentalOrderCheckoutPage({
   cartItems = [],
@@ -100,15 +127,27 @@ export default function RentalOrderCheckoutPage({
         deliveryAddress: deliveryInfo.deliveryAddress,
         items: orderItems,
       });
+      const aiStylistAttribution = buildAiStylistAttributionSummary(rentalItems);
 
       logUserInteraction({
         eventType: 'RENT',
         targetType: 'ORDER',
         targetId: orderResponse.id,
-        metadata: { itemCount: orderItems.length },
+        metadata: {
+          itemCount: items.length,
+          costumeIds: rentalItems.map((item) => item.costumeItemId || item.id),
+          aiStylistAttribution,
+        },
       }).catch(() => {});
 
       clearDirectItem();
+
+      rentalItems.forEach((item) => {
+        clearAiStylistCartAttribution(item);
+      });
+
+      setPendingOrderId(orderResponse.id);
+>>>>>>> 0896a2b19a36df5ae0e6073cb290790d92607fef
       onCheckoutSuccess?.(orderResponse.id);
       onNavigate?.('payment');
     } catch (err) {

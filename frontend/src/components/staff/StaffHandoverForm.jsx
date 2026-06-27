@@ -103,7 +103,7 @@ export default function StaffHandoverForm({
             onClick={() => onPreviewImage(handoverImageUrl)}
             className="aspect-[4/3] w-full overflow-hidden border border-[#cfc4c5] bg-[#eeeeee]"
           >
-            <img src={handoverImageUrl} alt="Preview" className="h-full w-full object-cover" />
+            <img src={handoverImageUrl} alt="Xem trước ảnh bàn giao" className="h-full w-full object-cover" />
           </button>
         )}
 

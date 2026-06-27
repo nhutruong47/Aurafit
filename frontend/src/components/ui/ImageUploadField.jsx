@@ -135,7 +135,7 @@ export default function ImageUploadField({
 
       {previewUrl && (
         <div className="overflow-hidden border border-[#ebe7df] bg-[#fafaf8]">
-          <img src={previewUrl} alt="Preview upload" className="aspect-[3/4] w-full object-cover" />
+          <img src={previewUrl} alt="Xem trước ảnh tải lên" className="aspect-[3/4] w-full object-cover" />
         </div>
       )}
 

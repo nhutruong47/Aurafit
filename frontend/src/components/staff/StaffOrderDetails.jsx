@@ -80,7 +80,7 @@ export default function StaffOrderDetails({ activeOrder, selectedDetailId, onSel
                   </div>
                   <p className="font-medium">{handover.costumeName}</p>
                   <p className="mt-1 text-sm text-[#5f5e5e]">
-                    {handover.skuCode} | Staff: {handover.staffName}
+                    {handover.skuCode} | Nhân viên: {handover.staffName}
                   </p>
                   {handover.note && <p className="mt-3 text-sm leading-6">{handover.note}</p>}
                 </div>
