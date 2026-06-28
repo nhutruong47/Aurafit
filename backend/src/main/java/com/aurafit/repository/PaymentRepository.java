@@ -16,9 +16,11 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             SELECT p FROM Payment p
             WHERE p.rentalOrder.id = :orderId
               AND p.status = :status
+              AND p.type = :type
             """)
-    Optional<Payment> findByRentalOrderIdAndStatus(
-            @Param("orderId") Integer orderId,
-            @Param("status") PaymentStatus status
+    Optional<Payment> findByRentalOrderIdAndStatusAndType(
+            @Param("orderId") Long orderId,
+            @Param("status") PaymentStatus status,
+            @Param("type") com.aurafit.enums.PaymentType type
     );
 }

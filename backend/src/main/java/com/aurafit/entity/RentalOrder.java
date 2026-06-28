@@ -70,6 +70,7 @@ public class RentalOrder extends BaseEntity {
     private List<RentalOrderDetail> details = new ArrayList<>();
 
     @JsonIgnore
-    @OneToOne(mappedBy = "rentalOrder", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Payment payment;
+    @Builder.Default
+    @OneToMany(mappedBy = "rentalOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Payment> payments = new ArrayList<>();
 }

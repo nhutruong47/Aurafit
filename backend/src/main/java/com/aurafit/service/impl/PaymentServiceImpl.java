@@ -79,12 +79,13 @@ public class PaymentServiceImpl implements PaymentService {
                 .subtract(order.getDiscountAmount());
 
         // 5. Tai hoac tao ban ghi Payment PENDING
-        Payment payment = paymentRepository.findByRentalOrderIdAndStatus(request.orderId(), PaymentStatus.PENDING)
+        Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(Long.valueOf(request.orderId()), PaymentStatus.PENDING, com.aurafit.enums.PaymentType.PAYMENT)
                 .orElseGet(() -> {
                     Payment newPayment = Payment.builder()
                             .rentalOrder(order)
                             .amount(amountPayable)
                             .method(PaymentMethod.BANKING)
+                            .type(com.aurafit.enums.PaymentType.PAYMENT)
                             .status(PaymentStatus.PENDING)
                             .build();
                     return paymentRepository.save(newPayment);
@@ -125,10 +126,10 @@ public class PaymentServiceImpl implements PaymentService {
                     "No valid order reference found in transfer content: " + webhookBody.content()
             );
         }
-        Integer orderId = Integer.parseInt(matcher.group(1));
+        Long orderId = Long.valueOf(matcher.group(1));
 
         // 3. Tim ban ghi Payment PENDING
-        Payment payment = paymentRepository.findByRentalOrderIdAndStatus(orderId, PaymentStatus.PENDING)
+        Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(orderId, PaymentStatus.PENDING, com.aurafit.enums.PaymentType.PAYMENT)
                 .orElseThrow(() -> new BadRequestException(
                         "No pending payment found for orderId: " + orderId
                 ));

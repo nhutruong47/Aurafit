@@ -45,4 +45,19 @@ public interface RentalOrderRepository extends JpaRepository<RentalOrder, Long> 
             ORDER BY ro.createdAt DESC
             """)
     List<RentalOrder> findAllOrdersForStaff();
+
+    @Query("SELECT COALESCE(SUM(r.totalPrice), 0) FROM RentalOrder r WHERE r.status IN ('COMPLETED', 'CONFIRMED')")
+    java.math.BigDecimal calculateTotalRevenue();
+
+    long countByStatus(com.aurafit.enums.OrderStatus status);
+
+    @Query(value = """
+            SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COALESCE(SUM(total_price), 0) as dailyRevenue
+            FROM rental_orders
+            WHERE created_at >= :startDate AND created_at <= :endDate
+              AND status IN ('COMPLETED', 'CONFIRMED')
+            GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+            ORDER BY TO_CHAR(created_at, 'YYYY-MM-DD') ASC
+            """, nativeQuery = true)
+    List<Object[]> getDailyRevenue(@Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
 }

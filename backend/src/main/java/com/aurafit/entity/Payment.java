@@ -2,6 +2,7 @@ package com.aurafit.entity;
 
 import com.aurafit.enums.PaymentMethod;
 import com.aurafit.enums.PaymentStatus;
+import com.aurafit.enums.PaymentType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -26,9 +27,13 @@ public class Payment extends BaseEntity {
     private Long id;
 
     @JsonIgnore
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rental_order_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rental_order_id", nullable = false)
     private RentalOrder rentalOrder;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentType type;
 
     @Column(nullable = false)
     private BigDecimal amount;

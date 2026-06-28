@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
+    long countByRole(com.aurafit.enums.Role role);
+
     List<User> findAllByOrderByIdDesc();
 
     List<User> findByRoleOrderByIdAsc(Role role);
