@@ -43,7 +43,7 @@ export const createAiStylistSession = async ({ guestSessionId, contextCostumeId 
         contextCostumeId: contextCostumeId || null,
       },
     },
-    'Không thể tạo phiên AI Stylist.'
+    'Không thể tạo phiên Chatbot AuraFit.'
   );
 
 export const fetchAiStylistSession = async (sessionId, guestSessionId) =>
@@ -53,7 +53,7 @@ export const fetchAiStylistSession = async (sessionId, guestSessionId) =>
       method: 'GET',
       params: guestSessionId ? { guestSessionId } : undefined,
     },
-    'Không thể tải phiên AI Stylist.'
+    'Không thể tải phiên Chatbot AuraFit.'
   );
 
 export const attachAiStylistSessionToCurrentUser = async ({ guestSessionId, preferredSessionId }) =>
@@ -66,7 +66,7 @@ export const attachAiStylistSessionToCurrentUser = async ({ guestSessionId, pref
         preferredSessionId: preferredSessionId || null,
       },
     },
-    'Không thể liên kết lịch sử AI Stylist với tài khoản hiện tại.'
+    'Không thể liên kết lịch sử Chatbot AuraFit với tài khoản hiện tại.'
   );
 
 export const sendAiStylistMessage = async ({
@@ -90,5 +90,5 @@ export const sendAiStylistMessage = async ({
         message,
       },
     },
-    'Không thể gửi tin nhắn đến AI Stylist.'
+    'Không thể gửi tin nhắn đến Chatbot AuraFit.'
   );

@@ -201,7 +201,7 @@ export default function DirectRentalPage({ currentUser, onNavigate }) {
                 onClick={() => onNavigate?.('chat')}
                 className="border border-black px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all hover:bg-black hover:text-white"
               >
-                Liên hệ Admin
+                Chatbot tư vấn
               </button>
             </div>
 
@@ -300,7 +300,7 @@ export default function DirectRentalPage({ currentUser, onNavigate }) {
                   onClick={() => onNavigate?.('chat')}
                   className="w-full border border-black py-4 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:bg-black hover:text-white"
                 >
-                  Liên hệ Admin để tư vấn
+                  Chatbot tư vấn
                 </button>
 
                 <p className="mt-4 text-center text-[11px] leading-relaxed text-[#999]">

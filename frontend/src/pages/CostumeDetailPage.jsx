@@ -8,7 +8,6 @@ import AlertMessage from '../components/ui/AlertMessage';
 import { fetchCostumeById } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
 import { mapCostumeToProduct, toCartItem } from '../utils/productMapper';
-import { hasUserRole } from '../utils/roles';
 
 const initialMockReviews = [
   {
@@ -63,7 +62,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   const [rentalEndDate, setRentalEndDate] = useState('');
   const impressionKeyRef = useRef('');
 
-  const isAdmin = useMemo(() => hasUserRole(currentUser, 'ADMIN'), [currentUser]);
   const {
     recommendations: similarRecommendations,
     isLoading: isSimilarLoading,
@@ -252,7 +250,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
           product={product}
           selectedItem={selectedItem}
           onSelectItem={setSelectedItem}
-          isAdmin={isAdmin}
           isLoading={isLoading}
           onAddToCart={handleAddToCartClick}
           onRentNow={handleRentNowClick}

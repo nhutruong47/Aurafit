@@ -12,6 +12,9 @@ function ProfileField({ label, value }) {
 
 export default function AccountProfileView({ currentUser, onNavigate, onAuthChange }) {
   const roles = getUserRoles(currentUser);
+  const isAdmin = roles.includes('ADMIN');
+  const isSeller = roles.includes('SELLER') || isAdmin;
+  const isStaff = roles.includes('STAFF') || isAdmin;
 
   return (
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
@@ -53,7 +56,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
             </div>
 
             <div className="mt-8 grid gap-4 md:grid-cols-2">
-              {roles.includes('ADMIN') && (
+              {isAdmin && (
                 <button
                   type="button"
                   onClick={() => onNavigate?.('adminDashboard')}
@@ -62,7 +65,16 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                   Vào dashboard Admin
                 </button>
               )}
-              {roles.includes('STAFF') && (
+              {isSeller && !isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate?.('adminDashboard')}
+                  className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+                >
+                  Khu đăng sản phẩm cho thuê
+                </button>
+              )}
+              {isStaff && (
                 <button
                   type="button"
                   onClick={() => onNavigate?.('staffDashboard')}
@@ -71,7 +83,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                   Vào dashboard nhân viên
                 </button>
               )}
-              {!roles.includes('ADMIN') && !roles.includes('STAFF') && (
+              {(!isStaff || isAdmin) && (
                 <button
                   type="button"
                   onClick={() => onNavigate?.('orders')}

@@ -49,6 +49,10 @@ public class Costume extends BaseEntity {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    private User owner;
+
     @OneToOne(mappedBy = "costume", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private CostumeMetadata metadata;
 

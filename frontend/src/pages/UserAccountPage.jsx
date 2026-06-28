@@ -6,6 +6,7 @@ import { getUserRoles } from '../utils/roles';
 
 const ROLE_REDIRECTS = {
   ADMIN: 'adminDashboard',
+  SELLER: 'adminDashboard',
   STAFF: 'staffDashboard',
   CUSTOMER: 'home',
 };
@@ -13,6 +14,7 @@ const ROLE_REDIRECTS = {
 const resolveRolePage = (user) => {
   const roles = getUserRoles(user);
   if (roles.includes('ADMIN')) return ROLE_REDIRECTS.ADMIN;
+  if (roles.includes('SELLER')) return ROLE_REDIRECTS.SELLER;
   if (roles.includes('STAFF')) return ROLE_REDIRECTS.STAFF;
   return ROLE_REDIRECTS.CUSTOMER;
 };

@@ -263,7 +263,7 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
           await createFreshSession();
         } catch (fallbackError) {
           if (!isMounted) return;
-          setSessionError(fallbackError.message || error.message || 'Không thể khởi tạo AI Stylist.');
+          setSessionError(fallbackError.message || error.message || 'Không thể khởi tạo Chatbot AuraFit.');
           setMessages([]);
           setSessionId(null);
         }
@@ -361,7 +361,7 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
       storeAiStylistSessionId(session.id, guestSessionId, currentUser?.id);
     } catch (error) {
       setDraft(text);
-      setSessionError(error.message || 'Không thể gửi tin nhắn đến AI Stylist.');
+      setSessionError(error.message || 'Không thể gửi tin nhắn đến Chatbot AuraFit.');
     } finally {
       setIsSending(false);
     }
@@ -399,7 +399,7 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
 
   const sendPriceRequest = () => {
     if (!activeProduct) return;
-    sendMessage(`Mình muốn được AI Stylist tư vấn giá và gợi ý costume phù hợp với "${activeProduct.name}" (${activeProduct.price}).`);
+    sendMessage(`Mình muốn được Chatbot AuraFit tư vấn giá và gợi ý costume phù hợp với "${activeProduct.name}" (${activeProduct.price}).`);
   };
 
   const handleCloseSession = () => {
@@ -416,10 +416,10 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
           <header className="z-40 flex min-h-20 flex-shrink-0 items-center justify-between border-b border-[#cfc4c5] bg-[#f9f9f9]/90 px-6 py-4 backdrop-blur-md md:px-8">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="font-serif text-3xl font-normal leading-tight">AuraFit AI Stylist</h2>
+                <h2 className="font-serif text-3xl font-normal leading-tight">AuraFit Chatbot</h2>
                 <span className="inline-flex items-center gap-1 text-xs text-[#99854e]">
                   <span className="material-symbols-outlined text-sm">verified_user</span>
-                  <strong>Bám theo catalog</strong>
+                  <strong>Tự động phản hồi</strong>
                 </span>
               </div>
               <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#999999]">

@@ -8,7 +8,6 @@ export default function ProductHero({
   product,
   selectedItem,
   onSelectItem,
-  isAdmin,
   isLoading = false,
   isAddingToCart = false,
   onAddToCart,
@@ -25,6 +24,9 @@ export default function ProductHero({
   const availableItems = product?.items || [];
 
   if (!product) return null;
+
+  const sellerName = product.sellerName || product.owner?.fullName || product.owner?.email || adminContact.name;
+  const sellerEmail = product.sellerEmail || product.owner?.email || '';
 
   const handleSelectItem = (item) => {
     onSelectItem?.(item);
@@ -177,18 +179,18 @@ export default function ProductHero({
           <div className="flex items-center gap-4">
             <img
               src={adminContact.avatar}
-              alt={adminContact.name}
+              alt={sellerName}
               className="h-14 w-14 rounded-full border border-[#cfc4c5]/50 object-cover"
             />
             <div>
-              <h4 className="font-serif text-lg font-bold">{adminContact.name}</h4>
+              <h4 className="font-serif text-lg font-bold">{sellerName}</h4>
               <div className="mt-1 flex items-center gap-2 text-xs text-[#5f5e5e]">
                 <span className="flex items-center text-[#99854e]">
                   <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                   {adminContact.rating}
                 </span>
                 <span>•</span>
-                <span>{adminContact.address.split(',').slice(-2).join(', ').trim()}</span>
+                <span>{sellerEmail || adminContact.address.split(',').slice(-2).join(', ').trim()}</span>
               </div>
             </div>
           </div>
@@ -196,7 +198,7 @@ export default function ProductHero({
             onClick={() => onNavigate?.('chat', product)}
             className="border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
           >
-            Liên hệ Admin
+            Chatbot tư vấn
           </button>
         </div>
 
@@ -213,46 +215,38 @@ export default function ProductHero({
             </span>
           </div>
 
-          {isAdmin ? (
-            <div className="border border-[#d7d2c8] bg-[#fdfdfb] p-4 text-xs font-semibold uppercase tracking-wider leading-relaxed text-[#7f7041]">
-              Tài khoản Admin chỉ hỗ trợ quản trị và theo dõi số liệu, không có tính năng đặt thuê đồ.
-            </div>
-          ) : (
-            <>
-              <button
-                disabled={!product.available || isLoading || isAddingToCart}
-                onClick={onAddToCart}
-                className={`mb-3 w-full border border-black py-4 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 hover:bg-black hover:text-white ${
-                  !product.available || isLoading || isAddingToCart
-                    ? 'cursor-not-allowed border-[#eeeeee] bg-[#eeeeee] text-[#999999]'
-                    : ''
-                }`}
-              >
-                {isAddingToCart ? 'Đang thêm...' : isLoading ? 'Đang tải...' : !product.available ? 'Tạm hết hàng' : 'Thêm vào giỏ hàng'}
-              </button>
-              <button
-                disabled={!canRentNow || isAddingToCart}
-                onClick={handleRentNow}
-                className={`mb-3 w-full py-4 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
-                  canRentNow && !isAddingToCart
-                    ? 'bg-[#99854e] text-white hover:bg-black'
-                    : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
-                }`}
-              >
-                Thuê ngay {!canRentNow && !isAddingToCart && product.available && (
-                  <span className="ml-1 font-normal normal-case tracking-normal text-white/60">
-                    (Hãy chọn ngày thuê)
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => onNavigate?.('chat', product)}
-                className="w-full border border-black py-3 text-[12px] font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 hover:bg-black hover:text-white"
-              >
-                Liên hệ Admin
-              </button>
-            </>
-          )}
+          <button
+            disabled={!product.available || isLoading || isAddingToCart}
+            onClick={onAddToCart}
+            className={`mb-3 w-full border border-black py-4 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 hover:bg-black hover:text-white ${
+              !product.available || isLoading || isAddingToCart
+                ? 'cursor-not-allowed border-[#eeeeee] bg-[#eeeeee] text-[#999999]'
+                : ''
+            }`}
+          >
+            {isAddingToCart ? 'Đang thêm...' : isLoading ? 'Đang tải...' : !product.available ? 'Tạm hết hàng' : 'Thêm vào giỏ hàng'}
+          </button>
+          <button
+            disabled={!canRentNow || isAddingToCart}
+            onClick={handleRentNow}
+            className={`mb-3 w-full py-4 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
+              canRentNow && !isAddingToCart
+                ? 'bg-[#99854e] text-white hover:bg-black'
+                : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
+            }`}
+          >
+            Thuê ngay {!canRentNow && !isAddingToCart && product.available && (
+              <span className="ml-1 font-normal normal-case tracking-normal text-white/60">
+                (Hãy chọn ngày thuê)
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => onNavigate?.('chat', product)}
+            className="w-full border border-black py-3 text-[12px] font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 hover:bg-black hover:text-white"
+          >
+            Chatbot tư vấn
+          </button>
         </div>
       </div>
     </div>

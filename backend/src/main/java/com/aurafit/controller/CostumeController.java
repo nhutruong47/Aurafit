@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -88,31 +89,35 @@ public class CostumeController {
 
     @GetMapping("/admin")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get all costumes for admin", description = "Returns admin-oriented costume list with metadata but without item details")
-    public ResponseEntity<ApiResponse<List<AdminCostumeDTO>>> getAllCostumesForAdmin() {
-        return ResponseEntity.ok(ApiResponse.success("Admin costumes retrieved successfully.", adminService.getAllCostumes()));
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
+    @Operation(summary = "Get manageable costumes", description = "Admin sees all costumes; seller sees their own costumes")
+    public ResponseEntity<ApiResponse<List<AdminCostumeDTO>>> getAllCostumesForAdmin(Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.success("Manageable costumes retrieved successfully.", adminService.getAllCostumes(authentication.getName())));
     }
 
     // --- Admin Endpoints ---
 
     @PostMapping
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Create a new costume (Admin)")
-    public ResponseEntity<ApiResponse<AdminCostumeDTO>> createCostume(@Valid @RequestBody CostumeCreateRequest request) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
+    @Operation(summary = "Create a new costume (Admin/Seller)")
+    public ResponseEntity<ApiResponse<AdminCostumeDTO>> createCostume(
+            Authentication authentication,
+            @Valid @RequestBody CostumeCreateRequest request
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Costume created successfully.", adminService.createCostume(request), HttpStatus.CREATED));
+                .body(ApiResponse.success("Costume created successfully.", adminService.createCostume(request, authentication.getName()), HttpStatus.CREATED));
     }
 
     @PutMapping("/{id}")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update an existing costume (Admin)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
+    @Operation(summary = "Update an existing costume (Admin/Seller)")
     public ResponseEntity<ApiResponse<AdminCostumeDTO>> updateCostume(
+            Authentication authentication,
             @PathVariable Long id,
             @Valid @RequestBody CostumeUpdateRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Costume updated successfully.", adminService.updateCostume(id, request)));
+        return ResponseEntity.ok(ApiResponse.success("Costume updated successfully.", adminService.updateCostume(id, request, authentication.getName())));
     }
 }

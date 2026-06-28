@@ -13,11 +13,11 @@ export default function ChatAdminSidebar({ products }) {
     <aside className="flex h-auto w-full flex-shrink-0 flex-col border-b border-[#cfc4c5] bg-white md:h-full md:w-[380px] md:border-b-0 md:border-r">
       <div className="border-b border-[#cfc4c5] p-6">
         <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#99854e]">
-          AI Stylist
+          Chatbot AuraFit
         </p>
-        <h1 className="font-serif text-3xl font-normal">AuraFit AI Stylist</h1>
+        <h1 className="font-serif text-3xl font-normal">AuraFit Chatbot</h1>
         <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
-          Stylist sẽ dựa trên catalog thật để gợi ý costume, giá thuê và lý do phù hợp, không tự tạo sản phẩm ngoài database.
+          Chatbot tự động dựa trên catalog thật để gợi ý costume, giá thuê và lý do phù hợp, không tự tạo sản phẩm ngoài database.
         </p>
       </div>
 

@@ -5,6 +5,8 @@ import com.aurafit.dto.request.RegisterRequest;
 import com.aurafit.dto.response.AuthResponseDTO;
 import com.aurafit.dto.response.UserResponseDTO;
 import com.aurafit.entity.User;
+import com.aurafit.enums.Role;
+import com.aurafit.exception.BadRequestException;
 import com.aurafit.exception.ConflictException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.exception.UnauthorizedException;
@@ -16,6 +18,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -88,6 +93,31 @@ public class UserServiceImpl implements UserService {
         return user.getId();
     }
 
+    @Override
+    public List<UserResponseDTO> getAllUsers() {
+        return userRepository.findAllByOrderByIdDesc().stream()
+                .map(this::toUserResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public UserResponseDTO updateUserRole(Long userId, Role role) {
+        if (role != Role.CUSTOMER && role != Role.SELLER) {
+            throw new BadRequestException("Admin chi duoc cap hoac thu hoi quyen SELLER cho tai khoan ban hang.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (user.getRole() != Role.CUSTOMER && user.getRole() != Role.SELLER) {
+            throw new BadRequestException("Chi co the cap hoac thu hoi quyen SELLER cho tai khoan CUSTOMER/SELLER.");
+        }
+
+        user.setRole(role);
+        return toUserResponse(userRepository.save(user));
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -98,14 +128,18 @@ public class UserServiceImpl implements UserService {
         String refreshToken = jwtTokenProvider.generateRefreshToken(
                 user.getEmail(), user.getId(), user.getRole().name());
 
-        UserResponseDTO userDTO = new UserResponseDTO(
+        UserResponseDTO userDTO = toUserResponse(user);
+
+        return new AuthResponseDTO(accessToken, refreshToken, userDTO);
+    }
+
+    private UserResponseDTO toUserResponse(User user) {
+        return new UserResponseDTO(
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
                 user.getRole(),
                 user.getStatus()
         );
-
-        return new AuthResponseDTO(accessToken, refreshToken, userDTO);
     }
 }

@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AdminCategoriesSection from '../components/admin/AdminCategoriesSection';
 import AdminOverviewSection from '../components/admin/AdminOverviewSection';
 import AdminProductsSection from '../components/admin/AdminProductsSection';
 import AdminReportsSection from '../components/admin/AdminReportsSection';
 import { StatusBadge } from '../components/admin/AdminDashboardShared';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
+import AdminUsersSection from '../components/admin/AdminUsersSection';
 import { useAdminCostumes } from '../hooks/useAdminCostumes';
 import { useAdminCategories } from '../hooks/useAdminCategories';
+import { useAdminUsers } from '../hooks/useAdminUsers';
 
 const supportTickets = [
   { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chưa nhận hoàn cọc', channel: 'Chat', status: 'Đang xử lý', owner: 'Admin' },
@@ -26,8 +28,10 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
 
   const {
     isAdmin,
+    canManageProducts,
     products,
     categories,
+    sellerUsers,
     filteredProducts,
     productForm,
     editingProductId,
@@ -62,29 +66,61 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     handleDelete: handleDeleteCategory,
   } = useAdminCategories(currentUser);
 
+  const {
+    users,
+    filteredUsers,
+    userSearch,
+    message: userMessage,
+    error: userError,
+    isLoading: isUserLoading,
+    updatingUserId,
+    setUserSearch,
+    setSellerPermission,
+  } = useAdminUsers(currentUser);
+
   const ticketCount = useMemo(() => supportTickets.length, []);
+  const tabs = useMemo(
+    () =>
+      [
+        isAdmin ? ['overview', 'Tổng quan', 'dashboard'] : null,
+        ['products', 'Sản phẩm cho thuê', 'inventory_2'],
+        isAdmin ? ['users', 'Tài khoản bán', 'manage_accounts'] : null,
+        isAdmin ? ['categories', 'Danh mục', 'category'] : null,
+        isAdmin ? ['support', 'Hỗ trợ', 'support_agent'] : null,
+        isAdmin ? ['reports', 'Báo cáo', 'monitoring'] : null,
+      ].filter(Boolean),
+    [isAdmin]
+  );
+
+  useEffect(() => {
+    if (!canManageProducts) return;
+    if (!tabs.some(([id]) => id === activeTab)) {
+      setActiveTab(tabs[0]?.[0] || 'products');
+    }
+  }, [activeTab, canManageProducts, tabs]);
 
   const handleSubmitProduct = async (event) => {
     event.preventDefault();
     await submitProduct();
   };
 
-  if (!isAdmin) {
+  if (!canManageProducts) {
     return (
       <div className="bg-[#f4f4f2] text-[#171717]">
         <section className="mx-auto min-h-[calc(100dvh-80px)] max-w-[900px] px-5 py-20 md:px-20">
-          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#7f7041]">Admin</p>
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#7f7041]">Quyền cho thuê</p>
           <h1 className="font-serif text-[46px] font-normal italic leading-tight md:text-[70px]">
-            Cần tài khoản Admin để truy cập.
+            Cần được Admin cấp quyền SELLER.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-[#5f5e5e]">
-            Chỉ Admin mới có quyền đăng tải và quản lý sản phẩm trên AuraFit.
+            Tài khoản chưa được cấp quyền chỉ có thể đi thuê sản phẩm. Sau khi Admin cấp quyền SELLER,
+            tài khoản mới được đăng đồ lên AuraFit để cho thuê.
           </p>
           <button
             onClick={() => onNavigate?.('account')}
             className="mt-9 bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
           >
-            Đăng nhập Admin
+            Về tài khoản
           </button>
         </section>
       </div>
@@ -96,29 +132,25 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
       <div className="border-b border-[#d7d2c8] bg-[#fdfdfb]">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-5 px-5 py-6 md:flex-row md:items-center md:justify-between md:px-10">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7f7041]">AuraFit Admin</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7f7041]">
+              {isAdmin ? 'AuraFit Admin' : 'AuraFit Seller'}
+            </p>
             <h1 className="mt-2 font-serif text-4xl font-normal italic leading-[1.15] md:text-5xl">
-              Trung tâm quản lý sản phẩm và vận hành
+              {isAdmin ? 'Trung tâm quản lý sản phẩm và vận hành' : 'Khu đăng sản phẩm cho thuê'}
             </h1>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm md:flex md:items-center">
-            <StatusBadge label={`${ticketCount} yêu cầu`} tone="warning" />
+            {isAdmin && <StatusBadge label={`${ticketCount} yêu cầu`} tone="warning" />}
             <StatusBadge label={`${products.length} sản phẩm`} tone="good" />
-
-            <StatusBadge label={`${managedCategories.length} danh mục`} tone="default" />
+            {isAdmin && <StatusBadge label={`${users.length} tài khoản`} tone="default" />}
+            {isAdmin && <StatusBadge label={`${managedCategories.length} danh mục`} tone="default" />}
           </div>
         </div>
       </div>
 
       <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-8 px-5 py-8 md:px-10 xl:grid-cols-[240px_1fr]">
         <aside className="h-fit border border-[#d7d2c8] bg-[#111111] p-3 text-white">
-          {[
-            ['overview', 'Tổng quan', 'dashboard'],
-            ['products', 'Sản phẩm', 'inventory_2'],
-            ['categories', 'Danh mục', 'category'],
-            ['support', 'Hỗ trợ', 'support_agent'],
-            ['reports', 'Báo cáo', 'monitoring'],
-          ].map(([id, label, icon]) => (
+          {tabs.map(([id, label, icon]) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
@@ -133,11 +165,13 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
         </aside>
 
         <main>
-          {activeTab === 'overview' && <AdminOverviewSection metricCards={metricCards} />}
+          {activeTab === 'overview' && isAdmin && <AdminOverviewSection metricCards={metricCards} />}
           {activeTab === 'products' && (
             <AdminProductsSection
               products={products}
               categories={categories}
+              sellerUsers={sellerUsers}
+              isAdmin={isAdmin}
               filteredProducts={filteredProducts}
               productForm={productForm}
               editingProductId={editingProductId}
@@ -157,7 +191,19 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               onSubmitProduct={handleSubmitProduct}
             />
           )}
-          {activeTab === 'categories' && (
+          {activeTab === 'users' && isAdmin && (
+            <AdminUsersSection
+              filteredUsers={filteredUsers}
+              userSearch={userSearch}
+              message={userMessage}
+              error={userError}
+              isLoading={isUserLoading}
+              updatingUserId={updatingUserId}
+              onUserSearchChange={setUserSearch}
+              onSellerPermissionChange={setSellerPermission}
+            />
+          )}
+          {activeTab === 'categories' && isAdmin && (
             <AdminCategoriesSection
               categories={managedCategories}
               categoryForm={categoryForm}
@@ -173,8 +219,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               onDelete={handleDeleteCategory}
             />
           )}
-          {activeTab === 'support' && <AdminSupportSection supportTickets={supportTickets} />}
-          {activeTab === 'reports' && (
+          {activeTab === 'support' && isAdmin && <AdminSupportSection supportTickets={supportTickets} />}
+          {activeTab === 'reports' && isAdmin && (
             <AdminReportsSection availableProductCount={products.filter((product) => product.status === 'ACTIVE').length} />
           )}
         </main>

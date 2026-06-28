@@ -51,6 +51,7 @@ function DefaultLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
         cartCount={cartCount}
         currentUser={currentUser}
         isAdmin={hasUserRole(currentUser, 'ADMIN')}
+        isSeller={hasUserRole(currentUser, 'SELLER')}
         isStaff={hasUserRole(currentUser, 'STAFF')}
       />
       <main className="flex-1">
@@ -218,7 +219,7 @@ function App() {
             />
           }
         />
-        <Route path="/chat" element={<ChatPage onNavigate={handleNavigate} cartItems={cartItems} />} />
+        <Route path="/chat" element={<ChatPage currentUser={currentUser} onNavigate={handleNavigate} cartItems={cartItems} />} />
         <Route path="/orders" element={<RentalOrdersPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/admin" element={<AdminDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/staff" element={<StaffDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />

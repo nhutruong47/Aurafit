@@ -3,5 +3,7 @@ export function getUserRoles(user) {
 }
 
 export function hasUserRole(user, role) {
-  return getUserRoles(user).includes(role);
+  const roles = getUserRoles(user);
+  const adminInheritedRoles = ['SELLER', 'STAFF', 'CUSTOMER'];
+  return roles.includes(role) || (roles.includes('ADMIN') && adminInheritedRoles.includes(role));
 }

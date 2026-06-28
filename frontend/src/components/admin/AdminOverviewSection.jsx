@@ -11,9 +11,9 @@ export default function AdminOverviewSection({ metricCards }) {
       </div>
       <Panel title="Luồng quyền hiện tại">
         <div className="grid gap-4 md:grid-cols-3">
-          <RuleCard icon="admin_panel_settings" title="Admin" text="Đăng tải, chỉnh sửa và quản lý sản phẩm." />
-          <RuleCard icon="support_agent" title="Liên hệ" text="Khách hàng chỉ liên hệ AuraFit Admin." />
-          <RuleCard icon="block" title="Chủ xưởng" text="Luồng chủ cho thuê riêng đã được tắt." />
+          <RuleCard icon="admin_panel_settings" title="Admin" text="Quản lý hệ thống và cấp quyền SELLER cho tài khoản bán." />
+          <RuleCard icon="smart_toy" title="Chatbot" text="Khách hàng được tư vấn tự động qua Chatbot AuraFit." />
+          <RuleCard icon="storefront" title="Seller" text="Chỉ tài khoản được Admin cấp quyền mới được đăng đồ cho thuê." />
         </div>
       </Panel>
     </section>

@@ -26,6 +26,8 @@ public record CostumeCreateRequest(
         @NotNull(message = "Category ID is required")
         Long categoryId,
 
+        Long ownerUserId,
+
         @Valid
         CostumeMetadataUpsertRequest metadata
 ) {}

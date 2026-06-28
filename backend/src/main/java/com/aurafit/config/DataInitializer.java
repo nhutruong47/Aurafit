@@ -4,16 +4,21 @@ import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.CostumeMetadata;
+import com.aurafit.entity.User;
 import com.aurafit.enums.CostumeStatus;
 import com.aurafit.enums.ItemStatus;
+import com.aurafit.enums.Role;
+import com.aurafit.enums.UserStatus;
 import com.aurafit.repository.CategoryRepository;
 import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.CostumeMetadataRepository;
 import com.aurafit.repository.CostumeRepository;
+import com.aurafit.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +37,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class DataInitializer implements CommandLineRunner {
+
+    private static final String DEV_SELLER_EMAIL = "seller@aurafit.local";
+    private static final String DEV_SELLER_PASSWORD = "Seller@123";
 
     private static final ItemStatus[] EXTRA_ITEM_STATUS_CYCLE = {
             ItemStatus.AVAILABLE,
@@ -54,6 +62,8 @@ public class DataInitializer implements CommandLineRunner {
     private final CostumeRepository costumeRepository;
     private final CostumeItemRepository costumeItemRepository;
     private final CostumeMetadataRepository costumeMetadataRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -62,6 +72,8 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedCatalog() {
+        User catalogOwner = resolveCatalogOwner();
+
         Map<String, Category> categoriesByKey = categoryRepository.findAll().stream()
                 .collect(Collectors.toMap(
                         category -> normalizeKey(category.getName()),
@@ -94,7 +106,7 @@ public class DataInitializer implements CommandLineRunner {
 
             for (int categoryCostumeIndex = 0; categoryCostumeIndex < categorySeed.costumes().size(); categoryCostumeIndex++) {
                 CostumeSeed costumeSeed = categorySeed.costumes().get(categoryCostumeIndex);
-                Costume costume = upsertCostume(categorySeed, category, costumeSeed, categoryCostumeIndex, globalCostumeIndex, costumesByKey);
+                Costume costume = upsertCostume(categorySeed, category, costumeSeed, categoryCostumeIndex, globalCostumeIndex, catalogOwner, costumesByKey);
                 upsertMetadata(categorySeed, costumeSeed, costume, categoryCostumeIndex);
                 extraItemCursor = upsertItems(categorySeed, costumeSeed, costume, categoryCostumeIndex, globalCostumeIndex, extraItemCursor, itemsBySku);
                 globalCostumeIndex++;
@@ -124,6 +136,7 @@ public class DataInitializer implements CommandLineRunner {
                                   CostumeSeed costumeSeed,
                                   int categoryCostumeIndex,
                                   int globalCostumeIndex,
+                                  User catalogOwner,
                                   Map<String, Costume> costumesByKey) {
         String key = costumeKey(categorySeed.name(), costumeSeed.name());
         Costume costume = costumesByKey.get(key);
@@ -138,10 +151,37 @@ public class DataInitializer implements CommandLineRunner {
         costume.setImageUrl(buildImageUrl(categorySeed, costumeSeed));
         costume.setStatus(CostumeStatus.ACTIVE);
         costume.setCategory(category);
+        costume.setOwner(catalogOwner);
 
         Costume savedCostume = costumeRepository.save(costume);
         costumesByKey.put(key, savedCostume);
         return savedCostume;
+    }
+
+    private User resolveCatalogOwner() {
+        List<User> sellers = userRepository.findByRoleOrderByIdAsc(Role.SELLER);
+        if (!sellers.isEmpty()) {
+            return sellers.get(0);
+        }
+
+        return userRepository.findByEmail(DEV_SELLER_EMAIL)
+                .map(existingUser -> {
+                    existingUser.setRole(Role.SELLER);
+                    existingUser.setStatus(UserStatus.ACTIVE);
+                    existingUser.setEmailVerified(true);
+                    return userRepository.save(existingUser);
+                })
+                .orElseGet(() -> {
+                    User seller = new User();
+                    seller.setFullName("AuraFit Seller");
+                    seller.setEmail(DEV_SELLER_EMAIL);
+                    seller.setPasswordHash(passwordEncoder.encode(DEV_SELLER_PASSWORD));
+                    seller.setRole(Role.SELLER);
+                    seller.setStatus(UserStatus.ACTIVE);
+                    seller.setEmailVerified(true);
+                    seller.setPhoneVerified(false);
+                    return userRepository.save(seller);
+                });
     }
 
     private void upsertMetadata(CategorySeed categorySeed,
