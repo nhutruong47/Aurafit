@@ -42,7 +42,7 @@ function MessageBubble({ message, onNavigate, onRecommendationClick }) {
     <div className={`flex max-w-lg items-end gap-3 ${isUser ? 'ml-auto justify-end' : ''}`}>
       {!isUser && (
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-[#99854e]/10 text-[#99854e]">
-          <span className="material-symbols-outlined text-[18px]">support_agent</span>
+          <span className="material-symbols-outlined text-[18px]">smart_toy</span>
         </div>
       )}
       <div className={`${isUser ? 'bg-black text-white' : 'border border-[#cfc4c5] bg-[#f3f3f4]'} overflow-hidden p-5`}>
@@ -69,7 +69,7 @@ export default function ChatMessageList({ messages, onNavigate, onRecommendation
       <div className="flex items-center justify-center">
         <span className="h-px flex-1 bg-[#cfc4c5]" />
         <span className="px-4 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#999999]">
-          Hội thoại với AI Stylist
+          Hội thoại với Chatbot AuraFit
         </span>
         <span className="h-px flex-1 bg-[#cfc4c5]" />
       </div>

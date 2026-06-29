@@ -142,14 +142,14 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
             Tủ đồ thuê của bạn chỉ cách một lần đăng nhập.
           </h1>
           <p className="mt-7 max-w-lg text-base leading-8 text-[#5f5e5e]">
-            Đăng nhập để theo dõi đơn thuê, quản lý giỏ hàng và liên hệ AuraFit Admin khi cần tư vấn. Sản phẩm
-            trên hệ thống chỉ do tài khoản Admin đăng tải và quản lý.
+            Đăng nhập để theo dõi đơn thuê, quản lý giỏ hàng và chat với Chatbot AuraFit khi cần tư vấn. Tài khoản
+            chỉ được đăng đồ cho thuê sau khi Admin cấp quyền SELLER.
           </p>
           <div className="mt-10 grid max-w-md grid-cols-3 gap-4">
             {[
               ['verified_user', 'An toàn'],
               ['local_shipping', 'Theo dõi được'],
-              ['admin_panel_settings', 'Admin quản lý'],
+              ['storefront', 'Seller được cấp quyền'],
             ].map(([icon, label]) => (
               <div key={label} className="border border-[#cfc4c5] bg-white p-4">
                 <span className="material-symbols-outlined text-[#99854e]">{icon}</span>
@@ -203,7 +203,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   ? stage === 'verify-otp'
                     ? `Mã xác thực đã gửi tới ${form.email}. Nhập mã OTP để kích hoạt tài khoản của bạn.`
                     : 'Điền đầy đủ thông tin rồi nhấn Đăng ký. Hệ thống sẽ gửi mã OTP xác thực đến email Gmail của bạn trước khi hoàn tất đăng ký.'
-                  : 'Admin đăng nhập sẽ vào dashboard quản lý sản phẩm. Nhân viên đăng nhập sẽ vào màn hình bàn giao.'}
+                  : 'Seller được cấp quyền sẽ vào khu đăng sản phẩm. Nhân viên đăng nhập sẽ vào màn hình bàn giao.'}
               </p>
             </div>
 

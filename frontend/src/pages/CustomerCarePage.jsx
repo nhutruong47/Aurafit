@@ -39,7 +39,7 @@ const faqSections = [
 ];
 
 const careChannels = [
-  { icon: 'forum', label: 'Chat trực tiếp', copy: 'Hỗ trợ tư vấn phong cách và đơn thuê nhanh chóng trong giờ làm việc.' },
+  { icon: 'smart_toy', label: 'Chatbot tự động', copy: 'Tư vấn phong cách và đơn thuê nhanh chóng bằng chatbot AuraFit.' },
   { icon: 'local_shipping', label: 'Hỗ trợ giao nhận', copy: 'Theo dõi giao hàng, nhận hàng, hoàn trả và thay đổi lịch thuê.' },
   { icon: 'straighten', label: 'Tư vấn form dáng', copy: 'Kiểm tra số đo trước khi bạn chốt size cuối cùng.' },
 ];

@@ -101,9 +101,10 @@ export function useStaffRentalOrders(currentUser) {
         if (!mounted) return;
         setError(loadError.message || 'Không thể tải danh sách đơn.');
       } finally {
-        if (!mounted) return;
-        setIsLoading(false);
-        setLoadedUserKey(requestKey);
+        if (mounted) {
+          setIsLoading(false);
+          setLoadedUserKey(requestKey);
+        }
       }
     };
 
@@ -139,12 +140,21 @@ export function useStaffRentalOrders(currentUser) {
     setError('');
     setMessage('');
 
-    const payload = {
-      rentalOrderDetailId: Number(selectedDetailId),
-      imageUrl: handoverImageUrl,
-      note,
-      ...(mode === 'RETURN' ? { returnStatus } : {}),
-    };
+    const payload = mode === 'PICKUP'
+      ? {
+          imageUrl: handoverImageUrl,
+          note,
+        }
+      : {
+          imageUrl: handoverImageUrl,
+          note,
+          assessments: [
+            {
+              rentalOrderDetailId: Number(selectedDetailId),
+              returnStatus,
+            }
+          ]
+        };
 
     try {
       if (mode === 'PICKUP') {

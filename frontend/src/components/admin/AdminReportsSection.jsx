@@ -1,4 +1,3 @@
-// Khu vuc bao cao recommendation va AI Stylist cho admin.
 import { MetricCard, Panel, StatusBadge } from './AdminDashboardShared';
 
 const PERIOD_OPTIONS = [7, 30, 60];
@@ -37,8 +36,8 @@ export default function AdminReportsSection({
         },
         {
           label: 'Search + chat query',
-          value: `${overview.searches}`,
-          delta: `${overview.productViews} lượt xem sản phẩm`,
+          value: `${overview.searches || 0}`,
+          delta: `${overview.productViews || 0} lượt xem sản phẩm`,
         },
       ]
     : [];
@@ -64,7 +63,9 @@ export default function AdminReportsSection({
               {days} ngày
             </button>
           ))}
-          {analytics?.generatedAt && <StatusBadge label={`Cập nhật ${analytics.generatedAt.slice(0, 19)}`} tone="default" />}
+          {analytics?.generatedAt && (
+            <StatusBadge label={`Cập nhật ${analytics.generatedAt.slice(0, 19)}`} tone="default" />
+          )}
         </div>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}

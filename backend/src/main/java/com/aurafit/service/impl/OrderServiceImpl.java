@@ -49,6 +49,9 @@ public class OrderServiceImpl implements OrderService {
     private final UserInteractionEventRepository userInteractionEventRepository;
     private final InteractionEventRecorderService interactionEventRecorderService;
     private final ObjectMapper objectMapper;
+    private final HandoverRecordRepository handoverRecordRepository;
+    private final RentalOrderDetailRepository rentalOrderDetailRepository;
+    private final PaymentRepository paymentRepository;
 
     public OrderServiceImpl(RentalOrderRepository rentalOrderRepository,
                             CartRepository cartRepository,
@@ -57,7 +60,10 @@ public class OrderServiceImpl implements OrderService {
                             UserRepository userRepository,
                             UserInteractionEventRepository userInteractionEventRepository,
                             InteractionEventRecorderService interactionEventRecorderService,
-                            ObjectMapper objectMapper) {
+                            ObjectMapper objectMapper,
+                            HandoverRecordRepository handoverRecordRepository,
+                            RentalOrderDetailRepository rentalOrderDetailRepository,
+                            PaymentRepository paymentRepository) {
         this.rentalOrderRepository = rentalOrderRepository;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
@@ -66,6 +72,9 @@ public class OrderServiceImpl implements OrderService {
         this.userInteractionEventRepository = userInteractionEventRepository;
         this.interactionEventRecorderService = interactionEventRecorderService;
         this.objectMapper = objectMapper;
+        this.handoverRecordRepository = handoverRecordRepository;
+        this.rentalOrderDetailRepository = rentalOrderDetailRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     /**
@@ -491,5 +500,176 @@ public class OrderServiceImpl implements OrderService {
             Integer recommendationPosition,
             String recommendationReason
     ) {
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse cancelOrder(Long orderId, Long userId) {
+        RentalOrder order = rentalOrderRepository.findByIdAndUserIdWithDetails(orderId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.PENDING &&
+            order.getStatus() != com.aurafit.enums.OrderStatus.CONFIRMED) {
+            throw new BadRequestException("Khong the huy don hang voi trang thai: " + order.getStatus());
+        }
+
+        // Return items to AVAILABLE
+        for (RentalOrderDetail detail : order.getDetails()) {
+            CostumeItem item = detail.getCostumeItem();
+            item.setStatus(ItemStatus.AVAILABLE);
+            costumeItemRepository.save(item);
+        }
+
+        // If CONFIRMED (which implies PAID via SePay), log REFUND payment
+        if (order.getStatus() == com.aurafit.enums.OrderStatus.CONFIRMED) {
+            BigDecimal totalPaid = order.getPayments().stream()
+                    .filter(p -> p.getType() == com.aurafit.enums.PaymentType.PAYMENT && p.getStatus() == com.aurafit.enums.PaymentStatus.PAID)
+                    .map(Payment::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            if (totalPaid.compareTo(BigDecimal.ZERO) > 0) {
+                Payment refundPayment = Payment.builder()
+                        .rentalOrder(order)
+                        .amount(totalPaid)
+                        .method(com.aurafit.enums.PaymentMethod.BANKING)
+                        .type(com.aurafit.enums.PaymentType.REFUND)
+                        .status(com.aurafit.enums.PaymentStatus.PENDING)
+                        .build();
+                paymentRepository.save(refundPayment);
+            }
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.CANCELLED);
+        rentalOrderRepository.save(order);
+
+        return OrderResponse.fromEntity(order);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<com.aurafit.dto.response.HandoverRecordDTO> processPickupHandover(Long orderId, Long staffId, com.aurafit.dto.request.PickupRequestDTO request) {
+        User staff = userRepository.findById(staffId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", staffId));
+        if (staff.getRole() != com.aurafit.enums.Role.STAFF && staff.getRole() != com.aurafit.enums.Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Chi nhan vien hoac admin moi co quyen thuc hien thao tac nay.");
+        }
+
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.CONFIRMED) {
+            throw new BadRequestException("Chi co the giao hang khi don hang da duoc xac nhan (CONFIRMED). Trang thai hien tai: " + order.getStatus());
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.PICKED_UP);
+        rentalOrderRepository.save(order);
+
+        List<HandoverRecord> records = new ArrayList<>();
+        for (RentalOrderDetail detail : order.getDetails()) {
+            detail.getCostumeItem().setStatus(ItemStatus.RENTED);
+            costumeItemRepository.save(detail.getCostumeItem());
+
+            HandoverRecord record = HandoverRecord.builder()
+                    .rentalOrderDetail(detail)
+                    .staffUser(staff)
+                    .handoverType(com.aurafit.enums.HandoverType.PICKUP)
+                    .returnStatus(detail.getReturnStatus())
+                    .imageUrl(request.imageUrl())
+                    .note(request.note())
+                    .build();
+            records.add(record);
+        }
+        return handoverRecordRepository.saveAll(records).stream()
+                .map(com.aurafit.dto.response.HandoverRecordDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<com.aurafit.dto.response.HandoverRecordDTO> processReturnHandover(Long orderId, Long staffId, com.aurafit.dto.request.ReturnRequestDTO request) {
+        User staff = userRepository.findById(staffId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", staffId));
+        if (staff.getRole() != com.aurafit.enums.Role.STAFF && staff.getRole() != com.aurafit.enums.Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Chi nhan vien hoac admin moi co quyen thuc hien thao tac nay.");
+        }
+
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.PICKED_UP) {
+            throw new BadRequestException("Chi co the tra hang khi don hang da duoc giao (PICKED_UP). Trang thai hien tai: " + order.getStatus());
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.RETURNED);
+        rentalOrderRepository.save(order);
+
+        List<HandoverRecord> records = new ArrayList<>();
+
+        for (com.aurafit.dto.request.ItemAssessmentDTO assessment : request.assessments()) {
+            RentalOrderDetail detail = order.getDetails().stream()
+                    .filter(d -> d.getId().equals(assessment.rentalOrderDetailId()))
+                    .findFirst()
+                    .orElseThrow(() -> new BadRequestException("Khong tim thay chi tiet don hang voi ID: " + assessment.rentalOrderDetailId()));
+
+            detail.setReturnStatus(assessment.returnStatus());
+            rentalOrderDetailRepository.save(detail);
+
+            if (assessment.returnStatus() == ReturnStatus.RETURNED) {
+                detail.getCostumeItem().setStatus(ItemStatus.AVAILABLE);
+            } else if (assessment.returnStatus() == ReturnStatus.DAMAGED) {
+                detail.getCostumeItem().setStatus(ItemStatus.MAINTENANCE);
+            } else if (assessment.returnStatus() == ReturnStatus.LOST) {
+                detail.getCostumeItem().setStatus(ItemStatus.LOST);
+            }
+            costumeItemRepository.save(detail.getCostumeItem());
+
+            HandoverRecord record = HandoverRecord.builder()
+                    .rentalOrderDetail(detail)
+                    .staffUser(staff)
+                    .handoverType(com.aurafit.enums.HandoverType.RETURN)
+                    .returnStatus(assessment.returnStatus())
+                    .imageUrl(request.imageUrl())
+                    .note(assessment.note() != null && !assessment.note().isBlank() ? assessment.note() : request.note())
+                    .build();
+            records.add(record);
+        }
+
+        // Calculate and process refund post-return
+        calculateAndProcessRefund(order);
+
+        return handoverRecordRepository.saveAll(records).stream()
+                .map(com.aurafit.dto.response.HandoverRecordDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    private void calculateAndProcessRefund(RentalOrder order) {
+        BigDecimal totalDeposit = order.getTotalDeposit();
+        BigDecimal deductions = BigDecimal.ZERO;
+
+        for (RentalOrderDetail detail : order.getDetails()) {
+            if (detail.getReturnStatus() == ReturnStatus.DAMAGED || detail.getReturnStatus() == ReturnStatus.LOST) {
+                // Deduct the deposit for this item as penalty
+                deductions = deductions.add(detail.getDeposit());
+            }
+        }
+
+        BigDecimal refundAmount = totalDeposit.subtract(deductions);
+        if (refundAmount.compareTo(BigDecimal.ZERO) < 0) {
+            refundAmount = BigDecimal.ZERO;
+        }
+
+        if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+            Payment refundPayment = Payment.builder()
+                    .rentalOrder(order)
+                    .amount(refundAmount)
+                    .method(com.aurafit.enums.PaymentMethod.BANKING)
+                    .type(com.aurafit.enums.PaymentType.REFUND)
+                    .status(com.aurafit.enums.PaymentStatus.PENDING)
+                    .build();
+            paymentRepository.save(refundPayment);
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.COMPLETED);
+        rentalOrderRepository.save(order);
     }
 }

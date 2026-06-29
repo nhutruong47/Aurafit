@@ -14,8 +14,8 @@ export default function ChatComposer({
           className="min-h-[56px] flex-1 resize-none border-none bg-[#f3f3f4] px-5 py-4 outline-none transition placeholder:text-[#999999] focus:border-b-2 focus:border-[#99854e] focus:ring-0 disabled:cursor-not-allowed disabled:bg-[#ece7e6]"
           placeholder={
             activeProduct
-              ? `Nhắn AI Stylist về "${activeProduct.name}"...`
-              : 'Nhập yêu cầu cho AI Stylist...'
+              ? `Nhắn Chatbot AuraFit về "${activeProduct.name}"...`
+              : 'Nhập yêu cầu cho Chatbot AuraFit...'
           }
           rows="1"
           value={draft}

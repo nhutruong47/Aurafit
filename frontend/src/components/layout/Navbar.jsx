@@ -7,6 +7,7 @@ export default function Navbar({
   onSearchOpen,
   cartCount = 0,
   isAdmin = false,
+  isSeller = false,
   isStaff = false,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -16,14 +17,12 @@ export default function Navbar({
     setMobileMenuOpen(false);
   };
 
-  const navLinks = isAdmin
-    ? []
-    : [
-        { label: 'Shop', page: 'shop', action: () => goPage('shop') },
-        { label: 'Cosplay', page: 'cosplay', action: () => goPage('cosplay') },
-        { label: 'Sự kiện', page: 'events', action: () => goPage('events') },
-        { label: 'Yearbook', page: 'yearbook', action: () => goPage('yearbook') },
-      ];
+  const navLinks = [
+    { label: 'Shop', page: 'shop', action: () => goPage('shop') },
+    { label: 'Cosplay', page: 'cosplay', action: () => goPage('cosplay') },
+    { label: 'Sự kiện', page: 'events', action: () => goPage('events') },
+    { label: 'Yearbook', page: 'yearbook', action: () => goPage('yearbook') },
+  ];
 
   const iconButtonClass =
     'flex h-11 w-11 items-center justify-center transition hover:text-[#99854e] focus:outline-none focus:ring-2 focus:ring-[#99854e]/30';
@@ -55,71 +54,67 @@ export default function Navbar({
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          {!isAdmin && (
-            <>
-              <button
-                onClick={() => {
-                  onSearchOpen?.();
-                  setMobileMenuOpen(false);
-                }}
-                className={`${iconButtonClass} ${currentPage === 'catalog' ? 'text-[#99854e]' : ''}`}
-                aria-label="Tìm kiếm"
-              >
-                <span className="material-symbols-outlined">search</span>
-              </button>
-              <button
-                onClick={() => goPage('checkout')}
-                className={`${iconButtonClass} group relative ${currentPage === 'checkout' ? 'text-[#99854e]' : ''}`}
-                aria-label="Giỏ hàng"
-              >
-                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  shopping_bag
-                </span>
-                {cartCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#99854e] text-[10px] text-white">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => goPage('chat')}
-                className={`${iconButtonClass} ${currentPage === 'chat' ? 'text-[#99854e]' : ''}`}
-                aria-label="Liên hệ Admin"
-                title="Liên hệ Admin"
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={currentPage === 'chat' ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                >
-                  support_agent
-                </span>
-              </button>
-              <button
-                onClick={() => goPage('orders')}
-                className={`${iconButtonClass} ${currentPage === 'orders' ? 'text-[#99854e]' : ''}`}
-                aria-label="Đơn hàng"
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={currentPage === 'orders' ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                >
-                  receipt_long
-                </span>
-              </button>
-            </>
-          )}
-          {isAdmin && (
+          <button
+            onClick={() => {
+              onSearchOpen?.();
+              setMobileMenuOpen(false);
+            }}
+            className={`${iconButtonClass} ${currentPage === 'catalog' ? 'text-[#99854e]' : ''}`}
+            aria-label="Tìm kiếm"
+          >
+            <span className="material-symbols-outlined">search</span>
+          </button>
+          <button
+            onClick={() => goPage('checkout')}
+            className={`${iconButtonClass} group relative ${currentPage === 'checkout' ? 'text-[#99854e]' : ''}`}
+            aria-label="Giỏ hàng"
+          >
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+              shopping_bag
+            </span>
+            {cartCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#99854e] text-[10px] text-white">
+                {cartCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => goPage('chat')}
+            className={`${iconButtonClass} ${currentPage === 'chat' ? 'text-[#99854e]' : ''}`}
+            aria-label="Chatbot AuraFit"
+            title="Chatbot AuraFit"
+          >
+            <span
+              className="material-symbols-outlined"
+              style={currentPage === 'chat' ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              smart_toy
+            </span>
+          </button>
+          <button
+            onClick={() => goPage('orders')}
+            className={`${iconButtonClass} ${currentPage === 'orders' ? 'text-[#99854e]' : ''}`}
+            aria-label="Đơn hàng"
+          >
+            <span
+              className="material-symbols-outlined"
+              style={currentPage === 'orders' ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              receipt_long
+            </span>
+          </button>
+          {(isAdmin || isSeller) && (
             <button
               onClick={() => goPage('adminDashboard')}
               className={`${iconButtonClass} hidden md:flex ${currentPage === 'adminDashboard' ? 'text-[#99854e]' : ''}`}
-              aria-label="Bảng điều khiển Admin"
-              title="Bảng điều khiển Admin"
+              aria-label={isAdmin ? 'Bảng điều khiển Admin' : 'Khu đăng sản phẩm cho thuê'}
+              title={isAdmin ? 'Bảng điều khiển Admin' : 'Khu đăng sản phẩm cho thuê'}
             >
               <span
                 className="material-symbols-outlined"
                 style={currentPage === 'adminDashboard' ? { fontVariationSettings: "'FILL' 1" } : undefined}
               >
-                admin_panel_settings
+                {isAdmin ? 'admin_panel_settings' : 'storefront'}
               </span>
             </button>
           )}
@@ -174,12 +169,12 @@ export default function Navbar({
                 {link.label}
               </button>
             ))}
-            {isAdmin && (
+            {(isAdmin || isSeller) && (
               <button
                 onClick={() => goPage('adminDashboard')}
                 className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#99854e]"
               >
-                Admin
+                {isAdmin ? 'Admin' : 'Cho thuê'}
               </button>
             )}
             {isStaff && (

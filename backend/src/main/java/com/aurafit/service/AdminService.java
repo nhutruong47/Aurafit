@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface AdminService {
 
-    List<AdminCostumeDTO> getAllCostumes();
+    List<AdminCostumeDTO> getAllCostumes(String authenticatedEmail);
 
-    AdminCostumeDTO createCostume(CostumeCreateRequest request);
+    AdminCostumeDTO createCostume(CostumeCreateRequest request, String authenticatedEmail);
 
-    AdminCostumeDTO updateCostume(Long id, CostumeUpdateRequest request);
+    AdminCostumeDTO updateCostume(Long id, CostumeUpdateRequest request, String authenticatedEmail);
 }

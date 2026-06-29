@@ -6,6 +6,7 @@ import EmptyState from '../components/ui/EmptyState';
 import { clearAiStylistCartAttribution, toAiStylistAttributionRequest } from '../services/interactionsService';
 import { createOrder } from '../services/rentalOrderService';
 import { useDirectOrderStore } from '../store/useDirectOrderStore';
+import { useCheckoutStore } from '../store/useCheckoutStore';
 import { formatCurrency } from '../utils/formatCurrency';
 
 export default function RentalOrderCheckoutPage({
@@ -17,6 +18,7 @@ export default function RentalOrderCheckoutPage({
   onNavigate,
 }) {
   const { directItem, clearDirectItem } = useDirectOrderStore();
+  const { setPendingOrderId } = useCheckoutStore();
   const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
   const [deliveryError, setDeliveryError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,17 +66,17 @@ export default function RentalOrderCheckoutPage({
       return;
     }
     if (!isDeliveryValid()) {
-      setDeliveryError('Vui long dien day du thong tin giao hang.');
+      setDeliveryError('Vui lòng điền đầy đủ thông tin giao hàng.');
       return;
     }
     if (!itemsToOrder.length) {
-      setSubmitError('Vui long chon it nhat mot san pham de thue.');
+      setSubmitError('Vui lòng chọn ít nhất một sản phẩm để thuê.');
       return;
     }
 
     const invalidItems = itemsToOrder.filter((item) => !item?.sku || !item?.rentalStartDate || !item?.rentalEndDate);
     if (invalidItems.length > 0) {
-      setSubmitError('Mot so san pham chua co du thong tin thue. Vui long kiem tra lai.');
+      setSubmitError('Một số sản phẩm chưa có đủ thông tin thuê. Vui lòng kiểm tra lại.');
       return;
     }
 
@@ -95,6 +97,7 @@ export default function RentalOrderCheckoutPage({
         })),
       });
 
+      setPendingOrderId(orderResponse.id);
       clearDirectItem();
       itemsToOrder.forEach((item) => {
         clearAiStylistCartAttribution(item);
@@ -103,7 +106,7 @@ export default function RentalOrderCheckoutPage({
       onCheckoutSuccess?.(orderResponse.id);
       onNavigate?.('payment');
     } catch (error) {
-      setSubmitError(error.message || 'Khong the tao don hang. Vui long thu lai.');
+      setSubmitError(error.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -139,10 +142,10 @@ export default function RentalOrderCheckoutPage({
     });
 
     if (totalRental > 0) {
-      rows.push({ label: 'Tien thue', value: formatCurrency(totalRental) });
+      rows.push({ label: 'Tiền thuê', value: formatCurrency(totalRental) });
     }
     if (totalDeposit > 0) {
-      rows.push({ label: 'Tien dat coc (Hoan tra)', value: formatCurrency(totalDeposit) });
+      rows.push({ label: 'Tiền đặt cọc (Hoàn trả)', value: formatCurrency(totalDeposit) });
     }
 
     return rows;
@@ -157,7 +160,7 @@ export default function RentalOrderCheckoutPage({
     return formatCurrency(total);
   }, [summaryRows]);
 
-  const headingLabel = isSingleItem || isDirectOnly ? 'Don thue cua ban' : 'Gio hang thue';
+  const headingLabel = isSingleItem || isDirectOnly ? 'Đơn thuê của bạn' : 'Giỏ hàng thuê';
   const selectedCount = cartDisplayItems.filter((item) => selectedCartItemIds.has(item.id)).length;
   const totalDisplayCount = (directDisplayItem ? 1 : 0) + cartDisplayItems.length;
   const selectedDisplayCount = (directDisplayItem ? 1 : 0) + selectedCount;
@@ -169,7 +172,7 @@ export default function RentalOrderCheckoutPage({
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#99854e]">
-                Xac nhan don thue
+                Xác nhận đơn thuê
               </p>
               <h1 className="mb-2 font-serif text-[40px] font-normal italic leading-tight md:text-[64px]">
                 {headingLabel}
@@ -180,7 +183,7 @@ export default function RentalOrderCheckoutPage({
                   className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#99854e] transition-colors hover:text-black"
                 >
                   <span className="material-symbols-outlined text-[16px]">receipt_long</span>
-                  Lich su don hang
+                  Lịch sử đơn hàng
                 </button>
               )}
             </div>
@@ -204,11 +207,11 @@ export default function RentalOrderCheckoutPage({
                       }}
                       className="h-4 w-4 accent-[#99854e]"
                     />
-                    Chon tat ca
+                    Chọn tất cả
                   </label>
                 )}
                 <span className="text-[12px] font-semibold uppercase tracking-[0.15em]">
-                  {selectedDisplayCount} / {totalDisplayCount} san pham
+                  {selectedDisplayCount} / {totalDisplayCount} sản phẩm
                 </span>
               </div>
             )}
@@ -220,9 +223,9 @@ export default function RentalOrderCheckoutPage({
             {!hasItems ? (
               <EmptyState
                 icon="shopping_bag"
-                title="Chua co san pham nao"
-                message="Hay chon san pham ban muon thue tu danh muc cua AuraFit."
-                actionLabel="Xem bo suu tap"
+                title="Chưa có sản phẩm nào"
+                message="Hãy chọn sản phẩm bạn muốn thuê từ danh mục của AuraFit."
+                actionLabel="Xem bộ sưu tập"
                 onAction={() => onNavigate?.('catalog')}
               />
             ) : (
@@ -267,25 +270,25 @@ export default function RentalOrderCheckoutPage({
 
                 <div className="border-t border-[#cfc4c5] pt-12">
                   <h2 className="mb-6 font-serif text-2xl font-normal uppercase italic">
-                    Thong tin giao hang
+                    Thông tin giao hàng
                   </h2>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
-                        Ten nguoi nhan *
+                        Tên người nhận *
                       </label>
                       <input
                         type="text"
                         name="receiverName"
                         value={deliveryInfo.receiverName}
                         onChange={handleDeliveryChange}
-                        placeholder="Ho va ten"
+                        placeholder="Họ và tên"
                         className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
-                        So dien thoai *
+                        Số điện thoại *
                       </label>
                       <input
                         type="tel"
@@ -298,14 +301,14 @@ export default function RentalOrderCheckoutPage({
                     </div>
                     <div className="md:col-span-2">
                       <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
-                        Dia chi giao hang *
+                        Địa chỉ giao hàng *
                       </label>
                       <input
                         type="text"
                         name="deliveryAddress"
                         value={deliveryInfo.deliveryAddress}
                         onChange={handleDeliveryChange}
-                        placeholder="So nha, duong, phuong/xa, quan/huyen, tinh/thanh pho"
+                        placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
                         className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                       />
                     </div>
@@ -313,14 +316,14 @@ export default function RentalOrderCheckoutPage({
                   {deliveryError && <p className="mt-3 text-sm text-red-600">{deliveryError}</p>}
                   {!currentUser?.id && (
                     <p className="mt-3 text-sm text-[#99854e]">
-                      Vui long{' '}
+                      Vui lòng{' '}
                       <button
                         onClick={() => onNavigate?.('account')}
                         className="underline hover:text-black"
                       >
-                        dang nhap
+                        đăng nhập
                       </button>{' '}
-                      de tiep tuc thanh toan.
+                      để tiếp tục thanh toán.
                     </p>
                   )}
                 </div>

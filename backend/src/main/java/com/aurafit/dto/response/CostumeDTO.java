@@ -21,6 +21,7 @@ public record CostumeDTO(
         CostumeStatus status,
         int availableItemCount,
         CategoryDTO category,
+        UserResponseDTO owner,
         CostumeMetadataDTO metadata,
         List<CostumeItemDTO> items
 ) {
@@ -39,6 +40,13 @@ public record CostumeDTO(
                 costume.getStatus(),
                 (int) availableCount,
                 CategoryDTO.fromEntity(costume.getCategory()),
+                costume.getOwner() != null ? new UserResponseDTO(
+                        costume.getOwner().getId(),
+                        costume.getOwner().getFullName(),
+                        costume.getOwner().getEmail(),
+                        costume.getOwner().getRole(),
+                        costume.getOwner().getStatus()
+                ) : null,
                 CostumeMetadataDTO.fromEntity(costume.getMetadata()),
                 costume.getItems() == null ? List.of() :
                         costume.getItems().stream()

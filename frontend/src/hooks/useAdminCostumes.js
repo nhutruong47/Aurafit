@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchPublicCategories } from '../services/catalogService';
 import { createCostume, fetchAdminCostumes, updateCostume } from '../services/costumeService';
+import { fetchUsers } from '../services/userService';
 import { hasUserRole } from '../utils/roles';
 
 export const emptyProductForm = {
@@ -10,6 +11,7 @@ export const emptyProductForm = {
   rentalPrice: '',
   depositPrice: '',
   categoryId: 1,
+  ownerUserId: '',
   status: 'ACTIVE',
   style: '',
   occasion: '',
@@ -46,6 +48,7 @@ const buildMetadataPayload = (productForm) => ({
 export function useAdminCostumes(currentUser) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [sellerUsers, setSellerUsers] = useState([]);
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [editingProductId, setEditingProductId] = useState(null);
   const [productSearch, setProductSearch] = useState('');
@@ -55,6 +58,7 @@ export function useAdminCostumes(currentUser) {
   const [productError, setProductError] = useState('');
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const isAdmin = hasUserRole(currentUser, 'ADMIN');
+  const canManageProducts = hasUserRole(currentUser, 'SELLER');
 
   const filteredProducts = useMemo(() => {
     const query = productSearch.trim().toLowerCase();
@@ -85,22 +89,31 @@ export function useAdminCostumes(currentUser) {
   }, [products, productCategoryFilter, productSearch, productStatusFilter]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!canManageProducts) return;
 
-    Promise.all([fetchAdminCostumes(), fetchPublicCategories()])
-      .then(([costumeData, categoryData]) => {
+    Promise.all([
+      fetchAdminCostumes(),
+      fetchPublicCategories(),
+      isAdmin ? fetchUsers() : Promise.resolve([]),
+    ])
+      .then(([costumeData, categoryData, userData]) => {
         const nextCategories = Array.isArray(categoryData) ? categoryData : [];
+        const nextSellerUsers = Array.isArray(userData)
+          ? userData.filter((user) => String(user.role).toUpperCase() === 'SELLER')
+          : [];
         setProducts(Array.isArray(costumeData) ? costumeData : []);
         setCategories(nextCategories);
+        setSellerUsers(nextSellerUsers);
         if (nextCategories.length > 0) {
           setProductForm((currentForm) => ({
             ...currentForm,
             categoryId: currentForm.categoryId || nextCategories[0].id,
+            ownerUserId: currentForm.ownerUserId || nextSellerUsers[0]?.id || '',
           }));
         }
       })
       .catch(() => setProductError('Không thể tải danh sách sản phẩm.'));
-  }, [isAdmin]);
+  }, [canManageProducts, isAdmin]);
 
   const handleProductFieldChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -128,6 +141,7 @@ export function useAdminCostumes(currentUser) {
       rentalPrice: product.rentalPrice ?? '',
       depositPrice: product.depositPrice ?? '',
       categoryId: product.category?.id || categories[0]?.id || 1,
+      ownerUserId: product.owner?.id || sellerUsers[0]?.id || currentUser?.id || '',
       status: product.status || 'ACTIVE',
       style: metadata.style || '',
       occasion: metadata.occasion || '',
@@ -150,6 +164,7 @@ export function useAdminCostumes(currentUser) {
     setProductForm({
       ...emptyProductForm,
       categoryId: categories[0]?.id || emptyProductForm.categoryId,
+      ownerUserId: sellerUsers[0]?.id || '',
     });
     setProductMessage('');
     setProductError('');
@@ -161,6 +176,11 @@ export function useAdminCostumes(currentUser) {
     setProductError('');
 
     try {
+      if (isAdmin && !productForm.ownerUserId) {
+        setProductError('Admin can chon tai khoan SELLER lam chu san pham.');
+        return false;
+      }
+
       const payload = {
         name: productForm.name,
         description: productForm.description,
@@ -168,6 +188,7 @@ export function useAdminCostumes(currentUser) {
         rentalPrice: Number(productForm.rentalPrice),
         depositPrice: Number(productForm.depositPrice),
         categoryId: Number(productForm.categoryId),
+        ...(isAdmin ? { ownerUserId: Number(productForm.ownerUserId) } : {}),
         metadata: buildMetadataPayload(productForm),
       };
 
@@ -185,13 +206,14 @@ export function useAdminCostumes(currentUser) {
       } else {
         const createdProduct = await createCostume(payload);
         setProducts((currentProducts) => [createdProduct, ...currentProducts]);
-        setProductMessage('Sản phẩm đã được admin đăng tải thành công.');
+        setProductMessage('Sản phẩm đã được đăng tải thành công.');
       }
 
       setEditingProductId(null);
       setProductForm({
         ...emptyProductForm,
         categoryId: categories[0]?.id || emptyProductForm.categoryId,
+        ownerUserId: sellerUsers[0]?.id || '',
       });
       return true;
     } catch (error) {
@@ -204,8 +226,10 @@ export function useAdminCostumes(currentUser) {
 
   return {
     isAdmin,
+    canManageProducts,
     products,
     categories,
+    sellerUsers,
     filteredProducts,
     productForm,
     editingProductId,

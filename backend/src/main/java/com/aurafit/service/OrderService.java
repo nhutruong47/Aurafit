@@ -20,4 +20,16 @@ public interface OrderService {
     List<OrderSummaryResponse> getUserOrders(Long userId);
 
     OrderResponse getUserOrderDetail(Long orderId, Long userId);
+
+    OrderResponse cancelOrder(Long orderId, Long userId);
+
+    /**
+     * Process order pickup handover.
+     */
+    List<com.aurafit.dto.response.HandoverRecordDTO> processPickupHandover(Long orderId, Long staffId, com.aurafit.dto.request.PickupRequestDTO request);
+
+    /**
+     * Process order return handover.
+     */
+    List<com.aurafit.dto.response.HandoverRecordDTO> processReturnHandover(Long orderId, Long staffId, com.aurafit.dto.request.ReturnRequestDTO request);
 }

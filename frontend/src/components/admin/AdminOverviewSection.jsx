@@ -1,19 +1,36 @@
 // Khu vuc tong quan chi so va nguyen tac van hanh trong admin dashboard.
+import { useEffect, useState } from 'react';
 import { MetricCard, Panel, RuleCard } from './AdminDashboardShared';
+import { fetchMetrics } from '../../services/analyticsService';
 
-export default function AdminOverviewSection({ metricCards }) {
+export default function AdminOverviewSection({ metricCards: defaultMetricCards }) {
+  const [metrics, setMetrics] = useState(null);
+
+  useEffect(() => {
+    fetchMetrics().then(setMetrics).catch(() => {});
+  }, []);
+
+  const displayCards = metrics
+    ? [
+        { label: 'Tổng Đơn', value: metrics.totalOrders || '0', delta: 'Cập nhật từ DB' },
+        { label: 'Doanh Thu', value: metrics.totalRevenue || '0', delta: 'Cập nhật từ DB' },
+        { label: 'Tài khoản', value: metrics.totalUsers || '0', delta: 'Cập nhật từ DB' },
+        { label: 'Sản phẩm', value: metrics.totalCostumes || '0', delta: 'Cập nhật từ DB' },
+      ]
+    : defaultMetricCards;
+
   return (
     <section>
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {metricCards.map((metric) => (
+        {displayCards.map((metric) => (
           <MetricCard key={metric.label} {...metric} />
         ))}
       </div>
       <Panel title="Luồng quyền hiện tại">
         <div className="grid gap-4 md:grid-cols-3">
-          <RuleCard icon="admin_panel_settings" title="Admin" text="Đăng tải, chỉnh sửa và quản lý sản phẩm." />
-          <RuleCard icon="support_agent" title="Liên hệ" text="Khách hàng chỉ liên hệ AuraFit Admin." />
-          <RuleCard icon="block" title="Chủ xưởng" text="Luồng chủ cho thuê riêng đã được tắt." />
+          <RuleCard icon="admin_panel_settings" title="Admin" text="Quản lý hệ thống và cấp quyền SELLER cho tài khoản bán." />
+          <RuleCard icon="smart_toy" title="Chatbot" text="Khách hàng được tư vấn tự động qua Chatbot AuraFit." />
+          <RuleCard icon="storefront" title="Seller" text="Chỉ tài khoản được Admin cấp quyền mới được đăng đồ cho thuê." />
         </div>
       </Panel>
     </section>

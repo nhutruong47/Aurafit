@@ -3,6 +3,7 @@ package com.aurafit.controller;
 import com.aurafit.dto.request.PaymentCreateRequest;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.PaymentInitResponse;
+import com.aurafit.dto.response.PaymentStatusResponse;
 import com.aurafit.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -38,5 +39,16 @@ public class PaymentController {
         String email = authentication.getName();
         PaymentInitResponse response = paymentService.initializePayment(request, email);
         return ResponseEntity.ok(ApiResponse.success("Payment initialized successfully.", response));
+    }
+
+    @GetMapping("/status")
+    @Operation(summary = "Check payment status for an order")
+    public ResponseEntity<ApiResponse<PaymentStatusResponse>> getPaymentStatus(
+            Authentication authentication,
+            @RequestParam Long orderId
+    ) {
+        String email = authentication.getName();
+        PaymentStatusResponse response = paymentService.getPaymentStatus(orderId, email);
+        return ResponseEntity.ok(ApiResponse.success("Payment status retrieved.", response));
     }
 }

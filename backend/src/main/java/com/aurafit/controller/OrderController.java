@@ -1,7 +1,8 @@
 package com.aurafit.controller;
 
 import com.aurafit.dto.request.CheckoutRequest;
-import com.aurafit.dto.request.HandoverRequest;
+import com.aurafit.dto.request.PickupRequestDTO;
+import com.aurafit.dto.request.ReturnRequestDTO;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.HandoverRecordDTO;
 import com.aurafit.dto.response.OrderResponse;
@@ -89,28 +90,41 @@ public class OrderController {
 
     @PostMapping("/{orderId}/pickup-handovers")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Record a pickup handover")
-    public ResponseEntity<ApiResponse<HandoverRecordDTO>> createPickupHandover(
+    @Operation(summary = "Record a pickup handover for an order")
+    public ResponseEntity<ApiResponse<List<HandoverRecordDTO>>> createPickupHandover(
             Authentication authentication,
             @PathVariable Long orderId,
-            @Valid @RequestBody HandoverRequest request
+            @Valid @RequestBody PickupRequestDTO request
     ) {
         Long staffUserId = extractUserId(authentication);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Pickup handover recorded.", staffService.createPickupHandover(staffUserId, orderId, request), HttpStatus.CREATED));
+                .body(ApiResponse.success("Pickup handover recorded.", orderService.processPickupHandover(orderId, staffUserId, request), HttpStatus.CREATED));
     }
 
     @PostMapping("/{orderId}/return-handovers")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Record a return handover")
-    public ResponseEntity<ApiResponse<HandoverRecordDTO>> createReturnHandover(
+    @Operation(summary = "Record a return handover for an order")
+    public ResponseEntity<ApiResponse<List<HandoverRecordDTO>>> createReturnHandover(
             Authentication authentication,
             @PathVariable Long orderId,
-            @Valid @RequestBody HandoverRequest request
+            @Valid @RequestBody ReturnRequestDTO request
     ) {
         Long staffUserId = extractUserId(authentication);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Return handover recorded.", staffService.createReturnHandover(staffUserId, orderId, request), HttpStatus.CREATED));
+                .body(ApiResponse.success("Return handover recorded.", orderService.processReturnHandover(orderId, staffUserId, request), HttpStatus.CREATED));
+    }
+
+    @PutMapping("/{orderId}/cancel")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @Operation(summary = "Cancel an order")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
+            Authentication authentication,
+            @PathVariable Long orderId
+    ) {
+        Long userId = extractUserId(authentication);
+        return ResponseEntity.ok(
+                ApiResponse.success("Order cancelled successfully", orderService.cancelOrder(orderId, userId))
+        );
     }
 
     // --- Private helpers ---

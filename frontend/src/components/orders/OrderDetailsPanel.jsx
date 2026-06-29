@@ -5,7 +5,7 @@ import OrderTimeline from './OrderTimeline';
 const fallbackImage =
   'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=200&q=80';
 
-export default function OrderDetailsPanel({ order }) {
+export default function OrderDetailsPanel({ order, onCancel }) {
   const statusInfo = mapOrderStatus(order.status);
   const timeline = getOrderTimeline(order);
 
@@ -13,9 +13,16 @@ export default function OrderDetailsPanel({ order }) {
     <div className="sticky top-28 border border-[#cfc4c5] bg-white p-8 md:p-10">
       <div className="mb-8 flex items-baseline justify-between border-b border-[#cfc4c5] pb-6">
         <h2 className="font-serif text-3xl font-normal">Chi tiết: {getOrderCode(order.id)}</h2>
-        <span className={`text-[12px] font-bold uppercase tracking-[0.2em] ${statusInfo.color}`}>
-          {statusInfo.text}
-        </span>
+        <div className="flex items-center gap-4">
+          {(order.status === 'PENDING' || order.status === 'CONFIRMED') && onCancel && (
+            <button onClick={() => onCancel(order.id)} className="text-[10px] font-bold uppercase tracking-wider text-red-600 transition hover:text-red-800">
+              Hủy đơn
+            </button>
+          )}
+          <span className={`text-[12px] font-bold uppercase tracking-[0.2em] ${statusInfo.color}`}>
+            {statusInfo.text}
+          </span>
+        </div>
       </div>
 
       <div className="mb-12">

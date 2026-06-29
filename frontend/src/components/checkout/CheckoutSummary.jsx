@@ -43,7 +43,7 @@ export default function CheckoutSummary({
             onClick={() => onNavigate?.('chat')}
             className="w-full border border-black py-4 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:bg-black hover:text-white"
           >
-            Liên hệ Admin để tư vấn
+            Chatbot tư vấn
           </button>
           <p className="mt-4 text-center text-[11px] leading-relaxed text-[#999999]">
             Bằng việc nhấn thanh toán, bạn đồng ý với{' '}

@@ -3,6 +3,10 @@ package com.aurafit.service;
 import com.aurafit.dto.request.AuthRequest;
 import com.aurafit.dto.request.RegisterRequest;
 import com.aurafit.dto.response.AuthResponseDTO;
+import com.aurafit.dto.response.UserResponseDTO;
+import com.aurafit.enums.Role;
+
+import java.util.List;
 
 public interface UserService {
 
@@ -13,4 +17,8 @@ public interface UserService {
     AuthResponseDTO refresh(String refreshToken);
 
     Long getUserIdByEmail(String email);
+
+    List<UserResponseDTO> getAllUsers();
+
+    UserResponseDTO updateUserRole(Long userId, Role role);
 }
