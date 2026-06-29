@@ -6,7 +6,6 @@ import EmptyState from '../components/ui/EmptyState';
 import { clearAiStylistCartAttribution, toAiStylistAttributionRequest } from '../services/interactionsService';
 import { createOrder } from '../services/rentalOrderService';
 import { useDirectOrderStore } from '../store/useDirectOrderStore';
-import { useCheckoutStore } from '../store/useCheckoutStore';
 import { formatCurrency } from '../utils/formatCurrency';
 
 export default function RentalOrderCheckoutPage({
