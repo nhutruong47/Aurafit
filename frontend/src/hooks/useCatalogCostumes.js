@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchCostumes } from '../services/costumeService';
+import { fetchPublicCategories } from '../services/catalogService';
 import { categoryApiNames, mapCostumeToProduct } from '../utils/productMapper';
 
 export function useCatalogCostumes(categoryKey) {
@@ -14,7 +15,7 @@ export function useCatalogCostumes(categoryKey) {
     let isMounted = true;
     const controller = new AbortController();
     const requestKey = categoryKey || '__all__';
-    const resolvedCategory = categoryKey ? categoryApiNames[categoryKey] || categoryKey : null;
+    const resolvedCategoryName = categoryKey ? categoryApiNames[categoryKey] || categoryKey : null;
 
     setState((currentState) => ({
       ...currentState,
@@ -23,27 +24,54 @@ export function useCatalogCostumes(categoryKey) {
       requestKey,
     }));
 
-    fetchCostumes({ pageSize: 100, signal: controller.signal })
-      .then((data) => {
-        if (!isMounted) return;
+    const fetchData = async () => {
+      try {
+        let categoryId = null;
+
+        // Step 1: If a category is requested, fetch all categories to find the corresponding ID
+        if (resolvedCategoryName) {
+          const categories = await fetchPublicCategories();
+          if (controller.signal.aborted) return;
+          
+          const targetCategory = (categories || []).find(
+            (c) => c.name.toLowerCase() === resolvedCategoryName.toLowerCase()
+          );
+          
+          // If the category is specified but doesn't exist on the backend, return empty immediately
+          if (!targetCategory) {
+            if (isMounted) {
+              setState({
+                costumes: [],
+                isLoading: false,
+                error: null,
+                requestKey,
+              });
+            }
+            return;
+          }
+          
+          categoryId = targetCategory.id;
+        }
+
+        // Step 2: Fetch costumes with the found categoryId (or null for all)
+        const data = await fetchCostumes({ 
+          categoryId, 
+          pageSize: 100, 
+          signal: controller.signal 
+        });
+        
+        if (controller.signal.aborted || !isMounted) return;
 
         const mappedCostumes = Array.isArray(data) ? data.map(mapCostumeToProduct) : [];
-        const filteredCostumes = resolvedCategory
-          ? mappedCostumes.filter(
-              (product) => product.rawCategory === resolvedCategory || product.category === resolvedCategory
-            )
-          : mappedCostumes;
 
         setState({
-          costumes: filteredCostumes,
+          costumes: mappedCostumes,
           isLoading: false,
           error: null,
           requestKey,
         });
-      })
-      .catch((requestError) => {
-        if (controller.signal.aborted) return;
-        if (!isMounted) return;
+      } catch (requestError) {
+        if (controller.signal.aborted || !isMounted) return;
 
         setState({
           costumes: [],
@@ -51,7 +79,10 @@ export function useCatalogCostumes(categoryKey) {
           error: requestError,
           requestKey,
         });
-      });
+      }
+    };
+
+    fetchData();
 
     return () => {
       isMounted = false;
