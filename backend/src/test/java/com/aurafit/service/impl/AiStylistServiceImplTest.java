@@ -12,14 +12,19 @@ import com.aurafit.entity.Costume;
 import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.CostumeMetadata;
 import com.aurafit.entity.User;
+import com.aurafit.entity.UserInteractionEvent;
 import com.aurafit.enums.AiStylistMessageRole;
 import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.InteractionEventType;
+import com.aurafit.enums.InteractionTargetType;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.exception.BadRequestException;
 import com.aurafit.repository.AiStylistSessionRepository;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.RentalOrderDetailRepository;
+import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.AiExplanationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +45,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -57,7 +65,13 @@ class AiStylistServiceImplTest {
     private RentalOrderDetailRepository rentalOrderDetailRepository;
 
     @Mock
+    private UserInteractionEventRepository userInteractionEventRepository;
+
+    @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private AiExplanationService aiExplanationService;
 
     private AiStylistServiceImpl aiStylistService;
 
@@ -67,9 +81,17 @@ class AiStylistServiceImplTest {
                 aiStylistSessionRepository,
                 costumeRepository,
                 rentalOrderDetailRepository,
+                userInteractionEventRepository,
                 userRepository,
-                new ObjectMapper()
+                new ObjectMapper(),
+                aiExplanationService
         );
+        lenient().when(userInteractionEventRepository.findTop60BySessionIdOrderByCreatedAtDesc(anyString()))
+                .thenReturn(List.of());
+        lenient().when(userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(anyLong()))
+                .thenReturn(List.of());
+        lenient().when(aiExplanationService.enhanceRecommendationReasons(anyString(), anyString(), anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(2));
     }
 
     @Test
@@ -267,6 +289,121 @@ class AiStylistServiceImplTest {
     }
 
     @Test
+    void sendMessage_ShouldPersonalizeRecommendationsFromRecentInteractionHistory() {
+        User user = user(21L, "history@aurafit.vn");
+        Category yearbook = category(2L, "Yearbook");
+        Costume historyMatch = costume(
+                2L,
+                "Classic White Yearbook Dress",
+                yearbook,
+                metadata("Classic", "Yearbook", "Spring", "White", "portrait"),
+                ItemStatus.AVAILABLE
+        );
+        Costume weakerCandidate = costume(
+                3L,
+                "Blue Event Dress",
+                yearbook,
+                metadata("Modern", "Event", "Summer", "Blue", "party"),
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(9L)
+                .user(user)
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder()
+                                .id(1L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("AI Stylist da san sang.")
+                                .build()
+                )))
+                .build();
+
+        UserInteractionEvent recentViewEvent = interactionEvent(
+                501L,
+                user,
+                "session-auth",
+                InteractionEventType.VIEW_PRODUCT,
+                InteractionTargetType.COSTUME,
+                "2",
+                null,
+                "{\"style\":\"Classic\",\"occasion\":\"Yearbook\",\"season\":\"Spring\",\"category\":\"Yearbook\",\"color\":\"White\",\"tags\":[\"portrait\"]}",
+                LocalDateTime.now()
+        );
+
+        when(userRepository.findByEmail("history@aurafit.vn")).thenReturn(Optional.of(user));
+        when(userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(21L))
+                .thenReturn(List.of(recentViewEvent));
+        when(aiStylistSessionRepository.findByIdWithMessages(9L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(weakerCandidate, historyMatch));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 30L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(9L, null, null, null, null, "Goi y cho minh costume phu hop"),
+                "history@aurafit.vn"
+        );
+
+        assertFalse(result.messages().get(2).recommendations().isEmpty());
+        assertEquals(2L, result.messages().get(2).recommendations().get(0).costume().id());
+        assertTrue(result.messages().get(2).content().contains("hanh vi ban da xem va tim gan day"));
+        assertTrue(result.messages().get(2).recommendations().get(0).reason().contains("Gan voi costume ban da xem"));
+    }
+
+    @Test
+    void sendMessage_ShouldFilterRecommendationsByRequestedSize() {
+        Category events = category(3L, "Events");
+        Costume xlCandidate = costume(
+                4L,
+                "Red XL Gala Dress",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Red", "formal"),
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE
+        );
+        xlCandidate.getItems().forEach(item -> item.setSize("XL"));
+
+        Costume mOnlyCandidate = costume(
+                5L,
+                "Red Medium Gala Dress",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Red", "formal"),
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE
+        );
+        mOnlyCandidate.getItems().forEach(item -> item.setSize("M"));
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(10L)
+                .guestSessionId("guest-size")
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder()
+                                .id(1L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("AI Stylist da san sang.")
+                                .build()
+                )))
+                .build();
+
+        when(aiStylistSessionRepository.findByIdWithMessages(10L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(mOnlyCandidate, xlCandidate));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 40L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(10L, "guest-size", null, null, null, "Can goi y costume mau do size XL"),
+                null
+        );
+
+        assertEquals(1, result.messages().get(2).recommendations().size());
+        assertEquals(4L, result.messages().get(2).recommendations().get(0).costume().id());
+        assertTrue(result.messages().get(2).recommendations().get(0).reason().contains("size XL"));
+    }
+
+    @Test
     void attachGuestSessionsToUser_ShouldAttachGuestSessionsAndPreferRequestedSession() {
         User user = user(11L, "stylist@aurafit.vn");
         AiStylistSession existingUserSession = session(60L, null, user, LocalDateTime.of(2026, 6, 25, 9, 0));
@@ -380,6 +517,46 @@ class AiStylistServiceImplTest {
         }
         costume.setItems(items);
         return costume;
+    }
+
+    private UserInteractionEvent interactionEvent(
+            Long id,
+            User user,
+            String sessionId,
+            InteractionEventType eventType,
+            InteractionTargetType targetType,
+            String targetId,
+            String queryText,
+            String metadataJson,
+            LocalDateTime createdAt
+    ) {
+        UserInteractionEvent event = UserInteractionEvent.builder()
+                .id(id)
+                .user(user)
+                .sessionId(sessionId)
+                .eventType(eventType)
+                .targetType(targetType)
+                .targetId(targetId)
+                .queryText(queryText)
+                .metadataJson(metadataJson)
+                .build();
+        event.setCreatedAt(createdAt);
+        return event;
+    }
+
+    private AiStylistSession persistSession(AiStylistSession session, long nextMessageIdStart) {
+        long nextId = nextMessageIdStart;
+        for (AiStylistMessage message : session.getMessages()) {
+            if (message.getId() == null) {
+                message.setId(nextId++);
+                message.setCreatedAt(LocalDateTime.now());
+            }
+        }
+        if (session.getCreatedAt() == null) {
+            session.setCreatedAt(LocalDateTime.now());
+        }
+        session.setUpdatedAt(LocalDateTime.now());
+        return session;
     }
 
     private AiStylistSession session(Long id, String guestSessionId, User user, LocalDateTime updatedAt) {

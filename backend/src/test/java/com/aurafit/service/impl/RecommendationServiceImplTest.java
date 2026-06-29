@@ -15,6 +15,7 @@ import com.aurafit.enums.ItemStatus;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.AiExplanationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +47,9 @@ class RecommendationServiceImplTest {
     @Mock
     private UserInteractionEventRepository userInteractionEventRepository;
 
+    @Mock
+    private AiExplanationService aiExplanationService;
+
     private RecommendationServiceImpl recommendationService;
 
     @BeforeEach
@@ -52,8 +58,11 @@ class RecommendationServiceImplTest {
                 costumeRepository,
                 userRepository,
                 userInteractionEventRepository,
-                new ObjectMapper()
+                new ObjectMapper(),
+                aiExplanationService
         );
+        when(aiExplanationService.enhanceRecommendationReasons(anyString(), anyString(), anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(2));
     }
 
     @Test

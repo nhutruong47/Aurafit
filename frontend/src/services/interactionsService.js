@@ -344,3 +344,18 @@ export const clearAiStylistCartAttribution = (item) => {
   delete attributionMap[cartKey];
   writeBrowserMap(AI_STYLIST_CART_ATTRIBUTION_KEY, attributionMap);
 };
+
+export const toAiStylistAttributionRequest = (attribution) => {
+  if (!attribution || attribution.source !== AI_STYLIST_SOURCE) {
+    return null;
+  }
+
+  return {
+    interactionSessionId: attribution.interactionSessionId || null,
+    aiStylistSessionId: attribution.aiStylistSessionId || null,
+    aiStylistMessageId: attribution.aiStylistMessageId || null,
+    guestSessionId: attribution.guestSessionId || null,
+    recommendationPosition: attribution.position || null,
+    recommendationReason: attribution.reason || null,
+  };
+};

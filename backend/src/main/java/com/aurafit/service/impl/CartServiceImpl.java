@@ -7,6 +7,8 @@ import com.aurafit.entity.CartItem;
 import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.User;
 import com.aurafit.enums.CartStatus;
+import com.aurafit.enums.InteractionEventType;
+import com.aurafit.enums.InteractionTargetType;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CartItemRepository;
@@ -14,11 +16,14 @@ import com.aurafit.repository.CartRepository;
 import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.service.CartService;
+import com.aurafit.service.InteractionEventRecorderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Service
 public class CartServiceImpl implements CartService {
@@ -27,15 +32,18 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final CostumeItemRepository costumeItemRepository;
     private final UserRepository userRepository;
+    private final InteractionEventRecorderService interactionEventRecorderService;
 
     public CartServiceImpl(CartRepository cartRepository,
                            CartItemRepository cartItemRepository,
                            CostumeItemRepository costumeItemRepository,
-                           UserRepository userRepository) {
+                           UserRepository userRepository,
+                           InteractionEventRecorderService interactionEventRecorderService) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.costumeItemRepository = costumeItemRepository;
         this.userRepository = userRepository;
+        this.interactionEventRecorderService = interactionEventRecorderService;
     }
 
     @Override
@@ -92,6 +100,7 @@ public class CartServiceImpl implements CartService {
         cart.getItems().add(cartItem);
         cart.recalculateTotal();
         cartRepository.save(cart);
+        recordAddToCartEvent(userId, costumeItem, cartItem, request);
 
         // 8. Re-fetch with full JOIN FETCH graph for the response DTO
         Cart refreshedCart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
@@ -138,5 +147,51 @@ public class CartServiceImpl implements CartService {
 
                     return cartRepository.save(newCart);
                 });
+    }
+
+    private void recordAddToCartEvent(Long userId,
+                                      CostumeItem costumeItem,
+                                      CartItem cartItem,
+                                      AddToCartRequestDTO request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("costumeItemId", costumeItem.getId());
+        metadata.put("costumeId", costumeItem.getCostume() != null ? costumeItem.getCostume().getId() : null);
+        metadata.put("sku", costumeItem.getSku());
+        metadata.put("rentalStartDate", request.rentalStartDate() != null ? request.rentalStartDate().toString() : null);
+        metadata.put("rentalEndDate", request.rentalEndDate() != null ? request.rentalEndDate().toString() : null);
+        metadata.put("category", costumeItem.getCostume() != null && costumeItem.getCostume().getCategory() != null
+                ? costumeItem.getCostume().getCategory().getName()
+                : null);
+
+        if (request.aiStylistAttribution() != null) {
+            metadata.put("aiStylistAttribution", buildAiStylistAttribution(request.aiStylistAttribution()));
+        }
+
+        interactionEventRecorderService.record(
+                user,
+                request.aiStylistAttribution() != null ? request.aiStylistAttribution().interactionSessionId() : null,
+                InteractionEventType.ADD_TO_CART,
+                InteractionTargetType.CART,
+                cartItem.getId() != null ? String.valueOf(cartItem.getId()) : null,
+                "/cart",
+                null,
+                metadata
+        );
+    }
+
+    private Map<String, Object> buildAiStylistAttribution(com.aurafit.dto.request.AiStylistAttributionRequest attribution) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("source", "AI_STYLIST");
+        metadata.put("slot", "ai_stylist_chat");
+        metadata.put("interactionSessionId", attribution.interactionSessionId());
+        metadata.put("aiStylistSessionId", attribution.aiStylistSessionId());
+        metadata.put("aiStylistMessageId", attribution.aiStylistMessageId());
+        metadata.put("guestSessionId", attribution.guestSessionId());
+        metadata.put("recommendationPosition", attribution.recommendationPosition());
+        metadata.put("recommendationReason", attribution.recommendationReason());
+        return metadata;
     }
 }

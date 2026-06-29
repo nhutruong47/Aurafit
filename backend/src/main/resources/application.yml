@@ -44,3 +44,19 @@ app:
   upload:
     image-folder: ${UPLOAD_IMAGE_FOLDER:aurafit}
     max-image-size-bytes: ${UPLOAD_MAX_IMAGE_SIZE_BYTES:5242880}
+
+ai:
+  enabled: ${AI_ENABLED:false}
+  provider-base-url: ${AI_PROVIDER_BASE_URL:}
+  provider-api-key: ${AI_PROVIDER_API_KEY:}
+  embedding-model: ${AI_EMBEDDING_MODEL:}
+  chat-model: ${AI_CHAT_MODEL:}
+  fallback-embedding-dimension: ${AI_FALLBACK_EMBEDDING_DIMENSION:64}
+  default-recommendation-limit: ${AI_DEFAULT_RECOMMENDATION_LIMIT:6}
+  candidate-pool-size: ${AI_CANDIDATE_POOL_SIZE:24}
+  profile-top-tag-limit: ${AI_PROFILE_TOP_TAG_LIMIT:5}
+  profile-stale-minutes: ${AI_PROFILE_STALE_MINUTES:60}
+  llm-explanation-enabled: ${AI_LLM_EXPLANATION_ENABLED:false}
+  provider-connect-timeout-millis: ${AI_PROVIDER_CONNECT_TIMEOUT_MS:2000}
+  provider-read-timeout-millis: ${AI_PROVIDER_READ_TIMEOUT_MS:6000}
+  provider-max-retries: ${AI_PROVIDER_MAX_RETRIES:1}

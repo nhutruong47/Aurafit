@@ -25,5 +25,7 @@ public record CheckoutItemRequest(
         LocalDate rentalStartDate,
 
         @NotNull(message = "rentalEndDate is required")
-        LocalDate rentalEndDate
+        LocalDate rentalEndDate,
+
+        AiStylistAttributionRequest aiStylistAttribution
 ) {}

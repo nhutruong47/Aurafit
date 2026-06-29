@@ -15,6 +15,7 @@ import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.AiExplanationService;
 import com.aurafit.service.RecommendationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,15 +44,18 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final UserRepository userRepository;
     private final UserInteractionEventRepository userInteractionEventRepository;
     private final ObjectMapper objectMapper;
+    private final AiExplanationService aiExplanationService;
 
     public RecommendationServiceImpl(CostumeRepository costumeRepository,
                                      UserRepository userRepository,
                                      UserInteractionEventRepository userInteractionEventRepository,
-                                     ObjectMapper objectMapper) {
+                                     ObjectMapper objectMapper,
+                                     AiExplanationService aiExplanationService) {
         this.costumeRepository = costumeRepository;
         this.userRepository = userRepository;
         this.userInteractionEventRepository = userInteractionEventRepository;
         this.objectMapper = objectMapper;
+        this.aiExplanationService = aiExplanationService;
     }
 
     @Override
@@ -61,7 +65,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         int normalizedLimit = Math.max(1, Math.min(limit, 12));
 
-        return costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, costumeId).stream()
+        List<SimilarCostumeRecommendationDTO> recommendations = costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, costumeId).stream()
                 .filter(candidate -> !sourceCostume.getId().equals(candidate.getId()))
                 .map(candidate -> buildCandidate(sourceCostume, candidate))
                 .filter(candidate -> candidate.availableItemCount() > 0)
@@ -77,6 +81,12 @@ public class RecommendationServiceImpl implements RecommendationService {
                         candidate.availableItemCount()
                 ))
                 .toList();
+
+        return aiExplanationService.enhanceRecommendationReasons(
+                "similar_products",
+                buildSimilarExplanationContext(sourceCostume),
+                recommendations
+        );
     }
 
     @Override
@@ -96,10 +106,14 @@ public class RecommendationServiceImpl implements RecommendationService {
         PreferenceProfile profile = buildPreferenceProfile(recentEvents, activeCostumesById);
 
         if (profile.isEmpty()) {
-            return buildHomepageFallbackRecommendations(candidates, normalizedLimit);
+            return aiExplanationService.enhanceRecommendationReasons(
+                    "homepage_personalized",
+                    "Gợi ý cá nhân hóa trang chủ cho người dùng chưa có đủ lịch sử rõ ràng.",
+                    buildHomepageFallbackRecommendations(candidates, normalizedLimit)
+            );
         }
 
-        return candidates.stream()
+        List<SimilarCostumeRecommendationDTO> recommendations = candidates.stream()
                 .map(candidate -> buildHomepageCandidate(candidate, profile))
                 .filter(candidate -> candidate.availableItemCount() > 0)
                 .sorted(Comparator
@@ -114,6 +128,12 @@ public class RecommendationServiceImpl implements RecommendationService {
                         candidate.availableItemCount()
                 ))
                 .toList();
+
+        return aiExplanationService.enhanceRecommendationReasons(
+                "homepage_personalized",
+                "Gợi ý cá nhân hóa trang chủ dựa trên lịch sử xem, tìm kiếm và thuê gần đây.",
+                recommendations
+        );
     }
 
     private SimilarCandidate buildCandidate(Costume sourceCostume, Costume candidate) {
@@ -415,6 +435,19 @@ public class RecommendationServiceImpl implements RecommendationService {
         return normalizedLeft != null && normalizedLeft.equals(normalizedRight);
     }
 
+    private String buildSimilarExplanationContext(Costume sourceCostume) {
+        if (sourceCostume == null) {
+            return "Gợi ý sản phẩm tương tự cho trang chi tiết.";
+        }
+
+        CostumeMetadataDTO metadata = CostumeMetadataDTO.fromEntity(sourceCostume.getMetadata());
+        return "Gợi ý sản phẩm tương tự cho costume \"" + sourceCostume.getName() + "\""
+                + " | style=" + safe(metadata != null ? metadata.style() : null)
+                + " | occasion=" + safe(metadata != null ? metadata.occasion() : null)
+                + " | season=" + safe(metadata != null ? metadata.season() : null)
+                + " | color=" + safe(metadata != null ? metadata.color() : null);
+    }
+
     private User resolveAuthenticatedUser(String authenticatedEmail) {
         String normalizedEmail = normalize(authenticatedEmail);
         if (normalizedEmail == null) {
@@ -445,6 +478,10 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private String safe(String value) {
+        return value == null ? "không rõ" : value;
     }
 
     private record SimilarCandidate(Costume costume, int score, int availableItemCount, String reason) {

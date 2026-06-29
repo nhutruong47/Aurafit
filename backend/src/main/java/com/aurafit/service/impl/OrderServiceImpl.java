@@ -1,16 +1,22 @@
 package com.aurafit.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.aurafit.dto.request.AiStylistAttributionRequest;
 import com.aurafit.dto.request.CheckoutItemRequest;
 import com.aurafit.dto.request.CheckoutRequest;
 import com.aurafit.dto.response.OrderResponse;
 import com.aurafit.dto.response.OrderSummaryResponse;
 import com.aurafit.entity.*;
 import com.aurafit.enums.CartStatus;
+import com.aurafit.enums.InteractionEventType;
+import com.aurafit.enums.InteractionTargetType;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.enums.ReturnStatus;
 import com.aurafit.exception.BadRequestException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.*;
+import com.aurafit.service.InteractionEventRecorderService;
 import com.aurafit.service.OrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,29 +26,46 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
+    private static final TypeReference<Map<String, Object>> METADATA_TYPE = new TypeReference<>() {
+    };
 
     private final RentalOrderRepository rentalOrderRepository;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final CostumeItemRepository costumeItemRepository;
     private final UserRepository userRepository;
+    private final UserInteractionEventRepository userInteractionEventRepository;
+    private final InteractionEventRecorderService interactionEventRecorderService;
+    private final ObjectMapper objectMapper;
 
     public OrderServiceImpl(RentalOrderRepository rentalOrderRepository,
                             CartRepository cartRepository,
                             CartItemRepository cartItemRepository,
                             CostumeItemRepository costumeItemRepository,
-                            UserRepository userRepository) {
+                            UserRepository userRepository,
+                            UserInteractionEventRepository userInteractionEventRepository,
+                            InteractionEventRecorderService interactionEventRecorderService,
+                            ObjectMapper objectMapper) {
         this.rentalOrderRepository = rentalOrderRepository;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.costumeItemRepository = costumeItemRepository;
         this.userRepository = userRepository;
+        this.userInteractionEventRepository = userInteractionEventRepository;
+        this.interactionEventRecorderService = interactionEventRecorderService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -201,6 +224,8 @@ public class OrderServiceImpl implements OrderService {
                 .findByIdWithDetailsAndCostumes(savedOrder.getId())
                 .orElse(savedOrder);
 
+        recordRentEvent(user, responseOrder, items, orderDetails);
+
         return OrderResponse.fromEntity(responseOrder);
     }
 
@@ -219,5 +244,252 @@ public class OrderServiceImpl implements OrderService {
         RentalOrder order = rentalOrderRepository.findByIdAndUserIdWithDetails(orderId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         return OrderResponse.fromEntity(order);
+    }
+
+    private void recordRentEvent(User user,
+                                 RentalOrder order,
+                                 List<CheckoutItemRequest> requestItems,
+                                 List<RentalOrderDetail> orderDetails) {
+        List<MatchedAiStylistAttribution> matchedAttributions = matchAiStylistAttributions(user, requestItems, orderDetails);
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("itemCount", orderDetails.size());
+        metadata.put("costumeIds", orderDetails.stream()
+                .map(detail -> detail.getCostumeItem() != null && detail.getCostumeItem().getCostume() != null
+                        ? detail.getCostumeItem().getCostume().getId()
+                        : null)
+                .filter(id -> id != null)
+                .distinct()
+                .toList());
+        metadata.put("costumeItemIds", orderDetails.stream()
+                .map(detail -> detail.getCostumeItem() != null ? detail.getCostumeItem().getId() : null)
+                .filter(id -> id != null)
+                .toList());
+        metadata.put("skus", orderDetails.stream()
+                .map(detail -> detail.getCostumeItem() != null ? detail.getCostumeItem().getSku() : null)
+                .filter(sku -> sku != null && !sku.isBlank())
+                .toList());
+        metadata.put("rentalStartDate", order.getRentalStartDate() != null ? order.getRentalStartDate().toLocalDate().toString() : null);
+        metadata.put("rentalEndDate", order.getRentalEndDate() != null ? order.getRentalEndDate().toLocalDate().toString() : null);
+
+        String interactionSessionId = null;
+        if (!matchedAttributions.isEmpty()) {
+            metadata.put("aiStylistAttribution", buildAiStylistAttributionSummary(matchedAttributions));
+            interactionSessionId = matchedAttributions.stream()
+                    .map(MatchedAiStylistAttribution::interactionSessionId)
+                    .filter(value -> value != null && !value.isBlank())
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        interactionEventRecorderService.record(
+                user,
+                interactionSessionId,
+                InteractionEventType.RENT,
+                InteractionTargetType.ORDER,
+                order.getId() != null ? String.valueOf(order.getId()) : null,
+                "/orders",
+                null,
+                metadata
+        );
+    }
+
+    private List<MatchedAiStylistAttribution> matchAiStylistAttributions(User user,
+                                                                         List<CheckoutItemRequest> requestItems,
+                                                                         List<RentalOrderDetail> orderDetails) {
+        Map<String, MatchedAiStylistAttribution> explicitBySignature = new LinkedHashMap<>();
+        for (int index = 0; index < requestItems.size() && index < orderDetails.size(); index++) {
+            CheckoutItemRequest requestItem = requestItems.get(index);
+            RentalOrderDetail detail = orderDetails.get(index);
+            if (requestItem.aiStylistAttribution() == null) {
+                continue;
+            }
+            MatchedAiStylistAttribution attribution = buildMatchedAttribution(requestItem.aiStylistAttribution(), requestItem, detail);
+            explicitBySignature.put(buildSignature(requestItem.sku(), requestItem.rentalStartDate().toString(), requestItem.rentalEndDate().toString()), attribution);
+        }
+
+        List<UserInteractionEvent> recentAddToCartEvents = user != null && user.getId() != null
+                ? userInteractionEventRepository.findTop120ByUser_IdAndEventTypeOrderByCreatedAtDesc(user.getId(), InteractionEventType.ADD_TO_CART)
+                : List.of();
+
+        Map<String, MatchedAiStylistAttribution> inferredBySignature = new HashMap<>();
+        for (UserInteractionEvent event : recentAddToCartEvents) {
+            Map<String, Object> metadata = parseMetadata(event.getMetadataJson());
+            Map<String, Object> aiStylistAttribution = readNestedMap(metadata.get("aiStylistAttribution"));
+            if (aiStylistAttribution.isEmpty()) {
+                continue;
+            }
+
+            String sku = readString(metadata.get("sku"));
+            String rentalStartDate = readString(metadata.get("rentalStartDate"));
+            String rentalEndDate = readString(metadata.get("rentalEndDate"));
+            String signature = buildSignature(sku, rentalStartDate, rentalEndDate);
+            if (signature == null || explicitBySignature.containsKey(signature) || inferredBySignature.containsKey(signature)) {
+                continue;
+            }
+
+            Long costumeItemId = parseLong(metadata.get("costumeItemId"));
+            Long costumeId = parseLong(metadata.get("costumeId"));
+            inferredBySignature.put(signature, new MatchedAiStylistAttribution(
+                    costumeId,
+                    costumeItemId,
+                    sku,
+                    rentalStartDate,
+                    rentalEndDate,
+                    readString(aiStylistAttribution.get("interactionSessionId")),
+                    parseLong(aiStylistAttribution.get("aiStylistSessionId")),
+                    parseLong(aiStylistAttribution.get("aiStylistMessageId")),
+                    readString(aiStylistAttribution.get("guestSessionId")),
+                    parseInteger(aiStylistAttribution.get("recommendationPosition")),
+                    readString(aiStylistAttribution.get("recommendationReason"))
+            ));
+        }
+
+        LinkedHashMap<String, MatchedAiStylistAttribution> merged = new LinkedHashMap<>(explicitBySignature);
+        for (int index = 0; index < requestItems.size(); index++) {
+            CheckoutItemRequest requestItem = requestItems.get(index);
+            String signature = buildSignature(
+                    requestItem.sku(),
+                    requestItem.rentalStartDate() != null ? requestItem.rentalStartDate().toString() : null,
+                    requestItem.rentalEndDate() != null ? requestItem.rentalEndDate().toString() : null
+            );
+            if (signature == null || merged.containsKey(signature)) {
+                continue;
+            }
+            MatchedAiStylistAttribution inferred = inferredBySignature.get(signature);
+            if (inferred != null) {
+                merged.put(signature, inferred);
+            }
+        }
+
+        return new ArrayList<>(merged.values());
+    }
+
+    private MatchedAiStylistAttribution buildMatchedAttribution(AiStylistAttributionRequest requestAttribution,
+                                                                CheckoutItemRequest requestItem,
+                                                                RentalOrderDetail detail) {
+        Long costumeItemId = detail.getCostumeItem() != null ? detail.getCostumeItem().getId() : null;
+        Long costumeId = detail.getCostumeItem() != null && detail.getCostumeItem().getCostume() != null
+                ? detail.getCostumeItem().getCostume().getId()
+                : null;
+        return new MatchedAiStylistAttribution(
+                costumeId,
+                costumeItemId,
+                requestItem.sku(),
+                requestItem.rentalStartDate() != null ? requestItem.rentalStartDate().toString() : null,
+                requestItem.rentalEndDate() != null ? requestItem.rentalEndDate().toString() : null,
+                requestAttribution.interactionSessionId(),
+                requestAttribution.aiStylistSessionId(),
+                requestAttribution.aiStylistMessageId(),
+                requestAttribution.guestSessionId(),
+                requestAttribution.recommendationPosition(),
+                requestAttribution.recommendationReason()
+        );
+    }
+
+    private Map<String, Object> buildAiStylistAttributionSummary(List<MatchedAiStylistAttribution> matchedAttributions) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("source", "AI_STYLIST");
+        summary.put("slot", "ai_stylist_chat");
+        summary.put("chatAttributedItemCount", matchedAttributions.size());
+        summary.put("aiStylistSessionIds", matchedAttributions.stream()
+                .map(MatchedAiStylistAttribution::aiStylistSessionId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList());
+        summary.put("attributedCostumeIds", matchedAttributions.stream()
+                .map(MatchedAiStylistAttribution::costumeId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList());
+        summary.put("attributedItems", matchedAttributions.stream()
+                .map(item -> {
+                    Map<String, Object> attributedItem = new LinkedHashMap<>();
+                    attributedItem.put("costumeItemId", item.costumeItemId());
+                    attributedItem.put("sku", item.sku());
+                    attributedItem.put("rentalStartDate", item.rentalStartDate());
+                    attributedItem.put("rentalEndDate", item.rentalEndDate());
+                    attributedItem.put("aiStylistSessionId", item.aiStylistSessionId());
+                    attributedItem.put("aiStylistMessageId", item.aiStylistMessageId());
+                    attributedItem.put("guestSessionId", item.guestSessionId());
+                    attributedItem.put("interactionSessionId", item.interactionSessionId());
+                    attributedItem.put("recommendationPosition", item.recommendationPosition());
+                    attributedItem.put("recommendationReason", item.recommendationReason());
+                    return attributedItem;
+                })
+                .toList());
+        return summary;
+    }
+
+    private Map<String, Object> parseMetadata(String metadataJson) {
+        if (metadataJson == null || metadataJson.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(metadataJson.trim(), METADATA_TYPE);
+        } catch (Exception ignored) {
+            return Map.of();
+        }
+    }
+
+    private Map<String, Object> readNestedMap(Object value) {
+        if (value instanceof Map<?, ?> rawMap) {
+            LinkedHashMap<String, Object> normalized = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+                if (entry.getKey() != null) {
+                    normalized.put(entry.getKey().toString(), entry.getValue());
+                }
+            }
+            return normalized;
+        }
+        return Map.of();
+    }
+
+    private String buildSignature(String sku, String rentalStartDate, String rentalEndDate) {
+        if (sku == null || sku.isBlank() || rentalStartDate == null || rentalEndDate == null) {
+            return null;
+        }
+        return sku.trim() + "|" + rentalStartDate.trim() + "|" + rentalEndDate.trim();
+    }
+
+    private String readString(Object value) {
+        return value != null ? value.toString() : null;
+    }
+
+    private Long parseLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private Integer parseInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private record MatchedAiStylistAttribution(
+            Long costumeId,
+            Long costumeItemId,
+            String sku,
+            String rentalStartDate,
+            String rentalEndDate,
+            String interactionSessionId,
+            Long aiStylistSessionId,
+            Long aiStylistMessageId,
+            String guestSessionId,
+            Integer recommendationPosition,
+            String recommendationReason
+    ) {
     }
 }

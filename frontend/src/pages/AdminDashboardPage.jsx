@@ -5,20 +5,14 @@ import AdminProductsSection from '../components/admin/AdminProductsSection';
 import AdminReportsSection from '../components/admin/AdminReportsSection';
 import { StatusBadge } from '../components/admin/AdminDashboardShared';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
-import { useAdminCostumes } from '../hooks/useAdminCostumes';
 import { useAdminCategories } from '../hooks/useAdminCategories';
+import { useAdminCostumes } from '../hooks/useAdminCostumes';
+import { useRecommendationAnalytics } from '../hooks/useRecommendationAnalytics';
 
 const supportTickets = [
-  { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chưa nhận hoàn cọc', channel: 'Chat', status: 'Đang xử lý', owner: 'Admin' },
-  { id: 'SP-2187', customer: 'Quốc Huy', subject: 'Muốn đổi lịch nhận đồ', channel: 'Hotline', status: 'Mới', owner: 'Admin' },
-  { id: 'SP-2172', customer: 'Bảo Trân', subject: 'Lỗi thanh toán chuyển khoản', channel: 'Email', status: 'Đã phản hồi', owner: 'Admin' },
-];
-
-const metricCards = [
-  { label: 'Đơn đang xử lý', value: '47', delta: '+8 hôm nay' },
-  { label: 'Doanh thu hôm nay', value: '18.6M', delta: '+12.4%' },
-  { label: 'Yêu cầu mở', value: '11', delta: '3 ưu tiên cao' },
-  { label: 'Sản phẩm đang hiển thị', value: '180', delta: 'Admin quản lý' },
+  { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chua nhan hoan coc', channel: 'Chat', status: 'Dang xu ly', owner: 'Admin' },
+  { id: 'SP-2187', customer: 'Quoc Huy', subject: 'Muon doi lich nhan do', channel: 'Hotline', status: 'Moi', owner: 'Admin' },
+  { id: 'SP-2172', customer: 'Bao Tran', subject: 'Loi thanh toan chuyen khoan', channel: 'Email', status: 'Da phan hoi', owner: 'Admin' },
 ];
 
 export default function AdminDashboardPage({ currentUser, onNavigate }) {
@@ -62,7 +56,48 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     handleDelete: handleDeleteCategory,
   } = useAdminCategories(currentUser);
 
+  const {
+    analytics,
+    periodDays,
+    isLoading: isAnalyticsLoading,
+    error: analyticsError,
+    setPeriodDays,
+  } = useRecommendationAnalytics(currentUser);
+
   const ticketCount = useMemo(() => supportTickets.length, []);
+  const metricCards = useMemo(() => {
+    if (!analytics?.overview || !analytics?.aiStylist) {
+      return [
+        { label: 'Don dang xu ly', value: '47', delta: '+8 hom nay' },
+        { label: 'Recommendation CTR', value: '--', delta: 'Dang cho du lieu' },
+        { label: 'AI Stylist session', value: '--', delta: 'Dang cho du lieu' },
+        { label: 'San pham dang hien thi', value: `${products.length}`, delta: 'Admin quan ly' },
+      ];
+    }
+
+    return [
+      {
+        label: 'Recommendation CTR',
+        value: `${Number(analytics.overview.recommendationCtr || 0).toFixed(2)}%`,
+        delta: `${analytics.overview.recommendationClicks} click / ${analytics.overview.recommendationImpressions} impression`,
+      },
+      {
+        label: 'AI Stylist session',
+        value: `${analytics.aiStylist.sessionsStarted}`,
+        delta: `${analytics.aiStylist.userMessages} tin nhan nguoi dung`,
+      },
+      {
+        label: 'Rent tu AI Stylist',
+        value: `${analytics.aiStylist.attributedRents}`,
+        delta: `${analytics.aiStylist.attributedAddToCarts} add-to-cart co attribution`,
+      },
+      {
+        label: 'San pham dang hien thi',
+        value: `${products.length}`,
+        delta: `${managedCategories.length} danh muc dang hoat dong`,
+      },
+    ];
+  }, [analytics, managedCategories.length, products.length]);
 
   const handleSubmitProduct = async (event) => {
     event.preventDefault();
@@ -75,16 +110,16 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
         <section className="mx-auto min-h-[calc(100dvh-80px)] max-w-[900px] px-5 py-20 md:px-20">
           <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#7f7041]">Admin</p>
           <h1 className="font-serif text-[46px] font-normal italic leading-tight md:text-[70px]">
-            Cần tài khoản Admin để truy cập.
+            Can tai khoan Admin de truy cap.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-[#5f5e5e]">
-            Chỉ Admin mới có quyền đăng tải và quản lý sản phẩm trên AuraFit.
+            Chi Admin moi co quyen dang tai va quan ly san pham tren AuraFit.
           </p>
           <button
             onClick={() => onNavigate?.('account')}
             className="mt-9 bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
           >
-            Đăng nhập Admin
+            Dang nhap Admin
           </button>
         </section>
       </div>
@@ -98,14 +133,13 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7f7041]">AuraFit Admin</p>
             <h1 className="mt-2 font-serif text-4xl font-normal italic leading-[1.15] md:text-5xl">
-              Trung tâm quản lý sản phẩm và vận hành
+              Trung tam quan ly san pham va van hanh
             </h1>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm md:flex md:items-center">
-            <StatusBadge label={`${ticketCount} yêu cầu`} tone="warning" />
-            <StatusBadge label={`${products.length} sản phẩm`} tone="good" />
-
-            <StatusBadge label={`${managedCategories.length} danh mục`} tone="default" />
+            <StatusBadge label={`${ticketCount} yeu cau`} tone="warning" />
+            <StatusBadge label={`${products.length} san pham`} tone="good" />
+            <StatusBadge label={`${managedCategories.length} danh muc`} tone="default" />
           </div>
         </div>
       </div>
@@ -113,11 +147,11 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
       <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-8 px-5 py-8 md:px-10 xl:grid-cols-[240px_1fr]">
         <aside className="h-fit border border-[#d7d2c8] bg-[#111111] p-3 text-white">
           {[
-            ['overview', 'Tổng quan', 'dashboard'],
-            ['products', 'Sản phẩm', 'inventory_2'],
-            ['categories', 'Danh mục', 'category'],
-            ['support', 'Hỗ trợ', 'support_agent'],
-            ['reports', 'Báo cáo', 'monitoring'],
+            ['overview', 'Tong quan', 'dashboard'],
+            ['products', 'San pham', 'inventory_2'],
+            ['categories', 'Danh muc', 'category'],
+            ['support', 'Ho tro', 'support_agent'],
+            ['reports', 'Bao cao', 'monitoring'],
           ].map(([id, label, icon]) => (
             <button
               key={id}
@@ -175,7 +209,13 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
           )}
           {activeTab === 'support' && <AdminSupportSection supportTickets={supportTickets} />}
           {activeTab === 'reports' && (
-            <AdminReportsSection availableProductCount={products.filter((product) => product.status === 'ACTIVE').length} />
+            <AdminReportsSection
+              analytics={analytics}
+              isLoading={isAnalyticsLoading}
+              error={analyticsError}
+              periodDays={periodDays}
+              onPeriodDaysChange={setPeriodDays}
+            />
           )}
         </main>
       </div>

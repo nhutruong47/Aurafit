@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDirectOrderStore } from '../store/useDirectOrderStore';
 import { createOrder } from '../services/rentalOrderService';
-import { logUserInteraction } from '../services/interactionsService';
+import { toAiStylistAttributionRequest } from '../services/interactionsService';
 import { formatCurrency } from '../utils/formatCurrency';
 import { adminContact } from '../utils/shopMock';
 
@@ -58,16 +58,10 @@ export default function DirectRentalPage({ currentUser, onNavigate }) {
             quantity: directItem.quantity || 1,
             rentalStartDate: directItem.rentalStartDate,
             rentalEndDate: directItem.rentalEndDate,
+            aiStylistAttribution: toAiStylistAttributionRequest(directItem.attribution),
           },
         ],
       });
-
-      logUserInteraction({
-        eventType: 'RENT',
-        targetType: 'ORDER',
-        targetId: orderResponse.id,
-        metadata: { itemCount: 1, flow: 'direct' },
-      }).catch(() => {});
 
       clearDirectItem();
       onNavigate?.('payment');

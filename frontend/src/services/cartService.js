@@ -6,17 +6,22 @@ export const fetchCart = async () =>
       url: '/cart',
       method: 'GET',
     },
-    'Không thể tải giỏ hàng.'
+    'Khong the tai gio hang.'
   );
 
-export const addItemToCart = async ({ costumeItemId, rentalStartDate, rentalEndDate }) =>
+export const addItemToCart = async ({
+  costumeItemId,
+  rentalStartDate,
+  rentalEndDate,
+  aiStylistAttribution = null,
+}) =>
   requestJson(
     {
       url: '/cart/items',
       method: 'POST',
-      data: { costumeItemId, rentalStartDate, rentalEndDate },
+      data: { costumeItemId, rentalStartDate, rentalEndDate, aiStylistAttribution },
     },
-    'Không thể thêm sản phẩm vào giỏ hàng.'
+    'Khong the them san pham vao gio hang.'
   );
 
 export const removeCartItem = async (cartItemId) =>
@@ -25,5 +30,5 @@ export const removeCartItem = async (cartItemId) =>
       url: `/cart/items/${encodeURIComponent(cartItemId)}`,
       method: 'DELETE',
     },
-    'Không thể xóa sản phẩm khỏi giỏ hàng.'
+    'Khong the xoa san pham khoi gio hang.'
   );

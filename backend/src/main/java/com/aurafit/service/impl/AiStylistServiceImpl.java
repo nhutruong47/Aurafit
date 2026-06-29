@@ -2,10 +2,10 @@ package com.aurafit.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.aurafit.dto.response.AiStylistSessionAttachResponse;
 import com.aurafit.dto.request.CreateAiStylistSessionRequest;
 import com.aurafit.dto.request.SendAiStylistMessageRequest;
 import com.aurafit.dto.response.AiStylistMessageDTO;
+import com.aurafit.dto.response.AiStylistSessionAttachResponse;
 import com.aurafit.dto.response.AiStylistSessionDTO;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.CostumeMetadataDTO;
@@ -15,8 +15,10 @@ import com.aurafit.entity.AiStylistSession;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.User;
+import com.aurafit.entity.UserInteractionEvent;
 import com.aurafit.enums.AiStylistMessageRole;
 import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.InteractionEventType;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.enums.OrderStatus;
 import com.aurafit.exception.BadRequestException;
@@ -24,7 +26,9 @@ import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.AiStylistSessionRepository;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.RentalOrderDetailRepository;
+import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.AiExplanationService;
 import com.aurafit.service.AiStylistService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,28 +60,37 @@ import java.util.stream.Collectors;
 public class AiStylistServiceImpl implements AiStylistService {
 
     private static final int RESPONSE_LIMIT = 3;
+    private static final int HISTORY_EVENT_LIMIT = 60;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final TypeReference<List<Map<String, Object>>> RECOMMENDATION_SUMMARY_TYPE = new TypeReference<>() {
     };
-    private static final Pattern BUDGET_PATTERN = Pattern.compile("(\\d+[\\d.,]*)\\s*(tr|trieu|triệu|k|nghin|ngan|ngàn|vnd|d)?", Pattern.CASE_INSENSITIVE);
+    private static final TypeReference<Map<String, Object>> METADATA_TYPE = new TypeReference<>() {
+    };
+    private static final Pattern BUDGET_PATTERN = Pattern.compile("(\\d+[\\d.,]*)\\s*(tr|trieu|k|nghin|ngan|vnd|d)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern NORMALIZE_TEXT_PATTERN = Pattern.compile("[^\\p{L}\\p{N}\\s]");
 
     private final AiStylistSessionRepository aiStylistSessionRepository;
     private final CostumeRepository costumeRepository;
     private final RentalOrderDetailRepository rentalOrderDetailRepository;
+    private final UserInteractionEventRepository userInteractionEventRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final AiExplanationService aiExplanationService;
 
     public AiStylistServiceImpl(AiStylistSessionRepository aiStylistSessionRepository,
                                 CostumeRepository costumeRepository,
                                 RentalOrderDetailRepository rentalOrderDetailRepository,
+                                UserInteractionEventRepository userInteractionEventRepository,
                                 UserRepository userRepository,
-                                ObjectMapper objectMapper) {
+                                ObjectMapper objectMapper,
+                                AiExplanationService aiExplanationService) {
         this.aiStylistSessionRepository = aiStylistSessionRepository;
         this.costumeRepository = costumeRepository;
         this.rentalOrderDetailRepository = rentalOrderDetailRepository;
+        this.userInteractionEventRepository = userInteractionEventRepository;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        this.aiExplanationService = aiExplanationService;
     }
 
     @Override
@@ -125,18 +138,26 @@ public class AiStylistServiceImpl implements AiStylistService {
         Map<Long, Costume> activeCostumesById = buildActiveCostumeMap();
         AvailabilitySnapshot availabilitySnapshot = buildAvailabilitySnapshot(activeCostumesById.values(), availabilityWindow);
         Costume selectedCostume = resolveSelectedCostume(session, request.selectedCostumeId(), activeCostumesById);
-        StylistIntent intent = parseIntent(normalizedMessage);
+        List<UserInteractionEvent> recentEvents = loadRecentEvents(session, request.guestSessionId(), authenticatedEmail);
+        StylistPreferenceProfile preferenceProfile = buildPreferenceProfile(recentEvents, activeCostumesById);
+        StylistIntent intent = parseIntent(normalizedMessage, activeCostumesById.values());
         List<SimilarCostumeRecommendationDTO> recommendations = buildRecommendations(
                 normalizedMessage,
                 intent,
+                preferenceProfile,
                 selectedCostume,
                 activeCostumesById.values(),
                 availabilitySnapshot
         );
+        recommendations = aiExplanationService.enhanceRecommendationReasons(
+                "ai_stylist_chat",
+                buildAiStylistExplanationContext(normalizedMessage, selectedCostume, availabilityWindow, !preferenceProfile.isEmpty()),
+                recommendations
+        );
 
         addAssistantMessage(
                 session,
-                buildAssistantMessage(recommendations, selectedCostume, availabilityWindow),
+                buildAssistantMessage(recommendations, selectedCostume, availabilityWindow, !preferenceProfile.isEmpty()),
                 writeRecommendationMetadata(recommendations, availabilityWindow)
         );
 
@@ -232,11 +253,12 @@ public class AiStylistServiceImpl implements AiStylistService {
 
     private List<SimilarCostumeRecommendationDTO> buildRecommendations(String userMessage,
                                                                        StylistIntent intent,
+                                                                       StylistPreferenceProfile preferenceProfile,
                                                                        Costume selectedCostume,
                                                                        Collection<Costume> candidates,
                                                                        AvailabilitySnapshot availabilitySnapshot) {
         List<StylistCandidate> scoredCandidates = candidates.stream()
-                .map(candidate -> buildStylistCandidate(candidate, intent, selectedCostume, availabilitySnapshot))
+                .map(candidate -> buildStylistCandidate(candidate, intent, preferenceProfile, selectedCostume, availabilitySnapshot))
                 .filter(candidate -> candidate.availableItemCount() > 0)
                 .filter(candidate -> candidate.score() > 0)
                 .sorted(Comparator
@@ -258,7 +280,7 @@ public class AiStylistServiceImpl implements AiStylistService {
         }
 
         if (selectedCostume != null && looksLikeProductSpecificQuestion(userMessage)) {
-            int availableItemCount = availabilitySnapshot.availableItemCount(selectedCostume);
+            int availableItemCount = availabilitySnapshot.availableItemCount(selectedCostume, intent.requestedSizes());
             if (availableItemCount > 0) {
                 return List.of(SimilarCostumeRecommendationDTO.fromEntity(
                         selectedCostume,
@@ -274,9 +296,10 @@ public class AiStylistServiceImpl implements AiStylistService {
 
     private StylistCandidate buildStylistCandidate(Costume candidate,
                                                    StylistIntent intent,
+                                                   StylistPreferenceProfile preferenceProfile,
                                                    Costume selectedCostume,
                                                    AvailabilitySnapshot availabilitySnapshot) {
-        int availableItemCount = availabilitySnapshot.availableItemCount(candidate);
+        int availableItemCount = availabilitySnapshot.availableItemCount(candidate, intent.requestedSizes());
         CostumeMetadataDTO candidateMetadata = CostumeMetadataDTO.fromEntity(candidate.getMetadata());
         int keywordMatchCount = countKeywordMatches(candidate, intent.tokens());
 
@@ -287,6 +310,43 @@ public class AiStylistServiceImpl implements AiStylistService {
         } else if (intent.maxBudget() != null) {
             score -= 4;
         }
+
+        int historyCostumeScore = preferenceProfile.costumeScore(candidate.getId());
+        int historyStyleScore = preferenceProfile.attributeScore(
+                preferenceProfile.styles(),
+                candidateMetadata != null ? candidateMetadata.style() : null,
+                2
+        );
+        int historyOccasionScore = preferenceProfile.attributeScore(
+                preferenceProfile.occasions(),
+                candidateMetadata != null ? candidateMetadata.occasion() : null,
+                2
+        );
+        int historySeasonScore = preferenceProfile.attributeScore(
+                preferenceProfile.seasons(),
+                candidateMetadata != null ? candidateMetadata.season() : null,
+                1
+        );
+        int historyColorScore = preferenceProfile.attributeScore(
+                preferenceProfile.colors(),
+                candidateMetadata != null ? candidateMetadata.color() : null,
+                2
+        );
+        int historyCategoryScore = preferenceProfile.attributeScore(
+                preferenceProfile.categories(),
+                candidate.getCategory() != null ? candidate.getCategory().getName() : null,
+                1
+        );
+        int historyTagScore = preferenceProfile.tagScore(candidateMetadata != null ? candidateMetadata.tags() : List.of(), 1, 8);
+        int historyKeywordScore = preferenceProfile.keywordScore(candidate, 1, 8);
+        score += historyCostumeScore
+                + historyStyleScore
+                + historyOccasionScore
+                + historySeasonScore
+                + historyColorScore
+                + historyCategoryScore
+                + historyTagScore
+                + historyKeywordScore;
 
         boolean sameCategory = false;
         boolean sameStyle = false;
@@ -336,14 +396,39 @@ public class AiStylistServiceImpl implements AiStylistService {
             score += sharedTags * 2;
         }
 
+        boolean sizeMatched = !intent.requestedSizes().isEmpty();
+        if (sizeMatched) {
+            score += 4;
+        }
+
         score += Math.min(availableItemCount, 3);
 
-        String reason = buildStylistReason(candidate, selectedCostume, keywordMatchCount, inBudget, sameCategory, sameStyle, sameOccasion, sameSeason, sameColor, sharedTags);
+        String reason = buildStylistReason(
+                candidate,
+                selectedCostume,
+                intent,
+                keywordMatchCount,
+                inBudget,
+                sameCategory,
+                sameStyle,
+                sameOccasion,
+                sameSeason,
+                sameColor,
+                sharedTags,
+                historyCostumeScore,
+                historyStyleScore,
+                historyOccasionScore,
+                historyColorScore,
+                historyTagScore,
+                historyKeywordScore,
+                sizeMatched
+        );
         return new StylistCandidate(candidate, score, availableItemCount, reason);
     }
 
     private String buildStylistReason(Costume candidate,
                                       Costume selectedCostume,
+                                      StylistIntent intent,
                                       int keywordMatchCount,
                                       boolean inBudget,
                                       boolean sameCategory,
@@ -351,18 +436,43 @@ public class AiStylistServiceImpl implements AiStylistService {
                                       boolean sameOccasion,
                                       boolean sameSeason,
                                       boolean sameColor,
-                                      int sharedTags) {
+                                      int sharedTags,
+                                      int historyCostumeScore,
+                                      int historyStyleScore,
+                                      int historyOccasionScore,
+                                      int historyColorScore,
+                                      int historyTagScore,
+                                      int historyKeywordScore,
+                                      boolean sizeMatched) {
         if (selectedCostume != null && selectedCostume.getId() != null && selectedCostume.getId().equals(candidate.getId())) {
             return "Dung voi costume ban dang hoi va con san de thue";
+        }
+        if (historyCostumeScore > 0) {
+            return "Gan voi costume ban da xem hoac tuong tac gan day";
         }
         if (sameStyle && sameOccasion) {
             return "Cung style va dung dip su dung ban dang quan tam";
         }
+        if (historyStyleScore > 0 && historyOccasionScore > 0) {
+            return "Gan voi phong cach va dip su dung ban thuong tim";
+        }
+        if (historyStyleScore > 0) {
+            return "Gan voi phong cach ban thuong xem gan day";
+        }
+        if (historyOccasionScore > 0 || historyColorScore > 0) {
+            return "Phu hop voi nhu cau ban da tim hoac xem gan day";
+        }
         if (sameCategory && sharedTags > 0) {
             return "Cung nhom san pham va co tag gan voi nhu cau hien tai";
         }
+        if (sizeMatched) {
+            return "Co size " + String.join("/", intent.requestedSizes()) + " dang san de thue";
+        }
         if (keywordMatchCount > 0 && inBudget) {
             return "Hop voi tu khoa ban dua ra va nam trong tam gia";
+        }
+        if (historyTagScore > 0 || historyKeywordScore > 0) {
+            return "Lien quan den hanh vi tim kiem gan day cua ban";
         }
         if (sameStyle) {
             return "Cung style voi ngu canh ban dang xem";
@@ -384,13 +494,17 @@ public class AiStylistServiceImpl implements AiStylistService {
 
     private String buildAssistantMessage(List<SimilarCostumeRecommendationDTO> recommendations,
                                          Costume selectedCostume,
-                                         AvailabilityWindow availabilityWindow) {
+                                         AvailabilityWindow availabilityWindow,
+                                         boolean usedBehaviorProfile) {
         if (recommendations.isEmpty()) {
             return "Minh chua tim thay costume phu hop hoac con san tu noi dung hien tai. Ban hay noi ro hon ve dip su dung, style, mau sac, ngan sach, size, hoac chon mot costume cu the de minh loc hep hon.";
         }
 
         String catalogContext = selectedCostume != null
                 ? " Minh dang uu tien cac lua chon gan voi costume ban dang xem."
+                : "";
+        String behaviorContext = usedBehaviorProfile
+                ? " Minh cung uu tien cac mau gan voi hanh vi ban da xem va tim gan day."
                 : "";
         String dateContext = availabilityWindow != null
                 ? " trong khoang ngay " + formatAvailabilityWindow(availabilityWindow)
@@ -402,6 +516,7 @@ public class AiStylistServiceImpl implements AiStylistService {
 
         return "Minh da doi chieu voi catalog dang co va chi giu lai cac costume con san de thue" + dateContext + "." +
                 catalogContext +
+                behaviorContext +
                 " Goi y phu hop nhat hien tai: " + recommendationSummary +
                 ". Neu can loc tiep, ban co the bo sung ngan sach, size, mau sac hoac dip su dung.";
     }
@@ -412,6 +527,28 @@ public class AiStylistServiceImpl implements AiStylistService {
         }
 
         return "AI Stylist da san sang. Hay cho minh biet dip su dung, style, mau sac, ngan sach, size, hoac costume ban dang quan tam de minh de xuat tu catalog thuc te.";
+    }
+
+    private String buildAiStylistExplanationContext(String userMessage,
+                                                    Costume selectedCostume,
+                                                    AvailabilityWindow availabilityWindow,
+                                                    boolean usedBehaviorProfile) {
+        StringBuilder context = new StringBuilder("Gợi ý từ AI Stylist dựa trên catalog thật.");
+        if (selectedCostume != null) {
+            context.append(" Costume tham chiếu: ").append(selectedCostume.getName()).append('.');
+        }
+        if (availabilityWindow != null) {
+            context.append(" Lọc theo lịch thuê ")
+                    .append(formatAvailabilityWindow(availabilityWindow))
+                    .append('.');
+        }
+        if (usedBehaviorProfile) {
+            context.append(" Có dùng thêm lịch sử hành vi gần đây.");
+        }
+        if (userMessage != null && !userMessage.isBlank()) {
+            context.append(" Yêu cầu người dùng: ").append(limitText(userMessage, 220));
+        }
+        return context.toString();
     }
 
     private void addUserMessage(AiStylistSession session, String content) {
@@ -467,7 +604,7 @@ public class AiStylistServiceImpl implements AiStylistService {
                         availabilityWindow,
                         key -> buildAvailabilitySnapshot(activeCostumes, key)
                 );
-                int availableItemCount = availabilitySnapshot.availableItemCount(costume);
+                int availableItemCount = availabilitySnapshot.availableItemCount(costume, Set.of());
                 if (availableItemCount <= 0) {
                     continue;
                 }
@@ -530,7 +667,117 @@ public class AiStylistServiceImpl implements AiStylistService {
         return user;
     }
 
-    private StylistIntent parseIntent(String message) {
+    private List<UserInteractionEvent> loadRecentEvents(AiStylistSession session, String fallbackGuestSessionId, String authenticatedEmail) {
+        List<UserInteractionEvent> mergedEvents = new ArrayList<>();
+        Set<Long> seenEventIds = new LinkedHashSet<>();
+
+        User user = session.getUser() != null ? session.getUser() : resolveAuthenticatedUser(authenticatedEmail);
+        if (user != null && user.getId() != null) {
+            for (UserInteractionEvent event : userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(user.getId())) {
+                if (event.getId() != null && seenEventIds.add(event.getId())) {
+                    mergedEvents.add(event);
+                }
+            }
+        }
+
+        String guestSessionId = normalize(session.getGuestSessionId());
+        if (guestSessionId == null) {
+            guestSessionId = normalize(fallbackGuestSessionId);
+        }
+        if (guestSessionId != null) {
+            for (UserInteractionEvent event : userInteractionEventRepository.findTop60BySessionIdOrderByCreatedAtDesc(guestSessionId)) {
+                if (event.getId() != null && seenEventIds.add(event.getId())) {
+                    mergedEvents.add(event);
+                }
+            }
+        }
+
+        return mergedEvents.stream()
+                .sorted(Comparator.comparing(UserInteractionEvent::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(HISTORY_EVENT_LIMIT)
+                .toList();
+    }
+
+    private StylistPreferenceProfile buildPreferenceProfile(List<UserInteractionEvent> events, Map<Long, Costume> activeCostumesById) {
+        StylistPreferenceProfile profile = new StylistPreferenceProfile();
+
+        for (int index = 0; index < events.size(); index++) {
+            UserInteractionEvent event = events.get(index);
+            int eventWeight = interactionEventWeight(event.getEventType(), index);
+            if (eventWeight <= 0) {
+                continue;
+            }
+
+            Long costumeId = parseLong(event.getTargetId());
+            if (costumeId != null) {
+                Costume sourceCostume = activeCostumesById.get(costumeId);
+                if (sourceCostume != null) {
+                    profile.addCostumeInterest(costumeId, directCostumeBoost(event.getEventType(), index));
+                    profile.addCostumeMetadata(sourceCostume, eventWeight);
+                }
+            }
+
+            profile.addMetadata(parseMetadataMap(event.getMetadataJson()), eventWeight);
+            profile.addKeywords(event.getQueryText(), keywordEventBoost(event.getEventType()));
+        }
+
+        return profile;
+    }
+
+    private Map<String, Object> parseMetadataMap(String metadataJson) {
+        if (metadataJson == null || metadataJson.isBlank()) {
+            return Map.of();
+        }
+
+        try {
+            return objectMapper.readValue(metadataJson.trim(), METADATA_TYPE);
+        } catch (Exception ignored) {
+            return Map.of();
+        }
+    }
+
+    private int interactionEventWeight(InteractionEventType eventType, int eventIndex) {
+        int base = switch (eventType) {
+            case RENT -> 7;
+            case ADD_TO_CART -> 6;
+            case RECOMMENDATION_CLICK -> 5;
+            case VIEW_PRODUCT -> 3;
+            case SEARCH, CHAT_QUERY -> 2;
+            default -> 0;
+        };
+
+        if (eventIndex < 5) {
+            return base + 2;
+        }
+        if (eventIndex < 10) {
+            return base + 1;
+        }
+        return base;
+    }
+
+    private int directCostumeBoost(InteractionEventType eventType, int eventIndex) {
+        int boost = switch (eventType) {
+            case VIEW_PRODUCT, RECOMMENDATION_CLICK, ADD_TO_CART, RENT -> 8;
+            default -> 0;
+        };
+
+        if (eventIndex < 5) {
+            return boost + 2;
+        }
+        if (eventIndex < 10) {
+            return boost + 1;
+        }
+        return boost;
+    }
+
+    private int keywordEventBoost(InteractionEventType eventType) {
+        return switch (eventType) {
+            case SEARCH, CHAT_QUERY -> 2;
+            default -> 0;
+        };
+    }
+
+    private StylistIntent parseIntent(String message, Collection<Costume> candidates) {
         String normalizedMessage = normalizeText(message);
         Set<String> tokens = new LinkedHashSet<>();
         if (normalizedMessage != null) {
@@ -541,7 +788,30 @@ public class AiStylistServiceImpl implements AiStylistService {
             }
         }
 
-        return new StylistIntent(tokens, extractMaxBudget(message));
+        return new StylistIntent(tokens, extractMaxBudget(message), extractRequestedSizes(normalizedMessage, candidates));
+    }
+
+    private Set<String> extractRequestedSizes(String normalizedMessage, Collection<Costume> candidates) {
+        if (normalizedMessage == null || candidates == null || candidates.isEmpty()) {
+            return Set.of();
+        }
+
+        LinkedHashSet<String> requestedSizes = new LinkedHashSet<>();
+        Set<String> knownSizes = candidates.stream()
+                .flatMap(costume -> costume.getItems().stream())
+                .map(CostumeItem::getSize)
+                .map(this::normalizeText)
+                .filter(size -> size != null && !size.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        for (String knownSize : knownSizes) {
+            Pattern sizePattern = Pattern.compile("(?<![\\p{L}\\p{N}])" + Pattern.quote(knownSize) + "(?![\\p{L}\\p{N}])");
+            if (sizePattern.matcher(normalizedMessage).find()) {
+                requestedSizes.add(knownSize.toUpperCase(Locale.ROOT));
+            }
+        }
+
+        return requestedSizes;
     }
 
     private BigDecimal extractMaxBudget(String message) {
@@ -657,13 +927,6 @@ public class AiStylistServiceImpl implements AiStylistService {
         return normalizedLeft != null && normalizedLeft.equals(normalizedRight);
     }
 
-    private int countAvailableItems(Costume costume) {
-        return (int) costume.getItems().stream()
-                .map(CostumeItem::getStatus)
-                .filter(ItemStatus.AVAILABLE::equals)
-                .count();
-    }
-
     private AvailabilityWindow resolveAvailabilityWindow(LocalDate rentalStartDate, LocalDate rentalEndDate) {
         if (rentalStartDate == null && rentalEndDate == null) {
             return null;
@@ -768,6 +1031,14 @@ public class AiStylistServiceImpl implements AiStylistService {
         return value == null ? "" : value;
     }
 
+    private String limitText(String value, int maxLength) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        return trimmed.length() <= maxLength ? trimmed : trimmed.substring(0, maxLength);
+    }
+
     private Long parseLong(Object value) {
         if (value == null) {
             return null;
@@ -830,7 +1101,7 @@ public class AiStylistServiceImpl implements AiStylistService {
                 .compare(left, right);
     }
 
-    private record StylistIntent(Set<String> tokens, BigDecimal maxBudget) {
+    private record StylistIntent(Set<String> tokens, BigDecimal maxBudget, Set<String> requestedSizes) {
     }
 
     private record StylistCandidate(Costume costume, int score, int availableItemCount, String reason) {
@@ -847,7 +1118,7 @@ public class AiStylistServiceImpl implements AiStylistService {
     }
 
     private record AvailabilitySnapshot(AvailabilityWindow availabilityWindow, Set<Long> blockedItemIds) {
-        private int availableItemCount(Costume costume) {
+        private int availableItemCount(Costume costume, Set<String> requestedSizes) {
             if (costume == null || costume.getItems() == null) {
                 return 0;
             }
@@ -855,7 +1126,221 @@ public class AiStylistServiceImpl implements AiStylistService {
             return (int) costume.getItems().stream()
                     .filter(item -> ItemStatus.AVAILABLE.equals(item.getStatus()))
                     .filter(item -> availabilityWindow == null || item.getId() == null || !blockedItemIds.contains(item.getId()))
+                    .filter(item -> requestedSizes == null || requestedSizes.isEmpty() || matchesRequestedSize(item, requestedSizes))
                     .count();
+        }
+
+        private boolean matchesRequestedSize(CostumeItem item, Set<String> requestedSizes) {
+            String normalizedItemSize = AiStylistServiceImpl.normalizeSize(item != null ? item.getSize() : null);
+            return normalizedItemSize != null && requestedSizes.contains(normalizedItemSize);
+        }
+    }
+
+    private static String normalizeSize(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed.toUpperCase(Locale.ROOT);
+    }
+
+    private static final class StylistPreferenceProfile {
+        private final Map<String, Integer> styles = new HashMap<>();
+        private final Map<String, Integer> occasions = new HashMap<>();
+        private final Map<String, Integer> seasons = new HashMap<>();
+        private final Map<String, Integer> colors = new HashMap<>();
+        private final Map<String, Integer> categories = new HashMap<>();
+        private final Map<String, Integer> tags = new HashMap<>();
+        private final Map<String, Integer> keywords = new HashMap<>();
+        private final Map<Long, Integer> costumes = new HashMap<>();
+
+        boolean isEmpty() {
+            return styles.isEmpty()
+                    && occasions.isEmpty()
+                    && seasons.isEmpty()
+                    && colors.isEmpty()
+                    && categories.isEmpty()
+                    && tags.isEmpty()
+                    && keywords.isEmpty()
+                    && costumes.isEmpty();
+        }
+
+        Map<String, Integer> styles() {
+            return styles;
+        }
+
+        Map<String, Integer> occasions() {
+            return occasions;
+        }
+
+        Map<String, Integer> seasons() {
+            return seasons;
+        }
+
+        Map<String, Integer> colors() {
+            return colors;
+        }
+
+        Map<String, Integer> categories() {
+            return categories;
+        }
+
+        void addCostumeInterest(Long costumeId, int score) {
+            if (costumeId == null || score <= 0) {
+                return;
+            }
+
+            costumes.merge(costumeId, score, Integer::sum);
+        }
+
+        int costumeScore(Long costumeId) {
+            if (costumeId == null) {
+                return 0;
+            }
+
+            return costumes.getOrDefault(costumeId, 0);
+        }
+
+        void addCostumeMetadata(Costume costume, int weight) {
+            if (costume == null || weight <= 0) {
+                return;
+            }
+
+            CostumeMetadataDTO metadata = CostumeMetadataDTO.fromEntity(costume.getMetadata());
+            add(styles, metadata != null ? metadata.style() : null, weight);
+            add(occasions, metadata != null ? metadata.occasion() : null, weight);
+            add(seasons, metadata != null ? metadata.season() : null, weight);
+            add(colors, metadata != null ? metadata.color() : null, weight);
+            add(categories, costume.getCategory() != null ? costume.getCategory().getName() : null, weight);
+
+            if (metadata != null && metadata.tags() != null) {
+                for (String tag : metadata.tags()) {
+                    add(tags, tag, weight);
+                }
+            }
+        }
+
+        void addMetadata(Map<String, Object> metadataMap, int weight) {
+            if (metadataMap == null || metadataMap.isEmpty() || weight <= 0) {
+                return;
+            }
+
+            add(styles, readString(metadataMap.get("style")), weight);
+            add(occasions, readString(metadataMap.get("occasion")), weight);
+            add(seasons, readString(metadataMap.get("season")), weight);
+            add(colors, readString(metadataMap.get("color")), weight);
+            add(categories, readString(metadataMap.get("category")), weight);
+            addCollection(tags, metadataMap.get("tags"), weight);
+        }
+
+        void addKeywords(String queryText, int weight) {
+            String normalizedQuery = normalizeStatic(queryText);
+            if (normalizedQuery == null || weight <= 0) {
+                return;
+            }
+
+            for (String token : normalizedQuery.split("\\s+")) {
+                if (token.length() >= 3) {
+                    keywords.merge(token, weight, Integer::sum);
+                }
+            }
+        }
+
+        int attributeScore(Map<String, Integer> profileScores, String value, int multiplier) {
+            String normalizedValue = normalizeStatic(value);
+            if (normalizedValue == null) {
+                return 0;
+            }
+
+            return profileScores.getOrDefault(normalizedValue, 0) * multiplier;
+        }
+
+        int tagScore(List<String> candidateTags, int unit, int cap) {
+            if (candidateTags == null || candidateTags.isEmpty()) {
+                return 0;
+            }
+
+            int score = 0;
+            for (String tag : candidateTags) {
+                String normalizedTag = normalizeStatic(tag);
+                if (normalizedTag != null) {
+                    score += tags.getOrDefault(normalizedTag, 0) * unit;
+                }
+            }
+            return Math.min(cap, score);
+        }
+
+        int keywordScore(Costume candidate, int unit, int cap) {
+            if (keywords.isEmpty() || candidate == null) {
+                return 0;
+            }
+
+            String searchableText = normalizeStatic(
+                    String.join(" ",
+                            safe(candidate.getName()),
+                            safe(candidate.getDescription()),
+                            candidate.getCategory() != null ? safe(candidate.getCategory().getName()) : "",
+                            safe(candidate.getMetadata() != null ? candidate.getMetadata().getStyle() : null),
+                            safe(candidate.getMetadata() != null ? candidate.getMetadata().getOccasion() : null),
+                            safe(candidate.getMetadata() != null ? candidate.getMetadata().getSeason() : null),
+                            safe(candidate.getMetadata() != null ? candidate.getMetadata().getColor() : null),
+                            candidate.getMetadata() != null ? String.join(" ", candidate.getMetadata().getTags()) : ""
+                    )
+            );
+
+            if (searchableText == null) {
+                return 0;
+            }
+
+            int score = 0;
+            for (Map.Entry<String, Integer> entry : keywords.entrySet()) {
+                if (searchableText.contains(entry.getKey())) {
+                    score += entry.getValue() * unit;
+                }
+            }
+            return Math.min(cap, score);
+        }
+
+        private void add(Map<String, Integer> profileScores, String value, int weight) {
+            String normalizedValue = normalizeStatic(value);
+            if (normalizedValue == null) {
+                return;
+            }
+
+            profileScores.merge(normalizedValue, weight, Integer::sum);
+        }
+
+        private void addCollection(Map<String, Integer> profileScores, Object rawValue, int weight) {
+            if (rawValue instanceof Collection<?> collection) {
+                for (Object value : collection) {
+                    add(profileScores, value != null ? value.toString() : null, weight);
+                }
+                return;
+            }
+
+            if (rawValue instanceof String text) {
+                for (String token : text.split(",")) {
+                    add(profileScores, token, weight);
+                }
+            }
+        }
+
+        private static String readString(Object value) {
+            return value != null ? value.toString() : null;
+        }
+
+        private static String safe(String value) {
+            return value == null ? "" : value;
+        }
+
+        private static String normalizeStatic(String value) {
+            if (value == null) {
+                return null;
+            }
+
+            String trimmed = value.trim().toLowerCase(Locale.ROOT);
+            return trimmed.isEmpty() ? null : trimmed;
         }
     }
 }

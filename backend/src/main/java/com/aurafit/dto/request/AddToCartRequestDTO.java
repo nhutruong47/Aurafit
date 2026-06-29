@@ -22,5 +22,7 @@ public record AddToCartRequestDTO(
 
         @NotNull(message = "rentalEndDate is required")
         @Future(message = "rentalEndDate must be in the future")
-        LocalDate rentalEndDate
+        LocalDate rentalEndDate,
+
+        AiStylistAttributionRequest aiStylistAttribution
 ) {}
