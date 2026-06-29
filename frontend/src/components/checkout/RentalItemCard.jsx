@@ -18,13 +18,16 @@ export default function RentalItemCard({
   delay,
   showCheckbox = false,
   isChecked = false,
+  isProblematic = false,
   onToggleCheck,
   onRemoveFromCart,
   onUpdateCartQuantity,
 }) {
   return (
     <article
-      className="group relative flex flex-col items-start gap-8 md:flex-row"
+      className={`group relative flex flex-col items-start gap-8 p-4 md:flex-row transition-colors ${
+        isProblematic ? 'bg-red-50 border border-red-300' : 'bg-transparent'
+      }`}
       style={{ animation: `fadeIn 0.8s ease-out ${delay * 0.1}s both` }}
     >
       {showCheckbox && (

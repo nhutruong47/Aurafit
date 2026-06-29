@@ -38,4 +38,12 @@ public interface CostumeItemRepository extends JpaRepository<CostumeItem, Long> 
      * locate the exact CostumeItem without needing its database ID.
      */
     Optional<CostumeItem> findBySku(String sku);
+
+    /**
+     * Finds a physical item by its SKU and locks the row for update.
+     * Used during checkout to prevent double-booking race conditions.
+     */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ci FROM CostumeItem ci WHERE ci.sku = :sku")
+    Optional<CostumeItem> findBySkuForUpdate(@Param("sku") String sku);
 }

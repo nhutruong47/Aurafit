@@ -9,6 +9,7 @@ export function useHomepageRecommendations(sessionId, currentUserId) {
 
   useEffect(() => {
     let isMounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     setError('');
 

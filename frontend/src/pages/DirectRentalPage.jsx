@@ -48,7 +48,7 @@ export default function DirectRentalPage({ currentUser, onNavigate }) {
     setSubmitError('');
 
     try {
-      const orderResponse = await createOrder({
+      await createOrder({
         receiverName: deliveryInfo.receiverName,
         receiverPhone: deliveryInfo.receiverPhone,
         deliveryAddress: deliveryInfo.deliveryAddress,

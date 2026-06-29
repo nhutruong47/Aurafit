@@ -34,6 +34,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
   // Load order detail
   useEffect(() => {
     if (!pendingOrderId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrder(null);
       setPaymentInit(null);
       setPaymentStatus(null);
@@ -41,6 +42,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
     }
 
     let isMounted = true;
+     
     setIsLoadingOrder(true);
     setPaymentError('');
     setPaymentInit(null);
@@ -64,6 +66,11 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       isMounted = false;
     };
   }, [pendingOrderId]);
+
+  const clearPolling = () => {
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+  };
 
   // Start polling payment status after QR is generated
   useEffect(() => {
@@ -96,6 +103,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
     };
 
     // Countdown timer
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCountdown(PAYMENT_STATUS_POLL_MS / 1000);
     countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
@@ -114,10 +122,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
     };
   }, [paymentInit, pendingOrderId, onNavigate]);
 
-  const clearPolling = () => {
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    if (countdownRef.current) clearInterval(countdownRef.current);
-  };
+
 
   const items = useMemo(() => {
     if (order?.details?.length) {

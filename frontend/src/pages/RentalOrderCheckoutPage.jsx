@@ -23,6 +23,7 @@ export default function RentalOrderCheckoutPage({
   const [deliveryError, setDeliveryError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [problematicSku, setProblematicSku] = useState(null);
   const [selectedCartItemIds, setSelectedCartItemIds] = useState(() => {
     const ids = cartItems.map((item) => item.cartId || item.id || item.costumeItemId);
     return new Set(ids);
@@ -82,6 +83,7 @@ export default function RentalOrderCheckoutPage({
 
     setIsSubmitting(true);
     setSubmitError('');
+    setProblematicSku(null);
 
     try {
       const orderResponse = await createOrder({
@@ -106,7 +108,14 @@ export default function RentalOrderCheckoutPage({
       onCheckoutSuccess?.(orderResponse.id);
       onNavigate?.('payment');
     } catch (error) {
-      setSubmitError(error.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+      const errorMsg = error.message || '';
+      const skuMatch = errorMsg.match(/\[SKU:\s*(.*?)\]/);
+      if (skuMatch && skuMatch[1]) {
+        setSubmitError(`Sản phẩm [SKU: ${skuMatch[1]}] đã hết hàng hoặc không khả dụng. Vui lòng bỏ chọn sản phẩm này.`);
+        setProblematicSku(skuMatch[1]);
+      } else {
+        setSubmitError(errorMsg || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -232,10 +241,10 @@ export default function RentalOrderCheckoutPage({
               <>
                 {directDisplayItem && (
                   <RentalItemCard
-                    key={directDisplayItem.id}
                     item={directDisplayItem}
                     delay={1}
                     showCheckbox={false}
+                    isProblematic={problematicSku === directDisplayItem.sku}
                     onRemoveFromCart={handleRemoveFromCart}
                     onUpdateCartQuantity={onUpdateCartQuantity}
                   />
@@ -249,6 +258,7 @@ export default function RentalOrderCheckoutPage({
                         item={item}
                         delay={index + 1 + (directDisplayItem ? 1 : 0)}
                         showCheckbox
+                        isProblematic={problematicSku === item.sku}
                         isChecked={selectedCartItemIds.has(item.id)}
                         onToggleCheck={(checked) => {
                           setSelectedCartItemIds((current) => {

@@ -30,11 +30,13 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
 
   useEffect(() => {
     if (!pendingOrderId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrder(null);
       return undefined;
     }
 
     let isMounted = true;
+     
     setIsLoading(true);
     setError('');
 
