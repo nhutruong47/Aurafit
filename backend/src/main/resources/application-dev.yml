@@ -11,6 +11,10 @@ spring:
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 1
+      connection-timeout: 5000
 
   jpa:
     hibernate:
@@ -38,4 +42,7 @@ spring:
 
 # -- SePay Webhook ------------------------------------------------------------
 sepay:
-  webhook-token: "${SEPAY_WEBHOOK_TOKEN:CHANGE_ME_IN_PRODUCTION}"
+  api-key: ${SEPAY_API_KEY:}
+  webhook-secret: ${SEPAY_WEBHOOK_SECRET:}
+  va-account: ${SEPAY_VA_ACCOUNT:}
+  vietqr-base-url: ${SEPAY_VIETQR_BASE_URL:}

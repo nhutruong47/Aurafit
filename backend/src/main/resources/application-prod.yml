@@ -37,3 +37,10 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
+
+# -- SePay ---------------------------------------------------------------------
+sepay:
+  api-key: ${SEPAY_API_KEY:}
+  webhook-secret: ${SEPAY_WEBHOOK_SECRET:}
+  va-account: ${SEPAY_VA_ACCOUNT:}
+  vietqr-base-url: ${SEPAY_VIETQR_BASE_URL:}

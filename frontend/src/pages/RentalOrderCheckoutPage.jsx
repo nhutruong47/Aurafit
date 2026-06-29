@@ -7,6 +7,7 @@ import { useCheckoutStore } from '../store/useCheckoutStore';
 import { clearAiStylistCartAttribution, logUserInteraction } from '../services/interactionsService';
 import { createOrder } from '../services/rentalOrderService';
 import { useDirectOrderStore } from '../store/useDirectOrderStore';
+import { useCheckoutStore } from '../store/useCheckoutStore';
 import { formatCurrency } from '../utils/formatCurrency';
 
 const buildAiStylistAttributionSummary = (rentalItems = []) => {
