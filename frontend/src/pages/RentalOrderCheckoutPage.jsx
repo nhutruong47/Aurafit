@@ -7,6 +7,7 @@ import { clearAiStylistCartAttribution, toAiStylistAttributionRequest } from '..
 import { createOrder } from '../services/rentalOrderService';
 import { useDirectOrderStore } from '../store/useDirectOrderStore';
 import { formatCurrency } from '../utils/formatCurrency';
+import { useCheckoutStore } from '@/store/useCheckoutStore';
 
 export default function RentalOrderCheckoutPage({
   cartItems = [],
