@@ -175,6 +175,10 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
       onNavigate?.('account');
       return;
     }
+    if (!selectedItem && product.items?.length > 0) {
+      alert('Vui lòng chọn kích thước/loại trước khi thêm vào giỏ.');
+      return;
+    }
     onAddToCart?.(toCartItem(product, selectedItem));
   };
 

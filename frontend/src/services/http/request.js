@@ -28,6 +28,6 @@ export const requestJson = async (config, fallbackMessage = 'Không thể kết 
       throw error;
     }
 
-    throw new Error(getErrorMessage(error, fallbackMessage));
+    throw new Error(getErrorMessage(error, fallbackMessage), { cause: error });
   }
 };

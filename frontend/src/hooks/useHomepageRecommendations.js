@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
-import { fetchHomepageRecommendations } from '../services/costumeService';
+import { fetchRecommendedCostumes } from '../services/costumeService';
 import { mapCostumeToProduct } from '../utils/productMapper';
-
-const HOMEPAGE_LIMIT = 6;
 
 export function useHomepageRecommendations(sessionId, currentUserId) {
   const [recommendations, setRecommendations] = useState([]);
@@ -14,18 +12,18 @@ export function useHomepageRecommendations(sessionId, currentUserId) {
     setIsLoading(true);
     setError('');
 
-    fetchHomepageRecommendations(sessionId, HOMEPAGE_LIMIT)
+    // Update to hit the new backend API: /api/costumes/recommendations?userId={id}
+    fetchRecommendedCostumes(currentUserId)
       .then((items) => {
         if (!isMounted) return;
 
         const normalizedItems = Array.isArray(items)
           ? items
-              .filter((item) => item?.costume?.id)
+              .filter((item) => item?.id)
               .map((item) => ({
-                ...item,
                 product: mapCostumeToProduct({
-                  ...item.costume,
-                  available: item.availableItemCount > 0,
+                  ...item,
+                  available: true,
                 }),
               }))
           : [];

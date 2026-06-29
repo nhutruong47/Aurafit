@@ -70,6 +70,15 @@ export const createOrder = async (orderData) =>
     'Không thể tạo đơn hàng.'
   );
 
+export const cancelOrder = async (orderId) =>
+  requestJson(
+    {
+      url: `/orders/${encodeURIComponent(orderId)}/cancel`,
+      method: 'PUT',
+    },
+    'Không thể hủy đơn hàng.'
+  );
+
 export const fetchOrderDetail = async (orderId) =>
   requestJson(
     { url: `/orders/${encodeURIComponent(orderId)}`, method: 'GET' },

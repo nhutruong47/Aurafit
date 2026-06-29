@@ -22,6 +22,6 @@ export const uploadImage = async (file) => {
 
     return unwrapApiResponse(response.data);
   } catch (error) {
-    throw new Error(getErrorMessage(error, 'Không thể tải ảnh lên backend.'));
+    throw new Error(getErrorMessage(error, 'Không thể tải ảnh lên backend.'), { cause: error });
   }
 };
