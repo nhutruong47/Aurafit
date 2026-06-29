@@ -7,6 +7,7 @@ import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 import { clearAiStylistCartAttribution, logUserInteraction } from '../services/interactionsService';
 import { createOrder } from '../services/rentalOrderService';
 import { useDirectOrderStore } from '../store/useDirectOrderStore';
+import { useCheckoutStore } from '../store/useCheckoutStore';
 import { formatCurrency } from '../utils/formatCurrency';
 
 const buildAiStylistAttributionSummary = (rentalItems = []) => {
@@ -44,6 +45,7 @@ export default function RentalOrderCheckoutPage({
   onNavigate,
 }) {
   const { directItem, clearDirectItem } = useDirectOrderStore();
+  const { setPendingOrderId } = useCheckoutStore();
   const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
   const [deliveryError, setDeliveryError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,22 +129,22 @@ export default function RentalOrderCheckoutPage({
         deliveryAddress: deliveryInfo.deliveryAddress,
         items: orderItems,
       });
-      const aiStylistAttribution = buildAiStylistAttributionSummary(rentalItems);
+      const aiStylistAttribution = buildAiStylistAttributionSummary(itemsToOrder);
 
       logUserInteraction({
         eventType: 'RENT',
         targetType: 'ORDER',
         targetId: orderResponse.id,
         metadata: {
-          itemCount: items.length,
-          costumeIds: rentalItems.map((item) => item.costumeItemId || item.id),
+          itemCount: itemsToOrder.length,
+          costumeIds: itemsToOrder.map((item) => item.costumeItemId || item.id),
           aiStylistAttribution,
         },
       }).catch(() => {});
 
       clearDirectItem();
 
-      rentalItems.forEach((item) => {
+      itemsToOrder.forEach((item) => {
         clearAiStylistCartAttribution(item);
       });
 
