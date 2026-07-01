@@ -1,6 +1,8 @@
 // The san pham dung trong danh sach catalog.
+import { useCallback, useEffect, useState } from 'react';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
+import { fetchCostumeItems } from '../../services/costumeService';
 
 const extractCategoryName = (value) => {
   if (!value) return '';
@@ -9,15 +11,101 @@ const extractCategoryName = (value) => {
   return '';
 };
 
-export default function CatalogProductCard({ costume, onNavigate, onAddToCart }) {
+export default function CatalogProductCard({ costume, onNavigate, onAddToCart, onRentNow }) {
+  const today = new Date().toISOString().split('T')[0];
+
+  const [items, setItems] = useState(() => costume.items || []);
+  const [selectedItem, setSelectedItem] = useState(() => costume.items?.[0] || null);
+  const [showDates, setShowDates] = useState(false);
+  const [rentalStartDate, setRentalStartDate] = useState(today);
+  const [rentalEndDate, setRentalEndDate] = useState('');
+  const [dateError, setDateError] = useState('');
+
   const categoryLabel = extractCategoryName(costume.category);
   const subcategoryLabel = extractCategoryName(costume.subcategory);
+  const available = costume.available;
+
+  // Neu items chua duoc load tu API, fetch ngay
+  useEffect(() => {
+    if ((!costume.items || costume.items.length === 0) && costume.id) {
+      fetchCostumeItems(costume.id)
+        .then((fetched) => {
+          if (fetched && fetched.length > 0) {
+            setItems(fetched);
+            setSelectedItem((prev) => prev || fetched[0]);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [costume.id, costume.items]);
+
+  const handleStartDateChange = (e) => {
+    const val = e.target.value;
+    setRentalStartDate(val);
+    setDateError('');
+    if (rentalEndDate && val >= rentalEndDate) setRentalEndDate('');
+  };
+
+  const handleEndDateChange = (e) => {
+    const val = e.target.value;
+    if (rentalStartDate && val <= rentalStartDate) {
+      setDateError('Ngày trả phải sau ngày nhận.');
+      return;
+    }
+    setRentalEndDate(val);
+    setDateError('');
+  };
+
+  const buildCartItem = useCallback(() => {
+    if (selectedItem) {
+      return {
+        ...toCartItem(costume, selectedItem),
+        rentalStartDate,
+        rentalEndDate,
+      };
+    }
+    return {
+      id: costume.id,
+      costumeId: costume.id,
+      costumeItemId: null,
+      name: costume.name,
+      meta: costume.tag || '',
+      rawCategory: categoryLabel,
+      category: categoryLabel,
+      subcategory: subcategoryLabel,
+      tag: costume.tag,
+      price: costume.price,
+      priceValue: costume.priceValue,
+      deposit: costume.deposit,
+      depositValue: costume.depositValue,
+      image: costume.image,
+      sku: null,
+      size: null,
+      color: null,
+      rentalStartDate,
+      rentalEndDate,
+    };
+  }, [costume, selectedItem, categoryLabel, subcategoryLabel, rentalStartDate, rentalEndDate]);
+
+  const handleAddToCart = useCallback(() => {
+    onAddToCart?.(buildCartItem());
+  }, [buildCartItem, onAddToCart]);
+
+  const canRentNow = available && rentalStartDate && rentalEndDate && !dateError;
+
+  const handleRentNow = useCallback(() => {
+    if (!canRentNow) { setShowDates(true); return; }
+    onRentNow?.(buildCartItem());
+  }, [canRentNow, buildCartItem, onRentNow]);
+
   return (
     <article
-      onClick={() => onNavigate?.('productDetail', costume)}
       className="group relative cursor-pointer overflow-hidden border border-[#cfc4c5] bg-white transition-all duration-500 hover:border-[#99854e]/50"
     >
-      <div className="relative h-64 overflow-hidden">
+      <div
+        onClick={() => onNavigate?.('productDetail', costume)}
+        className="relative h-64 overflow-hidden"
+      >
         <img
           src={costume.image}
           alt={costume.name}
@@ -42,12 +130,12 @@ export default function CatalogProductCard({ costume, onNavigate, onAddToCart })
         <div className="absolute top-3 right-3">
           <span
             className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md ${
-              costume.available
+              available
                 ? 'border-green-500/30 bg-green-500/20 text-green-100'
                 : 'border-red-500/30 bg-red-500/20 text-red-100'
             }`}
           >
-            {costume.available ? 'Còn hàng' : 'Hết hàng'}
+            {available ? 'Còn hàng' : 'Hết hàng'}
           </span>
         </div>
 
@@ -64,7 +152,7 @@ export default function CatalogProductCard({ costume, onNavigate, onAddToCart })
         </h3>
         <p className="mb-4 line-clamp-1 text-[11px] text-[#777777]">{subcategoryLabel} • {costume.tag}</p>
 
-        <div className="mb-5 grid grid-cols-2 gap-4">
+        <div className="mb-4 grid grid-cols-2 gap-4">
           <div>
             <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#999999]">Giá thuê</span>
             <span className="font-serif text-xl text-black">{formatCurrency(costume.priceValue)}</span>
@@ -75,20 +163,65 @@ export default function CatalogProductCard({ costume, onNavigate, onAddToCart })
           </div>
         </div>
 
+        {/* Date picker toggle */}
         <button
-          disabled={!costume.available}
-          onClick={(event) => {
-            event.stopPropagation();
-            onAddToCart?.(toCartItem(costume));
-          }}
-          className={`w-full px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition-all duration-300 active:scale-95 ${
-            costume.available
-              ? 'bg-black text-white hover:bg-[#99854e]'
-              : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
-          }`}
+          onClick={() => setShowDates((v) => !v)}
+          className="mb-3 flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[#99854e] hover:underline"
         >
-          Thuê ngay
+          <span>{showDates ? '▼ Ẩn ngày thuê' : '▶  Chọn ngày thuê'}</span>
         </button>
+
+        {showDates && (
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-[9px] uppercase tracking-wide text-[#999]">Ngày nhận</label>
+              <input
+                type="date"
+                value={rentalStartDate}
+                min={today}
+                onChange={handleStartDateChange}
+                className="w-full border border-[#cfc4c5] bg-white px-2 py-1.5 text-[11px] focus:border-black focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[9px] uppercase tracking-wide text-[#999]">Ngày trả</label>
+              <input
+                type="date"
+                value={rentalEndDate}
+                min={rentalStartDate ? new Date(new Date(rentalStartDate).getTime() + 86400000).toISOString().split('T')[0] : today}
+                onChange={handleEndDateChange}
+                className="w-full border border-[#cfc4c5] bg-white px-2 py-1.5 text-[11px] focus:border-black focus:outline-none"
+              />
+            </div>
+            {dateError && <p className="col-span-2 text-[10px] text-red-500">{dateError}</p>}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-2">
+          <button
+            disabled={!available}
+            onClick={handleAddToCart}
+            className={`w-full px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition-all duration-300 active:scale-95 ${
+              available
+                ? 'border border-black text-black hover:bg-black hover:text-white'
+                : 'cursor-not-allowed border border-[#eeeeee] bg-[#eeeeee] text-[#999999]'
+            }`}
+          >
+            Thêm vào giỏ hàng
+          </button>
+          <button
+            disabled={!available}
+            onClick={handleRentNow}
+            className={`w-full px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition-all duration-300 active:scale-95 ${
+              available
+                ? 'bg-[#99854e] text-white hover:bg-black'
+                : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
+            }`}
+          >
+            Thuê ngay
+          </button>
+        </div>
       </div>
     </article>
   );

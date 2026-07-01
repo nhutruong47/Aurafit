@@ -9,7 +9,7 @@ import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 import { useCatalogFilters } from '../hooks/useCatalogFilters';
 import { logUserInteraction } from '../services/interactionsService';
 
-export default function CatalogPage({ onNavigate, onAddToCart }) {
+export default function CatalogPage({ onNavigate, onAddToCart, onRentNow }) {
   const searchInputRef = useRef(null);
   const [searchParams] = useSearchParams();
   const { costumes, isLoading, error } = useCatalogCostumes();
@@ -114,6 +114,7 @@ export default function CatalogPage({ onNavigate, onAddToCart }) {
                   costume={costume}
                   onNavigate={onNavigate}
                   onAddToCart={onAddToCart}
+                  onRentNow={onRentNow}
                 />
               ))}
             </div>
