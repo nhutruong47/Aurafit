@@ -113,8 +113,8 @@ public class OrderServiceImpl implements OrderService {
         // ── Step 4: Process each item in the request list ─────────────────────
         for (CheckoutItemRequest item : items) {
 
-            // ── 4a. Locate physical CostumeItem by SKU ──────────────────────────
-            CostumeItem costumeItem = costumeItemRepository.findBySku(item.sku())
+            // ── 4a. Locate physical CostumeItem by SKU and lock it ───────────────
+            CostumeItem costumeItem = costumeItemRepository.findBySkuForUpdate(item.sku())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "CostumeItem", "sku", item.sku()
                     ));

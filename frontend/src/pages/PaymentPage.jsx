@@ -18,7 +18,7 @@ const statusLabels = {
 };
 
 export default function PaymentPage({ cartItems = [], onNavigate }) {
-  const { pendingOrderId } = useCheckoutStore();
+  const { pendingOrderId, hydratePendingOrderId } = useCheckoutStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const [order, setOrder] = useState(null);
@@ -27,9 +27,16 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [countdown, setCountdown] = useState(PAYMENT_STATUS_POLL_MS / 1000);
+  const [isInitialized, setIsInitialized] = useState(false);
   const pollIntervalRef = useRef(null);
   const countdownRef = useRef(null);
   const isMountedRef = useRef(true);
+
+  // Hydrate pendingOrderId from localStorage on mount
+  useEffect(() => {
+    hydratePendingOrderId();
+    setIsInitialized(true);
+  }, [hydratePendingOrderId]);
 
   // Load order detail
   useEffect(() => {
@@ -37,10 +44,12 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       setOrder(null);
       setPaymentInit(null);
       setPaymentStatus(null);
+      setIsLoadingOrder(false);
       return undefined;
     }
 
     let isMounted = true;
+
     setIsLoadingOrder(true);
     setPaymentError('');
     setPaymentInit(null);
@@ -64,6 +73,11 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       isMounted = false;
     };
   }, [pendingOrderId]);
+
+  const clearPolling = () => {
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+  };
 
   // Start polling payment status after QR is generated
   useEffect(() => {
@@ -114,11 +128,6 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
     };
   }, [paymentInit, pendingOrderId, onNavigate]);
 
-  const clearPolling = () => {
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    if (countdownRef.current) clearInterval(countdownRef.current);
-  };
-
   const items = useMemo(() => {
     if (order?.details?.length) {
       return order.details.map((detail) => ({
@@ -168,31 +177,85 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
   const isPaid = paymentStatus === 'PAID' || paymentStatus === 'CONFIRMED';
   const statusLabel = statusLabels[paymentStatus] || statusLabels[paymentStatus] || paymentStatus;
 
+  // Show redirect prompt if no pendingOrderId after hydration
+  if (isInitialized && !pendingOrderId) {
+    return (
+      <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
+        <PaymentHeader onNavigate={onNavigate} />
+        <main className="mx-auto max-w-[1440px] px-5 pb-28 pt-16 md:px-20 md:pb-40">
+          <div className="mx-auto max-w-xl py-20 text-center">
+            <span className="material-symbols-outlined text-6xl text-[#ccc]">receipt_long</span>
+            <h1 className="mt-6 font-serif text-3xl italic">Không tìm thấy đơn hàng</h1>
+            <p className="mt-4 text-sm text-[#5f5e5e]">
+              Vui lòng quay lại bước checkout để tạo đơn thuê trước khi thanh toán.
+            </p>
+            <button
+              onClick={() => onNavigate?.('checkout')}
+              className="mt-8 bg-black px-8 py-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+            >
+              Quay lại giỏ hàng
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
       <PaymentHeader onNavigate={onNavigate} />
 
-      <main className="mx-auto flex max-w-[1440px] flex-col gap-16 px-5 py-16 md:px-20 lg:flex-row lg:gap-20">
-        <PaymentFormSections
-          order={order}
-          paymentInit={paymentInit}
-          isPaid={isPaid}
-          paymentStatus={paymentStatus}
-          statusLabel={statusLabel}
-          isCheckingStatus={isCheckingStatus}
-          countdown={countdown}
-        />
-        <PaymentSummary
-          items={items}
-          summary={summary}
-          isLoading={isLoadingOrder}
-          paymentError={paymentError}
-          paymentInit={paymentInit}
-          isSubmitting={isSubmitting}
-          isPaid={isPaid}
-          onCompletePayment={handleCompletePayment}
-          onViewOrders={() => onNavigate?.('orders')}
-        />
+      <main className="mx-auto max-w-[1440px] px-5 pb-28 pt-16 md:px-20 md:pb-40">
+        <header className="mb-16 animate-[fadeIn_0.8s_ease-out_forwards]">
+          <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#99854e]">
+            Thanh toán đơn thuê
+          </p>
+          <h1 className="font-serif text-[40px] font-normal italic leading-tight md:text-[64px]">
+            Mã ARF{String(order?.id || pendingOrderId || '----').padStart(4, '0')}
+          </h1>
+        </header>
+
+        {paymentError && !isLoadingOrder && (
+          <div className="mb-8 border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
+            {paymentError}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-16 lg:grid-cols-12 lg:gap-20">
+          <section className="space-y-16 lg:col-span-8">
+            {isLoadingOrder ? (
+              <div className="space-y-8">
+                <div className="h-48 animate-pulse rounded border border-[#e8e2e3] bg-white" />
+                <div className="h-48 animate-pulse rounded border border-[#e8e2e3] bg-white" />
+                <div className="h-48 animate-pulse rounded border border-[#e8e2e3] bg-white" />
+              </div>
+            ) : (
+              <PaymentFormSections
+                order={order}
+                paymentInit={paymentInit}
+                isPaid={isPaid}
+                paymentStatus={paymentStatus}
+                statusLabel={statusLabel}
+                isCheckingStatus={isCheckingStatus}
+                countdown={countdown}
+              />
+            )}
+          </section>
+
+          <aside className="lg:col-span-4">
+            <PaymentSummary
+              items={items}
+              summary={summary}
+              isLoading={isLoadingOrder}
+              paymentError={paymentError && !isLoadingOrder ? paymentError : ''}
+              paymentInit={paymentInit}
+              isSubmitting={isSubmitting}
+              isPaid={isPaid}
+              onCompletePayment={handleCompletePayment}
+              onViewOrders={() => onNavigate?.('orders')}
+            />
+          </aside>
+        </div>
       </main>
     </div>
   );

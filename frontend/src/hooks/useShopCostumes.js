@@ -27,6 +27,7 @@ export function useShopCostumes(currentUserId) {
     let isMounted = true;
     const controller = new AbortController();
     const requestKey = currentUserId || '__guest__';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     setError('');
 

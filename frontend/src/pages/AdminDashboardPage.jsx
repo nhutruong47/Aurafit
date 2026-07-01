@@ -97,6 +97,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
   useEffect(() => {
     if (!canManageProducts) return;
     if (!tabs.some(([id]) => id === activeTab)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(tabs[0]?.[0] || 'products');
     }
   }, [activeTab, canManageProducts, tabs]);

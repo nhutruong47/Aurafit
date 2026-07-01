@@ -5,21 +5,27 @@ import { mapCostumeToProduct } from '../utils/productMapper';
 const SIMILAR_LIMIT = 4;
 
 export function useSimilarProducts(costumeId) {
-  const [recommendations, setRecommendations] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [state, setState] = useState({
+    recommendations: [],
+    isLoading: !!costumeId,
+    error: '',
+    prevCostumeId: costumeId,
+  });
+
+  // Derived state to avoid setting state synchronously in useEffect
+  if (costumeId !== state.prevCostumeId) {
+    setState({
+      recommendations: [],
+      isLoading: !!costumeId,
+      error: '',
+      prevCostumeId: costumeId,
+    });
+  }
 
   useEffect(() => {
-    if (!costumeId) {
-      setRecommendations([]);
-      setIsLoading(false);
-      setError('');
-      return undefined;
-    }
+    if (!costumeId) return undefined;
 
     let isMounted = true;
-    setIsLoading(true);
-    setError('');
 
     fetchSimilarCostumes(costumeId, SIMILAR_LIMIT)
       .then((items) => {
@@ -37,18 +43,21 @@ export function useSimilarProducts(costumeId) {
               }))
           : [];
 
-        setRecommendations(normalizedItems);
-        setError('');
+        setState((prev) => ({
+          ...prev,
+          recommendations: normalizedItems,
+          isLoading: false,
+          error: '',
+        }));
       })
       .catch((requestError) => {
         if (!isMounted) return;
-        setRecommendations([]);
-        setError(requestError.message || 'Không thể tải sản phẩm tương tự.');
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setState((prev) => ({
+          ...prev,
+          recommendations: [],
+          isLoading: false,
+          error: requestError.message || 'Không thể tải sản phẩm tương tự.',
+        }));
       });
 
     return () => {
@@ -57,8 +66,8 @@ export function useSimilarProducts(costumeId) {
   }, [costumeId]);
 
   return {
-    recommendations,
-    isLoading,
-    error,
+    recommendations: state.recommendations,
+    isLoading: state.isLoading,
+    error: state.error,
   };
 }

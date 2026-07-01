@@ -19,12 +19,12 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
   const sliderRef = useRef(null);
   const homepageImpressionKeyRef = useRef('');
   const { costumes, isLoading } = useCatalogCostumes();
-  const interactionSessionIdRef = useRef(getInteractionSessionId());
+  const [interactionSessionId] = useState(() => getInteractionSessionId());
   const {
     recommendations: homepageRecommendations,
     isLoading: isHomepageRecommendationsLoading,
     error: homepageRecommendationsError,
-  } = useHomepageRecommendations(interactionSessionIdRef.current, currentUser?.id);
+  } = useHomepageRecommendations(interactionSessionId, currentUser?.id);
 
   const products = useMemo(
     () => ({

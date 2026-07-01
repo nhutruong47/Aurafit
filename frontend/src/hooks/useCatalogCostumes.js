@@ -17,6 +17,7 @@ export function useCatalogCostumes(categoryKey) {
     const requestKey = categoryKey || '__all__';
     const resolvedCategoryName = categoryKey ? categoryApiNames[categoryKey] || categoryKey : null;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((currentState) => ({
       ...currentState,
       isLoading: true,
