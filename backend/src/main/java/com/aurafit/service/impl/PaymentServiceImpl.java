@@ -28,8 +28,8 @@ import java.util.regex.Pattern;
 public class PaymentServiceImpl implements PaymentService {
 
     private static final Pattern ORDER_ID_PATTERN = Pattern.compile("ARF(\\d+)");
-    private static final String BANK_CODE         = "970422";
-    private static final String VIETQR_TEMPLATE    = "compact2";
+    private static final String VIETQR_BANK       = "MBBank";
+    private static final String VIETQR_TEMPLATE    = "compact";
 
     private final PaymentRepository paymentRepository;
     private final RentalOrderRepository rentalOrderRepository;
@@ -148,11 +148,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     private String buildSepayVietQrUrl(String paymentContent, BigDecimal amount) {
         StringBuilder url = new StringBuilder(sepayVietQrBaseUrl);
-        url.append("?bankCode=").append(BANK_CODE);
-        url.append("&accountNo=").append(sepayVaAccount);
-        url.append("&template=").append(VIETQR_TEMPLATE);
+        url.append("?acc=").append(sepayVaAccount);
+        url.append("&bank=").append(VIETQR_BANK);
         url.append("&amount=").append(amount.toPlainString());
-        url.append("&description=").append(java.net.URLEncoder.encode(paymentContent, java.nio.charset.StandardCharsets.UTF_8));
+        url.append("&des=").append(java.net.URLEncoder.encode(paymentContent, java.nio.charset.StandardCharsets.UTF_8));
+        url.append("&template=").append(VIETQR_TEMPLATE);
         return url.toString();
     }
 
