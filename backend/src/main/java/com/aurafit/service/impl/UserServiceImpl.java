@@ -2,10 +2,13 @@ package com.aurafit.service.impl;
 
 import com.aurafit.dto.request.AuthRequest;
 import com.aurafit.dto.request.RegisterRequest;
+import com.aurafit.dto.request.StaffCreateRequest;
 import com.aurafit.dto.response.AuthResponseDTO;
+import com.aurafit.dto.response.StaffAccountResponseDTO;
 import com.aurafit.dto.response.UserResponseDTO;
 import com.aurafit.entity.User;
 import com.aurafit.enums.Role;
+import com.aurafit.enums.UserStatus;
 import com.aurafit.exception.BadRequestException;
 import com.aurafit.exception.ConflictException;
 import com.aurafit.exception.ResourceNotFoundException;
@@ -116,6 +119,30 @@ public class UserServiceImpl implements UserService {
 
         user.setRole(role);
         return toUserResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public StaffAccountResponseDTO createStaffAccount(StaffCreateRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new ConflictException("Email nay da duoc su dung.");
+        }
+
+        String temporaryPassword = request.temporaryPassword();
+        if (temporaryPassword == null || temporaryPassword.isBlank()) {
+            temporaryPassword = "Staff@12345";
+        }
+
+        User staff = new User();
+        staff.setFullName(request.fullName());
+        staff.setEmail(request.email());
+        staff.setPhone(request.phone());
+        staff.setPasswordHash(passwordEncoder.encode(temporaryPassword));
+        staff.setRole(Role.STAFF);
+        staff.setStatus(request.status() == null ? UserStatus.ACTIVE : request.status());
+        staff.setEmailVerified(true);
+
+        return StaffAccountResponseDTO.fromEntity(userRepository.save(staff));
     }
 
     // -------------------------------------------------------------------------

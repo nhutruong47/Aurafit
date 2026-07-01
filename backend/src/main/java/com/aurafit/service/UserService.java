@@ -2,7 +2,9 @@ package com.aurafit.service;
 
 import com.aurafit.dto.request.AuthRequest;
 import com.aurafit.dto.request.RegisterRequest;
+import com.aurafit.dto.request.StaffCreateRequest;
 import com.aurafit.dto.response.AuthResponseDTO;
+import com.aurafit.dto.response.StaffAccountResponseDTO;
 import com.aurafit.dto.response.UserResponseDTO;
 import com.aurafit.enums.Role;
 
@@ -21,4 +23,7 @@ public interface UserService {
     List<UserResponseDTO> getAllUsers();
 
     UserResponseDTO updateUserRole(Long userId, Role role);
+
+    StaffAccountResponseDTO createStaffAccount(StaffCreateRequest request);
+
 }

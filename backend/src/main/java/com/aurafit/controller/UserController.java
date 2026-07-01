@@ -1,16 +1,20 @@
 package com.aurafit.controller;
 
+import com.aurafit.dto.request.StaffCreateRequest;
 import com.aurafit.dto.request.UserRoleUpdateRequest;
 import com.aurafit.dto.response.ApiResponse;
+import com.aurafit.dto.response.StaffAccountResponseDTO;
 import com.aurafit.dto.response.UserResponseDTO;
 import com.aurafit.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -51,5 +55,15 @@ public class UserController {
             @Valid @RequestBody UserRoleUpdateRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success("User role updated successfully.", userService.updateUserRole(userId, request.role())));
+    }
+
+    @PostMapping("/staff")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<StaffAccountResponseDTO>> createStaffAccount(
+            @Valid @RequestBody StaffCreateRequest request
+    ) {
+        StaffAccountResponseDTO createdStaff = userService.createStaffAccount(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Tạo tài khoản staff thành công.", createdStaff));
     }
 }

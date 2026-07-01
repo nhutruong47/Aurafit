@@ -67,9 +67,11 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     message: userMessage,
     error: userError,
     isLoading: isUserLoading,
+    isCreatingStaff,
     updatingUserId,
     setUserSearch,
     setSellerPermission,
+    createStaff,
   } = useAdminUsers(currentUser);
 
   const {
@@ -235,9 +237,11 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               message={userMessage}
               error={userError}
               isLoading={isUserLoading}
+              isCreatingStaff={isCreatingStaff}
               updatingUserId={updatingUserId}
               onUserSearchChange={setUserSearch}
               onSellerPermissionChange={setSellerPermission}
+              onCreateStaff={createStaff}
             />
           )}
           {activeTab === 'categories' && isAdmin && (
