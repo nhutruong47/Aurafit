@@ -31,6 +31,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -61,8 +62,8 @@ class RecommendationServiceImplTest {
                 new ObjectMapper(),
                 aiExplanationService
         );
-        when(aiExplanationService.enhanceRecommendationReasons(anyString(), anyString(), anyList()))
-                .thenAnswer(invocation -> invocation.getArgument(2));
+        when(aiExplanationService.enhanceRecommendationReasons(anyString(), anyString(), anyString(), any(), any(), anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(5));
     }
 
     @Test

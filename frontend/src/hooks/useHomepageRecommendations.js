@@ -1,6 +1,33 @@
 import { useEffect, useState } from 'react';
-import { fetchRecommendedCostumes } from '../services/costumeService';
+import { fetchHomepageRecommendations, fetchRecommendedCostumes } from '../services/costumeService';
 import { mapCostumeToProduct } from '../utils/productMapper';
+
+const HOMEPAGE_LIMIT = 6;
+
+const normalizePersonalizedItems = (items) =>
+  Array.isArray(items)
+    ? items
+        .filter((item) => item?.costume?.id)
+        .map((item) => ({
+          ...item,
+          product: mapCostumeToProduct({
+            ...item.costume,
+            available: item.availableItemCount > 0,
+          }),
+        }))
+    : [];
+
+const normalizeFallbackItems = (items) =>
+  Array.isArray(items)
+    ? items
+        .filter((item) => item?.id)
+        .map((item) => ({
+          product: mapCostumeToProduct({
+            ...item,
+            available: true,
+          }),
+        }))
+    : [];
 
 export function useHomepageRecommendations(sessionId, currentUserId) {
   const [recommendations, setRecommendations] = useState([]);
@@ -9,37 +36,62 @@ export function useHomepageRecommendations(sessionId, currentUserId) {
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
-    setError('');
 
-    // Update to hit the new backend API: /api/costumes/recommendations?userId={id}
-    fetchRecommendedCostumes(currentUserId)
-      .then((items) => {
+    const loadRecommendations = async () => {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const personalizedItems = await fetchHomepageRecommendations({
+          sessionId,
+          limit: HOMEPAGE_LIMIT,
+        });
+
         if (!isMounted) return;
 
-        const normalizedItems = Array.isArray(items)
-          ? items
-              .filter((item) => item?.id)
-              .map((item) => ({
-                product: mapCostumeToProduct({
-                  ...item,
-                  available: true,
-                }),
-              }))
-          : [];
+        const normalizedPersonalizedItems = normalizePersonalizedItems(personalizedItems);
 
-        setRecommendations(normalizedItems);
-      })
-      .catch((requestError) => {
-        if (!isMounted) return;
-        setRecommendations([]);
-        setError(requestError.message || 'Không thể tải gợi ý trang chủ.');
-      })
-      .finally(() => {
+        if (normalizedPersonalizedItems.length > 0) {
+          setRecommendations(normalizedPersonalizedItems);
+          setError('');
+          return;
+        }
+
+        try {
+          const fallbackItems = await fetchRecommendedCostumes(currentUserId);
+          if (!isMounted) return;
+
+          setRecommendations(normalizeFallbackItems(fallbackItems));
+          setError('');
+        } catch {
+          if (!isMounted) return;
+
+          setRecommendations([]);
+          setError('');
+        }
+      } catch (personalizedError) {
+        try {
+          const fallbackItems = await fetchRecommendedCostumes(currentUserId);
+          if (!isMounted) return;
+
+          setRecommendations(normalizeFallbackItems(fallbackItems));
+          setError('');
+        } catch (fallbackError) {
+          if (!isMounted) return;
+
+          setRecommendations([]);
+          setError(
+            fallbackError.message || personalizedError.message || 'Không thể tải gợi ý trang chủ.'
+          );
+        }
+      } finally {
         if (isMounted) {
           setIsLoading(false);
         }
-      });
+      }
+    };
+
+    loadRecommendations();
 
     return () => {
       isMounted = false;

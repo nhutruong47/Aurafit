@@ -28,7 +28,10 @@ import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.RentalOrderDetailRepository;
 import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.AiChatContext;
+import com.aurafit.service.AiChatContextBuilder;
 import com.aurafit.service.AiExplanationService;
+import com.aurafit.service.AiIntentUnderstandingService;
 import com.aurafit.service.AiStylistService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -62,12 +66,84 @@ public class AiStylistServiceImpl implements AiStylistService {
     private static final int RESPONSE_LIMIT = 3;
     private static final int HISTORY_EVENT_LIMIT = 60;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
-    private static final TypeReference<List<Map<String, Object>>> RECOMMENDATION_SUMMARY_TYPE = new TypeReference<>() {
-    };
     private static final TypeReference<Map<String, Object>> METADATA_TYPE = new TypeReference<>() {
     };
     private static final Pattern BUDGET_PATTERN = Pattern.compile("(\\d+[\\d.,]*)\\s*(tr|trieu|k|nghin|ngan|vnd|d)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern NORMALIZE_TEXT_PATTERN = Pattern.compile("[^\\p{L}\\p{N}\\s]");
+    private static final Pattern VIETNAMESE_ACCENT_PATTERN = Pattern.compile("[àáảãạăắằẳẵặâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵ]", Pattern.CASE_INSENSITIVE);
+    private static final Pattern NON_LATIN_SCRIPT_PATTERN = Pattern.compile("[\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}\\p{IsHangul}\\p{IsCyrillic}\\p{IsArabic}\\p{IsHebrew}\\p{IsThai}]");
+    private static final Set<String> VI_LANGUAGE_HINTS = Set.of(
+            "ao", "ban", "bo", "can", "cho", "co", "con", "costume", "de", "dip", "do", "goi", "gia",
+            "hoi", "hang", "hop", "khoang", "mau", "minh", "muon", "ngan", "sach", "phu", "size", "su",
+            "thue", "tim", "toi", "trang", "tu", "tuong", "ung", "vay", "voi", "yeu", "y"
+    );
+    private static final Set<String> EN_LANGUAGE_HINTS = Set.of(
+            "a", "an", "budget", "color", "costume", "dress", "event", "for", "hello", "help", "hi", "i",
+            "looking", "me", "my", "need", "outfit", "party", "please", "price", "recommend", "rental",
+            "rent", "show", "size", "suggest", "suit", "thanks", "want", "wedding", "with"
+    );
+    private static final Set<String> LOW_SIGNAL_TOKENS = Set.of(
+            "ban", "can", "cho", "co", "costume", "di", "do", "goi", "help", "looking", "minh", "muon",
+            "need", "please", "recommend", "rent", "rental", "suggest", "thue", "tim", "toi", "trang",
+            "tuong", "want", "voi"
+    );
+    private static final List<IntentSignalGroup> INTENT_SIGNAL_GROUPS = List.of(
+            new IntentSignalGroup("formal_evening", Set.of(
+                    "da hoi", "dam da hoi", "vay da hoi", "vay tiec", "dam tiec", "evening",
+                    "evening dress", "formal", "formal wear", "gown", "prom", "prom dress",
+                    "suit", "vest", "tuxedo", "black tie", "cocktail"
+            )),
+            new IntentSignalGroup("wedding", Set.of(
+                    "dam cuoi", "di cuoi", "wedding", "bridesmaid", "cuoi hoi", "an hoi"
+            )),
+            new IntentSignalGroup("cosplay", Set.of(
+                    "cosplay", "anime", "manga", "game", "fantasy", "hoa trang", "halloween", "character"
+            )),
+            new IntentSignalGroup("yearbook", Set.of(
+                    "ky yeu", "yearbook", "graduation", "portrait"
+            )),
+            new IntentSignalGroup("photoshoot", Set.of(
+                    "chup anh", "photoshoot", "couple", "concept"
+            )),
+            new IntentSignalGroup("office", Set.of(
+                    "cong so", "office", "business", "interview"
+            )),
+            new IntentSignalGroup("traditional", Set.of(
+                    "ao dai", "traditional", "truyen thong"
+            )),
+            new IntentSignalGroup("performance", Set.of(
+                    "bieu dien", "performance", "stage", "dance"
+            ))
+    );
+    private static final Set<String> CASUAL_CHAT_PHRASES = Set.of(
+            "hi", "hello", "hey", "xin chao", "chao", "ban khoe khong", "khoe khong", "how are you",
+            "ban la ai", "you are who", "who are you", "cam on", "thanks", "thank you", "good morning", "good evening"
+    );
+    private static final Set<String> CASUAL_THANKS_PHRASES = Set.of(
+            "cam on", "thanks", "thank you", "thank u"
+    );
+    private static final Set<String> CASUAL_IDENTITY_PHRASES = Set.of(
+            "ban la ai", "who are you", "you are who", "gioi thieu ve ban"
+    );
+    private static final Set<String> CASUAL_HEALTH_PHRASES = Set.of(
+            "ban khoe khong", "khoe khong", "how are you", "how are u"
+    );
+    private static final Set<String> RENTAL_SUPPORT_PHRASES = Set.of(
+            "thue nhu the nao", "dat coc", "coc", "deposit", "tra do", "return", "phi thue", "phi phat",
+            "late fee", "giao hang", "delivery", "ship", "thanh toan", "payment", "chinh sach", "giu do"
+    );
+    private static final Set<String> PRODUCT_DETAIL_PHRASES = Set.of(
+            "size", "mau", "color", "gia", "price", "con khong", "con hang", "available", "availability",
+            "bao nhieu", "co mau", "co size", "san pham nay", "bo nay", "vay nay", "costume nay", "this product",
+            "this costume", "this outfit"
+    );
+    private static final Set<String> PRODUCT_REFERENCE_PHRASES = Set.of(
+            "san pham nay", "bo nay", "vay nay", "costume nay", "do nay", "item nay", "this product", "this costume", "this outfit"
+    );
+    private static final Set<String> RECOMMENDATION_REQUEST_PHRASES = Set.of(
+            "goi y", "recommend", "recommendation", "suggest", "suggestion", "thue do", "chon do", "mac gi",
+            "nen mac", "outfit", "phoi do", "party", "event", "prom", "cosplay", "ky yeu", "dam cuoi", "chup anh"
+    );
 
     private final AiStylistSessionRepository aiStylistSessionRepository;
     private final CostumeRepository costumeRepository;
@@ -76,6 +152,8 @@ public class AiStylistServiceImpl implements AiStylistService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final AiExplanationService aiExplanationService;
+    private final AiIntentUnderstandingService aiIntentUnderstandingService;
+    private final AiChatContextBuilder aiChatContextBuilder;
 
     public AiStylistServiceImpl(AiStylistSessionRepository aiStylistSessionRepository,
                                 CostumeRepository costumeRepository,
@@ -83,7 +161,9 @@ public class AiStylistServiceImpl implements AiStylistService {
                                 UserInteractionEventRepository userInteractionEventRepository,
                                 UserRepository userRepository,
                                 ObjectMapper objectMapper,
-                                AiExplanationService aiExplanationService) {
+                                AiExplanationService aiExplanationService,
+                                AiIntentUnderstandingService aiIntentUnderstandingService,
+                                AiChatContextBuilder aiChatContextBuilder) {
         this.aiStylistSessionRepository = aiStylistSessionRepository;
         this.costumeRepository = costumeRepository;
         this.rentalOrderDetailRepository = rentalOrderDetailRepository;
@@ -91,6 +171,8 @@ public class AiStylistServiceImpl implements AiStylistService {
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
         this.aiExplanationService = aiExplanationService;
+        this.aiIntentUnderstandingService = aiIntentUnderstandingService;
+        this.aiChatContextBuilder = aiChatContextBuilder;
     }
 
     @Override
@@ -131,18 +213,60 @@ public class AiStylistServiceImpl implements AiStylistService {
     public AiStylistSessionDTO sendMessage(SendAiStylistMessageRequest request, String authenticatedEmail) {
         AiStylistSession session = loadAccessibleSession(request.sessionId(), request.guestSessionId(), authenticatedEmail);
         String normalizedMessage = request.message().trim();
+        Map<Long, Costume> activeCostumesById = buildActiveCostumeMap();
+        AiChatContext chatContext = aiChatContextBuilder.build(session, normalizedMessage, activeCostumesById);
+        AiIntentUnderstandingService.IntentUnderstandingResult understoodIntent =
+                aiIntentUnderstandingService.understandIntent(chatContext);
+        ReplyLanguage replyLanguage = mapReplyLanguage(understoodIntent.language());
         AvailabilityWindow availabilityWindow = resolveAvailabilityWindow(request.rentalStartDate(), request.rentalEndDate());
 
         addUserMessage(session, normalizedMessage);
 
-        Map<Long, Costume> activeCostumesById = buildActiveCostumeMap();
         AvailabilitySnapshot availabilitySnapshot = buildAvailabilitySnapshot(activeCostumesById.values(), availabilityWindow);
         Costume selectedCostume = resolveSelectedCostume(session, request.selectedCostumeId(), activeCostumesById);
+        StylistIntent intent = buildStylistIntent(normalizedMessage, understoodIntent);
+        ChatIntent chatIntent = mapChatIntent(understoodIntent.intent());
+
+        if (chatIntent == ChatIntent.RECOMMENDATION_EXPLANATION_FOLLOW_UP) {
+            List<SimilarCostumeRecommendationDTO> followUpRecommendations = chatContext.lastRecommendationDtos();
+            String assistantContent = buildRecommendationFollowUpResponse(
+                    normalizedMessage,
+                    replyLanguage,
+                    followUpRecommendations,
+                    chatContext.lastUserNeedSummary()
+            );
+            addAssistantMessage(
+                    session,
+                    assistantContent,
+                    writeAssistantMetadata(
+                            followUpRecommendations,
+                            toAvailabilityWindow(chatContext),
+                            understoodIntent,
+                            normalizedMessage,
+                            assistantContent,
+                            chatContext.lastUserNeedSummary()
+                    )
+            );
+            AiStylistSession savedSession = aiStylistSessionRepository.save(session);
+            return toSessionDTO(savedSession, activeCostumesById);
+        }
+
+        if (chatIntent != ChatIntent.RECOMMENDATION_REQUEST) {
+            String assistantContent = buildDirectResponse(chatIntent, normalizedMessage, replyLanguage, selectedCostume, availabilitySnapshot, availabilityWindow, intent);
+            addAssistantMessage(
+                    session,
+                    assistantContent,
+                    writeAssistantMetadata(List.of(), availabilityWindow, understoodIntent, normalizedMessage, assistantContent, null)
+            );
+            AiStylistSession savedSession = aiStylistSessionRepository.save(session);
+            return toSessionDTO(savedSession, activeCostumesById);
+        }
+
         List<UserInteractionEvent> recentEvents = loadRecentEvents(session, request.guestSessionId(), authenticatedEmail);
         StylistPreferenceProfile preferenceProfile = buildPreferenceProfile(recentEvents, activeCostumesById);
-        StylistIntent intent = parseIntent(normalizedMessage, activeCostumesById.values());
         List<SimilarCostumeRecommendationDTO> recommendations = buildRecommendations(
                 normalizedMessage,
+                replyLanguage,
                 intent,
                 preferenceProfile,
                 selectedCostume,
@@ -151,14 +275,26 @@ public class AiStylistServiceImpl implements AiStylistService {
         );
         recommendations = aiExplanationService.enhanceRecommendationReasons(
                 "ai_stylist_chat",
-                buildAiStylistExplanationContext(normalizedMessage, selectedCostume, availabilityWindow, !preferenceProfile.isEmpty()),
-                recommendations
+                buildAiStylistExplanationContext(
+                        normalizedMessage,
+                        selectedCostume,
+                        availabilityWindow,
+                        !preferenceProfile.isEmpty(),
+                        understoodIntent.intentJson(),
+                        chatContext
+                ),
+                replyLanguage.providerCode(),
+                limitText(normalizedMessage, 220),
+                understoodIntent.intentJson(),
+                recommendations,
+                chatContext
         );
 
+        String assistantContent = buildAssistantMessage(recommendations, selectedCostume, availabilityWindow, !preferenceProfile.isEmpty(), replyLanguage);
         addAssistantMessage(
                 session,
-                buildAssistantMessage(recommendations, selectedCostume, availabilityWindow, !preferenceProfile.isEmpty()),
-                writeRecommendationMetadata(recommendations, availabilityWindow)
+                assistantContent,
+                writeAssistantMetadata(recommendations, availabilityWindow, understoodIntent, normalizedMessage, assistantContent, null)
         );
 
         AiStylistSession savedSession = aiStylistSessionRepository.save(session);
@@ -252,13 +388,14 @@ public class AiStylistServiceImpl implements AiStylistService {
     }
 
     private List<SimilarCostumeRecommendationDTO> buildRecommendations(String userMessage,
+                                                                       ReplyLanguage replyLanguage,
                                                                        StylistIntent intent,
                                                                        StylistPreferenceProfile preferenceProfile,
                                                                        Costume selectedCostume,
                                                                        Collection<Costume> candidates,
                                                                        AvailabilitySnapshot availabilitySnapshot) {
         List<StylistCandidate> scoredCandidates = candidates.stream()
-                .map(candidate -> buildStylistCandidate(candidate, intent, preferenceProfile, selectedCostume, availabilitySnapshot))
+                .map(candidate -> buildStylistCandidate(candidate, replyLanguage, intent, preferenceProfile, selectedCostume, availabilitySnapshot))
                 .filter(candidate -> candidate.availableItemCount() > 0)
                 .filter(candidate -> candidate.score() > 0)
                 .sorted(Comparator
@@ -284,7 +421,11 @@ public class AiStylistServiceImpl implements AiStylistService {
             if (availableItemCount > 0) {
                 return List.of(SimilarCostumeRecommendationDTO.fromEntity(
                         selectedCostume,
-                        "Dung voi costume ban dang hoi va con san de thue",
+                        replyText(
+                                replyLanguage,
+                                "Đúng với costume bạn đang hỏi và còn sẵn để thuê",
+                                "Matches the costume you're asking about and is currently available to rent"
+                        ),
                         20 + availableItemCount,
                         availableItemCount
                 ));
@@ -295,6 +436,7 @@ public class AiStylistServiceImpl implements AiStylistService {
     }
 
     private StylistCandidate buildStylistCandidate(Costume candidate,
+                                                   ReplyLanguage replyLanguage,
                                                    StylistIntent intent,
                                                    StylistPreferenceProfile preferenceProfile,
                                                    Costume selectedCostume,
@@ -302,8 +444,9 @@ public class AiStylistServiceImpl implements AiStylistService {
         int availableItemCount = availabilitySnapshot.availableItemCount(candidate, intent.requestedSizes());
         CostumeMetadataDTO candidateMetadata = CostumeMetadataDTO.fromEntity(candidate.getMetadata());
         int keywordMatchCount = countKeywordMatches(candidate, intent.tokens());
+        IntentMatch intentMatch = evaluateLatestIntentMatch(candidate, candidateMetadata, intent);
 
-        int score = keywordMatchCount * 4;
+        int score = keywordMatchCount * 4 + intentMatch.score();
         boolean inBudget = isInBudget(candidate, intent.maxBudget());
         if (inBudget) {
             score += 6;
@@ -339,7 +482,7 @@ public class AiStylistServiceImpl implements AiStylistService {
         );
         int historyTagScore = preferenceProfile.tagScore(candidateMetadata != null ? candidateMetadata.tags() : List.of(), 1, 8);
         int historyKeywordScore = preferenceProfile.keywordScore(candidate, 1, 8);
-        score += historyCostumeScore
+        int historyScore = historyCostumeScore
                 + historyStyleScore
                 + historyOccasionScore
                 + historySeasonScore
@@ -347,6 +490,10 @@ public class AiStylistServiceImpl implements AiStylistService {
                 + historyCategoryScore
                 + historyTagScore
                 + historyKeywordScore;
+        if (intent.hasExplicitSignals() && !intentMatch.hasSignalMatch()) {
+            historyScore = Math.min(historyScore, 4);
+        }
+        score += historyScore;
 
         boolean sameCategory = false;
         boolean sameStyle = false;
@@ -405,8 +552,10 @@ public class AiStylistServiceImpl implements AiStylistService {
 
         String reason = buildStylistReason(
                 candidate,
+                replyLanguage,
                 selectedCostume,
                 intent,
+                intentMatch,
                 keywordMatchCount,
                 inBudget,
                 sameCategory,
@@ -427,8 +576,10 @@ public class AiStylistServiceImpl implements AiStylistService {
     }
 
     private String buildStylistReason(Costume candidate,
+                                      ReplyLanguage replyLanguage,
                                       Costume selectedCostume,
                                       StylistIntent intent,
+                                      IntentMatch intentMatch,
                                       int keywordMatchCount,
                                       boolean inBudget,
                                       boolean sameCategory,
@@ -445,108 +596,548 @@ public class AiStylistServiceImpl implements AiStylistService {
                                       int historyKeywordScore,
                                       boolean sizeMatched) {
         if (selectedCostume != null && selectedCostume.getId() != null && selectedCostume.getId().equals(candidate.getId())) {
-            return "Dung voi costume ban dang hoi va con san de thue";
+            return replyText(
+                    replyLanguage,
+                    "Đúng với costume bạn đang hỏi và còn sẵn để thuê",
+                    "Matches the costume you're asking about and is currently available to rent"
+            );
         }
-        if (historyCostumeScore > 0) {
-            return "Gan voi costume ban da xem hoac tuong tac gan day";
+        if (intentMatch.hasSignalMatch() && intentMatch.signalMatchCount() >= 2) {
+            return replyText(
+                    replyLanguage,
+                    "Khớp rất sát với nhu cầu hiện tại bạn vừa mô tả",
+                    "Closely matches the current occasion or style you just described"
+            );
         }
-        if (sameStyle && sameOccasion) {
-            return "Cung style va dung dip su dung ban dang quan tam";
-        }
-        if (historyStyleScore > 0 && historyOccasionScore > 0) {
-            return "Gan voi phong cach va dip su dung ban thuong tim";
-        }
-        if (historyStyleScore > 0) {
-            return "Gan voi phong cach ban thuong xem gan day";
-        }
-        if (historyOccasionScore > 0 || historyColorScore > 0) {
-            return "Phu hop voi nhu cau ban da tim hoac xem gan day";
-        }
-        if (sameCategory && sharedTags > 0) {
-            return "Cung nhom san pham va co tag gan voi nhu cau hien tai";
-        }
-        if (sizeMatched) {
-            return "Co size " + String.join("/", intent.requestedSizes()) + " dang san de thue";
+        if (intentMatch.hasSignalMatch()) {
+            return replyText(
+                    replyLanguage,
+                    "Khớp với nhu cầu hiện tại bạn vừa nói",
+                    "Matches the latest need you just mentioned"
+            );
         }
         if (keywordMatchCount > 0 && inBudget) {
-            return "Hop voi tu khoa ban dua ra va nam trong tam gia";
+            return replyText(
+                    replyLanguage,
+                    "Khớp với nhu cầu hiện tại và vẫn nằm trong tầm giá của bạn",
+                    "Matches your current need and still fits your budget"
+            );
+        }
+        if (sizeMatched) {
+            return replyLanguage.isVietnamese()
+                    ? "Có size " + String.join("/", intent.requestedSizes()) + " đang sẵn để thuê"
+                    : "Available right now in size " + String.join("/", intent.requestedSizes());
+        }
+        if (historyCostumeScore > 0) {
+            return replyText(
+                    replyLanguage,
+                    "Gần với costume bạn đã xem hoặc tương tác gần đây",
+                    "Close to a costume you've viewed or interacted with recently"
+            );
+        }
+        if (sameStyle && sameOccasion) {
+            return replyText(
+                    replyLanguage,
+                    "Cùng style và đúng dịp sử dụng bạn đang quan tâm",
+                    "Matches both the style and occasion you're looking for"
+            );
+        }
+        if (historyStyleScore > 0 && historyOccasionScore > 0) {
+            return replyText(
+                    replyLanguage,
+                    "Gần với phong cách và dịp sử dụng bạn thường tìm",
+                    "Close to the style and occasion you usually browse"
+            );
+        }
+        if (historyStyleScore > 0) {
+            return replyText(
+                    replyLanguage,
+                    "Gần với phong cách bạn thường xem gần đây",
+                    "Close to the style you've viewed recently"
+            );
+        }
+        if (historyOccasionScore > 0 || historyColorScore > 0) {
+            return replyText(
+                    replyLanguage,
+                    "Phù hợp với nhu cầu bạn đã tìm hoặc xem gần đây",
+                    "Fits what you've recently searched for or viewed"
+            );
+        }
+        if (sameCategory && sharedTags > 0) {
+            return replyText(
+                    replyLanguage,
+                    "Cùng nhóm sản phẩm và có tag gần với nhu cầu hiện tại",
+                    "In the same product group with tags close to your current need"
+            );
         }
         if (historyTagScore > 0 || historyKeywordScore > 0) {
-            return "Lien quan den hanh vi tim kiem gan day cua ban";
+            return replyText(
+                    replyLanguage,
+                    "Liên quan đến hành vi tìm kiếm gần đây của bạn",
+                    "Related to your recent search behavior"
+            );
         }
         if (sameStyle) {
-            return "Cung style voi ngu canh ban dang xem";
+            return replyText(
+                    replyLanguage,
+                    "Cùng style với ngữ cảnh bạn đang xem",
+                    "Matches the style of the context you're viewing"
+            );
         }
         if (sameOccasion || sameSeason || sameColor) {
-            return "Metadata phu hop voi nhu cau ban vua mo ta";
+            return replyText(
+                    replyLanguage,
+                    "Metadata phù hợp với nhu cầu bạn vừa mô tả",
+                    "Its metadata fits the need you just described"
+            );
         }
         if (sameCategory) {
-            return "Cung danh muc va con san de thue";
+            return replyText(
+                    replyLanguage,
+                    "Cùng danh mục và còn sẵn để thuê",
+                    "In the same category and still available to rent"
+            );
         }
         if (inBudget) {
-            return "Con san de thue va nam trong tam gia ban dua ra";
+            return replyText(
+                    replyLanguage,
+                    "Còn sẵn để thuê và nằm trong tầm giá bạn đưa ra",
+                    "Currently available and within the budget you mentioned"
+            );
         }
         if (keywordMatchCount > 0) {
-            return "Lien quan den tu khoa ban vua nhap";
+            return replyText(
+                    replyLanguage,
+                    "Liên quan đến từ khóa bạn vừa nhập",
+                    "Related to the keywords you just entered"
+            );
         }
-        return "Con san de thue trong catalog hien tai";
+        return replyText(
+                replyLanguage,
+                "Còn sẵn để thuê trong catalog hiện tại",
+                "Currently available in the live catalog"
+        );
     }
 
     private String buildAssistantMessage(List<SimilarCostumeRecommendationDTO> recommendations,
                                          Costume selectedCostume,
                                          AvailabilityWindow availabilityWindow,
-                                         boolean usedBehaviorProfile) {
+                                         boolean usedBehaviorProfile,
+                                         ReplyLanguage replyLanguage) {
         if (recommendations.isEmpty()) {
-            return "Minh chua tim thay costume phu hop hoac con san tu noi dung hien tai. Ban hay noi ro hon ve dip su dung, style, mau sac, ngan sach, size, hoac chon mot costume cu the de minh loc hep hon.";
+            return replyText(
+                    replyLanguage,
+                    "Mình chưa tìm thấy costume phù hợp hoặc còn sẵn từ nội dung hiện tại. Bạn hãy nói rõ hơn về dịp sử dụng, style, màu sắc, ngân sách, size hoặc chọn một costume cụ thể để mình lọc hẹp hơn.",
+                    "I couldn't find a suitable costume that's currently available from your current request. Tell me more about the occasion, style, color, budget, size, or a specific costume so I can narrow it down."
+            );
+        }
+
+        String dateContext = availabilityWindow != null
+                ? (replyLanguage.isVietnamese()
+                ? " trong khoảng ngày " + formatAvailabilityWindowVi(availabilityWindow)
+                : " for " + formatAvailabilityWindowEn(availabilityWindow))
+                : "";
+        String recommendationSummary = recommendations.stream()
+                .map(item -> item.costume().name() + " (" + formatPrice(item.costume().rentalPrice(), replyLanguage) + ") - " + item.reason())
+                .collect(Collectors.joining(replyLanguage.isVietnamese() ? "; " : "; "));
+
+        if (replyLanguage.isVietnamese()) {
+            String catalogContext = selectedCostume != null
+                    ? " Mình đang ưu tiên các lựa chọn gần với costume bạn đang xem."
+                    : "";
+            String behaviorContext = usedBehaviorProfile
+                    ? " Mình chỉ dùng thêm hành vi bạn đã xem và tìm gần đây để cá nhân hóa trong các lựa chọn đã khớp nhu cầu hiện tại."
+                    : "";
+            return "Mình đã đối chiếu với catalog đang có và chỉ giữ lại các costume còn sẵn để thuê" + dateContext + "." +
+                    catalogContext +
+                    behaviorContext +
+                    " Gợi ý phù hợp nhất hiện tại: " + recommendationSummary +
+                    ". Nếu cần lọc tiếp, bạn có thể bổ sung ngân sách, size, màu sắc hoặc dịp sử dụng.";
         }
 
         String catalogContext = selectedCostume != null
-                ? " Minh dang uu tien cac lua chon gan voi costume ban dang xem."
+                ? " I'm prioritizing options close to the costume you're viewing."
                 : "";
         String behaviorContext = usedBehaviorProfile
-                ? " Minh cung uu tien cac mau gan voi hanh vi ban da xem va tim gan day."
+                ? " I only used your recent behavior to personalize among the options that already match your current need."
                 : "";
-        String dateContext = availabilityWindow != null
-                ? " trong khoang ngay " + formatAvailabilityWindow(availabilityWindow)
-                : "";
-
-        String recommendationSummary = recommendations.stream()
-                .map(item -> item.costume().name() + " (" + formatPrice(item.costume().rentalPrice()) + ") - " + item.reason())
-                .collect(Collectors.joining("; "));
-
-        return "Minh da doi chieu voi catalog dang co va chi giu lai cac costume con san de thue" + dateContext + "." +
+        return "I checked the live catalog and kept only the costumes that are currently available to rent" + dateContext + "." +
                 catalogContext +
                 behaviorContext +
-                " Goi y phu hop nhat hien tai: " + recommendationSummary +
-                ". Neu can loc tiep, ban co the bo sung ngan sach, size, mau sac hoac dip su dung.";
+                " The best matches right now are: " + recommendationSummary +
+                ". If you want me to narrow it down further, add your budget, size, color, or occasion.";
+    }
+
+    private String buildDirectResponse(ChatIntent chatIntent,
+                                       String userMessage,
+                                       ReplyLanguage replyLanguage,
+                                       Costume selectedCostume,
+                                       AvailabilitySnapshot availabilitySnapshot,
+                                       AvailabilityWindow availabilityWindow,
+                                       StylistIntent intent) {
+        return switch (chatIntent) {
+            case CASUAL_CHAT -> buildCasualChatResponse(userMessage, replyLanguage);
+            case RENTAL_SUPPORT -> buildRentalSupportResponse(userMessage, replyLanguage);
+            case PRODUCT_QUESTION -> buildProductQuestionResponse(userMessage, replyLanguage, selectedCostume, availabilitySnapshot, availabilityWindow, intent);
+            case RECOMMENDATION_EXPLANATION_FOLLOW_UP -> buildRecommendationFollowUpFallbackResponse(replyLanguage);
+            case OUT_OF_SCOPE -> buildOutOfScopeResponse(replyLanguage);
+            case RECOMMENDATION_REQUEST -> replyText(
+                    replyLanguage,
+                    "Mình đang xử lý yêu cầu gợi ý trang phục của bạn.",
+                    "I'm preparing outfit recommendations for you."
+            );
+        };
+    }
+
+    private String buildCasualChatResponse(String userMessage, ReplyLanguage replyLanguage) {
+        String normalizedMessage = normalizeForLanguageDetection(userMessage);
+        if (normalizedMessage == null) {
+            return replyText(
+                    replyLanguage,
+                    "Mình luôn sẵn sàng giúp bạn chọn trang phục phù hợp. Hôm nay bạn đang cần đồ cho dịp nào?",
+                    "I'm ready to help you find the right outfit. What occasion are you shopping for today?"
+            );
+        }
+
+        if (containsAnyPhrase(normalizedMessage, CASUAL_THANKS_PHRASES)) {
+            return replyText(
+                    replyLanguage,
+                    "Không có gì. Mình luôn sẵn sàng giúp bạn chọn trang phục phù hợp. Nếu muốn, bạn có thể nói luôn dịp sử dụng để mình tư vấn tiếp.",
+                    "You're welcome. I'm always ready to help you choose the right outfit. If you'd like, tell me the occasion and I'll help from there."
+            );
+        }
+        if (containsAnyPhrase(normalizedMessage, CASUAL_IDENTITY_PHRASES)) {
+            return replyText(
+                    replyLanguage,
+                    "Mình là AuraFit AI Stylist. Mình có thể hỗ trợ bạn chọn trang phục, giải thích lựa chọn phù hợp và trả lời các câu hỏi cơ bản về thuê đồ.",
+                    "I'm AuraFit AI Stylist. I can help you choose outfits, explain suitable options, and answer basic costume rental questions."
+            );
+        }
+        if (containsAnyPhrase(normalizedMessage, CASUAL_HEALTH_PHRASES)) {
+            return replyText(
+                    replyLanguage,
+                    "Mình vẫn ổn và sẵn sàng giúp bạn chọn trang phục phù hợp. Hôm nay bạn đang tìm đồ cho dịp nào?",
+                    "I'm doing well and ready to help you find the right outfit. What occasion are you dressing for today?"
+            );
+        }
+        return replyText(
+                replyLanguage,
+                "Chào bạn, mình luôn sẵn sàng hỗ trợ chọn trang phục phù hợp. Bạn đang cần đồ cho dịp nào?",
+                "Hello, I'm ready to help with outfit suggestions. What occasion are you shopping for?"
+        );
+    }
+
+    private String buildRentalSupportResponse(String userMessage, ReplyLanguage replyLanguage) {
+        String normalizedMessage = normalizeForLanguageDetection(userMessage);
+        if (normalizedMessage == null) {
+            return replyText(
+                    replyLanguage,
+                    "Mình có thể hỗ trợ các câu hỏi cơ bản về quy trình thuê đồ. Bạn muốn hỏi về đặt cọc, thanh toán, giao hàng hay trả đồ?",
+                    "I can help with basic rental process questions. Are you asking about deposit, payment, delivery, or returns?"
+            );
+        }
+
+        if (normalizedMessage.contains("dat coc") || normalizedMessage.contains("coc") || normalizedMessage.contains("deposit")) {
+            return replyText(
+                    replyLanguage,
+                    "Thông tin đặt cọc còn tùy từng sản phẩm và chính sách vận hành hiện tại. Nếu backend chưa hiển thị rõ mức cọc, mình chưa thể cam kết cụ thể, nên bạn hãy kiểm tra ở trang sản phẩm hoặc xác nhận lại với shop trước khi chốt đơn nhé.",
+                    "Deposit details can vary by product and current shop policy. If the backend doesn't show a clear deposit amount yet, I can't confirm a specific number, so please check the product page or confirm with the shop before placing the order."
+            );
+        }
+        if (normalizedMessage.contains("tra do") || normalizedMessage.contains("return") || normalizedMessage.contains("phi phat") || normalizedMessage.contains("late fee")) {
+            return replyText(
+                    replyLanguage,
+                    "Bạn nên trả đồ đúng hạn và kiểm tra lại chính sách phí phạt hoặc xử lý trả trễ với shop. Nếu hệ thống chưa xác nhận mức phí cụ thể, mình chỉ có thể khuyên bạn liên hệ shop để được chốt thông tin chính xác.",
+                    "It's best to return the costume on time and confirm any late return fee policy with the shop. If the system doesn't expose a specific fee yet, I can only recommend checking directly with the shop for exact details."
+            );
+        }
+        if (normalizedMessage.contains("giao hang") || normalizedMessage.contains("delivery") || normalizedMessage.contains("ship")) {
+            return replyText(
+                    replyLanguage,
+                    "Việc giao hàng hoặc nhận tại shop còn phụ thuộc chính sách vận hành hiện tại. Bạn nên kiểm tra thông tin giao nhận trong luồng đặt thuê hoặc xác nhận trực tiếp với shop để chắc chắn nhé.",
+                    "Delivery or store pickup depends on the current operating policy. Please check the rental flow details or confirm directly with the shop to be sure."
+            );
+        }
+        if (normalizedMessage.contains("thanh toan") || normalizedMessage.contains("payment")) {
+            return replyText(
+                    replyLanguage,
+                    "Phương thức thanh toán cụ thể có thể thay đổi theo quy trình hiện hành của shop. Nếu màn hình đặt thuê chưa hiện rõ, bạn nên kiểm tra lại ở bước checkout hoặc hỏi shop để xác nhận cách thanh toán phù hợp.",
+                    "Payment methods can vary based on the shop's current checkout process. If the rental flow doesn't show it clearly yet, please recheck the checkout step or confirm with the shop."
+            );
+        }
+        return replyText(
+                replyLanguage,
+                "Với câu hỏi về quy trình thuê, mình có thể hỗ trợ ở mức chung: bạn nên kiểm tra ngày thuê, ngày trả, size, tình trạng sản phẩm và xác nhận lại các chính sách như giữ đồ, đặt cọc hoặc giao hàng nếu hệ thống chưa hiển thị rõ.",
+                "For rental process questions, I can help at a general level: check the rental dates, return date, size, product condition, and confirm any hold, deposit, or delivery policy if the system doesn't show it clearly yet."
+        );
+    }
+
+    private String buildProductQuestionResponse(String userMessage,
+                                                ReplyLanguage replyLanguage,
+                                                Costume selectedCostume,
+                                                AvailabilitySnapshot availabilitySnapshot,
+                                                AvailabilityWindow availabilityWindow,
+                                                StylistIntent intent) {
+        if (selectedCostume == null) {
+            return replyText(
+                    replyLanguage,
+                    "Mình cần bạn chọn đúng sản phẩm hoặc gửi rõ tên costume thì mới kiểm tra size, màu, giá hay tình trạng còn hàng chính xác được.",
+                    "I need you to open the exact product or send the costume name so I can check size, color, price, or availability accurately."
+            );
+        }
+
+        String normalizedMessage = normalizeForLanguageDetection(userMessage);
+        int availableItemCount = availabilitySnapshot.availableItemCount(selectedCostume, intent.requestedSizes());
+        Set<String> availableSizes = extractAvailableValues(selectedCostume, availabilitySnapshot, CostumeItem::getSize);
+        Set<String> availableColors = extractAvailableValues(selectedCostume, availabilitySnapshot, CostumeItem::getColor);
+        String dateContext = availabilityWindow != null
+                ? replyText(replyLanguage,
+                " trong khoảng " + formatAvailabilityWindowVi(availabilityWindow),
+                " for " + formatAvailabilityWindowEn(availabilityWindow))
+                : "";
+
+        if (normalizedMessage != null && normalizedMessage.contains("size")) {
+            if (!intent.requestedSizes().isEmpty()) {
+                String requestedSizeLabel = String.join("/", intent.requestedSizes());
+                if (availableItemCount > 0) {
+                    return replyText(
+                            replyLanguage,
+                            "Costume này hiện còn size " + requestedSizeLabel + dateContext + ". Bạn có thể tiếp tục kiểm tra ngày thuê hoặc chốt lựa chọn nếu phù hợp.",
+                            "This costume is currently available in size " + requestedSizeLabel + dateContext + ". You can keep checking the rental dates or move forward if it fits."
+                    );
+                }
+                return replyText(
+                        replyLanguage,
+                        "Mình chưa thấy size " + requestedSizeLabel + " còn sẵn" + dateContext + ". Các size đang dễ kiểm tra nhất là: " + joinValuesOrFallback(availableSizes, replyLanguage) + ".",
+                        "I can't see size " + requestedSizeLabel + " available" + dateContext + ". The sizes I can confirm more safely right now are: " + joinValuesOrFallback(availableSizes, replyLanguage) + "."
+                );
+            }
+            return replyText(
+                    replyLanguage,
+                    "Các size mình kiểm tra được cho costume này là: " + joinValuesOrFallback(availableSizes, replyLanguage) + ".",
+                    "The sizes I can check for this costume are: " + joinValuesOrFallback(availableSizes, replyLanguage) + "."
+            );
+        }
+
+        if (normalizedMessage != null && (normalizedMessage.contains("mau") || normalizedMessage.contains("color"))) {
+            return replyText(
+                    replyLanguage,
+                    "Màu mình kiểm tra được cho costume này là: " + joinValuesOrFallback(availableColors, replyLanguage) + ".",
+                    "The colors I can check for this costume are: " + joinValuesOrFallback(availableColors, replyLanguage) + "."
+            );
+        }
+
+        if (normalizedMessage != null && (normalizedMessage.contains("gia") || normalizedMessage.contains("price") || normalizedMessage.contains("bao nhieu"))) {
+            return replyText(
+                    replyLanguage,
+                    "Giá thuê hiện tại của costume này là " + formatPrice(selectedCostume.getRentalPrice(), replyLanguage) + ".",
+                    "The current rental price for this costume is " + formatPrice(selectedCostume.getRentalPrice(), replyLanguage) + "."
+            );
+        }
+
+        if (normalizedMessage != null && (normalizedMessage.contains("con khong") || normalizedMessage.contains("con hang") || normalizedMessage.contains("available") || normalizedMessage.contains("availability"))) {
+            if (availableItemCount > 0) {
+                return replyText(
+                        replyLanguage,
+                        "Costume này hiện vẫn còn sẵn để thuê" + dateContext + ".",
+                        "This costume is still available to rent" + dateContext + "."
+                );
+            }
+            return replyText(
+                    replyLanguage,
+                    "Hiện mình chưa thấy costume này còn sẵn" + dateContext + ". Bạn có thể đổi ngày thuê hoặc mình hỗ trợ tìm mẫu gần nhất.",
+                    "I can't currently see this costume available" + dateContext + ". You can change the rental dates, or I can help find the closest alternative."
+            );
+        }
+
+        return replyText(
+                replyLanguage,
+                "Mình đang thấy costume \"" + selectedCostume.getName() + "\" có giá thuê " + formatPrice(selectedCostume.getRentalPrice(), replyLanguage)
+                        + ", size khả dụng: " + joinValuesOrFallback(availableSizes, replyLanguage)
+                        + ", màu khả dụng: " + joinValuesOrFallback(availableColors, replyLanguage) + ".",
+                "For \"" + selectedCostume.getName() + "\", I can currently confirm the rental price is " + formatPrice(selectedCostume.getRentalPrice(), replyLanguage)
+                        + ", available sizes: " + joinValuesOrFallback(availableSizes, replyLanguage)
+                        + ", available colors: " + joinValuesOrFallback(availableColors, replyLanguage) + "."
+        );
+    }
+
+    private String buildRecommendationFollowUpResponse(String userMessage,
+                                                       ReplyLanguage replyLanguage,
+                                                       List<SimilarCostumeRecommendationDTO> previousRecommendations,
+                                                       String lastUserNeedSummary) {
+        if (previousRecommendations == null || previousRecommendations.isEmpty()) {
+            return buildRecommendationFollowUpFallbackResponse(replyLanguage);
+        }
+
+        String normalizedMessage = normalizeForLanguageDetection(userMessage);
+        if (normalizedMessage != null && isBestChoiceFollowUp(normalizedMessage)) {
+            SimilarCostumeRecommendationDTO bestMatch = previousRecommendations.get(0);
+            return replyText(
+                    replyLanguage,
+                    bestMatch.costume().name() + " là lựa chọn hợp nhất lúc này vì "
+                            + buildSingleRecommendationExplanation(bestMatch, lastUserNeedSummary, replyLanguage, false)
+                            + ". Nếu bạn muốn, mình có thể so sánh tiếp với các mẫu còn lại.",
+                    bestMatch.costume().name() + " is the strongest match right now because "
+                            + buildSingleRecommendationExplanation(bestMatch, lastUserNeedSummary, replyLanguage, false)
+                            + ". If you'd like, I can also compare it against the other suggestions."
+            );
+        }
+
+        if (normalizedMessage != null && isComparisonFollowUp(normalizedMessage)) {
+            String comparison = previousRecommendations.stream()
+                    .limit(3)
+                    .map(item -> item.costume().name() + ": " + buildSingleRecommendationExplanation(item, lastUserNeedSummary, replyLanguage, false))
+                    .collect(Collectors.joining(replyLanguage.isVietnamese() ? "; " : "; "));
+            return replyText(
+                    replyLanguage,
+                    "Nếu so sánh nhanh các mẫu vừa gợi ý: " + comparison + ". Nếu bạn muốn chốt một mẫu, mình có thể chọn giúp phương án hợp nhất.",
+                    "If I compare the previous suggestions quickly: " + comparison + ". If you want to narrow it down to one, I can help choose the best fit."
+            );
+        }
+
+        String explanation = previousRecommendations.stream()
+                .limit(3)
+                .map(item -> item.costume().name() + ": " + buildSingleRecommendationExplanation(item, lastUserNeedSummary, replyLanguage, true))
+                .collect(Collectors.joining(replyLanguage.isVietnamese() ? "; " : "; "));
+        return replyText(
+                replyLanguage,
+                "Các mẫu mình vừa gợi ý phù hợp vì " + explanation + ". Nếu bạn muốn, mình có thể so sánh kỹ hơn hoặc chọn ra mẫu hợp nhất.",
+                "The previous suggestions fit because " + explanation + ". If you want, I can compare them in more detail or choose the strongest option."
+        );
+    }
+
+    private String buildSingleRecommendationExplanation(SimilarCostumeRecommendationDTO recommendation,
+                                                        String lastUserNeedSummary,
+                                                        ReplyLanguage replyLanguage,
+                                                        boolean capitalize) {
+        CostumeDTO costume = recommendation.costume();
+        CostumeMetadataDTO metadata = costume != null ? costume.metadata() : null;
+        String needSummary = normalizeForLanguageDetection(lastUserNeedSummary);
+        List<String> reasons = new ArrayList<>();
+
+        if (needSummary != null) {
+            if (needSummary.contains("wedding")) {
+                reasons.add(replyText(replyLanguage, "hợp với nhu cầu đi tiệc cưới", "it fits a wedding occasion"));
+            } else if (needSummary.contains("prom")) {
+                reasons.add(replyText(replyLanguage, "đúng tinh thần prom", "it matches a prom occasion"));
+            } else if (needSummary.contains("gala")) {
+                reasons.add(replyText(replyLanguage, "phù hợp với không khí dạ hội", "it suits a formal evening occasion"));
+            }
+
+            if (needSummary.contains("formal")) {
+                reasons.add(replyText(replyLanguage, "giữ tổng thể lịch sự và trang trọng", "it keeps the overall look formal and polished"));
+            } else if (needSummary.contains("elegant")) {
+                reasons.add(replyText(replyLanguage, "giữ cảm giác thanh lịch", "it keeps the look elegant"));
+            }
+        }
+
+        if (metadata != null) {
+            if (metadata.style() != null && normalize(metadata.style()).contains("elegant")) {
+                reasons.add(replyText(replyLanguage, "form và style thiên về thanh lịch", "its style leans elegant"));
+            } else if (metadata.style() != null && normalize(metadata.style()).contains("traditional")) {
+                reasons.add(replyText(replyLanguage, "có style chỉn chu và dễ mặc", "its style is polished and easy to wear"));
+            }
+
+            if (metadata.occasion() != null) {
+                String normalizedOccasion = normalize(metadata.occasion());
+                if (normalizedOccasion.contains("wedding") || normalizedOccasion.contains("gala") || normalizedOccasion.contains("prom")) {
+                    reasons.add(replyText(replyLanguage, "occasion của mẫu này khá sát nhu cầu", "its occasion metadata is close to your need"));
+                }
+            }
+
+            if (metadata.color() != null) {
+                String normalizedColor = normalize(metadata.color());
+                if ("black".equals(normalizedColor) || "silver".equals(normalizedColor) || "white".equals(normalizedColor) || "gray".equals(normalizedColor)) {
+                    reasons.add(replyText(replyLanguage, "màu dễ phối và an toàn khi dự tiệc", "the color is easy to style for an event"));
+                }
+            }
+        }
+
+        if (recommendation.reason() != null && !recommendation.reason().isBlank()) {
+            reasons.add(replyText(
+                    replyLanguage,
+                    "backend cũng đã chấm mẫu này cao vì " + decapitalize(recommendation.reason()),
+                    "the backend also ranked it highly because " + decapitalize(recommendation.reason())
+            ));
+        }
+
+        if (reasons.isEmpty()) {
+            reasons.add(replyText(
+                    replyLanguage,
+                    "nó là một trong các lựa chọn khớp nhất với nhu cầu trước đó của bạn",
+                    "it was one of the closest matches to your previous need"
+            ));
+        }
+
+        String joined = String.join(replyLanguage.isVietnamese() ? ", " : ", ", reasons.stream().distinct().limit(3).toList());
+        return capitalize ? capitalizeFirst(joined) : joined;
+    }
+
+    private boolean isBestChoiceFollowUp(String normalizedMessage) {
+        return normalizedMessage.contains("cai nao hop nhat")
+                || normalizedMessage.contains("cai nao nen chon")
+                || normalizedMessage.contains("mau nao nen chon")
+                || normalizedMessage.contains("which one is best")
+                || normalizedMessage.contains("which one best")
+                || normalizedMessage.contains("which one should i choose")
+                || normalizedMessage.contains("best one");
+    }
+
+    private boolean isComparisonFollowUp(String normalizedMessage) {
+        return normalizedMessage.contains("so sanh")
+                || normalizedMessage.contains("compare");
+    }
+
+    private String buildRecommendationFollowUpFallbackResponse(ReplyLanguage replyLanguage) {
+        return replyText(
+                replyLanguage,
+                "Mình hiểu bạn đang hỏi tiếp về các mẫu vừa gợi ý. Hiện mình chưa giữ đủ danh sách recommendation trước đó trong ngữ cảnh này, nên bạn hãy gửi lại tên các mẫu hoặc yêu cầu mình gợi ý lại để mình giải thích chính xác hơn.",
+                "I understand you're following up on the previous suggestions. I don't have a reliable list of those recommendations in this context right now, so please send the item names again or let me recommend them again and I'll explain more precisely."
+        );
+    }
+
+    private String buildOutOfScopeResponse(ReplyLanguage replyLanguage) {
+        return replyText(
+                replyLanguage,
+                "Mình chủ yếu hỗ trợ chọn trang phục và giải đáp các câu hỏi liên quan đến thuê đồ. Nếu bạn muốn, mình có thể giúp gợi ý outfit hoặc kiểm tra thông tin thuê phù hợp.",
+                "I mainly help with outfit selection and costume rental questions. If you'd like, I can help suggest an outfit or check rental-related details."
+        );
     }
 
     private String buildIntroMessage(Costume contextCostume) {
         if (contextCostume != null) {
-            return "AI Stylist da san sang. Ban co the hoi ve style, dip su dung, mau sac, ngan sach, size, hoac yeu cau san pham tuong tu voi \"" + contextCostume.getName() + "\".";
+            return "AI Stylist đã sẵn sàng. Bạn có thể hỏi về style, dịp sử dụng, màu sắc, ngân sách, size hoặc yêu cầu sản phẩm tương tự với \"" + contextCostume.getName() + "\".";
         }
 
-        return "AI Stylist da san sang. Hay cho minh biet dip su dung, style, mau sac, ngan sach, size, hoac costume ban dang quan tam de minh de xuat tu catalog thuc te.";
+        return "AI Stylist đã sẵn sàng. Hãy cho mình biết dịp sử dụng, style, màu sắc, ngân sách, size hoặc costume bạn đang quan tâm để mình đề xuất từ catalog thực tế.";
     }
 
     private String buildAiStylistExplanationContext(String userMessage,
                                                     Costume selectedCostume,
                                                     AvailabilityWindow availabilityWindow,
-                                                    boolean usedBehaviorProfile) {
-        StringBuilder context = new StringBuilder("Gợi ý từ AI Stylist dựa trên catalog thật.");
+                                                    boolean usedBehaviorProfile,
+                                                    String detectedIntentJson,
+                                                    AiChatContext chatContext) {
+        StringBuilder context = new StringBuilder("AI stylist recommendations grounded in the live catalog.");
         if (selectedCostume != null) {
-            context.append(" Costume tham chiếu: ").append(selectedCostume.getName()).append('.');
+            context.append(" Reference costume: ").append(selectedCostume.getName()).append('.');
         }
         if (availabilityWindow != null) {
-            context.append(" Lọc theo lịch thuê ")
-                    .append(formatAvailabilityWindow(availabilityWindow))
+            context.append(" Rental availability window: ")
+                    .append(formatAvailabilityWindowEn(availabilityWindow))
                     .append('.');
         }
         if (usedBehaviorProfile) {
-            context.append(" Có dùng thêm lịch sử hành vi gần đây.");
+            context.append(" Recent behavior signals were also used.");
+        }
+        if (detectedIntentJson != null && !detectedIntentJson.isBlank()) {
+            context.append(" Detected intent JSON: ").append(detectedIntentJson);
+        }
+        if (chatContext != null && chatContext.conversationSummary() != null && !chatContext.conversationSummary().isBlank()) {
+            context.append(" Conversation summary: ").append(chatContext.conversationSummary());
         }
         if (userMessage != null && !userMessage.isBlank()) {
-            context.append(" Yêu cầu người dùng: ").append(limitText(userMessage, 220));
+            context.append(" Latest user request: ").append(limitText(userMessage, 220));
         }
         return context.toString();
     }
@@ -575,59 +1166,23 @@ public class AiStylistServiceImpl implements AiStylistService {
                 session.getGuestSessionId(),
                 session.getContextCostume() != null ? CostumeDTO.fromEntity(session.getContextCostume()) : null,
                 session.getMessages().stream()
-                        .map(message -> AiStylistMessageDTO.fromEntity(message, readStoredRecommendations(message.getMetadataJson(), activeCostumesById)))
+                        .map(message -> AiStylistMessageDTO.fromEntity(
+                                message,
+                                aiChatContextBuilder.readStoredRecommendations(message.getMetadataJson(), activeCostumesById)
+                        ))
                         .toList(),
                 session.getCreatedAt() != null ? session.getCreatedAt().toString() : null,
                 session.getUpdatedAt() != null ? session.getUpdatedAt().toString() : null
         );
     }
 
-    private List<SimilarCostumeRecommendationDTO> readStoredRecommendations(String metadataJson, Map<Long, Costume> activeCostumesById) {
-        if (metadataJson == null || metadataJson.isBlank()) {
-            return List.of();
-        }
-
-        try {
-            List<Map<String, Object>> summaries = objectMapper.readValue(metadataJson, RECOMMENDATION_SUMMARY_TYPE);
-            List<SimilarCostumeRecommendationDTO> recommendations = new ArrayList<>();
-            Map<AvailabilityWindow, AvailabilitySnapshot> availabilitySnapshots = new HashMap<>();
-            List<Costume> activeCostumes = new ArrayList<>(activeCostumesById.values());
-            for (Map<String, Object> summary : summaries) {
-                Long costumeId = parseLong(summary.get("costumeId"));
-                Costume costume = costumeId != null ? activeCostumesById.get(costumeId) : null;
-                if (costume == null) {
-                    continue;
-                }
-
-                AvailabilityWindow availabilityWindow = readAvailabilityWindow(summary);
-                AvailabilitySnapshot availabilitySnapshot = availabilitySnapshots.computeIfAbsent(
-                        availabilityWindow,
-                        key -> buildAvailabilitySnapshot(activeCostumes, key)
-                );
-                int availableItemCount = availabilitySnapshot.availableItemCount(costume, Set.of());
-                if (availableItemCount <= 0) {
-                    continue;
-                }
-
-                recommendations.add(SimilarCostumeRecommendationDTO.fromEntity(
-                        costume,
-                        stringValue(summary.get("reason")),
-                        intValue(summary.get("score")),
-                        availableItemCount
-                ));
-            }
-            return recommendations;
-        } catch (Exception ignored) {
-            return List.of();
-        }
-    }
-
-    private String writeRecommendationMetadata(List<SimilarCostumeRecommendationDTO> recommendations, AvailabilityWindow availabilityWindow) {
-        if (recommendations == null || recommendations.isEmpty()) {
-            return null;
-        }
-
-        List<Map<String, Object>> summaries = recommendations.stream()
+    private String writeAssistantMetadata(List<SimilarCostumeRecommendationDTO> recommendations,
+                                          AvailabilityWindow availabilityWindow,
+                                          AiIntentUnderstandingService.IntentUnderstandingResult understoodIntent,
+                                          String latestUserMessage,
+                                          String assistantContent,
+                                          String fallbackUserNeedSummary) {
+        List<Map<String, Object>> summaries = recommendations == null ? List.of() : recommendations.stream()
                 .map(item -> {
                     Map<String, Object> summary = new LinkedHashMap<>();
                     summary.put("costumeId", item.costume().id());
@@ -643,10 +1198,47 @@ public class AiStylistServiceImpl implements AiStylistService {
                 .toList();
 
         try {
-            return objectMapper.writeValueAsString(summaries);
+            Map<String, Object> metadata = new LinkedHashMap<>();
+            metadata.put("detectedIntent", understoodIntent.intent().name());
+            metadata.put("detectedIntentJson", understoodIntent.intentJson());
+            metadata.put("responseSummary", limitText(assistantContent, 240));
+            metadata.put("lastUserMessage", limitText(latestUserMessage, 240));
+            metadata.put("lastUserNeedSummary", buildUserNeedSummary(understoodIntent, fallbackUserNeedSummary));
+            metadata.put("language", understoodIntent.language().providerCode());
+            if (availabilityWindow != null) {
+                metadata.put("rentalStartDate", availabilityWindow.startDate().format(DATE_FORMATTER));
+                metadata.put("rentalEndDate", availabilityWindow.endDate().format(DATE_FORMATTER));
+            }
+            metadata.put("recommendations", summaries);
+            return objectMapper.writeValueAsString(metadata);
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private String buildUserNeedSummary(AiIntentUnderstandingService.IntentUnderstandingResult understoodIntent,
+                                        String fallbackUserNeedSummary) {
+        if (understoodIntent == null) {
+            return fallbackUserNeedSummary;
+        }
+
+        List<String> parts = new ArrayList<>();
+        if (understoodIntent.occasion() != null) {
+            parts.add("occasion=" + understoodIntent.occasion());
+        }
+        if (understoodIntent.style() != null) {
+            parts.add("style=" + understoodIntent.style());
+        }
+        if (understoodIntent.color() != null) {
+            parts.add("color=" + understoodIntent.color());
+        }
+        if (understoodIntent.gender() != null) {
+            parts.add("gender=" + understoodIntent.gender());
+        }
+        if (understoodIntent.size() != null) {
+            parts.add("size=" + understoodIntent.size());
+        }
+        return parts.isEmpty() ? fallbackUserNeedSummary : String.join(", ", parts);
     }
 
     private User resolveAuthenticatedUser(String authenticatedEmail) {
@@ -777,41 +1369,72 @@ public class AiStylistServiceImpl implements AiStylistService {
         };
     }
 
-    private StylistIntent parseIntent(String message, Collection<Costume> candidates) {
+    private StylistIntent buildStylistIntent(String message, AiIntentUnderstandingService.IntentUnderstandingResult understoodIntent) {
         String normalizedMessage = normalizeText(message);
         Set<String> tokens = new LinkedHashSet<>();
         if (normalizedMessage != null) {
             for (String token : normalizedMessage.split("\\s+")) {
-                if (token.length() >= 3) {
+                if (token.length() >= 3 && !LOW_SIGNAL_TOKENS.contains(token) && !token.chars().allMatch(Character::isDigit)) {
                     tokens.add(token);
                 }
             }
         }
 
-        return new StylistIntent(tokens, extractMaxBudget(message), extractRequestedSizes(normalizedMessage, candidates));
+        appendEntityTokens(tokens, understoodIntent.occasion());
+        appendEntityTokens(tokens, understoodIntent.style());
+        appendEntityTokens(tokens, understoodIntent.color());
+        appendEntityTokens(tokens, understoodIntent.gender());
+        appendEntityTokens(tokens, understoodIntent.productMentioned());
+        Set<String> requestedSizes = understoodIntent.size() == null
+                ? Set.of()
+                : Set.of(understoodIntent.size());
+        BigDecimal maxBudget = understoodIntent.budget() != null ? understoodIntent.budget() : extractMaxBudget(message);
+        String signalSource = String.join(" ",
+                safe(message),
+                safe(understoodIntent.occasion()),
+                safe(understoodIntent.style()),
+                safe(understoodIntent.color()),
+                safe(understoodIntent.gender()),
+                safe(understoodIntent.productMentioned())
+        );
+
+        return new StylistIntent(
+                tokens,
+                maxBudget,
+                requestedSizes,
+                extractIntentSignals(normalizeText(signalSource))
+        );
     }
 
-    private Set<String> extractRequestedSizes(String normalizedMessage, Collection<Costume> candidates) {
-        if (normalizedMessage == null || candidates == null || candidates.isEmpty()) {
+    private void appendEntityTokens(Set<String> tokens, String rawValue) {
+        String normalizedValue = normalizeText(rawValue);
+        if (normalizedValue == null) {
+            return;
+        }
+
+        for (String token : normalizedValue.split("\\s+")) {
+            if (token.length() >= 3 && !LOW_SIGNAL_TOKENS.contains(token) && !token.chars().allMatch(Character::isDigit)) {
+                tokens.add(token);
+            }
+        }
+    }
+
+    private Set<String> extractIntentSignals(String normalizedMessage) {
+        String intentText = normalizeForLanguageDetection(normalizedMessage);
+        if (intentText == null || intentText.isBlank()) {
             return Set.of();
         }
 
-        LinkedHashSet<String> requestedSizes = new LinkedHashSet<>();
-        Set<String> knownSizes = candidates.stream()
-                .flatMap(costume -> costume.getItems().stream())
-                .map(CostumeItem::getSize)
-                .map(this::normalizeText)
-                .filter(size -> size != null && !size.isBlank())
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        for (String knownSize : knownSizes) {
-            Pattern sizePattern = Pattern.compile("(?<![\\p{L}\\p{N}])" + Pattern.quote(knownSize) + "(?![\\p{L}\\p{N}])");
-            if (sizePattern.matcher(normalizedMessage).find()) {
-                requestedSizes.add(knownSize.toUpperCase(Locale.ROOT));
+        LinkedHashSet<String> signals = new LinkedHashSet<>();
+        for (IntentSignalGroup group : INTENT_SIGNAL_GROUPS) {
+            for (String alias : group.aliases()) {
+                if (intentText.contains(alias)) {
+                    signals.add(group.key());
+                    break;
+                }
             }
         }
-
-        return requestedSizes;
+        return signals;
     }
 
     private BigDecimal extractMaxBudget(String message) {
@@ -861,18 +1484,7 @@ public class AiStylistServiceImpl implements AiStylistService {
             return 0;
         }
 
-        String searchableText = normalizeText(
-                String.join(" ",
-                        safe(candidate.getName()),
-                        safe(candidate.getDescription()),
-                        candidate.getCategory() != null ? safe(candidate.getCategory().getName()) : "",
-                        candidate.getMetadata() != null ? safe(candidate.getMetadata().getStyle()) : "",
-                        candidate.getMetadata() != null ? safe(candidate.getMetadata().getOccasion()) : "",
-                        candidate.getMetadata() != null ? safe(candidate.getMetadata().getSeason()) : "",
-                        candidate.getMetadata() != null ? safe(candidate.getMetadata().getColor()) : "",
-                        candidate.getMetadata() != null ? String.join(" ", candidate.getMetadata().getTags()) : ""
-                )
-        );
+        String searchableText = buildSearchableText(candidate);
 
         if (searchableText == null) {
             return 0;
@@ -885,6 +1497,59 @@ public class AiStylistServiceImpl implements AiStylistService {
             }
         }
         return matchCount;
+    }
+
+    private IntentMatch evaluateLatestIntentMatch(Costume candidate, CostumeMetadataDTO candidateMetadata, StylistIntent intent) {
+        String searchableText = normalizeForLanguageDetection(buildSearchableText(candidate));
+        if (searchableText == null) {
+            return new IntentMatch(0, 0);
+        }
+
+        int signalMatchCount = 0;
+        for (IntentSignalGroup group : INTENT_SIGNAL_GROUPS) {
+            if (!intent.intentSignals().contains(group.key())) {
+                continue;
+            }
+            for (String alias : group.aliases()) {
+                if (searchableText.contains(alias)) {
+                    signalMatchCount++;
+                    break;
+                }
+            }
+        }
+
+        int score = signalMatchCount * 18;
+        if (intent.hasExplicitSignals() && signalMatchCount == 0) {
+            score -= 12;
+        }
+
+        String normalizedGender = normalize(candidateMetadata != null ? candidateMetadata.gender() : null);
+        if (normalizedGender != null && intent.tokens().contains(normalizedGender)) {
+            score += 6;
+        }
+
+        String normalizedColor = normalize(candidateMetadata != null ? candidateMetadata.color() : null);
+        if (normalizedColor != null && intent.tokens().contains(normalizedColor)) {
+            score += 5;
+        }
+
+        return new IntentMatch(score, signalMatchCount);
+    }
+
+    private String buildSearchableText(Costume candidate) {
+        return normalizeText(
+                String.join(" ",
+                        safe(candidate.getName()),
+                        safe(candidate.getDescription()),
+                        candidate.getCategory() != null ? safe(candidate.getCategory().getName()) : "",
+                        candidate.getMetadata() != null ? safe(candidate.getMetadata().getStyle()) : "",
+                        candidate.getMetadata() != null ? safe(candidate.getMetadata().getOccasion()) : "",
+                        candidate.getMetadata() != null ? safe(candidate.getMetadata().getSeason()) : "",
+                        candidate.getMetadata() != null ? safe(candidate.getMetadata().getColor()) : "",
+                        candidate.getMetadata() != null ? safe(candidate.getMetadata().getGender()) : "",
+                        candidate.getMetadata() != null ? String.join(" ", candidate.getMetadata().getTags()) : ""
+                )
+        );
     }
 
     private int countSharedTags(List<String> leftTags, List<String> rightTags) {
@@ -987,6 +1652,14 @@ public class AiStylistServiceImpl implements AiStylistService {
         return availabilityWindow.startDate().format(DATE_FORMATTER) + " den " + availabilityWindow.endDate().format(DATE_FORMATTER);
     }
 
+    private String formatAvailabilityWindowVi(AvailabilityWindow availabilityWindow) {
+        return availabilityWindow.startDate().format(DATE_FORMATTER) + " đến " + availabilityWindow.endDate().format(DATE_FORMATTER);
+    }
+
+    private String formatAvailabilityWindowEn(AvailabilityWindow availabilityWindow) {
+        return availabilityWindow.startDate().format(DATE_FORMATTER) + " to " + availabilityWindow.endDate().format(DATE_FORMATTER);
+    }
+
     private boolean looksLikeProductSpecificQuestion(String userMessage) {
         String normalizedMessage = normalizeText(userMessage);
         if (normalizedMessage == null) {
@@ -997,6 +1670,88 @@ public class AiStylistServiceImpl implements AiStylistService {
                 || normalizedMessage.contains("costume nay")
                 || normalizedMessage.contains("bo nay")
                 || normalizedMessage.contains("co con hang");
+    }
+
+    private ChatIntent detectChatIntent(String userMessage, Costume selectedCostume, StylistIntent intent) {
+        String normalizedMessage = normalizeForLanguageDetection(userMessage);
+        if (normalizedMessage == null || normalizedMessage.isBlank()) {
+            return ChatIntent.CASUAL_CHAT;
+        }
+
+        if (containsAnyPhrase(normalizedMessage, RENTAL_SUPPORT_PHRASES)) {
+            return ChatIntent.RENTAL_SUPPORT;
+        }
+        if (isProductQuestion(normalizedMessage, selectedCostume, intent)) {
+            return ChatIntent.PRODUCT_QUESTION;
+        }
+        if (isRecommendationRequest(normalizedMessage, intent)) {
+            return ChatIntent.RECOMMENDATION_REQUEST;
+        }
+        if (containsAnyPhrase(normalizedMessage, CASUAL_CHAT_PHRASES)) {
+            return ChatIntent.CASUAL_CHAT;
+        }
+        return ChatIntent.OUT_OF_SCOPE;
+    }
+
+    private boolean isRecommendationRequest(String normalizedMessage, StylistIntent intent) {
+        return containsAnyPhrase(normalizedMessage, RECOMMENDATION_REQUEST_PHRASES)
+                || (intent != null && intent.hasExplicitSignals());
+    }
+
+    private boolean isProductQuestion(String normalizedMessage, Costume selectedCostume, StylistIntent intent) {
+        boolean hasExplicitReference = containsAnyPhrase(normalizedMessage, PRODUCT_REFERENCE_PHRASES)
+                || looksLikeProductSpecificQuestion(normalizedMessage);
+        boolean asksProductDetail = containsAnyPhrase(normalizedMessage, PRODUCT_DETAIL_PHRASES)
+                || (intent != null && !intent.requestedSizes().isEmpty());
+        if (hasExplicitReference && asksProductDetail) {
+            return true;
+        }
+        return selectedCostume != null
+                && asksProductDetail
+                && !containsAnyPhrase(normalizedMessage, RECOMMENDATION_REQUEST_PHRASES)
+                && (intent == null || !intent.hasExplicitSignals());
+    }
+
+    private boolean containsAnyPhrase(String normalizedMessage, Set<String> phrases) {
+        for (String phrase : phrases) {
+            Pattern pattern = Pattern.compile("(^|[^\\p{L}\\p{N}])" + Pattern.quote(phrase) + "([^\\p{L}\\p{N}]|$)");
+            if (pattern.matcher(normalizedMessage).find()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Set<String> extractAvailableValues(Costume costume,
+                                               AvailabilitySnapshot availabilitySnapshot,
+                                               java.util.function.Function<CostumeItem, String> extractor) {
+        if (costume == null || costume.getItems() == null) {
+            return Set.of();
+        }
+
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        for (CostumeItem item : costume.getItems()) {
+            if (!ItemStatus.AVAILABLE.equals(item.getStatus())) {
+                continue;
+            }
+            if (availabilitySnapshot != null && availabilitySnapshot.availabilityWindow() != null
+                    && item.getId() != null && availabilitySnapshot.blockedItemIds().contains(item.getId())) {
+                continue;
+            }
+
+            String value = extractor.apply(item);
+            if (value != null && !value.isBlank()) {
+                values.add(value.trim());
+            }
+        }
+        return values;
+    }
+
+    private String joinValuesOrFallback(Set<String> values, ReplyLanguage replyLanguage) {
+        if (values == null || values.isEmpty()) {
+            return replyText(replyLanguage, "chưa có dữ liệu rõ ràng", "not clearly available in the current context");
+        }
+        return String.join("/", values);
     }
 
     private String normalize(String value) {
@@ -1017,9 +1772,92 @@ public class AiStylistServiceImpl implements AiStylistService {
         return normalized.isEmpty() ? null : normalized.replaceAll("\\s+", " ");
     }
 
-    private String formatPrice(BigDecimal value) {
+    private ChatIntent mapChatIntent(AiIntentUnderstandingService.IntentType intentType) {
+        if (intentType == null) {
+            return ChatIntent.OUT_OF_SCOPE;
+        }
+
+        return switch (intentType) {
+            case CASUAL_CHAT -> ChatIntent.CASUAL_CHAT;
+            case RECOMMENDATION_REQUEST -> ChatIntent.RECOMMENDATION_REQUEST;
+            case RECOMMENDATION_EXPLANATION_FOLLOW_UP -> ChatIntent.RECOMMENDATION_EXPLANATION_FOLLOW_UP;
+            case PRODUCT_QUESTION -> ChatIntent.PRODUCT_QUESTION;
+            case RENTAL_SUPPORT -> ChatIntent.RENTAL_SUPPORT;
+            case OUT_OF_SCOPE -> ChatIntent.OUT_OF_SCOPE;
+        };
+    }
+
+    private ReplyLanguage mapReplyLanguage(AiIntentUnderstandingService.Language language) {
+        if (language == AiIntentUnderstandingService.Language.EN) {
+            return ReplyLanguage.EN;
+        }
+        return ReplyLanguage.VI;
+    }
+
+    private ReplyLanguage detectReplyLanguage(String message) {
+        if (message == null || message.isBlank()) {
+            return ReplyLanguage.VI;
+        }
+
+        if (VIETNAMESE_ACCENT_PATTERN.matcher(message).find()) {
+            return ReplyLanguage.VI;
+        }
+
+        if (NON_LATIN_SCRIPT_PATTERN.matcher(message).find()) {
+            return ReplyLanguage.OTHER;
+        }
+
+        String normalized = normalizeForLanguageDetection(message);
+        if (normalized == null) {
+            return ReplyLanguage.VI;
+        }
+
+        List<String> tokens = List.of(normalized.split("\\s+"));
+        int viScore = countLanguageHints(tokens, VI_LANGUAGE_HINTS);
+        int enScore = countLanguageHints(tokens, EN_LANGUAGE_HINTS);
+
+        if (enScore >= 2 && enScore > viScore) {
+            return ReplyLanguage.EN;
+        }
+        if (viScore >= 1) {
+            return ReplyLanguage.VI;
+        }
+        if (enScore == 1 && tokens.size() <= 3) {
+            return ReplyLanguage.EN;
+        }
+
+        return ReplyLanguage.OTHER;
+    }
+
+    private String normalizeForLanguageDetection(String value) {
+        String normalized = normalizeText(value);
+        if (normalized == null) {
+            return null;
+        }
+
+        String stripped = Normalizer.normalize(normalized, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replace('đ', 'd');
+        return stripped.isBlank() ? null : stripped;
+    }
+
+    private int countLanguageHints(List<String> tokens, Set<String> hints) {
+        int score = 0;
+        for (String token : tokens) {
+            if (hints.contains(token)) {
+                score++;
+            }
+        }
+        return score;
+    }
+
+    private String replyText(ReplyLanguage replyLanguage, String vietnamese, String english) {
+        return replyLanguage.isVietnamese() ? vietnamese : english;
+    }
+
+    private String formatPrice(BigDecimal value, ReplyLanguage replyLanguage) {
         if (value == null) {
-            return "khong ro gia";
+            return replyLanguage.isVietnamese() ? "không rõ giá" : "price unavailable";
         }
 
         DecimalFormat decimalFormat = new DecimalFormat("#,###");
@@ -1037,6 +1875,28 @@ public class AiStylistServiceImpl implements AiStylistService {
         }
         String trimmed = value.trim();
         return trimmed.length() <= maxLength ? trimmed : trimmed.substring(0, maxLength);
+    }
+
+    private String decapitalize(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() == 1) {
+            return trimmed.toLowerCase(Locale.ROOT);
+        }
+        return Character.toLowerCase(trimmed.charAt(0)) + trimmed.substring(1);
+    }
+
+    private String capitalizeFirst(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() == 1) {
+            return trimmed.toUpperCase(Locale.ROOT);
+        }
+        return Character.toUpperCase(trimmed.charAt(0)) + trimmed.substring(1);
     }
 
     private Long parseLong(Object value) {
@@ -1101,7 +1961,22 @@ public class AiStylistServiceImpl implements AiStylistService {
                 .compare(left, right);
     }
 
-    private record StylistIntent(Set<String> tokens, BigDecimal maxBudget, Set<String> requestedSizes) {
+    private record StylistIntent(Set<String> tokens,
+                                 BigDecimal maxBudget,
+                                 Set<String> requestedSizes,
+                                 Set<String> intentSignals) {
+        private boolean hasExplicitSignals() {
+            return intentSignals != null && !intentSignals.isEmpty();
+        }
+    }
+
+    private record IntentSignalGroup(String key, Set<String> aliases) {
+    }
+
+    private record IntentMatch(int score, int signalMatchCount) {
+        private boolean hasSignalMatch() {
+            return signalMatchCount > 0;
+        }
     }
 
     private record StylistCandidate(Costume costume, int score, int availableItemCount, String reason) {
@@ -1136,6 +2011,18 @@ public class AiStylistServiceImpl implements AiStylistService {
         }
     }
 
+    private AvailabilityWindow toAvailabilityWindow(AiChatContext chatContext) {
+        if (chatContext == null
+                || chatContext.lastRecommendationRentalStartDate() == null
+                || chatContext.lastRecommendationRentalEndDate() == null) {
+            return null;
+        }
+        return new AvailabilityWindow(
+                chatContext.lastRecommendationRentalStartDate(),
+                chatContext.lastRecommendationRentalEndDate()
+        );
+    }
+
     private static String normalizeSize(String value) {
         if (value == null) {
             return null;
@@ -1143,6 +2030,35 @@ public class AiStylistServiceImpl implements AiStylistService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed.toUpperCase(Locale.ROOT);
+    }
+
+    private enum ChatIntent {
+        CASUAL_CHAT,
+        RECOMMENDATION_REQUEST,
+        RECOMMENDATION_EXPLANATION_FOLLOW_UP,
+        RENTAL_SUPPORT,
+        PRODUCT_QUESTION,
+        OUT_OF_SCOPE
+    }
+
+    private enum ReplyLanguage {
+        VI("vi"),
+        EN("en"),
+        OTHER("same_as_user");
+
+        private final String providerCode;
+
+        ReplyLanguage(String providerCode) {
+            this.providerCode = providerCode;
+        }
+
+        private String providerCode() {
+            return providerCode;
+        }
+
+        private boolean isVietnamese() {
+            return this == VI;
+        }
     }
 
     private static final class StylistPreferenceProfile {

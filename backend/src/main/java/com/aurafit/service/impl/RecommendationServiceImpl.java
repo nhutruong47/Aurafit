@@ -85,6 +85,9 @@ public class RecommendationServiceImpl implements RecommendationService {
         return aiExplanationService.enhanceRecommendationReasons(
                 "similar_products",
                 buildSimilarExplanationContext(sourceCostume),
+                "vi",
+                null,
+                null,
                 recommendations
         );
     }
@@ -109,6 +112,9 @@ public class RecommendationServiceImpl implements RecommendationService {
             return aiExplanationService.enhanceRecommendationReasons(
                     "homepage_personalized",
                     "Gợi ý cá nhân hóa trang chủ cho người dùng chưa có đủ lịch sử rõ ràng.",
+                    "vi",
+                    null,
+                    null,
                     buildHomepageFallbackRecommendations(candidates, normalizedLimit)
             );
         }
@@ -132,6 +138,9 @@ public class RecommendationServiceImpl implements RecommendationService {
         return aiExplanationService.enhanceRecommendationReasons(
                 "homepage_personalized",
                 "Gợi ý cá nhân hóa trang chủ dựa trên lịch sử xem, tìm kiếm và thuê gần đây.",
+                "vi",
+                null,
+                null,
                 recommendations
         );
     }

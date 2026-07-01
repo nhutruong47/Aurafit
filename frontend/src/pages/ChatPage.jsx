@@ -23,6 +23,11 @@ import {
   trackAiStylistSessionStart,
   trackAiStylistUserMessage,
 } from '../services/interactionsService';
+import {
+  buildPricePromptMessage,
+  detectChatReplyLanguage,
+  getChatAssistantErrorMessage,
+} from '../utils/chatLanguage';
 import { formatCurrency } from '../utils/formatCurrency';
 import { mapCostumeToProduct } from '../utils/productMapper';
 
@@ -73,6 +78,16 @@ const getLastAssistantMessage = (messages = []) => {
   return null;
 };
 
+const getLastUserMessageContent = (messages = []) => {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === 'USER' || message?.author === 'user') {
+      return message.content || message.text || '';
+    }
+  }
+  return '';
+};
+
 const getRecommendationIds = (recommendations = []) =>
   recommendations
     .map((item) => item?.costume?.id ?? item?.product?.id ?? null)
@@ -91,6 +106,9 @@ const getStableRentalPeriod = (products = []) => {
   const [rentalStartDate, rentalEndDate] = uniqueRanges[0].split('|');
   return rentalStartDate && rentalEndDate ? { rentalStartDate, rentalEndDate } : null;
 };
+
+const createClientMessageId = (prefix) =>
+  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
 export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
   const location = useLocation();
@@ -119,8 +137,11 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
   const [sessionError, setSessionError] = useState('');
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [typingLanguage, setTypingLanguage] = useState('vi');
+  const [isAssistantTyping, setIsAssistantTyping] = useState(false);
   const trackedSessionEntryKeyRef = useRef('');
   const trackedRecommendationImpressionsRef = useRef(new Set());
+  const isSendingRef = useRef(false);
 
   const activeProduct = useMemo(
     () => products.find((product) => product.name === activeProductName) || products[0] || null,
@@ -167,6 +188,7 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
 
         setSessionId(createdSession.id);
         setMessages(mapBackendMessages(createdSession.messages));
+        setTypingLanguage(detectChatReplyLanguage(getLastUserMessageContent(createdSession.messages)));
         storeAiStylistSessionId(createdSession.id, guestSessionId, currentUser?.id);
 
         const sessionEntryKey = `${createdSession.id}:created:${currentUser?.id || 'guest'}`;
@@ -237,6 +259,7 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
           } else {
             setSessionId(existingSession.id);
             setMessages(mapBackendMessages(existingSession.messages));
+            setTypingLanguage(detectChatReplyLanguage(getLastUserMessageContent(existingSession.messages)));
 
             const sessionEntryKey = `${existingSession.id}:resume:${currentUser?.id || 'guest'}`;
             if (trackedSessionEntryKeyRef.current !== sessionEntryKey) {
@@ -316,7 +339,24 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
 
   const sendMessage = async (textOverride) => {
     const text = (textOverride ?? draft).trim();
-    if (!text || !sessionId || isSending) return;
+    if (!text || !sessionId || isSendingRef.current) return;
+
+    const nextLanguage = detectChatReplyLanguage(text);
+    const optimisticUserMessage = {
+      id: createClientMessageId('user'),
+      author: 'user',
+      time: formatMessageTime(new Date().toISOString()),
+      text,
+      recommendations: [],
+    };
+
+    isSendingRef.current = true;
+    setTypingLanguage(nextLanguage);
+    setIsAssistantTyping(true);
+    setIsSending(true);
+    setSessionError('');
+    setDraft('');
+    setMessages((currentMessages) => [...currentMessages, optimisticUserMessage]);
 
     trackAiStylistUserMessage({
       interactionSessionId: guestSessionId,
@@ -327,10 +367,6 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
       rentalStartDate: activeRentalPeriod?.rentalStartDate || null,
       rentalEndDate: activeRentalPeriod?.rentalEndDate || null,
     }).catch(() => {});
-
-    setIsSending(true);
-    setSessionError('');
-    setDraft('');
 
     try {
       const session = await sendAiStylistMessage({
@@ -359,10 +395,20 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
       setMessages(mapBackendMessages(session.messages));
       setSessionId(session.id);
       storeAiStylistSessionId(session.id, guestSessionId, currentUser?.id);
-    } catch (error) {
-      setDraft(text);
-      setSessionError(error.message || 'Không thể gửi tin nhắn đến Chatbot AuraFit.');
+    } catch {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createClientMessageId('assistant-error'),
+          author: 'assistant',
+          time: formatMessageTime(new Date().toISOString()),
+          text: getChatAssistantErrorMessage(nextLanguage),
+          recommendations: [],
+        },
+      ]);
     } finally {
+      isSendingRef.current = false;
+      setIsAssistantTyping(false);
       setIsSending(false);
     }
   };
@@ -399,7 +445,7 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
 
   const sendPriceRequest = () => {
     if (!activeProduct) return;
-    sendMessage(`Mình muốn được Chatbot AuraFit tư vấn giá và gợi ý costume phù hợp với "${activeProduct.name}" (${activeProduct.price}).`);
+    sendMessage(buildPricePromptMessage(typingLanguage, activeProduct.name, activeProduct.price));
   };
 
   const handleCloseSession = () => {
@@ -463,6 +509,8 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
             messages={messages}
             onNavigate={onNavigate}
             onRecommendationClick={handleRecommendationClick}
+            isAssistantTyping={isAssistantTyping}
+            typingLanguage={typingLanguage}
           />
 
           <ChatComposer

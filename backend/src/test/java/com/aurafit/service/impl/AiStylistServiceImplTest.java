@@ -24,7 +24,9 @@ import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.RentalOrderDetailRepository;
 import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.AiChatContext;
 import com.aurafit.service.AiExplanationService;
+import com.aurafit.service.AiIntentUnderstandingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,6 +75,9 @@ class AiStylistServiceImplTest {
     @Mock
     private AiExplanationService aiExplanationService;
 
+    @Mock
+    private AiIntentUnderstandingService aiIntentUnderstandingService;
+
     private AiStylistServiceImpl aiStylistService;
 
     @BeforeEach
@@ -84,14 +89,22 @@ class AiStylistServiceImplTest {
                 userInteractionEventRepository,
                 userRepository,
                 new ObjectMapper(),
-                aiExplanationService
+                aiExplanationService,
+                aiIntentUnderstandingService,
+                new AiChatContextBuilderImpl(new ObjectMapper())
         );
         lenient().when(userInteractionEventRepository.findTop60BySessionIdOrderByCreatedAtDesc(anyString()))
                 .thenReturn(List.of());
         lenient().when(userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(anyLong()))
                 .thenReturn(List.of());
-        lenient().when(aiExplanationService.enhanceRecommendationReasons(anyString(), anyString(), anyList()))
-                .thenAnswer(invocation -> invocation.getArgument(2));
+        lenient().when(aiExplanationService.enhanceRecommendationReasons(anyString(), anyString(), anyString(), anyString(), anyString(), anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(5));
+        lenient().when(aiExplanationService.enhanceRecommendationReasons(anyString(), anyString(), anyString(), anyString(), anyString(), anyList(), any(AiChatContext.class)))
+                .thenAnswer(invocation -> invocation.getArgument(5));
+        lenient().when(aiIntentUnderstandingService.understandIntent(any(AiChatContext.class)))
+                .thenAnswer(invocation -> detectIntentFromContext(invocation.getArgument(0)));
+        lenient().when(aiIntentUnderstandingService.understandIntent(anyString()))
+                .thenAnswer(invocation -> detectIntent(invocation.getArgument(0)));
     }
 
     @Test
@@ -127,7 +140,7 @@ class AiStylistServiceImplTest {
         assertEquals("guest-001", result.guestSessionId());
         assertEquals(1, result.messages().size());
         assertEquals(AiStylistMessageRole.ASSISTANT, result.messages().get(0).role());
-        assertTrue(result.messages().get(0).content().contains("AI Stylist da san sang"));
+        assertTrue(result.messages().get(0).content().contains("AI Stylist đã sẵn sàng"));
     }
 
     @Test
@@ -164,7 +177,7 @@ class AiStylistServiceImplTest {
                         AiStylistMessage.builder()
                                 .id(1L)
                                 .role(AiStylistMessageRole.ASSISTANT)
-                                .content("AI Stylist da san sang.")
+                                .content("AI Stylist đã sẵn sàng.")
                                 .build()
                 )))
                 .build();
@@ -197,7 +210,7 @@ class AiStylistServiceImplTest {
         assertEquals(AiStylistMessageRole.USER, result.messages().get(1).role());
         assertEquals(AiStylistMessageRole.ASSISTANT, result.messages().get(2).role());
         assertFalse(result.messages().get(2).recommendations().isEmpty());
-        assertTrue(result.messages().get(2).content().contains("catalog"));
+        assertTrue(result.messages().get(2).content().contains("Mình đã đối chiếu"));
         assertTrue(
                 result.messages().get(2).recommendations().stream()
                         .anyMatch(item -> item.costume().id().equals(2L))
@@ -238,7 +251,7 @@ class AiStylistServiceImplTest {
                         AiStylistMessage.builder()
                                 .id(1L)
                                 .role(AiStylistMessageRole.ASSISTANT)
-                                .content("AI Stylist da san sang.")
+                                .content("AI Stylist đã sẵn sàng.")
                                 .build()
                 )))
                 .build();
@@ -277,7 +290,7 @@ class AiStylistServiceImplTest {
         );
 
         assertFalse(result.messages().get(2).recommendations().isEmpty());
-        assertTrue(result.messages().get(2).content().contains("2026-07-10 den 2026-07-12"));
+        assertTrue(result.messages().get(2).content().contains("2026-07-10 đến 2026-07-12"));
         assertTrue(
                 result.messages().get(2).recommendations().stream()
                         .noneMatch(item -> item.costume().id().equals(3L))
@@ -316,7 +329,7 @@ class AiStylistServiceImplTest {
                         AiStylistMessage.builder()
                                 .id(1L)
                                 .role(AiStylistMessageRole.ASSISTANT)
-                                .content("AI Stylist da san sang.")
+                                .content("AI Stylist đã sẵn sàng.")
                                 .build()
                 )))
                 .build();
@@ -348,8 +361,8 @@ class AiStylistServiceImplTest {
 
         assertFalse(result.messages().get(2).recommendations().isEmpty());
         assertEquals(2L, result.messages().get(2).recommendations().get(0).costume().id());
-        assertTrue(result.messages().get(2).content().contains("hanh vi ban da xem va tim gan day"));
-        assertTrue(result.messages().get(2).recommendations().get(0).reason().contains("Gan voi costume ban da xem"));
+        assertTrue(result.messages().get(2).content().contains("chỉ dùng thêm hành vi bạn đã xem và tìm gần đây"));
+        assertTrue(result.messages().get(2).recommendations().get(0).reason().contains("Gần với costume bạn đã xem"));
     }
 
     @Test
@@ -383,7 +396,7 @@ class AiStylistServiceImplTest {
                         AiStylistMessage.builder()
                                 .id(1L)
                                 .role(AiStylistMessageRole.ASSISTANT)
-                                .content("AI Stylist da san sang.")
+                                .content("AI Stylist đã sẵn sàng.")
                                 .build()
                 )))
                 .build();
@@ -401,6 +414,348 @@ class AiStylistServiceImplTest {
         assertEquals(1, result.messages().get(2).recommendations().size());
         assertEquals(4L, result.messages().get(2).recommendations().get(0).costume().id());
         assertTrue(result.messages().get(2).recommendations().get(0).reason().contains("size XL"));
+    }
+
+    @Test
+    void sendMessage_ShouldHandleVietnameseCasualChatWithoutRecommendations() {
+        User user = user(41L, "casual@aurafit.vn");
+        Category cosplay = category(8L, "Cosplay");
+        Costume cosplayCandidate = costume(
+                15L,
+                "Galaxy Hero Cosplay",
+                cosplay,
+                metadata("Fantasy", "Cosplay", "All Season", "Blue", "anime"),
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(15L)
+                .user(user)
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder()
+                                .id(1L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("AI Stylist đã sẵn sàng.")
+                                .build()
+                )))
+                .build();
+
+        UserInteractionEvent recentViewEvent = interactionEvent(
+                801L,
+                user,
+                "casual-session",
+                InteractionEventType.VIEW_PRODUCT,
+                InteractionTargetType.COSTUME,
+                "15",
+                "cosplay anime",
+                "{\"style\":\"Fantasy\",\"occasion\":\"Cosplay\",\"season\":\"All Season\",\"category\":\"Cosplay\",\"color\":\"Blue\",\"tags\":[\"anime\"]}",
+                LocalDateTime.now()
+        );
+
+        when(userRepository.findByEmail("casual@aurafit.vn")).thenReturn(Optional.of(user));
+        when(aiStylistSessionRepository.findByIdWithMessages(15L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(cosplayCandidate));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 70L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(15L, null, null, null, null, "Bạn khỏe không?"),
+                "casual@aurafit.vn"
+        );
+
+        assertTrue(result.messages().get(2).recommendations().isEmpty());
+        assertTrue(result.messages().get(2).content().contains("sẵn sàng giúp bạn")
+                || result.messages().get(2).content().contains("đang tìm đồ cho dịp nào"));
+    }
+
+    @Test
+    void sendMessage_ShouldHandleEnglishCasualChatWithoutRecommendations() {
+        AiStylistSession session = AiStylistSession.builder()
+                .id(16L)
+                .guestSessionId("guest-casual-en")
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder()
+                                .id(1L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("AI Stylist đã sẵn sàng.")
+                                .build()
+                )))
+                .build();
+
+        when(aiStylistSessionRepository.findByIdWithMessages(16L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE)).thenReturn(List.of());
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 80L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(16L, "guest-casual-en", null, null, null, "Hello, how are you?"),
+                null
+        );
+
+        assertTrue(result.messages().get(2).recommendations().isEmpty());
+        assertTrue(result.messages().get(2).content().contains("I'm doing well")
+                || result.messages().get(2).content().contains("ready to help"));
+    }
+
+    @Test
+    void sendMessage_ShouldHandleRentalSupportWithoutRecommendations() {
+        AiStylistSession session = AiStylistSession.builder()
+                .id(17L)
+                .guestSessionId("guest-support")
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder()
+                                .id(1L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("AI Stylist đã sẵn sàng.")
+                                .build()
+                )))
+                .build();
+
+        when(aiStylistSessionRepository.findByIdWithMessages(17L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE)).thenReturn(List.of());
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 90L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(17L, "guest-support", null, null, null, "Thuê đồ cần đặt cọc không?"),
+                null
+        );
+
+        assertTrue(result.messages().get(2).recommendations().isEmpty());
+        assertTrue(result.messages().get(2).content().contains("đặt cọc")
+                || result.messages().get(2).content().contains("xác nhận lại với shop"));
+    }
+
+    @Test
+    void sendMessage_ShouldNotLetHistoryOverrideThanksMessage() {
+        User user = user(42L, "thanks@aurafit.vn");
+        Category events = category(9L, "Events");
+        Costume galaCandidate = costume(
+                16L,
+                "Crystal Gala Dress",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Silver", "formal"),
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(18L)
+                .user(user)
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder()
+                                .id(1L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("AI Stylist đã sẵn sàng.")
+                                .build()
+                )))
+                .build();
+
+        UserInteractionEvent historyEvent = interactionEvent(
+                901L,
+                user,
+                "thanks-session",
+                InteractionEventType.VIEW_PRODUCT,
+                InteractionTargetType.COSTUME,
+                "16",
+                "dam da hoi",
+                "{\"style\":\"Elegant\",\"occasion\":\"Gala\",\"season\":\"Winter\",\"category\":\"Events\",\"color\":\"Silver\",\"tags\":[\"formal\"]}",
+                LocalDateTime.now()
+        );
+
+        when(userRepository.findByEmail("thanks@aurafit.vn")).thenReturn(Optional.of(user));
+        when(aiStylistSessionRepository.findByIdWithMessages(18L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE)).thenReturn(List.of(galaCandidate));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 100L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(18L, null, null, null, null, "Cảm ơn"),
+                "thanks@aurafit.vn"
+        );
+
+        assertTrue(result.messages().get(2).recommendations().isEmpty());
+        assertTrue(result.messages().get(2).content().contains("Không có gì")
+                || result.messages().get(2).content().contains("sẵn sàng giúp bạn"));
+    }
+
+    @Test
+    void sendMessage_ShouldReplyInEnglishWhenUserMessageIsEnglish() {
+        Category events = category(1L, "Events");
+        Costume selectedCostume = costume(
+                1L,
+                "Red Gala Dress",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Red", "formal"),
+                ItemStatus.AVAILABLE
+        );
+        Costume matchingCandidate = costume(
+                2L,
+                "Velvet Red Evening Dress",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Red", "formal"),
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(12L)
+                .guestSessionId("guest-en")
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder()
+                                .id(1L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("AI Stylist đã sẵn sàng.")
+                                .build()
+                )))
+                .build();
+
+        when(aiStylistSessionRepository.findByIdWithMessages(12L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(matchingCandidate, selectedCostume));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 45L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(12L, "guest-en", 1L, null, null, "Can you recommend a red costume under 300k?"),
+                null
+        );
+
+        assertTrue(result.messages().get(2).content().contains("I checked the live catalog"));
+        assertTrue(result.messages().get(2).recommendations().stream().allMatch(item ->
+                item.reason().contains("Matches")
+                        || item.reason().contains("Close")
+                        || item.reason().contains("Available")
+                        || item.reason().contains("Currently")
+                        || item.reason().contains("Fits")
+                        || item.reason().contains("Related")
+                        || item.reason().contains("same category")
+                        || item.reason().contains("same product group")
+        ));
+    }
+
+    @Test
+    void sendMessage_ShouldPrioritizeLatestOccasionIntentOverInteractionHistory() {
+        User user = user(31L, "gala-priority@aurafit.vn");
+        Category events = category(4L, "Events");
+        Category cosplay = category(5L, "Cosplay");
+        Costume galaCandidate = costume(
+                6L,
+                "Midnight Evening Gown",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Black", "formal", "evening"),
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE
+        );
+        Costume cosplayCandidate = costume(
+                7L,
+                "Moon Warrior Cosplay Set",
+                cosplay,
+                metadata("Fantasy", "Cosplay", "All Season", "Blue", "anime", "character"),
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(13L)
+                .user(user)
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder()
+                                .id(1L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("AI Stylist đã sẵn sàng.")
+                                .build()
+                )))
+                .build();
+
+        UserInteractionEvent cosplayHistory = interactionEvent(
+                601L,
+                user,
+                "session-priority",
+                InteractionEventType.VIEW_PRODUCT,
+                InteractionTargetType.COSTUME,
+                "7",
+                "cosplay anime",
+                "{\"style\":\"Fantasy\",\"occasion\":\"Cosplay\",\"season\":\"All Season\",\"category\":\"Cosplay\",\"color\":\"Blue\",\"tags\":[\"anime\",\"character\"]}",
+                LocalDateTime.now()
+        );
+
+        when(userRepository.findByEmail("gala-priority@aurafit.vn")).thenReturn(Optional.of(user));
+        when(userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(31L))
+                .thenReturn(List.of(cosplayHistory));
+        when(aiStylistSessionRepository.findByIdWithMessages(13L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(cosplayCandidate, galaCandidate));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 50L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(13L, null, null, null, null, "Tôi muốn thuê đồ đi dạ hội."),
+                "gala-priority@aurafit.vn"
+        );
+
+        assertFalse(result.messages().get(2).recommendations().isEmpty());
+        assertEquals(6L, result.messages().get(2).recommendations().get(0).costume().id());
+        assertTrue(result.messages().get(2).recommendations().get(0).reason().contains("nhu cầu hiện tại")
+                || result.messages().get(2).recommendations().get(0).reason().contains("dịp"));
+    }
+
+    @Test
+    void sendMessage_ShouldKeepPromIntentAboveAoDaiHistoryAndReplyInEnglish() {
+        User user = user(32L, "prom-priority@aurafit.vn");
+        Category formal = category(6L, "Formal");
+        Category traditional = category(7L, "Traditional");
+        Costume promCandidate = costume(
+                8L,
+                "Silver Prom Gown",
+                formal,
+                metadata("Elegant", "Prom", "Spring", "Silver", "formal", "evening"),
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE
+        );
+        Costume aoDaiCandidate = costume(
+                9L,
+                "Classic White Ao Dai",
+                traditional,
+                metadata("Traditional", "Ceremony", "Spring", "White", "ao dai", "traditional"),
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE,
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(14L)
+                .user(user)
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder()
+                                .id(1L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("AI Stylist đã sẵn sàng.")
+                                .build()
+                )))
+                .build();
+
+        UserInteractionEvent aoDaiHistory = interactionEvent(
+                701L,
+                user,
+                "session-prom",
+                InteractionEventType.VIEW_PRODUCT,
+                InteractionTargetType.COSTUME,
+                "9",
+                "ao dai truyen thong",
+                "{\"style\":\"Traditional\",\"occasion\":\"Ceremony\",\"season\":\"Spring\",\"category\":\"Traditional\",\"color\":\"White\",\"tags\":[\"ao dai\",\"traditional\"]}",
+                LocalDateTime.now()
+        );
+
+        when(userRepository.findByEmail("prom-priority@aurafit.vn")).thenReturn(Optional.of(user));
+        when(userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(32L))
+                .thenReturn(List.of(aoDaiHistory));
+        when(aiStylistSessionRepository.findByIdWithMessages(14L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(aoDaiCandidate, promCandidate));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 60L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(14L, null, null, null, null, "Recommend me something for prom."),
+                "prom-priority@aurafit.vn"
+        );
+
+        assertTrue(result.messages().get(2).content().contains("I checked the live catalog"));
+        assertEquals(8L, result.messages().get(2).recommendations().get(0).costume().id());
     }
 
     @Test
@@ -446,6 +801,182 @@ class AiStylistServiceImplTest {
         assertEquals(70L, result.preferredSessionId());
         assertEquals(2, attachedSession.getMessages().size());
         verify(aiStylistSessionRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void sendMessage_ShouldExplainPreviousRecommendationsForVietnameseFollowUp() {
+        Category formal = category(10L, "Formal");
+        Costume blackVest = costume(
+                20L,
+                "Vest đen công sở",
+                formal,
+                metadata("Elegant", "Wedding", "All Season", "Black", "formal"),
+                ItemStatus.AVAILABLE
+        );
+        Costume grayVest = costume(
+                21L,
+                "Vest xám doanh nhân",
+                formal,
+                metadata("Elegant", "Wedding", "All Season", "Gray", "formal"),
+                ItemStatus.AVAILABLE
+        );
+        Costume midiDress = costume(
+                22L,
+                "Đầm midi đen tối giản",
+                formal,
+                metadata("Elegant", "Wedding", "All Season", "Black", "minimal"),
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(19L)
+                .guestSessionId("guest-followup")
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder().id(1L).role(AiStylistMessageRole.USER).content("tôi muốn mặc thật lịch sự để dự tiệc cưới").build(),
+                        AiStylistMessage.builder()
+                                .id(2L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("Mình đã gợi ý 3 mẫu phù hợp.")
+                                .metadataJson("""
+                                        {
+                                          "detectedIntent":"RECOMMENDATION_REQUEST",
+                                          "lastUserNeedSummary":"occasion=wedding, style=formal",
+                                          "recommendations":[
+                                            {"costumeId":20,"reason":"Phù hợp với dịp cưới và phong cách lịch sự","score":95,"availableItemCount":1},
+                                            {"costumeId":21,"reason":"Giữ tổng thể formal nhưng nhẹ hơn đen","score":90,"availableItemCount":1},
+                                            {"costumeId":22,"reason":"Thanh lịch và dễ lên hình khi dự tiệc","score":88,"availableItemCount":1}
+                                          ]
+                                        }
+                                        """)
+                                .build()
+                )))
+                .build();
+
+        when(aiStylistSessionRepository.findByIdWithMessages(19L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(blackVest, grayVest, midiDress));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 110L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(19L, "guest-followup", null, null, null, "vì sao những cái này lại phù hợp với nhu cầu của tôi"),
+                null
+        );
+
+        assertTrue(result.messages().get(3).content().contains("Các mẫu mình vừa gợi ý phù hợp"));
+        assertTrue(result.messages().get(3).content().contains("Vest đen công sở"));
+        assertTrue(result.messages().get(3).content().contains("tiệc cưới"));
+        assertEquals(3, result.messages().get(3).recommendations().size());
+    }
+
+    @Test
+    void sendMessage_ShouldExplainPreviousRecommendationsInEnglish() {
+        Category formal = category(11L, "Formal");
+        Costume blackVest = costume(
+                30L,
+                "Black Office Vest",
+                formal,
+                metadata("Elegant", "Wedding", "All Season", "Black", "formal"),
+                ItemStatus.AVAILABLE
+        );
+        Costume grayVest = costume(
+                31L,
+                "Gray Business Vest",
+                formal,
+                metadata("Elegant", "Wedding", "All Season", "Gray", "formal"),
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(20L)
+                .guestSessionId("guest-followup-en")
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder().id(1L).role(AiStylistMessageRole.USER).content("I need a formal outfit for a wedding").build(),
+                        AiStylistMessage.builder()
+                                .id(2L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("These were the strongest matches.")
+                                .metadataJson("""
+                                        {
+                                          "detectedIntent":"RECOMMENDATION_REQUEST",
+                                          "lastUserNeedSummary":"occasion=wedding, style=formal",
+                                          "recommendations":[
+                                            {"costumeId":30,"reason":"Close to your wedding and formal request","score":95,"availableItemCount":1},
+                                            {"costumeId":31,"reason":"Formal alternative with a lighter tone","score":92,"availableItemCount":1}
+                                          ]
+                                        }
+                                        """)
+                                .build()
+                )))
+                .build();
+
+        when(aiStylistSessionRepository.findByIdWithMessages(20L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(blackVest, grayVest));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 120L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(20L, "guest-followup-en", null, null, null, "why did you recommend these?"),
+                null
+        );
+
+        assertTrue(result.messages().get(3).content().contains("The previous suggestions fit because"));
+        assertTrue(result.messages().get(3).content().contains("Black Office Vest"));
+        assertEquals(2, result.messages().get(3).recommendations().size());
+    }
+
+    @Test
+    void sendMessage_ShouldPickBestPreviousRecommendationForFollowUpChoiceQuestion() {
+        Category formal = category(12L, "Formal");
+        Costume topChoice = costume(
+                40L,
+                "Vest đen công sở",
+                formal,
+                metadata("Elegant", "Wedding", "All Season", "Black", "formal"),
+                ItemStatus.AVAILABLE
+        );
+        Costume alternative = costume(
+                41L,
+                "Vest xám doanh nhân",
+                formal,
+                metadata("Elegant", "Wedding", "All Season", "Gray", "formal"),
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(21L)
+                .guestSessionId("guest-best")
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder().id(1L).role(AiStylistMessageRole.USER).content("tôi muốn mặc thật lịch sự để dự tiệc cưới").build(),
+                        AiStylistMessage.builder()
+                                .id(2L)
+                                .role(AiStylistMessageRole.ASSISTANT)
+                                .content("Mình đã gợi ý 2 mẫu phù hợp.")
+                                .metadataJson("""
+                                        {
+                                          "detectedIntent":"RECOMMENDATION_REQUEST",
+                                          "lastUserNeedSummary":"occasion=wedding, style=formal",
+                                          "recommendations":[
+                                            {"costumeId":40,"reason":"Phù hợp với dịp cưới và phong cách lịch sự","score":95,"availableItemCount":1},
+                                            {"costumeId":41,"reason":"Giữ tổng thể formal nhưng nhẹ hơn đen","score":90,"availableItemCount":1}
+                                          ]
+                                        }
+                                        """)
+                                .build()
+                )))
+                .build();
+
+        when(aiStylistSessionRepository.findByIdWithMessages(21L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(topChoice, alternative));
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 130L));
+
+        AiStylistSessionDTO result = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(21L, "guest-best", null, null, null, "cái nào hợp nhất?"),
+                null
+        );
+
+        assertTrue(result.messages().get(3).content().contains("Vest đen công sở là lựa chọn hợp nhất"));
+        assertEquals(2, result.messages().get(3).recommendations().size());
     }
 
     @Test
@@ -569,5 +1100,91 @@ class AiStylistServiceImplTest {
         session.setCreatedAt(updatedAt.minusHours(1));
         session.setUpdatedAt(updatedAt);
         return session;
+    }
+
+    private AiIntentUnderstandingService.IntentUnderstandingResult detectIntent(String message) {
+        return detectIntentFromContext(AiChatContext.empty(message));
+    }
+
+    private AiIntentUnderstandingService.IntentUnderstandingResult detectIntentFromContext(AiChatContext context) {
+        String normalized = context == null || context.latestUserMessage() == null ? "" : context.latestUserMessage().toLowerCase();
+        AiIntentUnderstandingService.IntentType intentType = AiIntentUnderstandingService.IntentType.OUT_OF_SCOPE;
+        AiIntentUnderstandingService.Language language = normalized.contains("hello")
+                || normalized.contains("recommend")
+                || normalized.contains("need")
+                || normalized.contains("prom")
+                ? AiIntentUnderstandingService.Language.EN
+                : AiIntentUnderstandingService.Language.VI;
+        String occasion = null;
+        String style = null;
+        String color = null;
+        String size = null;
+        BigDecimal budget = null;
+        boolean isFollowUp = false;
+        boolean refersToPreviousRecommendations = context != null && context.hasPreviousRecommendation();
+
+        if (normalized.contains("hello") || normalized.contains("bạn khỏe không") || normalized.contains("ban khoe khong") || normalized.contains("cảm ơn") || normalized.contains("cam on")) {
+            intentType = AiIntentUnderstandingService.IntentType.CASUAL_CHAT;
+        } else if (normalized.contains("vì sao") || normalized.contains("vi sao")
+                || normalized.contains("giải thích") || normalized.contains("giai thich")
+                || normalized.contains("why did you recommend these")
+                || normalized.contains("cái nào hợp nhất") || normalized.contains("cai nao hop nhat")) {
+            intentType = AiIntentUnderstandingService.IntentType.RECOMMENDATION_EXPLANATION_FOLLOW_UP;
+            isFollowUp = true;
+        } else if (normalized.contains("đặt cọc") || normalized.contains("dat coc") || normalized.contains("deposit")) {
+            intentType = AiIntentUnderstandingService.IntentType.RENTAL_SUPPORT;
+        } else if (normalized.contains("size") && (normalized.contains("bộ này") || normalized.contains("bo nay") || normalized.contains("this"))) {
+            intentType = AiIntentUnderstandingService.IntentType.PRODUCT_QUESTION;
+            size = normalized.contains("xl") ? "XL" : "M";
+        } else if (normalized.contains("gợi ý") || normalized.contains("goi y") || normalized.contains("recommend") || normalized.contains("prom")
+                || normalized.contains("đám cưới") || normalized.contains("dam cuoi") || normalized.contains("tiệc cưới") || normalized.contains("tiec cuoi")
+                || normalized.contains("dạ hội") || normalized.contains("da hoi")) {
+            intentType = AiIntentUnderstandingService.IntentType.RECOMMENDATION_REQUEST;
+        }
+
+        if (normalized.contains("đám cưới") || normalized.contains("dam cuoi") || normalized.contains("tiệc cưới") || normalized.contains("tiec cuoi") || normalized.contains("wedding")) {
+            occasion = "wedding";
+        } else if (normalized.contains("prom")) {
+            occasion = "prom";
+        } else if (normalized.contains("dạ hội") || normalized.contains("da hoi") || normalized.contains("gala")) {
+            occasion = "gala";
+        }
+
+        if (normalized.contains("lịch sự") || normalized.contains("lich su") || normalized.contains("elegant")) {
+            style = "formal";
+        }
+        if (normalized.contains("màu đỏ") || normalized.contains("mau do") || normalized.contains("red")) {
+            color = "red";
+        }
+        if (normalized.contains("màu đen") || normalized.contains("mau den") || normalized.contains("black")) {
+            color = "black";
+        }
+        if (normalized.contains("300k")) {
+            budget = BigDecimal.valueOf(300_000);
+        }
+        if (normalized.contains("xl")) {
+            size = "XL";
+        }
+        if (normalized.contains("size m")) {
+            size = "M";
+        }
+
+        return new AiIntentUnderstandingService.IntentUnderstandingResult(
+                intentType,
+                0.9,
+                language,
+                occasion,
+                style,
+                color,
+                null,
+                size,
+                budget,
+                normalized.contains("tuần sau") || normalized.contains("tuan sau") || normalized.contains("next week") ? "next_week" : null,
+                (normalized.contains("bộ này") || normalized.contains("bo nay") || normalized.contains("this")) ? "current_product" : null,
+                isFollowUp,
+                refersToPreviousRecommendations,
+                "{}",
+                false
+        );
     }
 }

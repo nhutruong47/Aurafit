@@ -36,7 +36,7 @@ public class UploadController {
     }
 
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER', 'CUSTOMER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
     @Operation(
             summary = "Upload an image to Cloudinary",
             description = "Accepts jpg, jpeg, png, or webp image files and stores their metadata in the database.",

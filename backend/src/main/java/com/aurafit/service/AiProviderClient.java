@@ -4,12 +4,23 @@ import java.util.List;
 
 public interface AiProviderClient {
 
+    String understandIntent(IntentUnderstandingPrompt prompt);
+
     List<String> generateRecommendationExplanations(RecommendationExplanationPrompt prompt);
+
+    record IntentUnderstandingPrompt(
+            AiChatContext chatContext
+    ) {
+    }
 
     record RecommendationExplanationPrompt(
             String surface,
             String contextSummary,
-            List<RecommendationExplanationItem> items
+            String replyLanguage,
+            String userMessageExcerpt,
+            String detectedIntentJson,
+            List<RecommendationExplanationItem> items,
+            AiChatContext chatContext
     ) {
     }
 

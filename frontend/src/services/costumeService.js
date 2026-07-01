@@ -94,8 +94,12 @@ export const fetchSimilarCostumes = async (costumeId, limit = 4) =>
     'Không thể tải danh sách sản phẩm tương tự.'
   );
 
-export const fetchHomepageRecommendations = async (sessionId, limit = 6) =>
-  requestJson(
+export const fetchHomepageRecommendations = async (options = {}, legacyLimit) => {
+  const requestOptions =
+    typeof options === 'object' && options !== null ? options : { sessionId: options, limit: legacyLimit };
+  const { sessionId, limit = 6 } = requestOptions;
+
+  return requestJson(
     {
       url: '/recommendations/home',
       method: 'GET',
@@ -106,6 +110,7 @@ export const fetchHomepageRecommendations = async (sessionId, limit = 6) =>
     },
     'Không thể tải gợi ý cá nhân hóa cho trang chủ.'
   );
+};
 
 export const fetchAdminCostumes = async () => {
   const payload = await requestJson(

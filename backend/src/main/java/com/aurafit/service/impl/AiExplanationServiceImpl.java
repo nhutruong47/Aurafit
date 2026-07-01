@@ -4,6 +4,7 @@ import com.aurafit.config.AiProviderProperties;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.CostumeMetadataDTO;
 import com.aurafit.dto.response.SimilarCostumeRecommendationDTO;
+import com.aurafit.service.AiChatContext;
 import com.aurafit.service.AiExplanationService;
 import com.aurafit.service.AiProviderClient;
 import org.slf4j.Logger;
@@ -29,7 +30,31 @@ public class AiExplanationServiceImpl implements AiExplanationService {
     public List<SimilarCostumeRecommendationDTO> enhanceRecommendationReasons(
             String surface,
             String contextSummary,
+            String replyLanguage,
+            String userMessageExcerpt,
+            String detectedIntentJson,
             List<SimilarCostumeRecommendationDTO> recommendations
+    ) {
+        return enhanceRecommendationReasons(
+                surface,
+                contextSummary,
+                replyLanguage,
+                userMessageExcerpt,
+                detectedIntentJson,
+                recommendations,
+                null
+        );
+    }
+
+    @Override
+    public List<SimilarCostumeRecommendationDTO> enhanceRecommendationReasons(
+            String surface,
+            String contextSummary,
+            String replyLanguage,
+            String userMessageExcerpt,
+            String detectedIntentJson,
+            List<SimilarCostumeRecommendationDTO> recommendations,
+            AiChatContext chatContext
     ) {
         if (recommendations == null || recommendations.isEmpty() || !properties.isExplanationAvailable()) {
             return recommendations;
@@ -40,9 +65,13 @@ public class AiExplanationServiceImpl implements AiExplanationService {
                     new AiProviderClient.RecommendationExplanationPrompt(
                             surface,
                             contextSummary,
+                            replyLanguage,
+                            userMessageExcerpt,
+                            detectedIntentJson,
                             recommendations.stream()
                                     .map(this::toPromptItem)
-                                    .toList()
+                                    .toList(),
+                            chatContext
                     )
             );
 
