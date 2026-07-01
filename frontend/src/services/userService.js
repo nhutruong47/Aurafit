@@ -18,3 +18,13 @@ export const updateUserRole = async (userId, role) =>
     },
     'Không thể cập nhật quyền tài khoản.'
   );
+
+export const createStaffAccount = async (payload) =>
+  requestJson(
+    {
+      url: '/users/staff',
+      method: 'POST',
+      data: payload,
+    },
+    'Không thể tạo tài khoản staff.'
+  );

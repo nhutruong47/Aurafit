@@ -134,28 +134,6 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
           </div>
         </div>
 
-        {/* Size Selector */}
-        {items.length > 0 && (
-          <div className="mt-4">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5f5e5e]">Kích thước</p>
-            <div className="flex flex-wrap gap-1.5">
-              {items.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setSelectedItem(item)}
-                  className={`border px-3 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
-                    selectedItem?.id === item.id
-                      ? 'border-black bg-black text-white'
-                      : 'border-[#cfc4c5] text-black hover:border-black'
-                  }`}
-                >
-                  {item.size || 'Freesize'}{item.color ? ` / ${item.color}` : ''}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Date Picker (collapsible) */}
         <button
           onClick={() => setShowDates((v) => !v)}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchUsers, updateUserRole } from '../services/userService';
+import { createStaffAccount, fetchUsers, updateUserRole } from '../services/userService';
 import { hasUserRole } from '../utils/roles';
 
 export function useAdminUsers(currentUser) {
@@ -8,6 +8,7 @@ export function useAdminUsers(currentUser) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingStaff, setIsCreatingStaff] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState(null);
   const isAdmin = hasUserRole(currentUser, 'ADMIN');
 
@@ -69,6 +70,33 @@ export function useAdminUsers(currentUser) {
     }
   };
 
+  const createStaff = async (staffPayload) => {
+    if (!isAdmin || isCreatingStaff) return null;
+
+    setIsCreatingStaff(true);
+    setMessage('');
+    setError('');
+
+    try {
+      const createdStaff = await createStaffAccount({
+        fullName: staffPayload.fullName,
+        email: staffPayload.email,
+        phone: staffPayload.phone || '',
+        status: staffPayload.status || 'ACTIVE',
+        temporaryPassword: staffPayload.temporaryPassword || '',
+      });
+
+      setUsers((currentUsers) => [createdStaff, ...currentUsers]);
+      setMessage(`Đã tạo tài khoản staff cho ${createdStaff.fullName || createdStaff.email}.`);
+      return createdStaff;
+    } catch (createError) {
+      setError(createError.message || 'Không thể tạo tài khoản staff.');
+      return null;
+    } finally {
+      setIsCreatingStaff(false);
+    }
+  };
+
   return {
     users,
     filteredUsers,
@@ -76,8 +104,10 @@ export function useAdminUsers(currentUser) {
     message,
     error,
     isLoading,
+    isCreatingStaff,
     updatingUserId,
     setUserSearch,
     setSellerPermission,
+    createStaff,
   };
 }

@@ -20,6 +20,7 @@ export default function ProductHero({
 }) {
   const today = new Date().toISOString().split('T')[0];
   const [dateError, setDateError] = useState('');
+  const [showSizeSelector, setShowSizeSelector] = useState(false);
 
   const availableItems = product?.items || [];
 
@@ -118,14 +119,28 @@ export default function ProductHero({
         {/* Size / Color Selector */}
         {availableItems.length > 0 && (
           <div className="mb-6">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Kích thước</p>
+            <button
+              type="button"
+              onClick={() => setShowSizeSelector((v) => !v)}
+              className="flex w-full items-center justify-between border border-[#cfc4c5] px-4 py-2 text-left"
+            >
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+                {selectedItem ? `Size: ${selectedItem.size || 'Freesize'}${selectedItem.color ? ` / ${selectedItem.color}` : ''}` : 'Chọn size'}
+              </span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
+                {showSizeSelector ? 'Thu gọn' : 'Chọn size'}
+              </span>
+            </button>
+            {showSizeSelector && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {availableItems.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => handleSelectItem(item)}
-                    className={`border px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all ${
+                    onClick={() => {
+                      handleSelectItem(item);
+                      setShowSizeSelector(false);
+                    }}
+                    className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all ${
                       selectedItem?.id === item.id
                         ? 'border-black bg-black text-white'
                         : 'border-[#cfc4c5] bg-white text-black hover:border-black'
@@ -136,7 +151,7 @@ export default function ProductHero({
                   </button>
                 ))}
               </div>
-            </div>
+            )}
           </div>
         )}
 
