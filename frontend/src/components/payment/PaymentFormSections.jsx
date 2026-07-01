@@ -61,7 +61,7 @@ export default function PaymentFormSections({ order, paymentInit, isPaid, paymen
 
   return (
     <div className="space-y-16 lg:max-w-3xl">
-      <CheckoutSection number="01" title="Thông tin giao hàng" meta="Đã tạo từ checkout">
+      <CheckoutSection number="01" title="Thông tin giao hàng" meta="">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <DetailRow label="Người nhận" value={order?.receiverName} />
           <DetailRow label="Số điện thoại" value={order?.receiverPhone} />
@@ -73,7 +73,7 @@ export default function PaymentFormSections({ order, paymentInit, isPaid, paymen
 
       <GoldDivider />
 
-      <CheckoutSection number="02" title="Thông tin đơn thuê" meta="Đọc từ backend">
+      <CheckoutSection number="02" title="Thông tin đơn thuê" meta="">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <DetailRow label="Mã đơn" value={`ARF${String(displayOrderId).padStart(4, '0')}`} />
           <div>
@@ -131,6 +131,10 @@ export default function PaymentFormSections({ order, paymentInit, isPaid, paymen
                     <img
                       src={paymentInit.qrImageUrl}
                       alt="Mã VietQR thanh toán"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" fill="#f5f5f5"/><text x="128" y="128" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14" fill="#999">QR đang tải...</text></svg>');
+                      }}
                       className="h-64 w-64 rounded-lg border border-[#cfc4c5] bg-white object-contain p-2 shadow-sm"
                     />
                   ) : (

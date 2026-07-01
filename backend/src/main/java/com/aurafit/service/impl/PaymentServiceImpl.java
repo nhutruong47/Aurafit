@@ -19,11 +19,8 @@ import com.aurafit.service.PaymentService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +34,6 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final RentalOrderRepository rentalOrderRepository;
     private final UserRepository userRepository;
-    private final RestTemplate restTemplate;
 
     @Value("${sepay.api-key}")
     private String sepayApiKey;
@@ -57,7 +53,6 @@ public class PaymentServiceImpl implements PaymentService {
         this.paymentRepository     = paymentRepository;
         this.rentalOrderRepository = rentalOrderRepository;
         this.userRepository        = userRepository;
-        this.restTemplate           = new RestTemplate();
     }
 
     @Override
@@ -152,51 +147,14 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private String buildSepayVietQrUrl(String paymentContent, BigDecimal amount) {
-        Map<String, String> params = new HashMap<>();
-        params.put("bankCode", BANK_CODE);
-        params.put("accountNo", sepayVaAccount);
-        params.put("template", VIETQR_TEMPLATE);
-        params.put("amount", amount.toPlainString());
-        params.put("description", paymentContent);
-
         StringBuilder url = new StringBuilder(sepayVietQrBaseUrl);
-        url.append("?bankCode=").append(params.get("bankCode"));
-        url.append("&accountNo=").append(params.get("accountNo"));
-        url.append("&template=").append(params.get("template"));
-        url.append("&amount=").append(params.get("amount"));
+        url.append("?bankCode=").append(BANK_CODE);
+        url.append("&accountNo=").append(sepayVaAccount);
+        url.append("&template=").append(VIETQR_TEMPLATE);
+        url.append("&amount=").append(amount.toPlainString());
         url.append("&description=").append(java.net.URLEncoder.encode(paymentContent, java.nio.charset.StandardCharsets.UTF_8));
-
-        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-        headers.set("Authorization", "Bearer " + sepayApiKey);
-        headers.set("Accept", "application/json");
-
-        org.springframework.http.HttpEntity<String> entity = new org.springframework.http.HttpEntity<>(headers);
-
-        try {
-            org.springframework.http.ResponseEntity<SepayQrResponse> response = restTemplate.exchange(
-                    url.toString(),
-                    org.springframework.http.HttpMethod.GET,
-                    entity,
-                    SepayQrResponse.class
-            );
-
-            if (response.getBody() != null && response.getBody().data() != null) {
-                return response.getBody().data().qrUrl();
-            }
-        } catch (Exception e) {
-            // Fallback: trả về URL gốc để frontend vẫn hiển thị
-        }
-
-        return sepayVietQrBaseUrl
-                + "?bankCode=" + BANK_CODE
-                + "&accountNo=" + sepayVaAccount
-                + "&template=" + VIETQR_TEMPLATE
-                + "&amount=" + amount.toPlainString()
-                + "&description=" + java.net.URLEncoder.encode(paymentContent, java.nio.charset.StandardCharsets.UTF_8);
+        return url.toString();
     }
-
-    private record SepayQrResponse(SepayQrData data) {}
-    private record SepayQrData(String qrUrl) {}
 
     @Override
     public PaymentStatusResponse getPaymentStatus(Long orderId, String currentUserEmail) {

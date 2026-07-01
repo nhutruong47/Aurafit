@@ -28,7 +28,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
 
-    // Constructor injection — no @Autowired, no @Lazy, no circular dependency
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserDetailsService userDetailsService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.userDetailsService = userDetailsService;
@@ -65,10 +64,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-        } catch (Exception ex) {
-            // Malformed, expired, or tampered JWT — log and continue without authentication.
-            // Spring Security's authorization rules will return 401/403 as appropriate.
+        } catch (io.jsonwebtoken.ExpiredJwtException ex) {
+            log.warn("JWT token has expired: {}", ex.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"UNAUTHORIZED\",\"message\":\"Phiên làm việc đã hết hạn, vui lòng đăng nhập lại.\"}");
+            return;
+        } catch (io.jsonwebtoken.JwtException ex) {
             log.warn("JWT authentication failed: {}", ex.getMessage());
+        } catch (Exception ex) {
+            log.warn("JWT authentication error: {}", ex.getMessage());
         }
 
         filterChain.doFilter(request, response);

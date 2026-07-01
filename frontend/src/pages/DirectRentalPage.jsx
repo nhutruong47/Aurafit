@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDirectOrderStore } from '../store/useDirectOrderStore';
+import { useCheckoutStore } from '../store/useCheckoutStore';
 import { createOrder } from '../services/rentalOrderService';
 import { toAiStylistAttributionRequest } from '../services/interactionsService';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -7,6 +8,7 @@ import { adminContact } from '../utils/shopMock';
 
 export default function DirectRentalPage({ currentUser, onNavigate }) {
   const { directItem, clearDirectItem } = useDirectOrderStore();
+  const { setPendingOrderId } = useCheckoutStore();
   const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
   const [deliveryError, setDeliveryError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,7 +50,7 @@ export default function DirectRentalPage({ currentUser, onNavigate }) {
     setSubmitError('');
 
     try {
-      await createOrder({
+      const orderResponse = await createOrder({
         receiverName: deliveryInfo.receiverName,
         receiverPhone: deliveryInfo.receiverPhone,
         deliveryAddress: deliveryInfo.deliveryAddress,
@@ -63,6 +65,7 @@ export default function DirectRentalPage({ currentUser, onNavigate }) {
         ],
       });
 
+      setPendingOrderId(orderResponse.id);
       clearDirectItem();
       onNavigate?.('payment');
     } catch (err) {

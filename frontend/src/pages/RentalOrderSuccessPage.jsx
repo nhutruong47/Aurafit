@@ -23,14 +23,19 @@ const formatDateRange = (start, end) => {
 };
 
 export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
-  const { pendingOrderId, clearPendingOrderId } = useCheckoutStore();
+  const { pendingOrderId, clearPendingOrderId, hydratePendingOrderId } = useCheckoutStore();
+  const [isInitialized, setIsInitialized] = useState(false);
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    hydratePendingOrderId();
+    setIsInitialized(true);
+  }, [hydratePendingOrderId]);
+
+  useEffect(() => {
     if (!pendingOrderId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrder(null);
       return undefined;
     }
