@@ -206,11 +206,11 @@ export default function RentalItemCard({
           </div>
         </div>
 
-        <div className="mt-8 flex items-end justify-between border-t border-[#cfc4c5] pt-8">
+        <div className="mt-8 flex flex-col md:flex-row md:items-end justify-between border-t border-[#cfc4c5] pt-8 gap-4">
           <div className="space-y-1">
             <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">Thành tiền</p>
             <p className="font-serif text-3xl">
-              <span className="mr-2 text-xl text-[#999999] line-through">{item.original}</span>
+              {item.original && <span className="mr-2 text-xl text-[#999999] line-through">{item.original}</span>}
               {item.total}
             </p>
             {item.quantity > 1 && (
@@ -222,7 +222,7 @@ export default function RentalItemCard({
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
-              className="border border-black px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition hover:bg-black hover:text-white"
+              className="w-full shrink-0 border border-black px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] transition hover:bg-black hover:text-white md:w-auto"
             >
               Chỉnh sửa thời gian thuê
             </button>

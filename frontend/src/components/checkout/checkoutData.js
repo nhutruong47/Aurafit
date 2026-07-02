@@ -9,9 +9,12 @@ import { formatCurrency } from '../../utils/formatCurrency';
  */
 export function toRentalItem(item, index) {
   const numericPrice = Number(item.unitPrice ?? item.priceValue ?? 0);
-  const displayPrice = typeof item.price === 'string' && item.price.trim()
-    ? item.price
-    : formatCurrency(numericPrice);
+  const discountPercentage = typeof item.discountPercentage !== 'undefined' ? item.discountPercentage : 10;
+
+  let salePrice = numericPrice;
+  if (discountPercentage > 0) {
+    salePrice = Math.round(numericPrice * (1 - discountPercentage / 100));
+  }
 
   const start = item.rentalStartDate;
   const end = item.rentalEndDate;
@@ -22,7 +25,8 @@ export function toRentalItem(item, index) {
     rentalDays = Math.max(1, Math.round((new Date(end) - new Date(start)) / msPerDay));
   }
 
-  const subtotal = numericPrice * rentalDays;
+  const subtotal = salePrice * rentalDays;
+  const originalSubtotal = numericPrice * rentalDays;
 
   return {
     id: item.cartId || item.id || item.name || index,
@@ -31,7 +35,7 @@ export function toRentalItem(item, index) {
     costumeId: item.costumeId || null,
     name: item.name,
     tone: item.meta || item.subcategory || 'Tuyển chọn cho thuê',
-    badge: '-10%',
+    badge: discountPercentage > 0 ? `-${discountPercentage}%` : null,
     image: item.image,
     rawCategory: item.rawCategory,
     category: item.category,
@@ -43,8 +47,10 @@ export function toRentalItem(item, index) {
     rentalStartDate: start,
     rentalEndDate: end,
     rentalDays,
-    unitPrice: numericPrice,
+    unitPrice: salePrice,
+    originalUnitPrice: numericPrice,
     subtotal,
+    depositValue: item.depositValue,
     sizes: [
       {
         label: item.size ? `Size ${item.size}` : 'Freesize',
@@ -55,7 +61,7 @@ export function toRentalItem(item, index) {
     period: start && end ? `${start} — ${end}` : 'Chưa chọn thời gian thuê',
     detailLabel: 'Bảo vệ sản phẩm',
     detail: 'Đã bao gồm bảo hiểm Premium',
-    original: displayPrice,
+    original: discountPercentage > 0 ? formatCurrency(originalSubtotal) : null,
     total: formatCurrency(subtotal),
     addText: 'Thêm kích cỡ',
   };

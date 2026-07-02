@@ -8,6 +8,8 @@ import { createOrder } from '../services/rentalOrderService';
 import { useDirectOrderStore } from '../store/useDirectOrderStore';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useCheckoutStore } from '@/store/useCheckoutStore';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import { useToastStore } from '../store/useToastStore';
 
 export default function RentalOrderCheckoutPage({
   cartItems = [],
@@ -20,11 +22,13 @@ export default function RentalOrderCheckoutPage({
 }) {
   const { directItem, clearDirectItem } = useDirectOrderStore();
   const { setPendingOrderId } = useCheckoutStore();
+  const addToast = useToastStore((state) => state.addToast);
   const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
   const [deliveryError, setDeliveryError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [problematicSku, setProblematicSku] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedCartItemIds, setSelectedCartItemIds] = useState(() => {
     const ids = cartItems.map((item) => item.cartId || item.id || item.costumeItemId);
     return new Set(ids);
@@ -137,6 +141,19 @@ export default function RentalOrderCheckoutPage({
     onRemoveFromCart?.(itemId);
   };
 
+  const handleBulkDelete = () => {
+    selectedCartItemIds.forEach((id) => {
+      handleRemoveFromCart(id);
+    });
+    setIsDeleteModalOpen(false);
+    setSelectedCartItemIds(new Set());
+    addToast('Đã xóa các sản phẩm được chọn.');
+  };
+
+  const hasMissingDates = useMemo(() => {
+    return itemsToOrder.some((item) => !item.rentalStartDate || !item.rentalEndDate);
+  }, [itemsToOrder]);
+
   const summaryRows = useMemo(() => {
     const rows = [];
     let totalRental = 0;
@@ -161,14 +178,22 @@ export default function RentalOrderCheckoutPage({
     return rows;
   }, [itemsToOrder]);
 
-  const formattedTotalDue = useMemo(() => {
-    const total = summaryRows.reduce((sum, row) => {
-      const numeric = parseFloat(String(row.value).replace(/[^\d.]/g, ''));
-      return sum + (Number.isNaN(numeric) ? 0 : numeric);
-    }, 0);
+  const rawTotalDue = useMemo(() => {
+    let total = 0;
+    itemsToOrder.forEach((item) => {
+      const rentalDays = item.rentalDays || 1;
+      const unitPrice = item.unitPrice || 0;
+      total += unitPrice * rentalDays;
+      total += item.depositValue
+        ? item.depositValue * (item.quantity || 1)
+        : Math.round(unitPrice * 0.5);
+    });
+    return total;
+  }, [itemsToOrder]);
 
-    return formatCurrency(total);
-  }, [summaryRows]);
+  const formattedTotalDue = useMemo(() => {
+    return formatCurrency(rawTotalDue);
+  }, [rawTotalDue]);
 
   const headingLabel = isSingleItem || isDirectOnly ? 'Đơn thuê của bạn' : 'Giỏ hàng thuê';
   const selectedCount = cartDisplayItems.filter((item) => selectedCartItemIds.has(item.id)).length;
@@ -200,27 +225,37 @@ export default function RentalOrderCheckoutPage({
             {hasItems && (
               <div className="flex items-center gap-4 text-[#5f5e5e]">
                 {cartDisplayItems.length > 0 && (
-                  <label className="flex cursor-pointer items-center gap-2 text-[12px] font-semibold">
-                    <input
-                      type="checkbox"
-                      checked={selectedCount === cartDisplayItems.length && cartDisplayItems.length > 0}
-                      onChange={(event) => {
-                        if (event.target.checked) {
-                          setSelectedCartItemIds((current) => {
-                            const next = new Set(current);
-                            cartDisplayItems.forEach((item) => next.add(item.id));
-                            return next;
-                          });
-                        } else {
-                          setSelectedCartItemIds(new Set(directDisplayItem ? [directDisplayItem.id] : []));
-                        }
-                      }}
-                      className="h-4 w-4 accent-[#99854e]"
-                    />
-                    Chọn tất cả
-                  </label>
+                  <>
+                    <label className="flex cursor-pointer items-center gap-2 text-[12px] font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={selectedCount === cartDisplayItems.length && cartDisplayItems.length > 0}
+                        onChange={(event) => {
+                          if (event.target.checked) {
+                            setSelectedCartItemIds((current) => {
+                              const next = new Set(current);
+                              cartDisplayItems.forEach((item) => next.add(item.id));
+                              return next;
+                            });
+                          } else {
+                            setSelectedCartItemIds(new Set(directDisplayItem ? [directDisplayItem.id] : []));
+                          }
+                        }}
+                        className="h-4 w-4 accent-[#99854e]"
+                      />
+                      Chọn tất cả
+                    </label>
+                    {selectedCount > 0 && (
+                      <button
+                        onClick={() => setIsDeleteModalOpen(true)}
+                        className="text-[12px] font-semibold text-[#ba1a1a] hover:underline"
+                      >
+                        {selectedCount === cartDisplayItems.length ? 'Xóa tất cả' : 'Xóa đã chọn'}
+                      </button>
+                    )}
+                  </>
                 )}
-                <span className="text-[12px] font-semibold uppercase tracking-[0.15em]">
+                <span className="text-[12px] font-semibold uppercase tracking-[0.15em] ml-2 border-l border-[#cfc4c5] pl-4">
                   {selectedDisplayCount} / {totalDisplayCount} sản phẩm
                 </span>
               </div>
@@ -354,11 +389,19 @@ export default function RentalOrderCheckoutPage({
                 isSubmitting={isSubmitting}
                 submitError={submitError}
                 selectedCount={selectedDisplayCount}
+                hasMissingDates={hasMissingDates}
               />
             )}
           </aside>
         </div>
       </main>
+      <ConfirmDialog
+        isOpen={isDeleteModalOpen}
+        title="Xóa sản phẩm"
+        message={`Bạn có chắc chắn muốn xóa ${selectedCount} sản phẩm đã chọn khỏi giỏ hàng?`}
+        onConfirm={handleBulkDelete}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      />
     </div>
   );
 }

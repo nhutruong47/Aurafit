@@ -7,8 +7,9 @@ export default function CheckoutSummary({
   isSubmitting,
   submitError,
   selectedCount = 1,
+  hasMissingDates = false,
 }) {
-  const canSubmit = selectedCount > 0 && !isSubmitting;
+  const canSubmit = selectedCount > 0 && !isSubmitting && !hasMissingDates;
   return (
     <div className="sticky top-32 border border-[#cfc4c5] bg-white p-8 shadow-sm">
       <h2 className="mb-8 font-serif text-[28px] font-normal uppercase tracking-tight">Tóm tắt đơn thuê</h2>
@@ -32,6 +33,7 @@ export default function CheckoutSummary({
             <span className="font-serif text-[32px] tracking-tight">{formattedTotalDue}</span>
           </div>
           {submitError && <p className="mb-3 text-sm text-red-600">{submitError}</p>}
+          {hasMissingDates && <p className="mb-3 text-sm text-[#ba1a1a]">Vui lòng chọn thời gian thuê cho tất cả sản phẩm.</p>}
           <button
             onClick={onProceedToCheckout}
             disabled={!canSubmit}
