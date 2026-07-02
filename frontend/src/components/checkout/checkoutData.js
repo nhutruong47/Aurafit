@@ -9,7 +9,7 @@ import { formatCurrency } from '../../utils/formatCurrency';
  */
 export function toRentalItem(item, index) {
   const numericPrice = Number(item.unitPrice ?? item.priceValue ?? 0);
-  const discountPercentage = typeof item.discountPercentage !== 'undefined' ? item.discountPercentage : 10;
+  const discountPercentage = typeof item.discountPercentage !== 'undefined' ? item.discountPercentage : 0;
 
   let salePrice = numericPrice;
   if (discountPercentage > 0) {

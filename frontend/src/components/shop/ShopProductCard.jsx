@@ -14,6 +14,11 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
   const [dateError, setDateError] = useState('');
 
   const available = product.available;
+  const discountPercentage = product.discountPercentage || 0;
+  let salePrice = product.priceValue;
+  if (discountPercentage > 0) {
+    salePrice = Math.round(product.priceValue * (1 - discountPercentage / 100));
+  }
 
   // Neu items chua duoc load tu API, fetch ngay
   useEffect(() => {
@@ -50,7 +55,7 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
 
   const buildCartItem = useCallback(() => {
     if (selectedItem) {
-      return { ...toCartItem(product, selectedItem) };
+      return { ...toCartItem(product, selectedItem), discountPercentage };
     }
     // Fallback: dung costume-level data khi chua co item nao
     return {
@@ -71,8 +76,9 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
       color: null,
       rentalStartDate,
       rentalEndDate,
+      discountPercentage,
     };
-  }, [product, selectedItem, rentalStartDate, rentalEndDate]);
+  }, [product, selectedItem, rentalStartDate, rentalEndDate, discountPercentage]);
 
   const handleRentNow = () => {
     if (!canRentNow) { setShowDates(true); return; }
@@ -102,7 +108,12 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
           onError={(e) => { e.currentTarget.src = fallbackProductImage; }}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
         />
-        <span className="absolute left-3 top-3 z-10 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+        {discountPercentage > 0 && (
+          <span className="absolute left-3 top-3 z-10 bg-[#ba1a1a] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+            -{discountPercentage}%
+          </span>
+        )}
+        <span className={`absolute ${discountPercentage > 0 ? 'left-3 top-10' : 'left-3 top-3'} z-10 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white`}>
           {product.category}
         </span>
         <span className={`absolute right-3 top-3 z-10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
@@ -126,7 +137,16 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#999999]">Giá thuê</p>
-            <p className="mt-1 font-medium">{formatCurrency(product.priceValue)}</p>
+            <p className="mt-1 font-medium">
+              {discountPercentage > 0 ? (
+                <>
+                  <span className="mr-2 text-[#999999] line-through text-xs">{formatCurrency(product.priceValue)}</span>
+                  <span className="text-[#ba1a1a]">{formatCurrency(salePrice)}</span>
+                </>
+              ) : (
+                formatCurrency(product.priceValue)
+              )}
+            </p>
           </div>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#999999]">Tiền cọc</p>

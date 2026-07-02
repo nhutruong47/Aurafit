@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { requestRegistrationOtp } from '../../services/authService';
+import { useToastStore } from '../../store/useToastStore';
 
 function TextField({ label, name, placeholder, type = 'text', value, onChange, required = true, autoComplete }) {
   return (
@@ -37,6 +38,9 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
   const [localError, setLocalError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
   const [otpCountdown, setOtpCountdown] = useState(0);
+
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const addToast = useToastStore((state) => state.addToast);
 
   useEffect(() => {
     if (otpCountdown <= 0) return undefined;
@@ -81,6 +85,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
       return;
     }
 
+    setIsSendingOtp(true);
     try {
       const response = await requestRegistrationOtp({
         email: form.email,
@@ -88,12 +93,15 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
         phone: form.phone,
         password: form.password,
       });
+      addToast('Mã xác thực đã được gửi đến email của bạn');
       setStage('verify-otp');
       setOtpCountdown(OTP_TTL_SECONDS);
       const fallbackMsg = `Yêu cầu đăng ký đã được ghi nhận. Mã OTP đã được gửi tới ${form.email}. Vui lòng kiểm tra hộp thư và nhập mã để kích hoạt tài khoản.`;
       setInfoMessage(response?.message || fallbackMsg);
     } catch (err) {
       setLocalError(err.message || 'Không thể đăng ký và gửi mã OTP. Vui lòng thử lại.');
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -281,10 +289,22 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
+                  disabled={isSubmitting || isSendingOtp}
+                  className="flex w-full items-center justify-center bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-black/70"
                 >
-                  {isSubmitting ? 'Đang đăng ký...' : 'Đăng ký'}
+                  {isSendingOtp ? (
+                    <>
+                      <svg className="mr-3 h-4 w-4 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Đang gửi mã OTP...
+                    </>
+                  ) : isSubmitting ? (
+                    'Đang đăng ký...'
+                  ) : (
+                    'Đăng ký'
+                  )}
                 </button>
               </form>
             ) : (

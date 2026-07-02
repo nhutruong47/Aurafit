@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
+
 @Service
 @Transactional(readOnly = true)
 public class RecommendationServiceImpl implements RecommendationService {
@@ -47,10 +49,10 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final AiExplanationService aiExplanationService;
 
     public RecommendationServiceImpl(CostumeRepository costumeRepository,
-                                     UserRepository userRepository,
-                                     UserInteractionEventRepository userInteractionEventRepository,
-                                     ObjectMapper objectMapper,
-                                     AiExplanationService aiExplanationService) {
+            UserRepository userRepository,
+            UserInteractionEventRepository userInteractionEventRepository,
+            ObjectMapper objectMapper,
+            AiExplanationService aiExplanationService) {
         this.costumeRepository = costumeRepository;
         this.userRepository = userRepository;
         this.userInteractionEventRepository = userInteractionEventRepository;
@@ -65,7 +67,8 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         int normalizedLimit = Math.max(1, Math.min(limit, 12));
 
-        List<SimilarCostumeRecommendationDTO> recommendations = costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, costumeId).stream()
+        List<SimilarCostumeRecommendationDTO> recommendations = costumeRepository
+                .findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, costumeId).stream()
                 .filter(candidate -> !sourceCostume.getId().equals(candidate.getId()))
                 .map(candidate -> buildCandidate(sourceCostume, candidate))
                 .filter(candidate -> candidate.availableItemCount() > 0)
@@ -78,8 +81,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                         candidate.costume(),
                         candidate.reason(),
                         candidate.score(),
-                        candidate.availableItemCount()
-                ))
+                        candidate.availableItemCount()))
                 .toList();
 
         return aiExplanationService.enhanceRecommendationReasons(
@@ -88,12 +90,13 @@ public class RecommendationServiceImpl implements RecommendationService {
                 "vi",
                 null,
                 null,
-                recommendations
-        );
+                recommendations);
     }
 
     @Override
-    public List<SimilarCostumeRecommendationDTO> getHomepageRecommendations(String authenticatedEmail, String sessionId, int limit) {
+    @Cacheable(value = "homepage_recommendations", key = "#sessionId", condition = "#sessionId != null", sync = true)
+    public List<SimilarCostumeRecommendationDTO> getHomepageRecommendations(String authenticatedEmail, String sessionId,
+            int limit) {
         int normalizedLimit = Math.max(1, Math.min(limit, 12));
         User authenticatedUser = resolveAuthenticatedUser(authenticatedEmail);
         List<Costume> candidates = costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE);
@@ -115,8 +118,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                     "vi",
                     null,
                     null,
-                    buildHomepageFallbackRecommendations(candidates, normalizedLimit)
-            );
+                    buildHomepageFallbackRecommendations(candidates, normalizedLimit));
         }
 
         List<SimilarCostumeRecommendationDTO> recommendations = candidates.stream()
@@ -131,8 +133,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                         candidate.costume(),
                         candidate.reason(),
                         candidate.score(),
-                        candidate.availableItemCount()
-                ))
+                        candidate.availableItemCount()))
                 .toList();
 
         return aiExplanationService.enhanceRecommendationReasons(
@@ -141,8 +142,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 "vi",
                 null,
                 null,
-                recommendations
-        );
+                recommendations);
     }
 
     private SimilarCandidate buildCandidate(Costume sourceCostume, Costume candidate) {
@@ -164,8 +164,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 candidateMetadata != null ? candidateMetadata.color() : null);
         int sharedTagCount = countSharedTags(
                 sourceMetadata != null ? sourceMetadata.tags() : List.of(),
-                candidateMetadata != null ? candidateMetadata.tags() : List.of()
-        );
+                candidateMetadata != null ? candidateMetadata.tags() : List.of());
 
         int score = 0;
         if (sameStyle) {
@@ -200,13 +199,21 @@ public class RecommendationServiceImpl implements RecommendationService {
         int availableItemCount = countAvailableItems(candidate);
 
         int directCostumeScore = profile.costumeScore(candidate.getId());
-        int styleScore = profile.attributeScore(profile.styles(), metadata != null ? metadata.style() : null, HOMEPAGE_WEIGHTS.styleMatch());
-        int occasionScore = profile.attributeScore(profile.occasions(), metadata != null ? metadata.occasion() : null, HOMEPAGE_WEIGHTS.occasionMatch());
-        int seasonScore = profile.attributeScore(profile.seasons(), metadata != null ? metadata.season() : null, HOMEPAGE_WEIGHTS.seasonMatch());
-        int colorScore = profile.attributeScore(profile.colors(), metadata != null ? metadata.color() : null, HOMEPAGE_WEIGHTS.colorMatch());
-        int categoryScore = profile.attributeScore(profile.categories(), candidate.getCategory() != null ? candidate.getCategory().getName() : null, HOMEPAGE_WEIGHTS.categoryMatch());
-        int tagScore = profile.tagScore(metadata != null ? metadata.tags() : List.of(), HOMEPAGE_WEIGHTS.tagMatchUnit(), HOMEPAGE_WEIGHTS.tagMatchCap());
-        int keywordScore = profile.keywordScore(candidate, HOMEPAGE_WEIGHTS.keywordMatchUnit(), HOMEPAGE_WEIGHTS.keywordMatchCap());
+        int styleScore = profile.attributeScore(profile.styles(), metadata != null ? metadata.style() : null,
+                HOMEPAGE_WEIGHTS.styleMatch());
+        int occasionScore = profile.attributeScore(profile.occasions(), metadata != null ? metadata.occasion() : null,
+                HOMEPAGE_WEIGHTS.occasionMatch());
+        int seasonScore = profile.attributeScore(profile.seasons(), metadata != null ? metadata.season() : null,
+                HOMEPAGE_WEIGHTS.seasonMatch());
+        int colorScore = profile.attributeScore(profile.colors(), metadata != null ? metadata.color() : null,
+                HOMEPAGE_WEIGHTS.colorMatch());
+        int categoryScore = profile.attributeScore(profile.categories(),
+                candidate.getCategory() != null ? candidate.getCategory().getName() : null,
+                HOMEPAGE_WEIGHTS.categoryMatch());
+        int tagScore = profile.tagScore(metadata != null ? metadata.tags() : List.of(), HOMEPAGE_WEIGHTS.tagMatchUnit(),
+                HOMEPAGE_WEIGHTS.tagMatchCap());
+        int keywordScore = profile.keywordScore(candidate, HOMEPAGE_WEIGHTS.keywordMatchUnit(),
+                HOMEPAGE_WEIGHTS.keywordMatchCap());
         int availabilityScore = HOMEPAGE_WEIGHTS.availabilityBoost(availableItemCount);
 
         int totalScore = directCostumeScore + styleScore + occasionScore + seasonScore + colorScore
@@ -224,20 +231,19 @@ public class RecommendationServiceImpl implements RecommendationService {
                 colorScore,
                 categoryScore,
                 tagScore,
-                keywordScore
-        );
+                keywordScore);
 
         return new HomepageCandidate(candidate, totalScore, availableItemCount, reason);
     }
 
-    private List<SimilarCostumeRecommendationDTO> buildHomepageFallbackRecommendations(List<Costume> candidates, int limit) {
+    private List<SimilarCostumeRecommendationDTO> buildHomepageFallbackRecommendations(List<Costume> candidates,
+            int limit) {
         return candidates.stream()
                 .map(candidate -> new HomepageCandidate(
                         candidate,
                         HOMEPAGE_WEIGHTS.availabilityBoost(countAvailableItems(candidate)),
                         countAvailableItems(candidate),
-                        "Gợi ý phổ biến đang còn sẵn để thuê"
-                ))
+                        "Gợi ý phổ biến đang còn sẵn để thuê"))
                 .filter(candidate -> candidate.availableItemCount() > 0)
                 .sorted(Comparator
                         .comparingInt(HomepageCandidate::availableItemCount).reversed()
@@ -247,8 +253,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                         candidate.costume(),
                         candidate.reason(),
                         candidate.score(),
-                        candidate.availableItemCount()
-                ))
+                        candidate.availableItemCount()))
                 .toList();
     }
 
@@ -257,7 +262,8 @@ public class RecommendationServiceImpl implements RecommendationService {
         Set<Long> seenEventIds = new LinkedHashSet<>();
 
         if (authenticatedUser != null && authenticatedUser.getId() != null) {
-            for (UserInteractionEvent event : userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(authenticatedUser.getId())) {
+            for (UserInteractionEvent event : userInteractionEventRepository
+                    .findTop60ByUser_IdOrderByCreatedAtDesc(authenticatedUser.getId())) {
                 if (event.getId() != null && seenEventIds.add(event.getId())) {
                     mergedEvents.add(event);
                 }
@@ -266,7 +272,8 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         String normalizedSessionId = normalize(sessionId);
         if (normalizedSessionId != null) {
-            for (UserInteractionEvent event : userInteractionEventRepository.findTop60BySessionIdOrderByCreatedAtDesc(normalizedSessionId)) {
+            for (UserInteractionEvent event : userInteractionEventRepository
+                    .findTop60BySessionIdOrderByCreatedAtDesc(normalizedSessionId)) {
                 if (event.getId() != null && seenEventIds.add(event.getId())) {
                     mergedEvents.add(event);
                 }
@@ -274,12 +281,14 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
 
         return mergedEvents.stream()
-                .sorted(Comparator.comparing(UserInteractionEvent::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .sorted(Comparator.comparing(UserInteractionEvent::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(60)
                 .toList();
     }
 
-    private PreferenceProfile buildPreferenceProfile(List<UserInteractionEvent> events, Map<Long, Costume> activeCostumesById) {
+    private PreferenceProfile buildPreferenceProfile(List<UserInteractionEvent> events,
+            Map<Long, Costume> activeCostumesById) {
         PreferenceProfile profile = new PreferenceProfile();
 
         for (int index = 0; index < events.size(); index++) {
@@ -293,7 +302,8 @@ public class RecommendationServiceImpl implements RecommendationService {
             if (costumeId != null && event.getTargetType() == com.aurafit.enums.InteractionTargetType.COSTUME) {
                 Costume sourceCostume = activeCostumesById.get(costumeId);
                 if (sourceCostume != null) {
-                    profile.addCostumeInterest(costumeId, HOMEPAGE_WEIGHTS.directCostumeBoost(event.getEventType(), index));
+                    profile.addCostumeInterest(costumeId,
+                            HOMEPAGE_WEIGHTS.directCostumeBoost(event.getEventType(), index));
                     profile.addCostumeMetadata(sourceCostume, eventWeight);
                 }
             }
@@ -325,8 +335,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             int colorScore,
             int categoryScore,
             int tagScore,
-            int keywordScore
-    ) {
+            int keywordScore) {
         if (directCostumeScore > 0) {
             return "Dựa trên sản phẩm bạn đã xem gần đây";
         }
@@ -335,9 +344,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 Math.max(directCostumeScore, styleScore),
                 Math.max(
                         Math.max(occasionScore, seasonScore),
-                        Math.max(Math.max(colorScore, categoryScore), Math.max(tagScore, keywordScore))
-                )
-        );
+                        Math.max(Math.max(colorScore, categoryScore), Math.max(tagScore, keywordScore))));
 
         if (strongestScore == styleScore && strongestScore > 0) {
             return "Dựa trên phong cách bạn quan tâm";
@@ -403,8 +410,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             boolean sameSeason,
             boolean sameColor,
             int sharedTagCount,
-            boolean sameCategory
-    ) {
+            boolean sameCategory) {
         if (sameStyle && sameOccasion) {
             return "Cùng phong cách, phù hợp cùng dịp sử dụng";
         }
@@ -520,7 +526,8 @@ public class RecommendationServiceImpl implements RecommendationService {
         private static final int TAG_UNIT = 6;
         private static final int TAG_CAP = 18;
 
-        // Availability count is only a tie-breaker, not a primary recommendation signal.
+        // Availability count is only a tie-breaker, not a primary recommendation
+        // signal.
         private static final int AVAILABILITY_CAP = 3;
 
         int style() {
@@ -554,7 +561,8 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     private static final class HomepageWeights {
 
-        // Rental and cart actions are stronger purchase-intent signals than plain views.
+        // Rental and cart actions are stronger purchase-intent signals than plain
+        // views.
         private static final int RENT_EVENT = 8;
         private static final int ADD_TO_CART_EVENT = 6;
         private static final int RECOMMENDATION_CLICK_EVENT = 5;
@@ -797,9 +805,8 @@ public class RecommendationServiceImpl implements RecommendationService {
                             safe(candidate.getMetadata() != null ? candidate.getMetadata().getOccasion() : null),
                             safe(candidate.getMetadata() != null ? candidate.getMetadata().getSeason() : null),
                             safe(candidate.getMetadata() != null ? candidate.getMetadata().getColor() : null),
-                            candidate.getMetadata() != null ? String.join(" ", candidate.getMetadata().getTags()) : ""
-                    )
-            );
+                            candidate.getMetadata() != null ? String.join(" ", candidate.getMetadata().getTags())
+                                    : ""));
 
             if (searchableText == null) {
                 return 0;
