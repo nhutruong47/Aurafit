@@ -20,7 +20,7 @@ export default function RentalOrderCheckoutPage({
   onCheckoutSuccess,
   onNavigate,
 }) {
-  const { directItem, clearDirectItem } = useDirectOrderStore();
+  const { directItem, clearDirectItem, setDirectItem } = useDirectOrderStore();
   const { setPendingOrderId } = useCheckoutStore();
   const addToast = useToastStore((state) => state.addToast);
   const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
@@ -139,6 +139,14 @@ export default function RentalOrderCheckoutPage({
     }
 
     onRemoveFromCart?.(itemId);
+  };
+
+  const handleUpdateItemDates = async (itemId, data) => {
+    if (directItem && (directItem.cartId === itemId || directItem.id === itemId || directDisplayItem?.id === itemId)) {
+      setDirectItem({ ...directItem, rentalStartDate: data.rentalStartDate, rentalEndDate: data.rentalEndDate });
+      return;
+    }
+    await onUpdateCartItem?.(itemId, data);
   };
 
   const handleBulkDelete = () => {
@@ -283,7 +291,7 @@ export default function RentalOrderCheckoutPage({
                     isProblematic={problematicSku === directDisplayItem.sku}
                     onRemoveFromCart={handleRemoveFromCart}
                     onUpdateCartQuantity={onUpdateCartQuantity}
-                    onUpdateCartItem={onUpdateCartItem}
+                    onUpdateCartItem={handleUpdateItemDates}
                   />
                 )}
 
@@ -310,7 +318,7 @@ export default function RentalOrderCheckoutPage({
                         }}
                         onRemoveFromCart={handleRemoveFromCart}
                         onUpdateCartQuantity={onUpdateCartQuantity}
-                        onUpdateCartItem={onUpdateCartItem}
+                        onUpdateCartItem={handleUpdateItemDates}
                       />
                     ))}
                   </div>

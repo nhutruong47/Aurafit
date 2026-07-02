@@ -24,6 +24,7 @@ public class UserInteractionServiceImpl implements UserInteractionService {
     }
 
     @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void track(TrackInteractionRequest request, String authenticatedEmail) {
         UserInteractionEvent event = UserInteractionEvent.builder()
                 .user(resolveAuthenticatedUser(authenticatedEmail))

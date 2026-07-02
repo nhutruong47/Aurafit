@@ -135,6 +135,15 @@ public class OrderServiceImpl implements OrderService {
                 );
             }
 
+            // ── 4d. Validate quantity constraint ───────────────────────────────
+            // A CostumeItem represents a unique physical item (unique SKU). Its stock is strictly 1.
+            int availableStock = (costumeItem.getStatus() == ItemStatus.AVAILABLE) ? 1 : 0;
+            if (item.quantity() > availableStock) {
+                throw new BadRequestException(
+                        "Số lượng vượt quá tồn kho. Sản phẩm [SKU: " + item.sku() + "] chỉ có sẵn " + availableStock + " cái."
+                );
+            }
+
             // ── 4d. Calculate rental duration in days ───────────────────────────
             long rentalDays = ChronoUnit.DAYS.between(
                     item.rentalStartDate(),

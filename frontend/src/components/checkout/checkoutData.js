@@ -8,8 +8,11 @@ import { formatCurrency } from '../../utils/formatCurrency';
  * @returns {Object} Display item with computed fields: subtotal, rentalDays, period, etc.
  */
 export function toRentalItem(item, index) {
-  const numericPrice = Number(item.unitPrice ?? item.priceValue ?? 0);
-  const discountPercentage = typeof item.discountPercentage !== 'undefined' ? item.discountPercentage : 0;
+  const rawPrice = item.unitPrice ?? item.priceValue ?? 0;
+  const numericPrice = typeof rawPrice === 'string'
+    ? Number(rawPrice.replace(/[^\d]/g, ''))
+    : Number(rawPrice);
+  const discountPercentage = item.discountPercentage || 0;
 
   let salePrice = numericPrice;
   if (discountPercentage > 0) {
@@ -54,7 +57,7 @@ export function toRentalItem(item, index) {
     sizes: [
       {
         label: item.size ? `Size ${item.size}` : 'Freesize',
-        stock: 'Còn hàng',
+        stock: 1,
         quantity: item.quantity || 1,
       },
     ],

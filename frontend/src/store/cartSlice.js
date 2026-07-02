@@ -71,6 +71,15 @@ const cartSlice = createSlice({
         persistItems(state.items);
       }
     },
+    updateCartItemDates: (state, action) => {
+      const { cartId, rentalStartDate, rentalEndDate } = action.payload;
+      const item = state.items.find((i) => i.cartId === cartId || i.cartItemId === cartId);
+      if (item) {
+        item.rentalStartDate = rentalStartDate;
+        item.rentalEndDate = rentalEndDate;
+        persistItems(state.items);
+      }
+    },
     removeCartItem: (state, action) => {
       state.items = state.items.filter((item) => item.cartId !== action.payload);
       persistItems(state.items);
@@ -89,7 +98,7 @@ const cartSlice = createSlice({
   },
 });
 
-export const { addCartItem, updateCartQuantity, removeCartItem, clearCart, setCartItems } = cartSlice.actions;
+export const { addCartItem, updateCartQuantity, updateCartItemDates, removeCartItem, clearCart, setCartItems } = cartSlice.actions;
 
 export const selectCartItems = (state) => state.cart.items;
 export const selectCartCount = (state) =>

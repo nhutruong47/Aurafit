@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-function QuantityControl({ quantity, onDecrease, onIncrease }) {
+function QuantityControl({ quantity, onDecrease, onIncrease, maxReached }) {
   return (
     <div className="flex items-center gap-4 border border-[#cfc4c5] bg-[#f3f3f4] px-3 py-1">
       <button onClick={onDecrease} className="text-black transition hover:text-[#99854e]" aria-label="Giảm số lượng">
         <span className="material-symbols-outlined text-sm">remove</span>
       </button>
       <span className="text-sm">{quantity}</span>
-      <button onClick={onIncrease} className="text-black transition hover:text-[#99854e]" aria-label="Tăng số lượng">
+      <button onClick={onIncrease} disabled={maxReached} className={`transition ${maxReached ? 'text-gray-400 cursor-not-allowed' : 'text-black hover:text-[#99854e]'}`} aria-label="Tăng số lượng">
         <span className="material-symbols-outlined text-sm">add</span>
       </button>
     </div>
@@ -38,12 +38,12 @@ export default function RentalItemCard({
   }
 
   const handleSaveUpdate = async () => {
-    if (!editStartDate || !editEndDate || !item.cartItemId || !onUpdateCartItem) return;
+    if (!editStartDate || !editEndDate || !onUpdateCartItem) return;
     if (editStartDate >= editEndDate) return;
 
     setIsUpdating(true);
     try {
-      await onUpdateCartItem(item.cartItemId, {
+      await onUpdateCartItem(item.cartItemId, item.id, {
         rentalStartDate: editStartDate,
         rentalEndDate: editEndDate,
       });
@@ -129,15 +129,21 @@ export default function RentalItemCard({
                     <QuantityControl
                       quantity={size.quantity}
                       onDecrease={() => onUpdateCartQuantity?.(item.id, item.quantity - 1)}
-                      onIncrease={() => onUpdateCartQuantity?.(item.id, item.quantity + 1)}
+                      onIncrease={() => size.quantity < size.stock && onUpdateCartQuantity?.(item.id, item.quantity + 1)}
+                      maxReached={size.quantity >= size.stock}
                     />
                   </div>
                 ))}
 
-                <button className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#99854e] hover:underline">
-                  <span className="material-symbols-outlined text-sm">add_circle</span>
-                  {item.addText}
-                </button>
+                {productLink && productLink !== '#' && (
+                  <Link
+                    to={productLink}
+                    className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#99854e] hover:underline"
+                  >
+                    <span className="material-symbols-outlined text-sm">add_circle</span>
+                    {item.addText}
+                  </Link>
+                )}
               </div>
             </div>
 

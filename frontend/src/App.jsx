@@ -37,6 +37,7 @@ import {
   selectCartCount,
   selectCartItems,
   setCartItems,
+  updateCartItemDates,
   updateCartQuantity,
 } from './store/cartSlice';
 import { useAppDispatch, useAppSelector } from './store/hooks';
@@ -203,15 +204,23 @@ function App() {
     [cartItems, currentUser?.id, dispatch]
   );
   const handleUpdateCartItem = useCallback(
-    async (cartItemId, data) => {
-      if (currentUser?.id) {
+    async (cartItemId, localCartId, data) => {
+      let isApiUpdated = false;
+      if (currentUser?.id && cartItemId && typeof cartItemId === 'number') {
         try {
           const cart = await updateCartItemApi(cartItemId, data);
           dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
+          isApiUpdated = true;
           addToast('Cập nhật giỏ hàng thành công.');
         } catch {
-          addToast('Không thể cập nhật giỏ hàng.');
+          addToast('Không thể cập nhật giỏ hàng trên máy chủ.');
+          return; // Stop here if API fails, do not proceed to local success
         }
+      }
+      
+      if (!isApiUpdated) {
+        dispatch(updateCartItemDates({ cartId: localCartId, ...data }));
+        addToast('Cập nhật thời gian thành công (cục bộ).');
       }
     },
     [currentUser?.id, dispatch, addToast]

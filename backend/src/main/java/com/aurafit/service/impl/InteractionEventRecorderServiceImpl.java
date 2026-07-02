@@ -26,6 +26,7 @@ public class InteractionEventRecorderServiceImpl implements InteractionEventReco
     }
 
     @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void record(User user,
                        String sessionId,
                        InteractionEventType eventType,
