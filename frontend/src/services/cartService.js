@@ -32,3 +32,13 @@ export const removeCartItem = async (cartItemId) =>
     },
     'Khong the xoa san pham khoi gio hang.'
   );
+
+export const updateCartItem = async (cartItemId, { rentalStartDate, rentalEndDate }) =>
+  requestJson(
+    {
+      url: `/cart/items/${encodeURIComponent(cartItemId)}`,
+      method: 'PUT',
+      data: { rentalStartDate, rentalEndDate },
+    },
+    'Khong the cap nhat san pham trong gio hang.'
+  );

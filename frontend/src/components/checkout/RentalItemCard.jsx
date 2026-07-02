@@ -1,4 +1,6 @@
-// The chi tiet mot mon do trong gio thue, gom size, so luong va tong tien.
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+
 function QuantityControl({ quantity, onDecrease, onIncrease }) {
   return (
     <div className="flex items-center gap-4 border border-[#cfc4c5] bg-[#f3f3f4] px-3 py-1">
@@ -22,7 +24,53 @@ export default function RentalItemCard({
   onToggleCheck,
   onRemoveFromCart,
   onUpdateCartQuantity,
+  onUpdateCartItem,
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editStartDate, setEditStartDate] = useState(item.rentalStartDate || '');
+  const [editEndDate, setEditEndDate] = useState(item.rentalEndDate || '');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const productLink = item.costumeId && item.costumeId !== 'undefined' ? '/products/' + item.costumeId : '#';
+
+  if (!item.costumeId || item.costumeId === 'undefined') {
+    console.warn(`[RentalItemCard] Warning: costumeId is missing for cart item: ${item.name}`, item);
+  }
+
+  const handleSaveUpdate = async () => {
+    if (!editStartDate || !editEndDate || !item.cartItemId || !onUpdateCartItem) return;
+    if (editStartDate >= editEndDate) return;
+
+    setIsUpdating(true);
+    try {
+      await onUpdateCartItem(item.cartItemId, {
+        rentalStartDate: editStartDate,
+        rentalEndDate: editEndDate,
+      });
+      setIsEditing(false);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditStartDate(item.rentalStartDate || '');
+    setEditEndDate(item.rentalEndDate || '');
+    setIsEditing(false);
+  };
+
+  const imageElement = (
+    <img
+      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+      src={item.image}
+      alt={item.name}
+    />
+  );
+
+  const titleElement = (
+    <h3 className="font-serif text-3xl font-normal uppercase tracking-tight">{item.name}</h3>
+  );
+
   return (
     <article
       className={`group relative flex flex-col items-start gap-8 p-4 md:flex-row transition-colors ${
@@ -43,11 +91,13 @@ export default function RentalItemCard({
       )}
 
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#f7f7f7] md:w-72">
-        <img
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-          src={item.image}
-          alt={item.name}
-        />
+        {productLink ? (
+          <Link to={productLink} className="block h-full w-full">
+            {imageElement}
+          </Link>
+        ) : (
+          imageElement
+        )}
         <div className="absolute left-3 top-3 z-10 bg-[#99854e] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white">
           {item.badge}
         </div>
@@ -57,7 +107,13 @@ export default function RentalItemCard({
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1">
-              <h3 className="font-serif text-3xl font-normal uppercase tracking-tight">{item.name}</h3>
+              {productLink ? (
+                <Link to={productLink} className="hover:text-[#99854e] transition-colors">
+                  {titleElement}
+                </Link>
+              ) : (
+                titleElement
+              )}
               <p className="mt-1 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e]">{item.tone}</p>
               <p className="mt-1.5 text-xs text-[#99854e]">
                 Quản lý bởi: <span className="font-bold">AuraFit Admin</span>
@@ -97,7 +153,49 @@ export default function RentalItemCard({
           <div className="grid grid-cols-2 gap-4 pt-4">
             <div>
               <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">Thời gian thuê</p>
-              <p className="mt-1 italic">{item.period}</p>
+              {isEditing ? (
+                <div className="mt-2 space-y-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#666]">Từ ngày</label>
+                    <input
+                      type="date"
+                      value={editStartDate}
+                      onChange={(e) => setEditStartDate(e.target.value)}
+                      className="border border-[#cfc4c5] bg-white px-2 py-1 text-sm focus:border-[#99854e] focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#666]">Đến ngày</label>
+                    <input
+                      type="date"
+                      value={editEndDate}
+                      onChange={(e) => setEditEndDate(e.target.value)}
+                      className="border border-[#cfc4c5] bg-white px-2 py-1 text-sm focus:border-[#99854e] focus:outline-none"
+                    />
+                  </div>
+                  {editStartDate && editEndDate && editStartDate >= editEndDate && (
+                    <p className="text-[10px] text-red-500">Ngày kết thúc phải sau ngày bắt đầu</p>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={handleSaveUpdate}
+                      disabled={isUpdating || !editStartDate || !editEndDate || editStartDate >= editEndDate}
+                      className="border border-[#99854e] bg-[#99854e] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#7a6a3e] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isUpdating ? 'Đang cập nhật...' : 'Cập nhật'}
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      disabled={isUpdating}
+                      className="border border-[#cfc4c5] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#666] transition hover:bg-[#f3f3f4]"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-1 italic">{item.period}</p>
+              )}
             </div>
             <div>
               <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
@@ -121,9 +219,14 @@ export default function RentalItemCard({
               </p>
             )}
           </div>
-          <button className="border border-black px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition hover:bg-black hover:text-white">
-            Chỉnh sửa thời gian thuê
-          </button>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="border border-black px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition hover:bg-black hover:text-white"
+            >
+              Chỉnh sửa thời gian thuê
+            </button>
+          )}
         </div>
       </div>
     </article>

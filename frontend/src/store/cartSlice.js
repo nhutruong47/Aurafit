@@ -11,6 +11,8 @@ const mapCartItemToLocal = (cartItem) => ({
   cartId: `cart-item-${cartItem.id}`,
   id: cartItem.costumeItemId,
   cartItemId: cartItem.id,
+  costumeId: cartItem.costumeId,
+  costumeItemId: cartItem.costumeItemId,
   name: cartItem.costumeName,
   meta: [cartItem.sku, cartItem.size, cartItem.color].filter(Boolean).join(' • '),
   rawCategory: cartItem.category || 'Costume',

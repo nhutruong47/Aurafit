@@ -28,6 +28,7 @@ export function toRentalItem(item, index) {
     id: item.cartId || item.id || item.name || index,
     cartItemId: item.cartItemId,
     costumeItemId: item.costumeItemId || item.id,
+    costumeId: item.costumeId || null,
     name: item.name,
     tone: item.meta || item.subcategory || 'Tuyển chọn cho thuê',
     badge: '-10%',

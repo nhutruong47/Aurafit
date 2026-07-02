@@ -1,6 +1,7 @@
 package com.aurafit.controller;
 
 import com.aurafit.dto.request.AddToCartRequestDTO;
+import com.aurafit.dto.request.UpdateCartItemRequestDTO;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.CartDTO;
 import com.aurafit.service.CartService;
@@ -49,6 +50,18 @@ public class CartController {
     ) {
         Long userId = extractUserId(authentication);
         return ResponseEntity.ok(ApiResponse.success("Item added to cart.", cartService.addToCart(userId, request)));
+    }
+
+    @PutMapping("/items/{cartItemId}")
+    @Operation(summary = "Update cart item",
+            description = "Updates the rental dates of an existing CartItem and recalculates pricing.")
+    public ResponseEntity<ApiResponse<CartDTO>> updateCartItem(
+            Authentication authentication,
+            @PathVariable Long cartItemId,
+            @Valid @RequestBody UpdateCartItemRequestDTO request
+    ) {
+        Long userId = extractUserId(authentication);
+        return ResponseEntity.ok(ApiResponse.success("Cart item updated.", cartService.updateCartItem(userId, cartItemId, request)));
     }
 
     @DeleteMapping("/items/{cartItemId}")

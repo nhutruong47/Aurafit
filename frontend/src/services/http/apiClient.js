@@ -119,7 +119,9 @@ apiClient.interceptors.response.use(
 
     if (!refreshToken) {
       clearTokens();
-      window.location.href = '/account';
+      if (window.location.pathname !== '/account') {
+        window.location.href = '/account';
+      }
       return Promise.reject(error);
     }
 
@@ -142,7 +144,9 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       clearTokens();
       resolvePendingRequests(refreshError);
-      window.location.href = '/account';
+      if (window.location.pathname !== '/account') {
+        window.location.href = '/account';
+      }
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

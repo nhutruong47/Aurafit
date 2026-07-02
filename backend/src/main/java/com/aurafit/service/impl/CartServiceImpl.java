@@ -1,6 +1,7 @@
 package com.aurafit.service.impl;
 
 import com.aurafit.dto.request.AddToCartRequestDTO;
+import com.aurafit.dto.request.UpdateCartItemRequestDTO;
 import com.aurafit.dto.response.CartDTO;
 import com.aurafit.entity.Cart;
 import com.aurafit.entity.CartItem;
@@ -103,6 +104,47 @@ public class CartServiceImpl implements CartService {
         recordAddToCartEvent(userId, costumeItem, cartItem, request);
 
         // 8. Re-fetch with full JOIN FETCH graph for the response DTO
+        Cart refreshedCart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
+
+        return CartDTO.fromEntity(refreshedCart);
+    }
+
+    @Override
+    @Transactional
+    public CartDTO updateCartItem(Long userId, Long cartItemId, UpdateCartItemRequestDTO request) {
+        // 1. Validate rental dates
+        if (!request.rentalEndDate().isAfter(request.rentalStartDate())) {
+            throw new IllegalArgumentException("rentalEndDate must be after rentalStartDate");
+        }
+
+        // 2. Fetch the user's active cart with items
+        Cart cart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
+
+        // 3. Find the specific CartItem within the user's cart (prevents IDOR)
+        CartItem cartItem = cart.getItems().stream()
+                .filter(item -> item.getId().equals(cartItemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("CartItem", "id", cartItemId));
+
+        // 4. Recalculate pricing with the new dates
+        long rentalDays = ChronoUnit.DAYS.between(request.rentalStartDate(), request.rentalEndDate());
+        BigDecimal unitPrice = cartItem.getCostumeItem().getCostume().getRentalPrice();
+        BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(rentalDays));
+
+        // 5. Update fields
+        cartItem.setRentalStartDate(request.rentalStartDate());
+        cartItem.setRentalEndDate(request.rentalEndDate());
+        cartItem.setRentalDays((int) rentalDays);
+        cartItem.setUnitPrice(unitPrice);
+        cartItem.setSubtotal(subtotal);
+
+        // 6. Recalculate cart total and persist
+        cart.recalculateTotal();
+        cartRepository.save(cart);
+
+        // 7. Re-fetch with full JOIN FETCH graph for the response DTO
         Cart refreshedCart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
 

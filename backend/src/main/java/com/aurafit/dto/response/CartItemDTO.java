@@ -12,6 +12,7 @@ import java.time.LocalDate;
 public record CartItemDTO(
         Long id,
         Long costumeItemId,
+        Long costumeId,
         String costumeName,
         String sku,
         String size,
@@ -30,6 +31,7 @@ public record CartItemDTO(
         return new CartItemDTO(
                 cartItem.getId(),
                 costumeItem.getId(),
+                costume.getId(),
                 costume.getName(),
                 costumeItem.getSku(),
                 costumeItem.getSize(),

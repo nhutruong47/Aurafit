@@ -1,6 +1,7 @@
 package com.aurafit.service;
 
 import com.aurafit.dto.request.AddToCartRequestDTO;
+import com.aurafit.dto.request.UpdateCartItemRequestDTO;
 import com.aurafit.dto.response.CartDTO;
 
 public interface CartService {
@@ -15,6 +16,12 @@ public interface CartService {
      * Validates availability, calculates pricing, and returns the updated cart.
      */
     CartDTO addToCart(Long userId, AddToCartRequestDTO request);
+
+    /**
+     * Updates the rental dates of an existing CartItem.
+     * Recalculates pricing and returns the updated cart.
+     */
+    CartDTO updateCartItem(Long userId, Long cartItemId, UpdateCartItemRequestDTO request);
 
     /**
      * Removes a CartItem from the user's cart and returns the updated cart.

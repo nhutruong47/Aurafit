@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import ScrollToTop from './components/common/ScrollToTop';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
 import ToastContainer from './components/ui/ToastContainer';
@@ -21,7 +22,7 @@ import StaffDashboardPage from './pages/StaffDashboardPage';
 import UserAccountPage from './pages/UserAccountPage';
 import YearbookPage from './pages/YearbookPage';
 import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from './routing/navigation';
-import { addItemToCart as addItemToCartApi, fetchCart, removeCartItem as removeCartItemApi } from './services/cartService';
+import { addItemToCart as addItemToCartApi, fetchCart, removeCartItem as removeCartItemApi, updateCartItem as updateCartItemApi } from './services/cartService';
 import {
   attachGuestSessionToCurrentUser,
   consumeAiStylistRecommendationAttribution,
@@ -50,6 +51,7 @@ function DefaultLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f9f9f9]">
+      <ScrollToTop />
       <Navbar
         currentPage={currentPage}
         onNavigate={onNavigate}
@@ -200,6 +202,20 @@ function App() {
     },
     [cartItems, currentUser?.id, dispatch]
   );
+  const handleUpdateCartItem = useCallback(
+    async (cartItemId, data) => {
+      if (currentUser?.id) {
+        try {
+          const cart = await updateCartItemApi(cartItemId, data);
+          dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
+          addToast('Cập nhật giỏ hàng thành công.');
+        } catch {
+          addToast('Không thể cập nhật giỏ hàng.');
+        }
+      }
+    },
+    [currentUser?.id, dispatch, addToast]
+  );
 
   return (
     <Routes>
@@ -228,6 +244,7 @@ function App() {
               onAddToCart={handleAddToCart}
               onRemoveFromCart={handleRemoveFromCart}
               onUpdateCartQuantity={handleUpdateCartQuantity}
+              onUpdateCartItem={handleUpdateCartItem}
               onNavigate={handleNavigate}
             />
           }

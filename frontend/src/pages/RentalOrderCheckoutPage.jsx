@@ -14,6 +14,7 @@ export default function RentalOrderCheckoutPage({
   currentUser,
   onRemoveFromCart,
   onUpdateCartQuantity,
+  onUpdateCartItem,
   onCheckoutSuccess,
   onNavigate,
 }) {
@@ -247,6 +248,7 @@ export default function RentalOrderCheckoutPage({
                     isProblematic={problematicSku === directDisplayItem.sku}
                     onRemoveFromCart={handleRemoveFromCart}
                     onUpdateCartQuantity={onUpdateCartQuantity}
+                    onUpdateCartItem={onUpdateCartItem}
                   />
                 )}
 
@@ -273,6 +275,7 @@ export default function RentalOrderCheckoutPage({
                         }}
                         onRemoveFromCart={handleRemoveFromCart}
                         onUpdateCartQuantity={onUpdateCartQuantity}
+                        onUpdateCartItem={onUpdateCartItem}
                       />
                     ))}
                   </div>
