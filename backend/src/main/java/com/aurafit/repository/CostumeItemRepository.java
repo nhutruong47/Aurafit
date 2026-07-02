@@ -46,4 +46,17 @@ public interface CostumeItemRepository extends JpaRepository<CostumeItem, Long> 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT ci FROM CostumeItem ci WHERE ci.sku = :sku")
     Optional<CostumeItem> findBySkuForUpdate(@Param("sku") String sku);
+
+    /**
+     * Dynamically count available stock for a specific costume and size.
+     */
+    @Query("SELECT COUNT(ci) FROM CostumeItem ci WHERE ci.costume.id = :costumeId AND ci.size = :size AND ci.status = :status")
+    int countByCostumeIdAndSizeAndStatus(@Param("costumeId") Long costumeId, @Param("size") String size, @Param("status") ItemStatus status);
+
+    /**
+     * Dynamically fetch and lock N available items for a specific costume and size.
+     */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ci FROM CostumeItem ci WHERE ci.costume.id = :costumeId AND ci.size = :size AND ci.status = :status")
+    List<CostumeItem> findAvailableItemsForUpdate(@Param("costumeId") Long costumeId, @Param("size") String size, @Param("status") ItemStatus status, org.springframework.data.domain.Pageable pageable);
 }

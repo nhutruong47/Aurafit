@@ -1,6 +1,8 @@
 package com.aurafit.dto.response;
 
 import com.aurafit.entity.CartItem;
+import com.aurafit.repository.CostumeItemRepository;
+import com.aurafit.enums.ItemStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,11 +24,19 @@ public record CartItemDTO(
         LocalDate rentalEndDate,
         int rentalDays,
         BigDecimal unitPrice,
-        BigDecimal subtotal
+        BigDecimal subtotal,
+        int availableStock
 ) {
-    public static CartItemDTO fromEntity(CartItem cartItem) {
+    public static CartItemDTO fromEntity(CartItem cartItem, CostumeItemRepository costumeItemRepository) {
         var costumeItem = cartItem.getCostumeItem();
         var costume = costumeItem.getCostume();
+
+        int availableStock = 1;
+        if (costumeItemRepository != null) {
+            availableStock = costumeItemRepository.countByCostumeIdAndSizeAndStatus(
+                    costume.getId(), costumeItem.getSize(), ItemStatus.AVAILABLE
+            );
+        }
 
         return new CartItemDTO(
                 cartItem.getId(),
@@ -41,7 +51,8 @@ public record CartItemDTO(
                 cartItem.getRentalEndDate(),
                 cartItem.getRentalDays(),
                 cartItem.getUnitPrice(),
-                cartItem.getSubtotal()
+                cartItem.getSubtotal(),
+                availableStock
         );
     }
 }

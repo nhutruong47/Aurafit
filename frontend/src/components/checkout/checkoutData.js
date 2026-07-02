@@ -57,7 +57,7 @@ export function toRentalItem(item, index) {
     sizes: [
       {
         label: item.size ? `Size ${item.size}` : 'Freesize',
-        stock: 1,
+        stock: item.availableStock || 1,
         quantity: item.quantity || 1,
       },
     ],

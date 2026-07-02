@@ -51,7 +51,7 @@ public class CartServiceImpl implements CartService {
     @Transactional(readOnly = true)
     public CartDTO getCart(Long userId) {
         Cart cart = getOrCreateActiveCart(userId);
-        return CartDTO.fromEntity(cart);
+        return CartDTO.fromEntity(cart, costumeItemRepository);
     }
 
     @Override
@@ -107,7 +107,7 @@ public class CartServiceImpl implements CartService {
         Cart refreshedCart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
 
-        return CartDTO.fromEntity(refreshedCart);
+        return CartDTO.fromEntity(refreshedCart, costumeItemRepository);
     }
 
     @Override
@@ -148,7 +148,7 @@ public class CartServiceImpl implements CartService {
         Cart refreshedCart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
 
-        return CartDTO.fromEntity(refreshedCart);
+        return CartDTO.fromEntity(refreshedCart, costumeItemRepository);
     }
 
     @Override
@@ -167,7 +167,7 @@ public class CartServiceImpl implements CartService {
         cart.recalculateTotal();
         cartRepository.save(cart);
 
-        return CartDTO.fromEntity(cart);
+        return CartDTO.fromEntity(cart, costumeItemRepository);
     }
 
     // ── Private helpers ──────────────────────────────────────────────────

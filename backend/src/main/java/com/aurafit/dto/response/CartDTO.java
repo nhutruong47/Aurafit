@@ -2,6 +2,7 @@ package com.aurafit.dto.response;
 
 import com.aurafit.entity.Cart;
 import com.aurafit.enums.CartStatus;
+import com.aurafit.repository.CostumeItemRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,10 +18,10 @@ public record CartDTO(
         List<CartItemDTO> items,
         BigDecimal totalCartValue
 ) {
-    public static CartDTO fromEntity(Cart cart) {
+    public static CartDTO fromEntity(Cart cart, CostumeItemRepository costumeItemRepository) {
         List<CartItemDTO> itemDTOs = cart.getItems()
                 .stream()
-                .map(CartItemDTO::fromEntity)
+                .map(item -> CartItemDTO.fromEntity(item, costumeItemRepository))
                 .toList();
 
         return new CartDTO(

@@ -114,16 +114,22 @@ public class OrderServiceImpl implements OrderService {
         for (CheckoutItemRequest item : items) {
 
             // ── 4a. Locate physical CostumeItem by SKU and lock it ───────────────
-            CostumeItem costumeItem = costumeItemRepository.findBySkuForUpdate(item.sku())
+            CostumeItem representativeItem = costumeItemRepository.findBySku(item.sku())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "CostumeItem", "sku", item.sku()
                     ));
 
-            // ── 4b. Stock availability check ──────────────────────────────────
-            if (costumeItem.getStatus() != ItemStatus.AVAILABLE) {
+            Costume costume = representativeItem.getCostume();
+            String size = representativeItem.getSize();
+
+            // ── 4b. Stock availability check and dynamic allocation ─────────────────
+            List<CostumeItem> availableItems = costumeItemRepository.findAvailableItemsForUpdate(
+                    costume.getId(), size, ItemStatus.AVAILABLE, org.springframework.data.domain.PageRequest.of(0, item.quantity())
+            );
+
+            if (availableItems.size() < item.quantity()) {
                 throw new BadRequestException(
-                        "San pham ma [SKU: " + item.sku() + "] hien khong kha dung. "
-                        + "Trang thai hien tai: " + costumeItem.getStatus()
+                        "Chỉ còn " + availableItems.size() + " sản phẩm khả dụng cho mẫu này (Size: " + size + ")."
                 );
             }
 
@@ -132,15 +138,6 @@ public class OrderServiceImpl implements OrderService {
                 throw new BadRequestException(
                         "Ngay tra (rentalEndDate) cua san pham [SKU: " + item.sku()
                         + "] phai sau ngay nhan (rentalStartDate)."
-                );
-            }
-
-            // ── 4d. Validate quantity constraint ───────────────────────────────
-            // A CostumeItem represents a unique physical item (unique SKU). Its stock is strictly 1.
-            int availableStock = (costumeItem.getStatus() == ItemStatus.AVAILABLE) ? 1 : 0;
-            if (item.quantity() > availableStock) {
-                throw new BadRequestException(
-                        "Số lượng vượt quá tồn kho. Sản phẩm [SKU: " + item.sku() + "] chỉ có sẵn " + availableStock + " cái."
                 );
             }
 
@@ -156,7 +153,6 @@ public class OrderServiceImpl implements OrderService {
             }
 
             // ── 4e. Pull financial data from parent Costume ─────────────────────
-            Costume costume = costumeItem.getCostume();
             BigDecimal pricePerDay = costume.getRentalPrice();
             BigDecimal depositPerItem = costume.getDepositPrice();
 
@@ -183,23 +179,26 @@ public class OrderServiceImpl implements OrderService {
                 orderEndDate = itemEnd;
             }
 
-            // ── 4g. Build and attach RentalOrderDetail ──────────────────────────
-            RentalOrderDetail detail = RentalOrderDetail.builder()
-                    .costumeItem(costumeItem)
-                    .pricePerDay(pricePerDay)
-                    .rentalDays((int) rentalDays)
-                    .subtotal(subtotalRental)
-                    .deposit(depositPerItem)
-                    .price(pricePerDay)
-                    .returnStatus(ReturnStatus.NOT_RETURNED)
-                    .build();
-            orderDetails.add(detail);
+            // ── 4g. Accumulate for each physical item ──────────────────────────
+            // Loop through allocated physical items and build order details
+            BigDecimal singleItemRentalSubtotal = pricePerDay.multiply(BigDecimal.valueOf(rentalDays));
+            
+            for (CostumeItem allocatedItem : availableItems) {
+                // Lock inventory immediately
+                allocatedItem.setStatus(ItemStatus.RENTED);
+                costumeItemRepository.save(allocatedItem);
 
-            // ── 4h. Lock inventory immediately ─────────────────────────────────
-            // Prevents double-booking race conditions across concurrent requests.
-            // Will be rolled back automatically if transaction fails downstream.
-            costumeItem.setStatus(ItemStatus.RENTED);
-            costumeItemRepository.save(costumeItem);
+                RentalOrderDetail detail = RentalOrderDetail.builder()
+                        .costumeItem(allocatedItem)
+                        .pricePerDay(pricePerDay)
+                        .rentalDays((int) rentalDays)
+                        .subtotal(singleItemRentalSubtotal)
+                        .deposit(depositPerItem)
+                        .price(pricePerDay)
+                        .returnStatus(ReturnStatus.NOT_RETURNED)
+                        .build();
+                orderDetails.add(detail);
+            }
         }
 
         // ── Step 5: Create and persist RentalOrder ──────────────────────────────
