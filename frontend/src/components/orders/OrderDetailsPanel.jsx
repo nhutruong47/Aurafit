@@ -2,12 +2,22 @@ import { formatCurrency } from '../../utils/formatCurrency';
 import { getOrderCode, getOrderTimeline, mapOrderStatus } from './orderUtils';
 import OrderTimeline from './OrderTimeline';
 
+import { useNavigate } from 'react-router-dom';
+import { useCheckoutStore } from '../../store/useCheckoutStore';
+
 const fallbackImage =
   'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=200&q=80';
 
 export default function OrderDetailsPanel({ order, onCancel }) {
   const statusInfo = mapOrderStatus(order.status);
   const timeline = getOrderTimeline(order);
+  const navigate = useNavigate();
+  const setPendingOrderId = useCheckoutStore((state) => state.setPendingOrderId);
+
+  const handlePayNow = () => {
+    setPendingOrderId(order.id);
+    navigate('/payment');
+  };
 
   return (
     <div className="sticky top-28 border border-[#cfc4c5] bg-white p-8 md:p-10">
@@ -17,6 +27,14 @@ export default function OrderDetailsPanel({ order, onCancel }) {
           {(order.status === 'PENDING' || order.status === 'CONFIRMED') && onCancel && (
             <button onClick={() => onCancel(order.id)} className="text-[10px] font-bold uppercase tracking-wider text-red-600 transition hover:text-red-800">
               Hủy đơn
+            </button>
+          )}
+          {order.status === 'PENDING' && (
+            <button 
+              onClick={handlePayNow}
+              className="bg-black px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#99854e]"
+            >
+              Thanh toán ngay
             </button>
           )}
           <span className={`text-[12px] font-bold uppercase tracking-[0.2em] ${statusInfo.color}`}>

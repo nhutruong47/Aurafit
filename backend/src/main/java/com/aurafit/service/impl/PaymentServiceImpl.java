@@ -44,7 +44,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${sepay.va-account}")
     private String sepayVaAccount;
 
-    @Value("${sepay.vietqr-base-url}")
+    @Value("${sepay.vietqr-base-url:https://qr.sepay.vn/img}")
     private String sepayVietQrBaseUrl;
 
     public PaymentServiceImpl(PaymentRepository paymentRepository,

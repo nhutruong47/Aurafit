@@ -7,6 +7,7 @@ import { createPayment, getPaymentStatus } from '../services/paymentService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 import { formatCurrency } from '../utils/formatCurrency';
 import { fallbackProductImage } from '../utils/productMapper';
+import { useToastStore } from '../store/useToastStore';
 
 const PAYMENT_STATUS_POLL_MS = 10000;
 
@@ -109,14 +110,27 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       }
     };
 
-    // Countdown timer
-    setCountdown(PAYMENT_STATUS_POLL_MS / 1000);
-    countdownRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) return PAYMENT_STATUS_POLL_MS / 1000;
-        return prev - 1;
-      });
-    }, 1000);
+    // Countdown timer for 15-minute expiration
+    const expireTime = new Date(order?.createdAt || Date.now()).getTime() + 15 * 60 * 1000;
+    
+    const updateCountdown = () => {
+      const now = Date.now();
+      const diff = Math.max(0, expireTime - now);
+      
+      if (diff === 0 && isMountedRef.current) {
+        clearPolling();
+        useToastStore.getState().addToast('Đơn hàng đã hết hạn thanh toán.', 'error');
+        onNavigate?.('orders');
+        return;
+      }
+      
+      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+    };
+
+    updateCountdown();
+    countdownRef.current = setInterval(updateCountdown, 1000);
 
     // Polling every 10s
     checkStatus();
@@ -126,7 +140,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       isMountedRef.current = false;
       clearPolling();
     };
-  }, [paymentInit, pendingOrderId, onNavigate]);
+  }, [paymentInit, pendingOrderId, onNavigate, order]);
 
   const items = useMemo(() => {
     if (order?.details?.length) {

@@ -144,9 +144,9 @@ export default function PaymentFormSections({ order, paymentInit, isPaid, paymen
                   )}
                   {/* Countdown indicator */}
                   {!isPaid && (
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1">
-                      <span className="text-xs font-mono text-white">
-                        Kiểm tra sau {countdown}s
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-red-600/90 px-3 py-1 shadow-md">
+                      <span className="whitespace-nowrap text-[11px] font-bold tracking-wider text-white">
+                        Hết hạn sau: {countdown}
                       </span>
                     </div>
                   )}
