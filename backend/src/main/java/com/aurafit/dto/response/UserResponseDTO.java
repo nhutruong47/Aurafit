@@ -11,6 +11,8 @@ public record UserResponseDTO(
         Long id,
         String fullName,
         String email,
+        String phone,
+        String address,
         Role role,
         UserStatus status
 ) {

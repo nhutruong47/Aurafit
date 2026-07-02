@@ -38,20 +38,11 @@ export function useCatalogCostumes(categoryKey) {
             (c) => c.name.toLowerCase() === resolvedCategoryName.toLowerCase()
           );
           
-          // If the category is specified but doesn't exist on the backend, return empty immediately
-          if (!targetCategory) {
-            if (isMounted) {
-              setState({
-                costumes: [],
-                isLoading: false,
-                error: null,
-                requestKey,
-              });
-            }
-            return;
+          // If the category is specified but doesn't exactly match on backend, we just won't pass categoryId.
+          // We will filter locally after mapping.
+          if (targetCategory) {
+            categoryId = targetCategory.id;
           }
-          
-          categoryId = targetCategory.id;
         }
 
         // Step 2: Fetch costumes with the found categoryId (or null for all)
@@ -63,7 +54,13 @@ export function useCatalogCostumes(categoryKey) {
         
         if (controller.signal.aborted || !isMounted) return;
 
-        const mappedCostumes = Array.isArray(data) ? data.map(mapCostumeToProduct) : [];
+        let mappedCostumes = Array.isArray(data) ? data.map(mapCostumeToProduct) : [];
+        
+        if (resolvedCategoryName) {
+          mappedCostumes = mappedCostumes.filter(
+            (c) => c.category.toLowerCase() === resolvedCategoryName.toLowerCase()
+          );
+        }
 
         setState({
           costumes: mappedCostumes,

@@ -8,5 +8,7 @@ public record ItemAssessmentDTO(
         Long rentalOrderDetailId,
         @NotNull(message = "returnStatus is required")
         ReturnStatus returnStatus,
+        java.math.BigDecimal lateFee,
+        java.math.BigDecimal damageFee,
         String note
 ) {}

@@ -58,8 +58,17 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReviewData, setNewReviewData] = useState({ rating: 5, comment: '' });
   const [selectedItem, setSelectedItem] = useState(null);
-  const [rentalStartDate, setRentalStartDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [rentalEndDate, setRentalEndDate] = useState('');
+  const getLocalDateString = (daysOffset = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysOffset);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
+  const [rentalEndDate, setRentalEndDate] = useState(() => getLocalDateString(1));
   const impressionKeyRef = useRef('');
 
   const {
@@ -170,16 +179,19 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
 
   const displayedReviews = showAllReviews ? filteredReviews : filteredReviews.slice(0, 3);
 
-  const handleAddToCartClick = () => {
+  const handleAddToCartClick = async (itemFromHero) => {
     if (!currentUser?.id) {
       onNavigate?.('account');
-      return;
+      return false;
     }
     if (!selectedItem && product.items?.length > 0) {
       alert('Vui lòng chọn kích thước/loại trước khi thêm vào giỏ.');
-      return;
+      return false;
     }
-    onAddToCart?.(toCartItem(product, selectedItem));
+    // itemFromHero contains quantity and dates mapped by ProductHero
+    const finalItem = itemFromHero || toCartItem(product, selectedItem);
+    await onAddToCart?.(finalItem);
+    return true;
   };
 
   const handleRentNowClick = () => {

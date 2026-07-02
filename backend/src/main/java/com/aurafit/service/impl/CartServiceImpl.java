@@ -12,18 +12,21 @@ import com.aurafit.enums.InteractionEventType;
 import com.aurafit.enums.InteractionTargetType;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.exception.ResourceNotFoundException;
+import com.aurafit.exception.BadRequestException;
 import com.aurafit.repository.CartItemRepository;
 import com.aurafit.repository.CartRepository;
 import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.service.CartService;
 import com.aurafit.service.InteractionEventRecorderService;
+import com.aurafit.service.PricingEngineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -34,21 +37,24 @@ public class CartServiceImpl implements CartService {
     private final CostumeItemRepository costumeItemRepository;
     private final UserRepository userRepository;
     private final InteractionEventRecorderService interactionEventRecorderService;
+    private final PricingEngineService pricingEngineService;
 
     public CartServiceImpl(CartRepository cartRepository,
                            CartItemRepository cartItemRepository,
                            CostumeItemRepository costumeItemRepository,
                            UserRepository userRepository,
-                           InteractionEventRecorderService interactionEventRecorderService) {
+                           InteractionEventRecorderService interactionEventRecorderService,
+                           PricingEngineService pricingEngineService) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.costumeItemRepository = costumeItemRepository;
         this.userRepository = userRepository;
         this.interactionEventRecorderService = interactionEventRecorderService;
+        this.pricingEngineService = pricingEngineService;
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public CartDTO getCart(Long userId) {
         Cart cart = getOrCreateActiveCart(userId);
         return CartDTO.fromEntity(cart, costumeItemRepository);
@@ -57,51 +63,76 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public CartDTO addToCart(Long userId, AddToCartRequestDTO request) {
-        // 1. Validate rental dates
-        if (!request.rentalEndDate().isAfter(request.rentalStartDate())) {
-            throw new IllegalArgumentException("rentalEndDate must be after rentalStartDate");
+        // 1. Validate rental dates if present
+        if (request.rentalStartDate() != null && request.rentalEndDate() != null) {
+            if (!request.rentalEndDate().isAfter(request.rentalStartDate())) {
+                throw new IllegalArgumentException("rentalEndDate must be after rentalStartDate");
+            }
         }
 
         // 2. Fetch the CostumeItem with its parent Costume (single query via JOIN FETCH)
-        CostumeItem costumeItem = costumeItemRepository.findByIdWithCostume(request.costumeItemId())
+        CostumeItem referenceItem = costumeItemRepository.findByIdWithCostume(request.costumeItemId())
                 .orElseThrow(() -> new ResourceNotFoundException("CostumeItem", "id", request.costumeItemId()));
 
-        // 3. Validate item availability
-        if (costumeItem.getStatus() != ItemStatus.AVAILABLE) {
-            throw new IllegalStateException(
-                    "CostumeItem [SKU: " + costumeItem.getSku() + "] is currently " + costumeItem.getStatus()
-                            + " and cannot be added to cart");
-        }
-
-        // 4. Get or create the user's active cart
+        // 3. Get or create the user's active cart
         Cart cart = getOrCreateActiveCart(userId);
 
-        // 5. Prevent duplicate items in the same cart
-        if (cartItemRepository.existsByCartIdAndCostumeItemId(cart.getId(), costumeItem.getId())) {
-            throw new IllegalStateException(
-                    "CostumeItem [SKU: " + costumeItem.getSku() + "] is already in your cart");
+        // 4. Dynamic SKU Allocation & Verification
+        int newQty = request.quantity() != null ? request.quantity() : 1;
+        long totalAvailable = costumeItemRepository.countByCostumeIdAndSizeAndColorAndStatus(
+                referenceItem.getCostume().getId(), referenceItem.getSize(), referenceItem.getColor(), ItemStatus.AVAILABLE);
+        long existingQty = cartItemRepository.countVariantInCart(
+                cart.getId(), referenceItem.getCostume().getId(), referenceItem.getSize(), referenceItem.getColor());
+
+        if (existingQty + newQty > totalAvailable) {
+            throw new BadRequestException("Vượt quá số lượng tồn kho. Bạn đã có " + existingQty + " sản phẩm này trong giỏ.");
         }
 
-        // 6. Calculate pricing
-        long rentalDays = ChronoUnit.DAYS.between(request.rentalStartDate(), request.rentalEndDate());
-        BigDecimal unitPrice = costumeItem.getCostume().getRentalPrice();
-        BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(rentalDays));
+        // Fetch exactly `newQty` available items that are NOT already in the cart
+        List<CostumeItem> itemsToAdd = costumeItemRepository.findAvailableItemsForUpdate(
+                referenceItem.getCostume().getId(), referenceItem.getSize(), referenceItem.getColor(), ItemStatus.AVAILABLE,
+                org.springframework.data.domain.PageRequest.of(0, (int) (existingQty + newQty))
+        ).stream().filter(item -> !cartItemRepository.existsByCartIdAndCostumeItemId(cart.getId(), item.getId()))
+          .limit(newQty)
+          .toList();
 
-        // 7. Build and persist CartItem
-        CartItem cartItem = CartItem.builder()
-                .cart(cart)
-                .costumeItem(costumeItem)
-                .rentalStartDate(request.rentalStartDate())
-                .rentalEndDate(request.rentalEndDate())
-                .rentalDays((int) rentalDays)
-                .unitPrice(unitPrice)
-                .subtotal(subtotal)
-                .build();
+        if (itemsToAdd.size() < newQty) {
+            throw new BadRequestException("Không đủ sản phẩm trống để thêm vào giỏ hàng. Bạn đã có " + existingQty + " sản phẩm này trong giỏ.");
+        }
 
-        cart.getItems().add(cartItem);
+        // 5. Calculate pricing via Tiered Pricing Engine
+        int rentalDays = 0;
+        if (request.rentalStartDate() != null && request.rentalEndDate() != null) {
+            rentalDays = (int) java.time.temporal.ChronoUnit.DAYS.between(request.rentalStartDate(), request.rentalEndDate());
+        }
+        int effectiveDays = Math.max(1, rentalDays);
+        BigDecimal unitPrice = referenceItem.getCostume().getRentalPrice();
+        BigDecimal retailValue = referenceItem.getCostume().getDepositPrice(); // depositPrice = retail value
+
+        // Per-item pricing (quantity = 1 per CartItem row since each row is 1 physical SKU)
+        BigDecimal itemRentalFee = pricingEngineService.calculateItemRentalFee(unitPrice, effectiveDays, 1);
+        BigDecimal itemDeposit = pricingEngineService.calculateItemDeposit(retailValue, itemRentalFee, 1);
+        BigDecimal itemSubtotal = pricingEngineService.calculateTotal(itemRentalFee, itemDeposit);
+
+        // 6. Create CartItems
+        for (CostumeItem item : itemsToAdd) {
+            CartItem cartItem = CartItem.builder()
+                    .cart(cart)
+                    .costumeItem(item)
+                    .rentalStartDate(request.rentalStartDate())
+                    .rentalEndDate(request.rentalEndDate())
+                    .rentalDays(rentalDays > 0 ? rentalDays : null)
+                    .unitPrice(unitPrice)
+                    .rentalFee(itemRentalFee)
+                    .deposit(itemDeposit)
+                    .subtotal(itemSubtotal)
+                    .build();
+            cart.getItems().add(cartItem);
+            recordAddToCartEvent(userId, item, cartItem, request);
+        }
+
         cart.recalculateTotal();
         cartRepository.save(cart);
-        recordAddToCartEvent(userId, costumeItem, cartItem, request);
 
         // 8. Re-fetch with full JOIN FETCH graph for the response DTO
         Cart refreshedCart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)

@@ -115,9 +115,10 @@ function App() {
   const handleAddToCart = useCallback(
     async (item) => {
       const aiStylistAttribution = item?.id ? consumeAiStylistRecommendationAttribution(item.id) : null;
-      const apiEligible = currentUser?.id && item?.costumeItemId && item?.rentalStartDate && item?.rentalEndDate;
+      // Allow adding to cart even if dates are not selected yet (they will be selected on Checkout)
+      const apiEligible = !!(currentUser?.id && item?.costumeItemId);
 
-      if (!apiEligible && currentUser?.id && item?.id) {
+      if (apiEligible && item?.id) {
         logUserInteraction({
           userId: currentUser.id,
           actionType: 'ADD_TO_CART',
@@ -137,6 +138,7 @@ function App() {
             costumeItemId: item.costumeItemId,
             rentalStartDate: item.rentalStartDate,
             rentalEndDate: item.rentalEndDate,
+            quantity: item.quantity || 1,
             aiStylistAttribution,
           });
 
@@ -147,9 +149,8 @@ function App() {
           dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
           addToast(`Da them "${item.name}" vao gio hang.`);
           return;
-        } catch {
-          dispatch(addCartItem(aiStylistAttribution ? { ...item, attribution: aiStylistAttribution } : item));
-          addToast(`Da them "${item.name}" vao gio hang.`);
+        } catch (error) {
+          addToast(error?.message || 'Lỗi: Không thể thêm vào giỏ hàng, vui lòng thử lại.', 'error');
           return;
         }
       }
@@ -189,13 +190,26 @@ function App() {
     async (cartId) => {
       const matchedItem = cartItems.find((item) => item.cartId === cartId);
 
-      if (currentUser?.id && matchedItem?.cartItemId) {
-        try {
-          const cart = await removeCartItemApi(matchedItem.cartItemId);
-          dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
-          return;
-        } catch {
-          return;
+      if (currentUser?.id && matchedItem) {
+        // Grouped items have cartItemIds (array); ungrouped items have a single cartItemId
+        const idsToDelete = matchedItem.cartItemIds || (matchedItem.cartItemId ? [matchedItem.cartItemId] : []);
+
+        if (idsToDelete.length > 0) {
+          try {
+            let latestCart = null;
+            for (const id of idsToDelete) {
+              latestCart = await removeCartItemApi(id);
+            }
+            dispatch(setCartItems(mergeAiStylistCartAttribution(latestCart?.items || [])));
+            return;
+          } catch (error) {
+            if (error?.response?.status === 404) {
+              dispatch(removeCartItem(cartId));
+            } else {
+              addToast('Lỗi: Không thể xoá sản phẩm. Vui lòng tải lại trang.', 'error');
+            }
+            return;
+          }
         }
       }
 
@@ -252,7 +266,6 @@ function App() {
               currentUser={currentUser}
               onAddToCart={handleAddToCart}
               onRemoveFromCart={handleRemoveFromCart}
-              onUpdateCartQuantity={handleUpdateCartQuantity}
               onUpdateCartItem={handleUpdateCartItem}
               onNavigate={handleNavigate}
             />

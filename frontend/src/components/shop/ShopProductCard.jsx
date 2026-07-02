@@ -5,12 +5,19 @@ import { formatCurrency } from '../../utils/formatCurrency';
 import { fetchCostumeItems } from '../../services/costumeService';
 
 export default function ShopProductCard({ product, onNavigate, onAddToCart, onRentNow }) {
-  const today = new Date().toISOString().split('T')[0];
+  const getLocalDateString = (dateInput = new Date()) => {
+    const d = new Date(dateInput);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const today = getLocalDateString(0);
   const [items, setItems] = useState(() => product.items || []);
   const [selectedItem, setSelectedItem] = useState(() => product.items?.[0] || null);
   const [showDates, setShowDates] = useState(false);
-  const [rentalStartDate, setRentalStartDate] = useState(today);
-  const [rentalEndDate, setRentalEndDate] = useState('');
+  const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
+  const [rentalEndDate, setRentalEndDate] = useState(() => getLocalDateString(1));
   const [dateError, setDateError] = useState('');
 
   const available = product.available;
@@ -179,7 +186,7 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
               <input
                 type="date"
                 value={rentalEndDate}
-                min={rentalStartDate ? new Date(new Date(rentalStartDate).getTime() + 86400000).toISOString().split('T')[0] : today}
+                min={rentalStartDate ? getLocalDateString(new Date(new Date(rentalStartDate).getTime() + 86400000)) : today}
                 onChange={handleEndDateChange}
                 className="w-full border border-[#cfc4c5] bg-white px-2 py-1.5 text-[11px] focus:border-black focus:outline-none"
               />

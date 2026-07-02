@@ -1,6 +1,7 @@
 import ImageUploadField from '../ui/ImageUploadField';
 import { returnStatuses } from './staffData';
 import { Field } from './StaffDashboardShared';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 export default function StaffHandoverForm({
   activeOrder,
@@ -11,6 +12,10 @@ export default function StaffHandoverForm({
   handoverImageUrl,
   note,
   isSubmitting,
+  lateFee,
+  damageFee,
+  maxDeposit,
+  isPenaltyValid,
   onModeChange,
   onSelectDetail,
   onReturnStatusChange,
@@ -19,7 +24,11 @@ export default function StaffHandoverForm({
   onNoteChange,
   onPreviewImage,
   onSubmit,
+  onLateFeeChange,
+  onDamageFeeChange,
 }) {
+  const isReturnMode = mode === 'RETURN';
+
   return (
     <aside className="border border-[#cfc4c5] bg-white p-5 lg:col-span-3">
       <h2 className="mb-5 text-[11px] font-semibold uppercase tracking-[0.2em]">Tạo biên bản</h2>
@@ -58,10 +67,15 @@ export default function StaffHandoverForm({
           <div className="border border-[#e1dddc] bg-[#f9f9f9] p-3 text-sm">
             <p className="font-medium">{selectedDetail.costumeName}</p>
             <p className="mt-1 text-[#5f5e5e]">{selectedDetail.skuCode} | Item {selectedDetail.itemStatus}</p>
+            {isReturnMode && (
+              <p className="mt-1 text-[11px] font-semibold text-[#99854e]">
+                Tiền cọc: {formatCurrency(maxDeposit)}
+              </p>
+            )}
           </div>
         )}
 
-        {mode === 'RETURN' && (
+        {isReturnMode && (
           <Field label="Tình trạng trả">
             <div className="space-y-2">
               {returnStatuses.map((status) => (
@@ -77,6 +91,38 @@ export default function StaffHandoverForm({
               ))}
             </div>
           </Field>
+        )}
+
+        {isReturnMode && (
+          <Field label="Phí trễ hạn (VNĐ)">
+            <input
+              type="number"
+              min="0"
+              value={lateFee}
+              onChange={(e) => onLateFeeChange(Math.max(0, Number(e.target.value)))}
+              placeholder="0"
+              className="w-full border border-[#cfc4c5] bg-[#f9f9f9] px-3 py-3 text-sm outline-none focus:border-[#99854e]"
+            />
+          </Field>
+        )}
+
+        {isReturnMode && returnStatus === 'DAMAGED' && (
+          <Field label="Phí hư hỏng (VNĐ)">
+            <input
+              type="number"
+              min="0"
+              value={damageFee}
+              onChange={(e) => onDamageFeeChange(Math.max(0, Number(e.target.value)))}
+              placeholder="0"
+              className="w-full border border-[#cfc4c5] bg-[#f9f9f9] px-3 py-3 text-sm outline-none focus:border-[#99854e]"
+            />
+          </Field>
+        )}
+
+        {isReturnMode && !isPenaltyValid && (
+          <p className="text-sm font-medium text-[#ba1a1a]">
+            Tổng phí phạt không được vượt quá tiền cọc ({formatCurrency(maxDeposit)}).
+          </p>
         )}
 
         <Field label="URL ảnh bàn giao">
@@ -117,7 +163,7 @@ export default function StaffHandoverForm({
         </Field>
 
         <button
-          disabled={isSubmitting || !handoverImageUrl || !selectedDetailId}
+          disabled={isSubmitting || !handoverImageUrl || !selectedDetailId || (isReturnMode && !isPenaltyValid)}
           className="w-full bg-black px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
         >
           {isSubmitting ? 'Đang lưu...' : mode === 'PICKUP' ? 'Xác nhận bàn giao' : 'Xác nhận trả đồ'}

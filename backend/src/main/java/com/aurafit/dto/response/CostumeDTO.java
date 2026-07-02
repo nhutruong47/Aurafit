@@ -23,9 +23,10 @@ public record CostumeDTO(
         CategoryDTO category,
         UserResponseDTO owner,
         CostumeMetadataDTO metadata,
-        List<CostumeItemDTO> items
+        List<CostumeItemDTO> items,
+        List<InventorySummaryDTO> inventorySummary
 ) {
-    public static CostumeDTO fromEntity(Costume costume) {
+    public static CostumeDTO fromEntity(Costume costume, List<InventorySummaryDTO> inventorySummary) {
         long availableCount = costume.getItems() == null ? 0 :
                 costume.getItems().stream()
                         .filter(item -> item.getStatus() == com.aurafit.enums.ItemStatus.AVAILABLE)
@@ -44,6 +45,8 @@ public record CostumeDTO(
                         costume.getOwner().getId(),
                         costume.getOwner().getFullName(),
                         costume.getOwner().getEmail(),
+                        costume.getOwner().getPhone(),
+                        costume.getOwner().getAddress(),
                         costume.getOwner().getRole(),
                         costume.getOwner().getStatus()
                 ) : null,
@@ -51,7 +54,12 @@ public record CostumeDTO(
                 costume.getItems() == null ? List.of() :
                         costume.getItems().stream()
                                 .map(CostumeItemDTO::fromEntity)
-                                .toList()
+                                .toList(),
+                inventorySummary != null ? inventorySummary : List.of()
         );
+    }
+    
+    public static CostumeDTO fromEntity(Costume costume) {
+        return fromEntity(costume, List.of());
     }
 }

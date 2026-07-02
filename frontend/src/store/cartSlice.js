@@ -7,6 +7,10 @@ const persistItems = (items) => {
 
 const initialItems = loadJson('aurafitCartItems', []);
 
+/**
+ * Maps a single Backend CartItemDTO into a local flat object.
+ * Each Backend row represents exactly 1 physical SKU.
+ */
 const mapCartItemToLocal = (cartItem) => ({
   cartId: `cart-item-${cartItem.id}`,
   id: cartItem.costumeItemId,
@@ -14,24 +18,62 @@ const mapCartItemToLocal = (cartItem) => ({
   costumeId: cartItem.costumeId,
   costumeItemId: cartItem.costumeItemId,
   name: cartItem.costumeName,
-  meta: [cartItem.sku, cartItem.size, cartItem.color].filter(Boolean).join(' • '),
   rawCategory: cartItem.category || 'Costume',
   category: cartItem.category || 'Costume',
-  subcategory: cartItem.sku,
-  tag: cartItem.size,
   image: cartItem.imageUrl,
-  price: cartItem.subtotal,
   rentalStartDate: cartItem.rentalStartDate,
   rentalEndDate: cartItem.rentalEndDate,
-  rentalDays: cartItem.rentalDays,
   unitPrice: cartItem.unitPrice,
+  rentalDays: cartItem.rentalDays,
+  rentalFee: cartItem.rentalFee,
+  deposit: cartItem.deposit,
+  depositPrice: cartItem.depositPrice,
   subtotal: cartItem.subtotal,
   sku: cartItem.sku,
   size: cartItem.size,
   color: cartItem.color,
   quantity: 1,
+  availableStock: cartItem.availableStock,
   attribution: cartItem.attribution || null,
 });
+
+/**
+ * Groups an array of flat cart items (each representing 1 physical SKU row)
+ * by costumeId + size + color. Produces 1 grouped entry per unique variant.
+ *
+ * Grouped item includes:
+ * - quantity: total count of physical rows
+ * - cartItemIds: array of Backend CartItem IDs (for batch delete)
+ * - rentalFee / deposit / subtotal: summed across all rows
+ * - sku: the first row's SKU (used by checkout to identify the variant)
+ */
+const groupCartItems = (flatItems) => {
+  const groups = new Map();
+
+  for (const item of flatItems) {
+    const key = `${item.costumeId}_${item.size || ''}_${item.color || ''}`;
+
+    if (groups.has(key)) {
+      const group = groups.get(key);
+      group.quantity += 1;
+      group.cartItemIds.push(item.cartItemId);
+      group.rentalFee = (Number(group.rentalFee) || 0) + (Number(item.rentalFee) || 0);
+      group.deposit = (Number(group.deposit) || 0) + (Number(item.deposit) || 0);
+      group.subtotal = (Number(group.subtotal) || 0) + (Number(item.subtotal) || 0);
+    } else {
+      groups.set(key, {
+        ...item,
+        // Override identity fields for the grouped representation
+        cartId: `group-${key}`,
+        meta: [item.size, item.color].filter(Boolean).join(' • '),
+        quantity: 1,
+        cartItemIds: [item.cartItemId],
+      });
+    }
+  }
+
+  return Array.from(groups.values());
+};
 
 const cartSlice = createSlice({
   name: 'cart',
@@ -41,17 +83,22 @@ const cartSlice = createSlice({
   reducers: {
     addCartItem: (state, action) => {
       const item = action.payload;
-      const existingItem = state.items.find((cartItem) => cartItem.name === item.name);
+      const existingItem = state.items.find(
+        (cartItem) => 
+          (cartItem.costumeItemId && cartItem.costumeItemId === item.costumeItemId) ||
+          (cartItem.sku && cartItem.sku === item.sku) || 
+          (cartItem.id === item.id && cartItem.size === item.size && cartItem.color === item.color)
+      );
 
       if (existingItem) {
-        existingItem.quantity = (existingItem.quantity || 1) + 1;
+        existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
         persistItems(state.items);
         return;
       }
 
       state.items.push({
         ...item,
-        quantity: 1,
+        quantity: item.quantity || 1,
         cartId: item.cartId || `${item.name}-${Date.now()}-${state.items.length}`,
       });
       persistItems(state.items);
@@ -90,9 +137,17 @@ const cartSlice = createSlice({
     },
     setCartItems: (state, action) => {
       const payload = action.payload || [];
-      state.items = payload.map((entry) =>
-        typeof entry === 'object' && 'costumeName' in entry ? mapCartItemToLocal(entry) : entry
-      );
+
+      // Step 1: Map all backend DTOs to flat local items
+      const flatItems = payload.map((entry) => {
+        if (typeof entry === 'object' && 'costumeName' in entry) {
+          return mapCartItemToLocal(entry);
+        }
+        return entry;
+      });
+
+      // Step 2: Group identical variants (costumeId + size + color)
+      state.items = groupCartItems(flatItems);
       persistItems(state.items);
     },
   },

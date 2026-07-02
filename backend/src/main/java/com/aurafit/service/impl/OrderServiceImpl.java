@@ -18,6 +18,7 @@ import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.*;
 import com.aurafit.service.InteractionEventRecorderService;
 import com.aurafit.service.OrderService;
+import com.aurafit.service.PricingEngineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +53,7 @@ public class OrderServiceImpl implements OrderService {
     private final HandoverRecordRepository handoverRecordRepository;
     private final RentalOrderDetailRepository rentalOrderDetailRepository;
     private final PaymentRepository paymentRepository;
+    private final PricingEngineService pricingEngineService;
 
     public OrderServiceImpl(RentalOrderRepository rentalOrderRepository,
                             CartRepository cartRepository,
@@ -63,7 +65,8 @@ public class OrderServiceImpl implements OrderService {
                             ObjectMapper objectMapper,
                             HandoverRecordRepository handoverRecordRepository,
                             RentalOrderDetailRepository rentalOrderDetailRepository,
-                            PaymentRepository paymentRepository) {
+                            PaymentRepository paymentRepository,
+                            PricingEngineService pricingEngineService) {
         this.rentalOrderRepository = rentalOrderRepository;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
@@ -75,6 +78,7 @@ public class OrderServiceImpl implements OrderService {
         this.handoverRecordRepository = handoverRecordRepository;
         this.rentalOrderDetailRepository = rentalOrderDetailRepository;
         this.paymentRepository = paymentRepository;
+        this.pricingEngineService = pricingEngineService;
     }
 
     /**
@@ -121,15 +125,16 @@ public class OrderServiceImpl implements OrderService {
 
             Costume costume = representativeItem.getCostume();
             String size = representativeItem.getSize();
+            String color = representativeItem.getColor();
 
             // ── 4b. Stock availability check and dynamic allocation ─────────────────
             List<CostumeItem> availableItems = costumeItemRepository.findAvailableItemsForUpdate(
-                    costume.getId(), size, ItemStatus.AVAILABLE, org.springframework.data.domain.PageRequest.of(0, item.quantity())
+                    costume.getId(), size, color, ItemStatus.AVAILABLE, org.springframework.data.domain.PageRequest.of(0, item.quantity())
             );
 
             if (availableItems.size() < item.quantity()) {
                 throw new BadRequestException(
-                        "Chỉ còn " + availableItems.size() + " sản phẩm khả dụng cho mẫu này (Size: " + size + ")."
+                        "Chỉ còn " + availableItems.size() + " sản phẩm khả dụng cho mẫu này (Size: " + size + (color != null ? ", Màu: " + color : "") + ")."
                 );
             }
 
@@ -154,16 +159,11 @@ public class OrderServiceImpl implements OrderService {
 
             // ── 4e. Pull financial data from parent Costume ─────────────────────
             BigDecimal pricePerDay = costume.getRentalPrice();
-            BigDecimal depositPerItem = costume.getDepositPrice();
+            BigDecimal retailValue = costume.getDepositPrice(); // depositPrice = retail value
 
-            // subtotalRental = pricePerDay * rentalDays * quantity
-            BigDecimal subtotalRental = pricePerDay
-                    .multiply(BigDecimal.valueOf(rentalDays))
-                    .multiply(BigDecimal.valueOf(item.quantity()));
-
-            // subtotalDeposit = depositPerItem * quantity
-            BigDecimal subtotalDeposit = depositPerItem
-                    .multiply(BigDecimal.valueOf(item.quantity()));
+            // Use Tiered Pricing Engine for consistency with Cart
+            BigDecimal subtotalRental = pricingEngineService.calculateItemRentalFee(pricePerDay, (int) rentalDays, item.quantity());
+            BigDecimal subtotalDeposit = pricingEngineService.calculateItemDeposit(retailValue, subtotalRental, item.quantity());
 
             // ── 4f. Accumulate into order totals ────────────────────────────────
             totalRentalPrice = totalRentalPrice.add(subtotalRental);
@@ -180,8 +180,8 @@ public class OrderServiceImpl implements OrderService {
             }
 
             // ── 4g. Accumulate for each physical item ──────────────────────────
-            // Loop through allocated physical items and build order details
-            BigDecimal singleItemRentalSubtotal = pricePerDay.multiply(BigDecimal.valueOf(rentalDays));
+            BigDecimal singleItemRentalFee = pricingEngineService.calculateItemRentalFee(pricePerDay, (int) rentalDays, 1);
+            BigDecimal singleItemDeposit = pricingEngineService.calculateItemDeposit(retailValue, singleItemRentalFee, 1);
             
             for (CostumeItem allocatedItem : availableItems) {
                 // Lock inventory immediately
@@ -192,9 +192,9 @@ public class OrderServiceImpl implements OrderService {
                         .costumeItem(allocatedItem)
                         .pricePerDay(pricePerDay)
                         .rentalDays((int) rentalDays)
-                        .subtotal(singleItemRentalSubtotal)
-                        .deposit(depositPerItem)
-                        .price(pricePerDay)
+                        .subtotal(singleItemRentalFee)
+                        .deposit(singleItemDeposit)
+                        .price(pricingEngineService.calculateTotal(singleItemRentalFee, singleItemDeposit))
                         .returnStatus(ReturnStatus.NOT_RETURNED)
                         .build();
                 orderDetails.add(detail);
@@ -210,7 +210,7 @@ public class OrderServiceImpl implements OrderService {
                 .totalRentalPrice(totalRentalPrice)
                 .totalDeposit(totalDeposit)
                 .discountAmount(BigDecimal.ZERO)
-                .totalPrice(totalRentalPrice)
+                .totalPrice(totalRentalPrice.add(totalDeposit))
                 .rentalStartDate(orderStartDate)
                 .rentalEndDate(orderEndDate)
                 .details(orderDetails)
@@ -512,7 +512,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public OrderResponse cancelOrder(Long orderId, Long userId) {
+    public OrderResponse cancelOrder(Long orderId, Long userId, String cancelReason) {
         RentalOrder order = rentalOrderRepository.findByIdAndUserIdWithDetails(orderId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
@@ -548,6 +548,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setStatus(com.aurafit.enums.OrderStatus.CANCELLED);
+        order.setCancelReason(cancelReason);
         rentalOrderRepository.save(order);
 
         return OrderResponse.fromEntity(order);
@@ -604,12 +605,9 @@ public class OrderServiceImpl implements OrderService {
         RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
-        if (order.getStatus() != com.aurafit.enums.OrderStatus.PICKED_UP) {
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.PICKED_UP && order.getStatus() != com.aurafit.enums.OrderStatus.RETURNED) {
             throw new BadRequestException("Chi co the tra hang khi don hang da duoc giao (PICKED_UP). Trang thai hien tai: " + order.getStatus());
         }
-
-        order.setStatus(com.aurafit.enums.OrderStatus.RETURNED);
-        rentalOrderRepository.save(order);
 
         List<HandoverRecord> records = new ArrayList<>();
 
@@ -620,6 +618,18 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new BadRequestException("Khong tim thay chi tiet don hang voi ID: " + assessment.rentalOrderDetailId()));
 
             detail.setReturnStatus(assessment.returnStatus());
+            
+            // Map fees
+            detail.setLateFee(assessment.lateFee() != null ? assessment.lateFee() : BigDecimal.ZERO);
+            detail.setDamageFee(assessment.damageFee() != null ? assessment.damageFee() : BigDecimal.ZERO);
+            
+            // Calculate itemRefund = deposit - (lateFee + damageFee)
+            BigDecimal itemRefund = detail.getDeposit().subtract(detail.getLateFee()).subtract(detail.getDamageFee());
+            if (itemRefund.compareTo(BigDecimal.ZERO) < 0) {
+                itemRefund = BigDecimal.ZERO;
+            }
+            detail.setRefundedAmount(itemRefund);
+
             rentalOrderDetailRepository.save(detail);
 
             if (assessment.returnStatus() == ReturnStatus.RETURNED) {
@@ -642,8 +652,17 @@ public class OrderServiceImpl implements OrderService {
             records.add(record);
         }
 
-        // Calculate and process refund post-return
-        calculateAndProcessRefund(order);
+        boolean allReturned = order.getDetails().stream().noneMatch(d -> d.getReturnStatus() == ReturnStatus.NOT_RETURNED);
+
+        if (allReturned) {
+            calculateAndProcessRefund(order);
+        } else {
+            // Keep it as RETURNED to mean partially returned for now if not already
+            if (order.getStatus() != com.aurafit.enums.OrderStatus.RETURNED) {
+                order.setStatus(com.aurafit.enums.OrderStatus.RETURNED);
+                rentalOrderRepository.save(order);
+            }
+        }
 
         return handoverRecordRepository.saveAll(records).stream()
                 .map(com.aurafit.dto.response.HandoverRecordDTO::fromEntity)
@@ -651,33 +670,31 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void calculateAndProcessRefund(RentalOrder order) {
-        BigDecimal totalDeposit = order.getTotalDeposit();
-        BigDecimal deductions = BigDecimal.ZERO;
+        BigDecimal totalLateFee = BigDecimal.ZERO;
+        BigDecimal totalDamageFee = BigDecimal.ZERO;
+        BigDecimal totalRefundedAmount = BigDecimal.ZERO;
 
         for (RentalOrderDetail detail : order.getDetails()) {
-            if (detail.getReturnStatus() == ReturnStatus.DAMAGED || detail.getReturnStatus() == ReturnStatus.LOST) {
-                // Deduct the deposit for this item as penalty
-                deductions = deductions.add(detail.getDeposit());
-            }
+            totalLateFee = totalLateFee.add(detail.getLateFee() != null ? detail.getLateFee() : BigDecimal.ZERO);
+            totalDamageFee = totalDamageFee.add(detail.getDamageFee() != null ? detail.getDamageFee() : BigDecimal.ZERO);
+            totalRefundedAmount = totalRefundedAmount.add(detail.getRefundedAmount() != null ? detail.getRefundedAmount() : BigDecimal.ZERO);
         }
 
-        BigDecimal refundAmount = totalDeposit.subtract(deductions);
-        if (refundAmount.compareTo(BigDecimal.ZERO) < 0) {
-            refundAmount = BigDecimal.ZERO;
-        }
+        order.setTotalLateFee(totalLateFee);
+        order.setTotalDamageFee(totalDamageFee);
+        order.setTotalRefundedAmount(totalRefundedAmount);
+        order.setStatus(com.aurafit.enums.OrderStatus.COMPLETED);
+        rentalOrderRepository.save(order);
 
-        if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+        if (totalRefundedAmount.compareTo(BigDecimal.ZERO) > 0) {
             Payment refundPayment = Payment.builder()
                     .rentalOrder(order)
-                    .amount(refundAmount)
+                    .amount(totalRefundedAmount)
                     .method(com.aurafit.enums.PaymentMethod.BANKING)
                     .type(com.aurafit.enums.PaymentType.REFUND)
                     .status(com.aurafit.enums.PaymentStatus.PENDING)
                     .build();
             paymentRepository.save(refundPayment);
         }
-
-        order.setStatus(com.aurafit.enums.OrderStatus.COMPLETED);
-        rentalOrderRepository.save(order);
     }
 }

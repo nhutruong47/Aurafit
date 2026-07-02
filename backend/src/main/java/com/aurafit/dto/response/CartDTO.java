@@ -16,6 +16,8 @@ public record CartDTO(
         Long userId,
         CartStatus status,
         List<CartItemDTO> items,
+        BigDecimal totalRentalFee,
+        BigDecimal totalDeposit,
         BigDecimal totalCartValue
 ) {
     public static CartDTO fromEntity(Cart cart, CostumeItemRepository costumeItemRepository) {
@@ -29,6 +31,8 @@ public record CartDTO(
                 cart.getUser().getId(),
                 cart.getStatus(),
                 itemDTOs,
+                cart.getTotalRentalFee(),
+                cart.getTotalDeposit(),
                 cart.getTotalValue()
         );
     }

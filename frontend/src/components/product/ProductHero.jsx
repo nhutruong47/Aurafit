@@ -1,5 +1,6 @@
 // Hero chi tiet san pham voi gia, thong tin va hanh dong them vao gio.
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
 import { adminContact } from '../../utils/shopMock';
@@ -18,9 +19,18 @@ export default function ProductHero({
   onStartDateChange,
   onEndDateChange,
 }) {
-  const today = new Date().toISOString().split('T')[0];
+  const getLocalDateString = (dateInput = new Date()) => {
+    const d = new Date(dateInput);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const today = getLocalDateString();
   const [dateError, setDateError] = useState('');
   const [showSizeSelector, setShowSizeSelector] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const cartItems = useSelector((state) => state.cart.items);
 
   const availableItems = product?.items || [];
 
@@ -31,6 +41,7 @@ export default function ProductHero({
 
   const handleSelectItem = (item) => {
     onSelectItem?.(item);
+    setQuantity(1); // Reset quantity when changing variant
   };
 
   const handleStartDateChange = (e) => {
@@ -61,9 +72,37 @@ export default function ProductHero({
       ...toCartItem(product, item),
       rentalStartDate,
       rentalEndDate,
+      quantity,
     };
     onRentNow?.(itemWithDates);
   };
+
+  // ── Context-Aware Effective Stock (Redux-First) ──
+
+  const getSelectedVariantStock = () => {
+    if (!selectedItem || !product.inventorySummary) return product.availableItemCount;
+    
+    const summary = product.inventorySummary.find(
+      (s) => s.size === (selectedItem.size || '') && s.color === (selectedItem.color || '')
+    );
+    if (!summary) return 0;
+    return summary.availableCount;
+  };
+
+  const totalStock = getSelectedVariantStock();
+
+  // Calculate inCartQty from live Redux state (real-time, not stale API data)
+  const inCartQty = cartItems
+    .filter((ci) => {
+      const matchesCostume = ci.costumeId === product.id || ci.id === product.id;
+      const matchesSize = (ci.size || '') === (selectedItem?.size || '');
+      const matchesColor = (ci.color || '') === (selectedItem?.color || '');
+      return matchesCostume && matchesSize && matchesColor;
+    })
+    .reduce((sum, ci) => sum + (ci.quantity || 1), 0);
+
+  const effectiveStock = Math.max(0, totalStock - inCartQty);
+  const isVariantAvailable = effectiveStock > 0;
 
   return (
     <div className="flex flex-col gap-12 border border-[#cfc4c5] bg-white p-6 md:flex-row md:p-12">
@@ -155,6 +194,52 @@ export default function ProductHero({
           </div>
         )}
 
+        {/* Quantity Selector and Stock Status */}
+        {selectedItem && (
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Số lượng</span>
+              <div className="flex h-10 items-center border border-[#cfc4c5]">
+                <button
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  className="flex h-full w-10 items-center justify-center text-black transition hover:bg-[#f9f9f9] hover:text-[#99854e]"
+                >
+                  <span className="material-symbols-outlined text-sm">remove</span>
+                </button>
+                <span className="flex h-full w-12 items-center justify-center border-x border-[#cfc4c5] text-sm">
+                  {quantity}
+                </span>
+                <button
+                  onClick={() => setQuantity((q) => Math.min(effectiveStock, q + 1))}
+                  disabled={quantity >= effectiveStock}
+                  className={`flex h-full w-10 items-center justify-center transition ${
+                    quantity >= effectiveStock ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-black hover:bg-[#f9f9f9] hover:text-[#99854e]'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-sm">add</span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-end gap-2 pt-6">
+              <span
+                className={`inline-block rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-wider ${
+                  isVariantAvailable
+                    ? 'border-green-200 bg-green-50 text-green-700'
+                    : 'border-red-200 bg-red-50 text-red-700'
+                }`}
+              >
+                {isVariantAvailable ? `Còn ${effectiveStock} sản phẩm` : 'Hết hàng'}
+              </span>
+              {inCartQty > 0 && (
+                <span className="text-[10px] text-amber-600 italic font-medium">
+                  Đã có {inCartQty} sản phẩm trong giỏ hàng
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Rental Date Picker */}
         <div className="mb-6">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Thời gian thuê</p>
@@ -174,7 +259,7 @@ export default function ProductHero({
               <input
                 type="date"
                 value={rentalEndDate}
-                min={rentalStartDate ? new Date(new Date(rentalStartDate).getTime() + 86400000).toISOString().split('T')[0] : today}
+                min={rentalStartDate ? getLocalDateString(new Date(new Date(rentalStartDate).getTime() + 86400000)) : today}
                 onChange={handleEndDateChange}
                 className="w-full border border-[#cfc4c5] bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
               />
@@ -218,39 +303,38 @@ export default function ProductHero({
         </div>
 
         <div className="mt-auto">
-          <div className="mb-4">
-            <span
-              className={`inline-block rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-wider ${
-                product.available
-                  ? 'border-green-200 bg-green-50 text-green-700'
-                  : 'border-red-200 bg-red-50 text-red-700'
-              }`}
-            >
-              {product.available ? `Tình trạng: Còn hàng (${product.availableItemCount})` : 'Tình trạng: Hết hàng'}
-            </span>
-          </div>
-
           <button
-            disabled={!product.available || isLoading || isAddingToCart}
-            onClick={onAddToCart}
+            disabled={!isVariantAvailable || isLoading || isAddingToCart}
+            onClick={async () => {
+              if (!isVariantAvailable || isLoading || isAddingToCart) return;
+              const item = selectedItem || product.items?.[0] || null;
+              const itemWithDates = {
+                ...toCartItem(product, item),
+                quantity,
+              };
+              const success = await onAddToCart?.(itemWithDates);
+              if (success !== false) {
+                setQuantity(1);
+              }
+            }}
             className={`mb-3 w-full border border-black py-4 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 hover:bg-black hover:text-white ${
-              !product.available || isLoading || isAddingToCart
+              !isVariantAvailable || isLoading || isAddingToCart
                 ? 'cursor-not-allowed border-[#eeeeee] bg-[#eeeeee] text-[#999999]'
                 : ''
             }`}
           >
-            {isAddingToCart ? 'Đang thêm...' : isLoading ? 'Đang tải...' : !product.available ? 'Tạm hết hàng' : 'Thêm vào giỏ hàng'}
+            {isAddingToCart ? 'Đang thêm...' : isLoading ? 'Đang tải...' : !isVariantAvailable ? 'ĐÃ ĐẠT GIỚI HẠN TỒN KHO' : 'Thêm vào giỏ hàng'}
           </button>
           <button
-            disabled={!canRentNow || isAddingToCart}
+            disabled={!canRentNow || !isVariantAvailable || isAddingToCart}
             onClick={handleRentNow}
             className={`mb-3 w-full py-4 text-[13px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
-              canRentNow && !isAddingToCart
+              canRentNow && isVariantAvailable && !isAddingToCart
                 ? 'bg-[#99854e] text-white hover:bg-black'
                 : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
             }`}
           >
-            Thuê ngay {!canRentNow && !isAddingToCart && product.available && (
+            Thuê ngay {!canRentNow && !isAddingToCart && isVariantAvailable && (
               <span className="ml-1 font-normal normal-case tracking-normal text-white/60">
                 (Hãy chọn ngày thuê)
               </span>

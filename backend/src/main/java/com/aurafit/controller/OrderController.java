@@ -119,11 +119,12 @@ public class OrderController {
     @Operation(summary = "Cancel an order")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
             Authentication authentication,
-            @PathVariable Long orderId
+            @PathVariable Long orderId,
+            @RequestParam(required = false, defaultValue = "Khách hàng tự hủy") String cancelReason
     ) {
         Long userId = extractUserId(authentication);
         return ResponseEntity.ok(
-                ApiResponse.success("Order cancelled successfully", orderService.cancelOrder(orderId, userId))
+                ApiResponse.success("Order cancelled successfully", orderService.cancelOrder(orderId, userId, cancelReason))
         );
     }
 

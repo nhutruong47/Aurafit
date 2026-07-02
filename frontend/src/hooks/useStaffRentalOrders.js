@@ -16,6 +16,8 @@ export function useStaffRentalOrders(currentUser) {
   const [returnStatus, setReturnStatus] = useState('RETURNED');
   const [handoverImageUrl, setHandoverImageUrl] = useState('');
   const [note, setNote] = useState('');
+  const [lateFee, setLateFee] = useState(0);
+  const [damageFee, setDamageFee] = useState(0);
   const [previewImage, setPreviewImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,6 +33,9 @@ export function useStaffRentalOrders(currentUser) {
     () => activeOrder?.details?.find((detail) => String(detail.id) === String(selectedDetailId)),
     [activeOrder, selectedDetailId]
   );
+
+  const maxDeposit = selectedDetail?.depositPrice || 0;
+  const isPenaltyValid = (Number(lateFee) + Number(damageFee)) <= Number(maxDeposit);
 
   const activeTotals = useMemo(() => {
     const totalOrders = orders.length;
@@ -152,6 +157,8 @@ export function useStaffRentalOrders(currentUser) {
             {
               rentalOrderDetailId: Number(selectedDetailId),
               returnStatus,
+              lateFee: Number(lateFee) || 0,
+              damageFee: Number(damageFee) || 0,
             }
           ]
         };
@@ -168,6 +175,8 @@ export function useStaffRentalOrders(currentUser) {
       setSelectedDetailId(refreshedOrder.details?.[0]?.id || '');
       setHandoverImageUrl('');
       setNote('');
+      setLateFee(0);
+      setDamageFee(0);
       setMessage(mode === 'PICKUP' ? 'Đã tạo biên bản bàn giao PICKUP.' : 'Đã ghi nhận khách trả đồ.');
 
       await loadOrders(activeOrder.id);
@@ -205,5 +214,11 @@ export function useStaffRentalOrders(currentUser) {
     setPreviewImage,
     handleHandoverImageUploaded,
     submitHandover,
+    lateFee,
+    setLateFee,
+    damageFee,
+    setDamageFee,
+    maxDeposit,
+    isPenaltyValid,
   };
 }

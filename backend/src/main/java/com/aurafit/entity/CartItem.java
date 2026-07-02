@@ -27,17 +27,25 @@ public class CartItem extends BaseEntity {
     @JoinColumn(name = "costume_item_id", nullable = false)
     private CostumeItem costumeItem;
 
-    @Column(name = "rental_start_date", nullable = false)
+    @Column(name = "rental_start_date")
     private LocalDate rentalStartDate;
 
-    @Column(name = "rental_end_date", nullable = false)
+    @Column(name = "rental_end_date")
     private LocalDate rentalEndDate;
 
-    @Column(name = "rental_days", nullable = false)
-    private int rentalDays;
+    @Column(name = "rental_days")
+    private Integer rentalDays;
 
     @Column(name = "unit_price", nullable = false)
     private BigDecimal unitPrice;
+
+    @Builder.Default
+    @Column(name = "rental_fee", nullable = false, columnDefinition = "numeric(38,2) default 0")
+    private BigDecimal rentalFee = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "deposit", nullable = false, columnDefinition = "numeric(38,2) default 0")
+    private BigDecimal deposit = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private BigDecimal subtotal;

@@ -38,6 +38,8 @@ public record AdminCostumeDTO(
                         costume.getOwner().getId(),
                         costume.getOwner().getFullName(),
                         costume.getOwner().getEmail(),
+                        costume.getOwner().getPhone(),
+                        costume.getOwner().getAddress(),
                         costume.getOwner().getRole(),
                         costume.getOwner().getStatus()
                 ) : null,

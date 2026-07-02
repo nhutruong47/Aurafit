@@ -32,12 +32,14 @@ public class CostumeController {
     private final CostumeService costumeService;
     private final AdminService adminService;
     private final CostumeItemService costumeItemService;
+    private final com.aurafit.service.UserService userService;
 
     public CostumeController(CostumeService costumeService, AdminService adminService,
-                            CostumeItemService costumeItemService) {
+                            CostumeItemService costumeItemService, com.aurafit.service.UserService userService) {
         this.costumeService = costumeService;
         this.adminService = adminService;
         this.costumeItemService = costumeItemService;
+        this.userService = userService;
     }
 
     // --- Public Endpoints ---
@@ -45,6 +47,7 @@ public class CostumeController {
     @GetMapping
     @Operation(summary = "Browse costumes", description = "Returns paginated list of ACTIVE costumes")
     public ResponseEntity<ApiResponse<PaginatedResponse<CostumeListDTO>>> getAllCostumes(
+            Authentication authentication,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int pageNo,
@@ -52,16 +55,18 @@ public class CostumeController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
+        Long userId = extractUserIdSafely(authentication);
         PaginatedResponse<CostumeListDTO> response = costumeService.getAllActiveCostumes(
-                categoryId, keyword, pageNo, pageSize, sortBy, sortDir
+                categoryId, keyword, pageNo, pageSize, sortBy, sortDir, userId
         );
         return ResponseEntity.ok(ApiResponse.success("Costumes retrieved successfully.", response));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get costume details", description = "Returns a single costume by ID")
-    public ResponseEntity<ApiResponse<CostumeDTO>> getCostumeById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success("Costume retrieved successfully.", costumeService.getCostumeById(id)));
+    public ResponseEntity<ApiResponse<CostumeDTO>> getCostumeById(@PathVariable Long id, Authentication authentication) {
+        Long userId = extractUserIdSafely(authentication);
+        return ResponseEntity.ok(ApiResponse.success("Costume retrieved successfully.", costumeService.getCostumeById(id, userId)));
     }
 
     @GetMapping("/{id}/items")
@@ -119,5 +124,16 @@ public class CostumeController {
             @Valid @RequestBody CostumeUpdateRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success("Costume updated successfully.", adminService.updateCostume(id, request, authentication.getName())));
+    }
+
+    // ── Private helpers ──────────────────────────────────────────────────
+
+    private Long extractUserIdSafely(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) return null;
+        try {
+            return userService.getUserIdByEmail(authentication.getName());
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

@@ -50,4 +50,16 @@ public class RentalOrderDetail extends BaseEntity {
     @Column(name = "return_status", nullable = false)
     @Builder.Default
     private ReturnStatus returnStatus = ReturnStatus.NOT_RETURNED;
+
+    @Column(name = "late_fee")
+    @Builder.Default
+    private BigDecimal lateFee = BigDecimal.ZERO;
+
+    @Column(name = "damage_fee")
+    @Builder.Default
+    private BigDecimal damageFee = BigDecimal.ZERO;
+
+    @Column(name = "refunded_amount")
+    @Builder.Default
+    private BigDecimal refundedAmount = BigDecimal.ZERO;
 }

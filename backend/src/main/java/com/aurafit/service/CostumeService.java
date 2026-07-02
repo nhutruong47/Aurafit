@@ -22,7 +22,7 @@ public interface CostumeService {
      */
     PaginatedResponse<CostumeListDTO> getAllActiveCostumes(Long categoryId, String keyword,
                                                            int pageNo, int pageSize,
-                                                           String sortBy, String sortDir);
+                                                           String sortBy, String sortDir, Long userId);
 
     /**
      * Fetches a single costume by ID. Throws ResourceNotFoundException if not found.
@@ -30,7 +30,7 @@ public interface CostumeService {
      * @param id The costume ID.
      * @return The CostumeDTO.
      */
-    CostumeDTO getCostumeById(Long id);
+    CostumeDTO getCostumeById(Long id, Long userId);
 
     /**
      * Fetches all categories for sidebar/filter UI.

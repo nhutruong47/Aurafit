@@ -9,18 +9,34 @@ import { useRentalOrders } from '../hooks/useRentalOrders';
 import { cancelOrder } from '../services/rentalOrderService';
 import { useToastStore } from '../store/useToastStore';
 
+import { useState } from 'react';
+import CancelOrderModal from '../components/orders/CancelOrderModal';
+
 export default function RentalOrdersPage({ currentUser, onNavigate }) {
   const { orders, selectedOrder, isLoading, error, loadOrders, selectOrder } = useRentalOrders(currentUser);
   const addToast = useToastStore((s) => s.addToast);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
-  const handleCancelOrder = async (orderId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?')) return;
+  const handleCancelClick = (orderId) => {
+    setOrderToCancel(orderId);
+    setIsCancelModalOpen(true);
+  };
+
+  const handleConfirmCancel = async (reason) => {
+    if (!orderToCancel) return;
+    setIsCancelling(true);
     try {
-      await cancelOrder(orderId);
+      await cancelOrder(orderToCancel, reason);
       addToast('Đã hủy đơn hàng thành công.');
       loadOrders();
+      setIsCancelModalOpen(false);
+      setOrderToCancel(null);
     } catch (err) {
       alert(err.message);
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -45,9 +61,19 @@ export default function RentalOrdersPage({ currentUser, onNavigate }) {
         ) : (
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-20">
             <OrdersList orders={orders} selectedOrderId={selectedOrder?.id} onSelectOrder={selectOrder} />
-            <div className="lg:col-span-7">{selectedOrder && <OrderDetailsPanel order={selectedOrder} onCancel={handleCancelOrder} />}</div>
+            <div className="lg:col-span-7">{selectedOrder && <OrderDetailsPanel order={selectedOrder} onCancel={handleCancelClick} />}</div>
           </div>
         )}
+
+        <CancelOrderModal 
+          isOpen={isCancelModalOpen}
+          onClose={() => {
+            setIsCancelModalOpen(false);
+            setOrderToCancel(null);
+          }}
+          onConfirm={handleConfirmCancel}
+          isSubmitting={isCancelling}
+        />
       </main>
     </div>
   );

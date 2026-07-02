@@ -97,6 +97,14 @@ export const mapCostumeToProduct = (costume) => {
     occasion: metadata?.occasion || '',
     season: metadata?.season || '',
     tags: metadataTags,
+    // Virtual Inventory Aggregator data
+    inventorySummary: Array.isArray(costume.inventorySummary)
+      ? costume.inventorySummary.map((summary) => ({
+          color: summary.color || '',
+          size: summary.size || '',
+          availableCount: Number(summary.availableCount || 0),
+        }))
+      : [],
     // Items array: each entry has id, sku, size, color, status
     items: Array.isArray(costume.items)
       ? costume.items.map((item) => ({

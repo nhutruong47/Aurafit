@@ -10,6 +10,12 @@ import com.aurafit.enums.ItemStatus;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CategoryRepository;
 import com.aurafit.repository.CostumeRepository;
+import com.aurafit.repository.InventoryRepository;
+import com.aurafit.repository.CartRepository;
+import com.aurafit.repository.CartItemRepository;
+import com.aurafit.entity.Cart;
+import com.aurafit.enums.CartStatus;
+import com.aurafit.dto.response.InventorySummaryDTO;
 import com.aurafit.service.CostumeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,17 +33,26 @@ public class CostumeServiceImpl implements CostumeService {
 
     private final CostumeRepository costumeRepository;
     private final CategoryRepository categoryRepository;
+    private final InventoryRepository inventoryRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
 
     public CostumeServiceImpl(CostumeRepository costumeRepository,
-                              CategoryRepository categoryRepository) {
+                              CategoryRepository categoryRepository,
+                              InventoryRepository inventoryRepository,
+                              CartRepository cartRepository,
+                              CartItemRepository cartItemRepository) {
         this.costumeRepository = costumeRepository;
         this.categoryRepository = categoryRepository;
+        this.inventoryRepository = inventoryRepository;
+        this.cartRepository = cartRepository;
+        this.cartItemRepository = cartItemRepository;
     }
 
     @Override
     public PaginatedResponse<CostumeListDTO> getAllActiveCostumes(Long categoryId, String keyword,
                                                                   int pageNo, int pageSize,
-                                                                  String sortBy, String sortDir) {
+                                                                  String sortBy, String sortDir, Long userId) {
         // Build Sort object from parameters
         Sort sort = sortDir.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
@@ -60,11 +75,23 @@ public class CostumeServiceImpl implements CostumeService {
     }
 
     @Override
-    public CostumeDTO getCostumeById(Long id) {
+    public CostumeDTO getCostumeById(Long id, Long userId) {
         Costume costume = costumeRepository.findByIdWithItems(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Costume", "id", id));
+                
+        List<InventorySummaryDTO> inventorySummary = inventoryRepository.getInventorySummaryByCostumeId(id, ItemStatus.AVAILABLE);
 
-        return CostumeDTO.fromEntity(costume);
+        if (userId != null) {
+            Cart cart = cartRepository.findByUserIdAndStatus(userId, CartStatus.ACTIVE).orElse(null);
+            if (cart != null) {
+                inventorySummary = inventorySummary.stream().map(s -> {
+                    long inCart = cartItemRepository.countVariantInCart(cart.getId(), s.costumeId(), s.size(), s.color());
+                    return new InventorySummaryDTO(s.costumeId(), s.color(), s.size(), s.availableCount(), inCart);
+                }).toList();
+            }
+        }
+
+        return CostumeDTO.fromEntity(costume, inventorySummary);
     }
 
     @Override

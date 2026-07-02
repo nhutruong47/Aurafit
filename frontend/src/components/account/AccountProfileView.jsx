@@ -1,5 +1,8 @@
 // Man hinh ho so tai khoan va cac hanh dong theo vai tro nguoi dung.
+import { useState } from 'react';
 import { getUserRoles } from '../../utils/roles';
+import { updateProfile, changePassword } from '../../services/userService';
+import { useToastStore } from '../../store/useToastStore';
 
 function ProfileField({ label, value }) {
   return (
@@ -10,11 +13,128 @@ function ProfileField({ label, value }) {
   );
 }
 
+function EditProfileModal({ currentUser, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    fullName: currentUser.fullName || '',
+    phone: currentUser.phone || '',
+    address: currentUser.address || '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.fullName.trim()) { setError('Họ tên không được để trống.'); return; }
+    setIsSubmitting(true);
+    setError('');
+    try {
+      const updated = await updateProfile(form);
+      onSaved(updated);
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Lỗi cập nhật hồ sơ.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 space-y-5">
+        <h2 className="font-serif text-2xl italic">Chỉnh sửa hồ sơ</h2>
+        <div>
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Họ tên *</label>
+          <input type="text" value={form.fullName} onChange={(e) => setForm(f => ({...f, fullName: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
+        </div>
+        <div>
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Số điện thoại</label>
+          <input type="tel" value={form.phone} onChange={(e) => setForm(f => ({...f, phone: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
+        </div>
+        <div>
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Địa chỉ</label>
+          <input type="text" value={form.address} onChange={(e) => setForm(f => ({...f, address: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" placeholder="Số nhà, đường, phường, quận, TP" />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex gap-3">
+          <button type="submit" disabled={isSubmitting} className="flex-1 bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:opacity-50">
+            {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+          </button>
+          <button type="button" onClick={onClose} className="flex-1 border border-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:border-[#99854e] hover:text-[#99854e]">
+            Hủy
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ChangePasswordModal({ onClose }) {
+  const [form, setForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const addToast = useToastStore((state) => state.addToast);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (form.newPassword.length < 6) { setError('Mật khẩu mới phải có ít nhất 6 ký tự.'); return; }
+    if (form.newPassword !== form.confirmPassword) { setError('Mật khẩu xác nhận không khớp.'); return; }
+    setIsSubmitting(true);
+    setError('');
+    try {
+      await changePassword({ oldPassword: form.oldPassword, newPassword: form.newPassword });
+      addToast('Đổi mật khẩu thành công!');
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Lỗi đổi mật khẩu.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 space-y-5">
+        <h2 className="font-serif text-2xl italic">Đổi mật khẩu</h2>
+        <div>
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Mật khẩu cũ *</label>
+          <input type="password" value={form.oldPassword} onChange={(e) => setForm(f => ({...f, oldPassword: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
+        </div>
+        <div>
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Mật khẩu mới *</label>
+          <input type="password" value={form.newPassword} onChange={(e) => setForm(f => ({...f, newPassword: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
+        </div>
+        <div>
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Xác nhận mật khẩu mới *</label>
+          <input type="password" value={form.confirmPassword} onChange={(e) => setForm(f => ({...f, confirmPassword: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex gap-3">
+          <button type="submit" disabled={isSubmitting} className="flex-1 bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:opacity-50">
+            {isSubmitting ? 'Đang xử lý...' : 'Đổi mật khẩu'}
+          </button>
+          <button type="button" onClick={onClose} className="flex-1 border border-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:border-[#99854e] hover:text-[#99854e]">
+            Hủy
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function AccountProfileView({ currentUser, onNavigate, onAuthChange }) {
   const roles = getUserRoles(currentUser);
   const isAdmin = roles.includes('ADMIN');
   const isSeller = roles.includes('SELLER') || isAdmin;
   const isStaff = roles.includes('STAFF') || isAdmin;
+  const addToast = useToastStore((state) => state.addToast);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
+  const handleProfileSaved = (updatedUser) => {
+    const merged = { ...currentUser, ...updatedUser };
+    onAuthChange?.(merged);
+    addToast('Hồ sơ đã được cập nhật!');
+  };
 
   return (
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
@@ -25,8 +145,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
             Hồ sơ tài khoản
           </h1>
           <p className="mt-7 max-w-lg text-base leading-8 text-[#5f5e5e]">
-            Đây là thông tin tài khoản đang đăng nhập. Khi chưa có tài khoản, màn hình này sẽ hiển thị form đăng
-            nhập/đăng ký.
+            Đây là thông tin tài khoản đang đăng nhập. Bạn có thể chỉnh sửa thông tin cá nhân hoặc đổi mật khẩu.
           </p>
         </div>
 
@@ -52,10 +171,25 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
               <ProfileField label="Email" value={currentUser.email} />
               <ProfileField label="Họ tên" value={currentUser.fullName || 'Chưa cập nhật'} />
               <ProfileField label="Số điện thoại" value={currentUser.phone || 'Chưa cập nhật'} />
+              <ProfileField label="Địa chỉ" value={currentUser.address || 'Chưa cập nhật'} />
               <ProfileField label="Vai trò" value={roles.join(', ') || 'CUSTOMER'} />
             </div>
 
             <div className="mt-8 grid gap-4 md:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setShowEditProfile(true)}
+                className="bg-[#99854e] px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7a6a3e]"
+              >
+                Chỉnh sửa hồ sơ
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowChangePassword(true)}
+                className="border border-[#99854e] px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e] transition hover:bg-[#99854e]/10"
+              >
+                Đổi mật khẩu
+              </button>
               {isAdmin && (
                 <button
                   type="button"
@@ -113,6 +247,17 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
           </div>
         </div>
       </section>
+
+      {showEditProfile && (
+        <EditProfileModal
+          currentUser={currentUser}
+          onClose={() => setShowEditProfile(false)}
+          onSaved={handleProfileSaved}
+        />
+      )}
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+      )}
     </div>
   );
 }

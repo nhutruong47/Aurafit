@@ -21,7 +21,7 @@ public interface OrderService {
 
     OrderResponse getUserOrderDetail(Long orderId, Long userId);
 
-    OrderResponse cancelOrder(Long orderId, Long userId);
+    OrderResponse cancelOrder(Long orderId, Long userId, String cancelReason);
 
     /**
      * Process order pickup handover.

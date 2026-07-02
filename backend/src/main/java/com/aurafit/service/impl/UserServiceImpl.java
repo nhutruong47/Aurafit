@@ -146,6 +146,41 @@ public class UserServiceImpl implements UserService {
     }
 
     // -------------------------------------------------------------------------
+    // Profile management
+    // -------------------------------------------------------------------------
+
+    @Override
+    @Transactional
+    public UserResponseDTO updateProfile(Long userId, com.aurafit.dto.request.UpdateProfileRequestDTO request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        user.setFullName(request.fullName());
+        if (request.phone() != null) {
+            user.setPhone(request.phone());
+        }
+        if (request.address() != null) {
+            user.setAddress(request.address());
+        }
+
+        return toUserResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, com.aurafit.dto.request.ChangePasswordRequestDTO request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Mật khẩu cũ không chính xác.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
+    // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
 
@@ -165,6 +200,8 @@ public class UserServiceImpl implements UserService {
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
+                user.getPhone(),
+                user.getAddress(),
                 user.getRole(),
                 user.getStatus()
         );

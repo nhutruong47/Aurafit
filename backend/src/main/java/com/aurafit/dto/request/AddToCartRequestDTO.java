@@ -16,13 +16,14 @@ public record AddToCartRequestDTO(
         @NotNull(message = "costumeItemId is required")
         Long costumeItemId,
 
-        @NotNull(message = "rentalStartDate is required")
         @FutureOrPresent(message = "rentalStartDate must be today or in the future")
         LocalDate rentalStartDate,
 
-        @NotNull(message = "rentalEndDate is required")
         @Future(message = "rentalEndDate must be in the future")
         LocalDate rentalEndDate,
+
+        @jakarta.validation.constraints.Min(value = 1, message = "quantity must be at least 1")
+        Integer quantity,
 
         AiStylistAttributionRequest aiStylistAttribution
 ) {}

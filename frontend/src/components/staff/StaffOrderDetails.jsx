@@ -50,6 +50,15 @@ export default function StaffOrderDetails({ activeOrder, selectedDetailId, onSel
                   <SmallFact label="Trả đồ" value={detail.returnStatus || 'Chưa trả'} />
                   <SmallFact label="Phí thuê" value={formatCurrency(detail.rentalPrice || 0)} />
                   <SmallFact label="Tiền cọc" value={formatCurrency(detail.depositPrice || 0)} />
+                  {detail.lateFee > 0 && (
+                    <SmallFact label="Phí trễ" value={<span className="text-[#ba1a1a]">-{formatCurrency(detail.lateFee)}</span>} />
+                  )}
+                  {detail.damageFee > 0 && (
+                    <SmallFact label="Phí hư hỏng" value={<span className="text-[#ba1a1a]">-{formatCurrency(detail.damageFee)}</span>} />
+                  )}
+                  {detail.refundedAmount > 0 && (
+                    <SmallFact label="Hoàn cọc" value={<span className="text-[#2e7d32]">{formatCurrency(detail.refundedAmount)}</span>} />
+                  )}
                 </div>
               </div>
             </article>

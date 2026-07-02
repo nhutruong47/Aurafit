@@ -39,7 +39,10 @@ public record StaffOrderDetailResponse(
             ReturnStatus returnStatus,
             BigDecimal rentalPrice,
             BigDecimal depositPrice,
-            int rentalDays
+            int rentalDays,
+            BigDecimal lateFee,
+            BigDecimal damageFee,
+            BigDecimal refundedAmount
     ) {}
 
     public static StaffOrderDetailResponse fromEntity(RentalOrder order, List<HandoverRecord> handovers) {
@@ -55,7 +58,10 @@ public record StaffOrderDetailResponse(
                         d.getReturnStatus(),
                         d.getPricePerDay(),
                         d.getDeposit(),
-                        d.getRentalDays()
+                        d.getRentalDays(),
+                        d.getLateFee(),
+                        d.getDamageFee(),
+                        d.getRefundedAmount()
                 ))
                 .toList();
 

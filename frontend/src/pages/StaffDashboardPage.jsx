@@ -33,6 +33,12 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     setPreviewImage,
     handleHandoverImageUploaded,
     submitHandover,
+    lateFee,
+    setLateFee,
+    damageFee,
+    setDamageFee,
+    maxDeposit,
+    isPenaltyValid,
   } = useStaffRentalOrders(currentUser);
 
   const handleSubmit = async (event) => {
@@ -115,6 +121,10 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               handoverImageUrl={handoverImageUrl}
               note={note}
               isSubmitting={isSubmitting}
+              lateFee={lateFee}
+              damageFee={damageFee}
+              maxDeposit={maxDeposit}
+              isPenaltyValid={isPenaltyValid}
               onModeChange={setMode}
               onSelectDetail={setSelectedDetailId}
               onReturnStatusChange={setReturnStatus}
@@ -123,6 +133,8 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               onNoteChange={setNote}
               onPreviewImage={setPreviewImage}
               onSubmit={handleSubmit}
+              onLateFeeChange={setLateFee}
+              onDamageFeeChange={setDamageFee}
             />
           </div>
         )}

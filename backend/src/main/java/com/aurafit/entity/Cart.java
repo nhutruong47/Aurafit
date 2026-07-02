@@ -35,16 +35,28 @@ public class Cart extends BaseEntity {
     @Column(name = "total_value", nullable = false)
     private BigDecimal totalValue = BigDecimal.ZERO;
 
+    @Builder.Default
+    @Column(name = "total_rental_fee", nullable = false, columnDefinition = "numeric(38,2) default 0")
+    private BigDecimal totalRentalFee = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "total_deposit", nullable = false, columnDefinition = "numeric(38,2) default 0")
+    private BigDecimal totalDeposit = BigDecimal.ZERO;
+
     @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CartItem> items = new ArrayList<>();
 
     // ── Helper methods ───────────────────────────────────────
-    /** Recalculates totalValue from all child CartItems. */
+    /** Recalculates totalRentalFee, totalDeposit, and totalValue from all child CartItems. */
     public void recalculateTotal() {
-        this.totalValue = items.stream()
-                .map(CartItem::getSubtotal)
+        this.totalRentalFee = items.stream()
+                .map(CartItem::getRentalFee)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.totalDeposit = items.stream()
+                .map(CartItem::getDeposit)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.totalValue = this.totalRentalFee.add(this.totalDeposit);
     }
 }

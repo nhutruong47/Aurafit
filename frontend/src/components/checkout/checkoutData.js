@@ -1,23 +1,25 @@
 import { formatCurrency } from '../../utils/formatCurrency';
 
 /**
+ * Tiered Duration Multiplier (mirrors PricingEngineService.java)
+ * Days 1-2: 1.0x, Day 3: 1.2x, Day 4: 1.4x, etc.
+ */
+function calculateDurationMultiplier(days) {
+  if (days <= 2) return 1.0;
+  return 1.0 + (days - 2) * 0.2;
+}
+
+/**
  * Converts a cart item into a display-ready rental item for the checkout page.
+ * Uses the Tiered Rental Pricing Engine for calculations.
  *
  * @param {Object} item - Cart item (from Redux cart state)
  * @param {number} index - Index for generating stable id
- * @returns {Object} Display item with computed fields: subtotal, rentalDays, period, etc.
+ * @returns {Object} Display item with computed fields: rentalFee, deposit, subtotal, etc.
  */
 export function toRentalItem(item, index) {
-  const rawPrice = item.unitPrice ?? item.priceValue ?? 0;
-  const numericPrice = typeof rawPrice === 'string'
-    ? Number(rawPrice.replace(/[^\d]/g, ''))
-    : Number(rawPrice);
-  const discountPercentage = item.discountPercentage || 0;
-
-  let salePrice = numericPrice;
-  if (discountPercentage > 0) {
-    salePrice = Math.round(numericPrice * (1 - discountPercentage / 100));
-  }
+  const basePrice = Number(item.unitPrice ?? item.priceValue ?? 0);
+  const depositPrice = Number(item.depositPrice ?? 0); // retailValue from Costume.depositPrice
 
   const start = item.rentalStartDate;
   const end = item.rentalEndDate;
@@ -28,17 +30,39 @@ export function toRentalItem(item, index) {
     rentalDays = Math.max(1, Math.round((new Date(end) - new Date(start)) / msPerDay));
   }
 
-  const subtotal = salePrice * rentalDays;
-  const originalSubtotal = numericPrice * rentalDays;
+  // Tiered Pricing Engine (frontend mirror)
+  const multiplier = calculateDurationMultiplier(rentalDays);
+  const safeNumber = (val) => {
+    if (val == null) return null;
+    const num = Number(val);
+    return isNaN(num) ? null : num;
+  };
+
+  const safeQuantity = Number(item.quantity) || 1;
+
+  // Prefer backend-computed values; fall back to local calculation
+  const parsedRentalFee = safeNumber(item.rentalFee);
+  const rentalFee = parsedRentalFee != null
+    ? parsedRentalFee
+    : Math.round(basePrice * multiplier * safeQuantity);
+
+  const expectedDeposit = Math.max(0, Math.round(depositPrice * 1.2 * safeQuantity - rentalFee));
+  const parsedDeposit = safeNumber(item.deposit);
+  const deposit = (parsedDeposit != null && (parsedDeposit > 0 || expectedDeposit === 0))
+    ? parsedDeposit
+    : expectedDeposit;
+
+  const subtotal = rentalFee + deposit;
 
   return {
     id: item.cartId || item.id || item.name || index,
     cartItemId: item.cartItemId,
+    cartItemIds: item.cartItemIds || (item.cartItemId ? [item.cartItemId] : []),
     costumeItemId: item.costumeItemId || item.id,
     costumeId: item.costumeId || null,
     name: item.name,
-    tone: item.meta || item.subcategory || 'Tuyển chọn cho thuê',
-    badge: discountPercentage > 0 ? `-${discountPercentage}%` : null,
+    tone: [item.size, item.color].filter(Boolean).join(' • ') || 'Tuyển chọn cho thuê',
+    badge: null,
     image: item.image,
     rawCategory: item.rawCategory,
     category: item.category,
@@ -46,26 +70,19 @@ export function toRentalItem(item, index) {
     size: item.size,
     color: item.color,
     attribution: item.attribution || null,
-    quantity: item.quantity || 1,
+    quantity: safeQuantity,
     rentalStartDate: start,
     rentalEndDate: end,
     rentalDays,
-    unitPrice: salePrice,
-    originalUnitPrice: numericPrice,
+    multiplier,
+    unitPrice: basePrice,
+    depositPrice,
+    rentalFee,
+    deposit,
     subtotal,
-    depositValue: item.depositValue,
-    sizes: [
-      {
-        label: item.size ? `Size ${item.size}` : 'Freesize',
-        stock: item.availableStock || 1,
-        quantity: item.quantity || 1,
-      },
-    ],
     period: start && end ? `${start} — ${end}` : 'Chưa chọn thời gian thuê',
-    detailLabel: 'Bảo vệ sản phẩm',
-    detail: 'Đã bao gồm bảo hiểm Premium',
-    original: discountPercentage > 0 ? formatCurrency(originalSubtotal) : null,
     total: formatCurrency(subtotal),
-    addText: 'Thêm kích cỡ',
+    rentalFeeFormatted: formatCurrency(rentalFee),
+    depositFormatted: formatCurrency(deposit),
   };
 }

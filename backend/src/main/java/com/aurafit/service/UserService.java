@@ -26,4 +26,8 @@ public interface UserService {
 
     StaffAccountResponseDTO createStaffAccount(StaffCreateRequest request);
 
+    UserResponseDTO updateProfile(Long userId, com.aurafit.dto.request.UpdateProfileRequestDTO request);
+
+    void changePassword(Long userId, com.aurafit.dto.request.ChangePasswordRequestDTO request);
+
 }

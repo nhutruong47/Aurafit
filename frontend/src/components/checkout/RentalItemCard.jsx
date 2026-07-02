@@ -1,20 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-function QuantityControl({ quantity, onDecrease, onIncrease, maxReached }) {
-  return (
-    <div className="flex items-center gap-4 border border-[#cfc4c5] bg-[#f3f3f4] px-3 py-1">
-      <button onClick={onDecrease} className="text-black transition hover:text-[#99854e]" aria-label="Giảm số lượng">
-        <span className="material-symbols-outlined text-sm">remove</span>
-      </button>
-      <span className="text-sm">{quantity}</span>
-      <button onClick={onIncrease} disabled={maxReached} className={`transition ${maxReached ? 'text-gray-400 cursor-not-allowed' : 'text-black hover:text-[#99854e]'}`} aria-label="Tăng số lượng">
-        <span className="material-symbols-outlined text-sm">add</span>
-      </button>
-    </div>
-  );
-}
-
 export default function RentalItemCard({
   item,
   delay,
@@ -23,7 +9,6 @@ export default function RentalItemCard({
   isProblematic = false,
   onToggleCheck,
   onRemoveFromCart,
-  onUpdateCartQuantity,
   onUpdateCartItem,
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -73,24 +58,25 @@ export default function RentalItemCard({
 
   return (
     <article
-      className={`group relative flex flex-col items-start gap-8 p-4 md:flex-row transition-colors ${
-        isProblematic ? 'bg-red-50 border border-red-300' : 'bg-transparent'
+      className={`group relative flex flex-row py-6 border-b border-gray-200 items-start gap-6 transition-colors ${
+        isProblematic ? 'bg-red-50' : 'bg-transparent'
       }`}
-      style={{ animation: `fadeIn 0.8s ease-out ${delay * 0.1}s both` }}
+      style={{ animation: `fadeIn 0.5s ease-out ${delay * 0.1}s both` }}
     >
       {showCheckbox && (
-        <div className="absolute left-0 top-0 z-10 flex h-full w-10 items-center justify-center bg-white/80">
+        <div className="absolute left-2 top-8 z-10 flex h-6 w-6 items-center justify-center bg-white shadow-sm border border-gray-100">
           <input
             type="checkbox"
             checked={isChecked}
             onChange={(e) => onToggleCheck?.(e.target.checked)}
-            className="h-5 w-5 cursor-pointer accent-[#99854e]"
+            className="h-4 w-4 cursor-pointer accent-black"
             aria-label={`Chọn ${item.name}`}
           />
         </div>
       )}
 
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#f7f7f7] md:w-72">
+      {/* Left: Thumbnail */}
+      <div className="relative w-24 h-32 md:w-28 md:h-36 flex-shrink-0 bg-gray-100 overflow-hidden">
         {productLink ? (
           <Link to={productLink} className="block h-full w-full">
             {imageElement}
@@ -98,141 +84,127 @@ export default function RentalItemCard({
         ) : (
           imageElement
         )}
-        <div className="absolute left-3 top-3 z-10 bg-[#99854e] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white">
-          {item.badge}
+        {item.badge && (
+          <div className="absolute bottom-1 left-1 bg-[#99854e] px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white">
+            {item.badge}
+          </div>
+        )}
+      </div>
+
+      {/* Middle: Content Restructuring */}
+      <div className="flex flex-col flex-1 gap-1 min-w-0 py-1">
+        {/* Title */}
+        {productLink ? (
+          <Link to={productLink} className="hover:text-[#99854e] transition-colors truncate">
+            <h3 className="uppercase font-serif tracking-wide text-base md:text-lg text-black truncate">{item.name}</h3>
+          </Link>
+        ) : (
+          <h3 className="uppercase font-serif tracking-wide text-base md:text-lg text-black truncate">{item.name}</h3>
+        )}
+
+        {/* Variant & Quantity */}
+        <p className="text-sm text-gray-500 mt-1 truncate">
+          {item.size ? `Size ${item.size}` : 'Freesize'} 
+          {item.tone ? ` • ${item.tone}` : ''} 
+          <span className="mx-2">|</span> 
+          Số lượng: {item.quantity || 1}
+        </p>
+
+        {/* Rental Time */}
+        <div className="mt-2 text-sm text-gray-600">
+          {isEditing ? (
+             <div className="mt-2 p-2 bg-gray-50 border border-gray-200 text-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <label className="w-16 font-medium">Từ ngày:</label>
+                  <input
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                    className="border px-1 py-0.5 w-full focus:outline-none focus:border-black"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="w-16 font-medium">Đến ngày:</label>
+                  <input
+                    type="date"
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
+                    className="border px-1 py-0.5 w-full focus:outline-none focus:border-black"
+                  />
+                </div>
+                {editStartDate && editEndDate && editStartDate >= editEndDate && (
+                  <p className="text-red-500 text-[10px]">Ngày kết thúc phải sau ngày bắt đầu</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleSaveUpdate}
+                    disabled={isUpdating || !editStartDate || !editEndDate || editStartDate >= editEndDate}
+                    className="bg-black text-white px-2 py-1 disabled:opacity-50 uppercase tracking-wider text-[10px]"
+                  >
+                    {isUpdating ? 'Đang lưu...' : 'Lưu'}
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={isUpdating}
+                    className="bg-gray-200 text-gray-700 px-2 py-1 uppercase tracking-wider text-[10px]"
+                  >
+                    Hủy
+                  </button>
+                </div>
+             </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span>
+              {item.period ? (
+                <span>{item.period}</span>
+              ) : (
+                <span className="italic text-red-500 text-xs">Vui lòng chọn ngày thuê</span>
+              )}
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-sm underline text-gray-400 hover:text-black ml-1 transition-colors"
+              >
+                Chỉnh sửa
+              </button>
+            </div>
+          )}
+          
+          {item.multiplier && item.multiplier > 1 && !isEditing && (
+            <p className="text-xs text-gray-400 mt-0.5 ml-6">
+              Hệ số thuê: {item.multiplier.toFixed(1)}x ({item.rentalDays} ngày)
+            </p>
+          )}
         </div>
       </div>
 
-      <div className={`flex h-full flex-1 flex-col justify-between py-2${showCheckbox ? ' md:ml-10' : ''}`}>
-        <div className="space-y-4">
-          <div className="flex items-start justify-between gap-6">
-            <div className="flex-1">
-              {productLink ? (
-                <Link to={productLink} className="hover:text-[#99854e] transition-colors">
-                  {titleElement}
-                </Link>
-              ) : (
-                titleElement
-              )}
-              <p className="mt-1 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e]">{item.tone}</p>
-              <p className="mt-1.5 text-xs text-[#99854e]">
-                Quản lý bởi: <span className="font-bold">AuraFit Admin</span>
-              </p>
+      {/* Right: Pricing & Actions */}
+      <div className="flex flex-col justify-between items-end min-w-[120px] h-full py-1 self-stretch">
+        {/* Delete button */}
+        <button
+          onClick={() => onRemoveFromCart?.(item.id)}
+          className="text-gray-400 hover:text-black transition-colors"
+          aria-label="Xóa sản phẩm"
+        >
+          <span className="material-symbols-outlined text-[18px]">close</span>
+        </button>
 
-              <div className="mt-4 space-y-4">
-                {item.sizes.map((size) => (
-                  <div key={size.label} className="flex items-center justify-between border-b border-[#cfc4c5] pb-3">
-                    <div className="flex flex-col">
-                      <span className="text-[12px] font-semibold uppercase tracking-[0.15em]">{size.label}</span>
-                      <span className="text-[10px] font-medium text-[#99854e]">{size.stock}</span>
-                    </div>
-                    <QuantityControl
-                      quantity={size.quantity}
-                      onDecrease={() => onUpdateCartQuantity?.(item.id, item.quantity - 1)}
-                      onIncrease={() => size.quantity < size.stock && onUpdateCartQuantity?.(item.id, item.quantity + 1)}
-                      maxReached={size.quantity >= size.stock}
-                    />
-                  </div>
-                ))}
+        <div className="flex-1" />
 
-                {productLink && productLink !== '#' && (
-                  <Link
-                    to={productLink}
-                    className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#99854e] hover:underline"
-                  >
-                    <span className="material-symbols-outlined text-sm">add_circle</span>
-                    {item.addText}
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            <button
-              onClick={() => onRemoveFromCart?.(item.id)}
-              className="text-black transition hover:text-[#ba1a1a]"
-              aria-label="Xóa sản phẩm"
-            >
-              <span className="material-symbols-outlined">close</span>
-            </button>
+        {/* Price Breakdown */}
+        <div className="text-xs text-gray-500 uppercase tracking-wider flex flex-col items-end gap-1 mb-2 mt-4">
+          <div className="flex justify-between w-full min-w-[100px] gap-2">
+            <span>Thuê:</span>
+            <span>{item.rentalFeeFormatted || item.total}</span>
           </div>
-
-          <div className="grid grid-cols-2 gap-4 pt-4">
-            <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">Thời gian thuê</p>
-              {isEditing ? (
-                <div className="mt-2 space-y-2">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#666]">Từ ngày</label>
-                    <input
-                      type="date"
-                      value={editStartDate}
-                      onChange={(e) => setEditStartDate(e.target.value)}
-                      className="border border-[#cfc4c5] bg-white px-2 py-1 text-sm focus:border-[#99854e] focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#666]">Đến ngày</label>
-                    <input
-                      type="date"
-                      value={editEndDate}
-                      onChange={(e) => setEditEndDate(e.target.value)}
-                      className="border border-[#cfc4c5] bg-white px-2 py-1 text-sm focus:border-[#99854e] focus:outline-none"
-                    />
-                  </div>
-                  {editStartDate && editEndDate && editStartDate >= editEndDate && (
-                    <p className="text-[10px] text-red-500">Ngày kết thúc phải sau ngày bắt đầu</p>
-                  )}
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={handleSaveUpdate}
-                      disabled={isUpdating || !editStartDate || !editEndDate || editStartDate >= editEndDate}
-                      className="border border-[#99854e] bg-[#99854e] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#7a6a3e] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isUpdating ? 'Đang cập nhật...' : 'Cập nhật'}
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      disabled={isUpdating}
-                      className="border border-[#cfc4c5] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#666] transition hover:bg-[#f3f3f4]"
-                    >
-                      Hủy
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-1 italic">{item.period}</p>
-              )}
-            </div>
-            <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
-                {item.detailLabel}
-              </p>
-              <p className="mt-1">{item.detail}</p>
-            </div>
+          <div className="flex justify-between w-full min-w-[100px] gap-2">
+            <span>Cọc:</span>
+            <span>{item.depositFormatted || '—'}</span>
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col md:flex-row md:items-end justify-between border-t border-[#cfc4c5] pt-8 gap-4">
-          <div className="space-y-1">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">Thành tiền</p>
-            <p className="font-serif text-3xl">
-              {item.original && <span className="mr-2 text-xl text-[#999999] line-through">{item.original}</span>}
-              {item.total}
-            </p>
-            {item.quantity > 1 && (
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">
-                Số lượng x {item.quantity}
-              </p>
-            )}
-          </div>
-          {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="w-full shrink-0 border border-black px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] transition hover:bg-black hover:text-white md:w-auto"
-            >
-              Chỉnh sửa thời gian thuê
-            </button>
-          )}
+        {/* Total Price */}
+        <div className="text-lg font-serif font-medium text-black mt-2">
+          {item.total}
         </div>
       </div>
     </article>

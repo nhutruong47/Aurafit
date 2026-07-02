@@ -59,10 +59,25 @@ public class RentalOrder extends BaseEntity {
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
+    @Column(name = "cancel_reason", columnDefinition = "TEXT")
+    private String cancelReason;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status = OrderStatus.PENDING;
+
+    @Column(name = "total_late_fee")
+    @Builder.Default
+    private BigDecimal totalLateFee = BigDecimal.ZERO;
+
+    @Column(name = "total_damage_fee")
+    @Builder.Default
+    private BigDecimal totalDamageFee = BigDecimal.ZERO;
+
+    @Column(name = "total_refunded_amount")
+    @Builder.Default
+    private BigDecimal totalRefundedAmount = BigDecimal.ZERO;
 
     @JsonIgnore
     @Builder.Default

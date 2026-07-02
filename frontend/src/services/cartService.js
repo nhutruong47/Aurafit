@@ -13,13 +13,14 @@ export const addItemToCart = async ({
   costumeItemId,
   rentalStartDate,
   rentalEndDate,
+  quantity = 1,
   aiStylistAttribution = null,
 }) =>
   requestJson(
     {
       url: '/cart/items',
       method: 'POST',
-      data: { costumeItemId, rentalStartDate, rentalEndDate, aiStylistAttribution },
+      data: { costumeItemId, rentalStartDate, rentalEndDate, quantity, aiStylistAttribution },
     },
     'Khong the them san pham vao gio hang.'
   );

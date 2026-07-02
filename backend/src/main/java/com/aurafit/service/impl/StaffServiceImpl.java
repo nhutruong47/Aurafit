@@ -25,10 +25,10 @@ public class StaffServiceImpl implements StaffService {
     private final UserRepository userRepository;
 
     public StaffServiceImpl(RentalOrderRepository rentalOrderRepository,
-                            RentalOrderDetailRepository rentalOrderDetailRepository,
-                            HandoverRecordRepository handoverRecordRepository,
-                            CostumeItemRepository costumeItemRepository,
-                            UserRepository userRepository) {
+            RentalOrderDetailRepository rentalOrderDetailRepository,
+            HandoverRecordRepository handoverRecordRepository,
+            CostumeItemRepository costumeItemRepository,
+            UserRepository userRepository) {
         this.rentalOrderRepository = rentalOrderRepository;
         this.rentalOrderDetailRepository = rentalOrderDetailRepository;
         this.handoverRecordRepository = handoverRecordRepository;

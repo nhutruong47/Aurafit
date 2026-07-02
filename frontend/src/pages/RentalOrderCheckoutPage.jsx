@@ -11,15 +11,18 @@ import { useCheckoutStore } from '@/store/useCheckoutStore';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import { useToastStore } from '../store/useToastStore';
 
+import { useDispatch } from 'react-redux';
+import { setCartItems } from '../store/cartSlice';
+
 export default function RentalOrderCheckoutPage({
   cartItems = [],
   currentUser,
   onRemoveFromCart,
-  onUpdateCartQuantity,
   onUpdateCartItem,
   onCheckoutSuccess,
   onNavigate,
 }) {
+  const dispatch = useDispatch();
   const { directItem, clearDirectItem, setDirectItem } = useDirectOrderStore();
   const { setPendingOrderId } = useCheckoutStore();
   const addToast = useToastStore((state) => state.addToast);
@@ -39,6 +42,7 @@ export default function RentalOrderCheckoutPage({
   const hasItems = !!(directDisplayItem || cartDisplayItems.length > 0);
   const isSingleItem = (directDisplayItem ? 1 : 0) + cartDisplayItems.length === 1;
   const isDirectOnly = !!directItem && cartItems.length === 0;
+
 
   const handleDeliveryChange = (event) => {
     const { name, value } = event.target;
@@ -73,6 +77,17 @@ export default function RentalOrderCheckoutPage({
     }
     if (!isDeliveryValid()) {
       setDeliveryError('Vui lòng điền đầy đủ thông tin giao hàng.');
+      addToast('Vui lòng điền đầy đủ Thông tin giao hàng.', 'error');
+
+      let targetId = null;
+      if (!deliveryInfo.receiverName.trim()) targetId = 'receiverName';
+      else if (!deliveryInfo.receiverPhone.trim()) targetId = 'receiverPhone';
+      else if (!deliveryInfo.deliveryAddress.trim()) targetId = 'deliveryAddress';
+
+      if (targetId) {
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById(targetId)?.focus();
+      }
       return;
     }
     if (!itemsToOrder.length) {
@@ -109,6 +124,9 @@ export default function RentalOrderCheckoutPage({
       itemsToOrder.forEach((item) => {
         clearAiStylistCartAttribution(item);
       });
+      
+      const remainingCartItems = cartItems.filter(item => !selectedCartItemIds.has(item.cartId || item.id || item.costumeItemId));
+      dispatch(setCartItems(remainingCartItems));
 
       onCheckoutSuccess?.(orderResponse.id);
       onNavigate?.('payment');
@@ -141,12 +159,14 @@ export default function RentalOrderCheckoutPage({
     onRemoveFromCart?.(itemId);
   };
 
-  const handleUpdateItemDates = async (itemId, data) => {
-    if (directItem && (directItem.cartId === itemId || directItem.id === itemId || directDisplayItem?.id === itemId)) {
+  const handleUpdateItemDates = async (cartItemId, localCartId, data) => {
+    // RentalItemCard calls this with 3 arguments: (cartItemId, localCartId, { rentalStartDate, rentalEndDate })
+    const checkoutItemTargetId = localCartId || cartItemId;
+    if (directItem && (directItem.cartId === checkoutItemTargetId || directItem.id === checkoutItemTargetId || directDisplayItem?.id === checkoutItemTargetId)) {
       setDirectItem({ ...directItem, rentalStartDate: data.rentalStartDate, rentalEndDate: data.rentalEndDate });
       return;
     }
-    await onUpdateCartItem?.(itemId, data);
+    await onUpdateCartItem?.(cartItemId, localCartId, data);
   };
 
   const handleBulkDelete = () => {
@@ -168,12 +188,8 @@ export default function RentalOrderCheckoutPage({
     let totalDeposit = 0;
 
     itemsToOrder.forEach((item) => {
-      const rentalDays = item.rentalDays || 1;
-      const unitPrice = item.unitPrice || 0;
-      totalRental += unitPrice * rentalDays;
-      totalDeposit += item.depositValue
-        ? item.depositValue * (item.quantity || 1)
-        : Math.round(unitPrice * 0.5);
+      totalRental += item.rentalFee || 0;
+      totalDeposit += item.deposit || 0;
     });
 
     if (totalRental > 0) {
@@ -187,16 +203,7 @@ export default function RentalOrderCheckoutPage({
   }, [itemsToOrder]);
 
   const rawTotalDue = useMemo(() => {
-    let total = 0;
-    itemsToOrder.forEach((item) => {
-      const rentalDays = item.rentalDays || 1;
-      const unitPrice = item.unitPrice || 0;
-      total += unitPrice * rentalDays;
-      total += item.depositValue
-        ? item.depositValue * (item.quantity || 1)
-        : Math.round(unitPrice * 0.5);
-    });
-    return total;
+    return itemsToOrder.reduce((total, item) => total + (item.subtotal || 0), 0);
   }, [itemsToOrder]);
 
   const formattedTotalDue = useMemo(() => {
@@ -290,7 +297,6 @@ export default function RentalOrderCheckoutPage({
                     showCheckbox={false}
                     isProblematic={problematicSku === directDisplayItem.sku}
                     onRemoveFromCart={handleRemoveFromCart}
-                    onUpdateCartQuantity={onUpdateCartQuantity}
                     onUpdateCartItem={handleUpdateItemDates}
                   />
                 )}
@@ -317,7 +323,6 @@ export default function RentalOrderCheckoutPage({
                           });
                         }}
                         onRemoveFromCart={handleRemoveFromCart}
-                        onUpdateCartQuantity={onUpdateCartQuantity}
                         onUpdateCartItem={handleUpdateItemDates}
                       />
                     ))}
@@ -328,6 +333,25 @@ export default function RentalOrderCheckoutPage({
                   <h2 className="mb-6 font-serif text-2xl font-normal uppercase italic">
                     Thông tin giao hàng
                   </h2>
+                  <label className="mb-5 flex cursor-pointer items-center gap-3">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-[#99854e]"
+                      onChange={(e) => {
+                        if (e.target.checked && currentUser) {
+                          setDeliveryInfo({
+                            receiverName: currentUser.fullName || '',
+                            receiverPhone: currentUser.phone || '',
+                            deliveryAddress: currentUser.address || '',
+                          });
+                        } else {
+                          setDeliveryInfo({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
+                        }
+                        setDeliveryError('');
+                      }}
+                    />
+                    <span className="text-sm font-medium">Nhập thông tin của tôi (Tôi là người nhận)</span>
+                  </label>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
@@ -335,6 +359,7 @@ export default function RentalOrderCheckoutPage({
                       </label>
                       <input
                         type="text"
+                        id="receiverName"
                         name="receiverName"
                         value={deliveryInfo.receiverName}
                         onChange={handleDeliveryChange}
@@ -348,6 +373,7 @@ export default function RentalOrderCheckoutPage({
                       </label>
                       <input
                         type="tel"
+                        id="receiverPhone"
                         name="receiverPhone"
                         value={deliveryInfo.receiverPhone}
                         onChange={handleDeliveryChange}
@@ -361,6 +387,7 @@ export default function RentalOrderCheckoutPage({
                       </label>
                       <input
                         type="text"
+                        id="deliveryAddress"
                         name="deliveryAddress"
                         value={deliveryInfo.deliveryAddress}
                         onChange={handleDeliveryChange}
@@ -387,7 +414,7 @@ export default function RentalOrderCheckoutPage({
             )}
           </section>
 
-          <aside className="lg:col-span-4">
+          <aside className="lg:col-span-4 sticky top-24 h-fit">
             {hasItems && (
               <CheckoutSummary
                 summaryRows={summaryRows}

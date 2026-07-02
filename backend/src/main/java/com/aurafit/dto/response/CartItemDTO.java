@@ -22,8 +22,11 @@ public record CartItemDTO(
         String imageUrl,
         LocalDate rentalStartDate,
         LocalDate rentalEndDate,
-        int rentalDays,
+        Integer rentalDays,
         BigDecimal unitPrice,
+        BigDecimal rentalFee,
+        BigDecimal deposit,
+        BigDecimal depositPrice,
         BigDecimal subtotal,
         int availableStock
 ) {
@@ -33,8 +36,8 @@ public record CartItemDTO(
 
         int availableStock = 1;
         if (costumeItemRepository != null) {
-            availableStock = costumeItemRepository.countByCostumeIdAndSizeAndStatus(
-                    costume.getId(), costumeItem.getSize(), ItemStatus.AVAILABLE
+            availableStock = costumeItemRepository.countByCostumeIdAndSizeAndColorAndStatus(
+                    costume.getId(), costumeItem.getSize(), costumeItem.getColor(), ItemStatus.AVAILABLE
             );
         }
 
@@ -51,6 +54,9 @@ public record CartItemDTO(
                 cartItem.getRentalEndDate(),
                 cartItem.getRentalDays(),
                 cartItem.getUnitPrice(),
+                cartItem.getRentalFee(),
+                cartItem.getDeposit(),
+                costume.getDepositPrice(),
                 cartItem.getSubtotal(),
                 availableStock
         );
