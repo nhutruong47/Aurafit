@@ -13,6 +13,8 @@ export default function ShopPage({ currentUser, onNavigate, onAddToCart, onRentN
     activeProducts,
     activePage,
     totalPages,
+    totalElements,
+    allTotalElements,
     visibleProducts,
     isLoading,
     error,
@@ -56,7 +58,7 @@ export default function ShopPage({ currentUser, onNavigate, onAddToCart, onRentN
       <main className="mx-auto max-w-[1440px] px-5 py-10 md:px-20">
         <div className="mb-8 grid gap-3 border border-[#cfc4c5] bg-white p-3 md:grid-cols-3">
           {shopTabs.map((tab) => {
-            const count = productsByTab[tab.id]?.length || 0;
+            const count = tab.id === 'all' ? allTotalElements : (productsByTab[tab.id]?.length || 0);
             const isActive = activeTab === tab.id;
 
             return (
@@ -85,7 +87,7 @@ export default function ShopPage({ currentUser, onNavigate, onAddToCart, onRentN
               {shopTabs.find((tab) => tab.id === activeTab)?.label}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#5f5e5e]">
-              Đang hiển thị {visibleProducts.length} / {activeProducts.length} sản phẩm.
+              Đang hiển thị {visibleProducts.length} / {totalElements ?? activeProducts.length} sản phẩm.
             </p>
           </div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">
@@ -105,8 +107,6 @@ export default function ShopPage({ currentUser, onNavigate, onAddToCart, onRentN
                   key={`${activeTab}-${product.id}`}
                   product={product}
                   onNavigate={onNavigate}
-                  onAddToCart={onAddToCart}
-                  onRentNow={onRentNow}
                 />
               ))}
             </div>

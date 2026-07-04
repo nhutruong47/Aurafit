@@ -5,7 +5,7 @@ function SimilarProductsSkeleton() {
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
       {Array.from({ length: 4 }).map((_, index) => (
         <div key={index} className="border border-[#cfc4c5] bg-white">
-          <div className="aspect-[3/4] animate-pulse bg-[#ece7e6]" />
+          <div className="aspect-[4/5] animate-pulse bg-[#ece7e6]" />
           <div className="space-y-3 p-5">
             <div className="h-3 w-28 animate-pulse bg-[#ece7e6]" />
             <div className="h-8 w-3/4 animate-pulse bg-[#ece7e6]" />
@@ -58,7 +58,6 @@ export default function SimilarProductsSection({
 
               <ShopProductCard
                 product={recommendation.product}
-                onAddToCart={onAddToCart}
                 onNavigate={(page, product) => {
                   onRecommendationClick?.(recommendation, index, page, product);
                   onNavigate?.(page, product);

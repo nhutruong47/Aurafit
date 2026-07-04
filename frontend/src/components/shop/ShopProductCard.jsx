@@ -1,113 +1,23 @@
-// The san pham trong danh sach Shop.
-import { useCallback, useEffect, useState } from 'react';
-import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
+// Editorial Product Card — Luxury/Minimal aesthetic.
+// Only shows image, category, name, price, deposit, and a single "Xem chi tiết" CTA.
+import { fallbackProductImage } from '../../utils/productMapper';
 import { formatCurrency } from '../../utils/formatCurrency';
-import { fetchCostumeItems } from '../../services/costumeService';
 
-export default function ShopProductCard({ product, onNavigate, onAddToCart, onRentNow }) {
-  const getLocalDateString = (dateInput = new Date()) => {
-    const d = new Date(dateInput);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-  const today = getLocalDateString(0);
-  const [items, setItems] = useState(() => product.items || []);
-  const [selectedItem, setSelectedItem] = useState(() => product.items?.[0] || null);
-  const [showDates, setShowDates] = useState(false);
-  const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
-  const [rentalEndDate, setRentalEndDate] = useState(() => getLocalDateString(1));
-  const [dateError, setDateError] = useState('');
-
-  const available = product.available;
+export default function ShopProductCard({ product, onNavigate }) {
   const discountPercentage = product.discountPercentage || 0;
   let salePrice = product.priceValue;
   if (discountPercentage > 0) {
     salePrice = Math.round(product.priceValue * (1 - discountPercentage / 100));
   }
 
-  // Neu items chua duoc load tu API, fetch ngay
-  useEffect(() => {
-    if ((!product.items || product.items.length === 0) && product.id) {
-      fetchCostumeItems(product.id)
-        .then((fetched) => {
-          if (fetched && fetched.length > 0) {
-            setItems(fetched);
-            setSelectedItem((prev) => prev || fetched[0]);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [product.id, product.items]);
-
-  const handleStartDateChange = (e) => {
-    const val = e.target.value;
-    setRentalStartDate(val);
-    setDateError('');
-    if (rentalEndDate && val >= rentalEndDate) setRentalEndDate('');
-  };
-
-  const handleEndDateChange = (e) => {
-    const val = e.target.value;
-    if (rentalStartDate && val <= rentalStartDate) {
-      setDateError('Ngày trả phải sau ngày nhận.');
-      return;
-    }
-    setRentalEndDate(val);
-    setDateError('');
-  };
-
-  const canRentNow = available && rentalStartDate && rentalEndDate && !dateError;
-
-  const buildCartItem = useCallback(() => {
-    if (selectedItem) {
-      return { ...toCartItem(product, selectedItem), discountPercentage };
-    }
-    // Fallback: dung costume-level data khi chua co item nao
-    return {
-      id: product.id,
-      costumeId: product.costumeId || product.id,
-      costumeItemId: null,
-      name: product.name,
-      meta: product.meta || product.description || product.tag,
-      rawCategory: product.rawCategory,
-      category: product.category,
-      subcategory: product.subcategory,
-      tag: product.tag,
-      price: product.price,
-      deposit: product.deposit,
-      image: product.image,
-      sku: null,
-      size: null,
-      color: null,
-      rentalStartDate,
-      rentalEndDate,
-      discountPercentage,
-    };
-  }, [product, selectedItem, rentalStartDate, rentalEndDate, discountPercentage]);
-
-  const handleRentNow = () => {
-    if (!canRentNow) { setShowDates(true); return; }
-    const itemWithDates = {
-      ...buildCartItem(),
-      rentalStartDate,
-      rentalEndDate,
-    };
-    onRentNow?.(itemWithDates);
-  };
-
-  const handleAddToCart = () => {
-    const cartItem = buildCartItem();
-    onAddToCart?.(cartItem);
-  };
+  const available = product.available;
 
   return (
     <article className="group flex flex-col border border-[#cfc4c5] bg-white transition hover:border-[#99854e]">
       {/* Image */}
       <div
         onClick={() => onNavigate?.('productDetail', product)}
-        className="relative aspect-[3/4] cursor-pointer overflow-hidden bg-[#eeeeee]"
+        className="relative aspect-[4/5] cursor-pointer overflow-hidden bg-[#eeeeee]"
       >
         <img
           src={product.image}
@@ -131,23 +41,23 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
       </div>
 
       {/* Info */}
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex flex-1 flex-col p-4">
         <div onClick={() => onNavigate?.('productDetail', product)} className="cursor-pointer">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">
-            {product.subcategory || product.rawCategory}{product.tag ? ` | ${product.tag}` : ''}
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">
+            {product.subcategory || product.rawCategory}{product.tag ? ` · ${product.tag}` : ''}
           </p>
-          <h3 className="line-clamp-2 min-h-[48px] font-serif text-2xl italic leading-tight transition group-hover:text-[#99854e]">
+          <h3 className="line-clamp-2 min-h-[44px] font-serif text-xl italic leading-tight transition group-hover:text-[#99854e]">
             {product.name}
           </h3>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#e8e4e3] pt-3 text-sm">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#999999]">Giá thuê</p>
-            <p className="mt-1 font-medium">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#999999]">Giá thuê</p>
+            <p className="mt-0.5 font-medium">
               {discountPercentage > 0 ? (
                 <>
-                  <span className="mr-2 text-[#999999] line-through text-xs">{formatCurrency(product.priceValue)}</span>
+                  <span className="mr-1.5 text-[#999999] line-through text-xs">{formatCurrency(product.priceValue)}</span>
                   <span className="text-[#ba1a1a]">{formatCurrency(salePrice)}</span>
                 </>
               ) : (
@@ -156,68 +66,18 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
             </p>
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#999999]">Tiền cọc</p>
-            <p className="mt-1 font-medium">{formatCurrency(product.depositValue)}</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#999999]">Tiền cọc</p>
+            <p className="mt-0.5 font-medium">{formatCurrency(product.depositValue)}</p>
           </div>
         </div>
 
-        {/* Date Picker (collapsible) */}
-        <button
-          onClick={() => setShowDates((v) => !v)}
-          className="mt-3 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[#99854e] hover:underline"
-        >
-          <span>{showDates ? '▼ Ẩn ngày thuê' : '▶  Chọn ngày thuê'}</span>
-        </button>
-
-        {showDates && (
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <div>
-              <label className="mb-1 block text-[9px] uppercase tracking-wide text-[#999]">Ngày nhận</label>
-              <input
-                type="date"
-                value={rentalStartDate}
-                min={today}
-                onChange={handleStartDateChange}
-                className="w-full border border-[#cfc4c5] bg-white px-2 py-1.5 text-[11px] focus:border-black focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-[9px] uppercase tracking-wide text-[#999]">Ngày trả</label>
-              <input
-                type="date"
-                value={rentalEndDate}
-                min={rentalStartDate ? getLocalDateString(new Date(new Date(rentalStartDate).getTime() + 86400000)) : today}
-                onChange={handleEndDateChange}
-                className="w-full border border-[#cfc4c5] bg-white px-2 py-1.5 text-[11px] focus:border-black focus:outline-none"
-              />
-            </div>
-            {dateError && <p className="col-span-2 text-[10px] text-red-500">{dateError}</p>}
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="mt-auto flex flex-col gap-2 pt-4">
+        {/* Single CTA */}
+        <div className="mt-auto pt-4">
           <button
-            disabled={!available}
-            onClick={handleAddToCart}
-            className={`w-full px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
-              available
-                ? 'border border-black text-black hover:bg-black hover:text-white'
-                : 'cursor-not-allowed border border-[#eeeeee] bg-[#eeeeee] text-[#999999]'
-            }`}
+            onClick={() => onNavigate?.('productDetail', product)}
+            className="w-full border border-black px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-black transition hover:bg-black hover:text-white"
           >
-            Thêm vào giỏ hàng
-          </button>
-          <button
-            disabled={!available}
-            onClick={handleRentNow}
-            className={`w-full px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
-              available
-                ? 'bg-[#99854e] text-white hover:bg-black'
-                : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
-            }`}
-          >
-            Thuê ngay
+            Xem chi tiết
           </button>
         </div>
       </div>

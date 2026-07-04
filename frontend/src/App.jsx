@@ -10,7 +10,6 @@ import ChatPage from './pages/ChatPage';
 import CosplayPage from './pages/CosplayPage';
 import CostumeDetailPage from './pages/CostumeDetailPage';
 import CustomerCarePage from './pages/CustomerCarePage';
-import DirectRentalPage from './pages/DirectRentalPage';
 import EventsPage from './pages/EventsPage';
 import HomePage from './pages/HomePage';
 import PaymentPage from './pages/PaymentPage';
@@ -83,7 +82,6 @@ function App() {
   const cartCount = useAppSelector(selectCartCount);
   const handleNavigate = useLegacyNavigate();
   const handleSearchOpen = useSearchNavigation();
-  const { setDirectItem } = useDirectOrderStore();
   const addToast = useToastStore((state) => state.addToast);
 
   useEffect(() => {
@@ -162,7 +160,7 @@ function App() {
   );
 
   const handleRentNow = useCallback(
-    (item) => {
+    async (item) => {
       if (!currentUser?.id) {
         handleNavigate('account');
         return;
@@ -171,12 +169,11 @@ function App() {
         return;
       }
 
-      const aiStylistAttribution = item?.id ? consumeAiStylistRecommendationAttribution(item.id) : null;
-      setDirectItem(aiStylistAttribution ? { ...item, attribution: aiStylistAttribution } : item);
-      addToast(`Dang chuyen den trang thue "${item.name}"...`);
-      handleNavigate('direct-rental');
+      await handleAddToCart(item);
+      addToast(`Dang chuyen den trang thanh toan "${item.name}"...`);
+      handleNavigate('checkout', null, { state: { autoSelectId: item.id } });
     },
-    [currentUser, handleNavigate, setDirectItem, addToast]
+    [currentUser, handleNavigate, addToast, handleAddToCart]
   );
 
   const handleUpdateCartQuantity = useCallback(
@@ -271,15 +268,7 @@ function App() {
             />
           }
         />
-        <Route
-          path="/direct-rental"
-          element={
-            <DirectRentalPage
-              currentUser={currentUser}
-              onNavigate={handleNavigate}
-            />
-          }
-        />
+
         <Route path="/chat" element={<ChatPage currentUser={currentUser} onNavigate={handleNavigate} cartItems={cartItems} />} />
         <Route path="/orders" element={<RentalOrdersPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/admin" element={<AdminDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />

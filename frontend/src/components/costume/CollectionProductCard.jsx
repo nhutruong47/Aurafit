@@ -9,7 +9,7 @@ export default function CollectionProductCard({
 }) {
   return (
     <article className="group" style={{ animation: `fadeIn 0.7s ease-out ${index * 0.06}s both` }}>
-      <div className="relative mb-5 aspect-[3/4] overflow-hidden bg-[#eeeeee]">
+      <div className="relative mb-5 aspect-[4/5] overflow-hidden bg-[#eeeeee]">
         <img
           src={product.image}
           alt={product.name}

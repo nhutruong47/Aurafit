@@ -1,11 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchCostumes } from '../services/costumeService';
-import { fetchPublicCategories } from '../services/catalogService';
 import { categoryApiNames, mapCostumeToProduct } from '../utils/productMapper';
 
-export function useCatalogCostumes(categoryKey) {
+export function useCatalogCostumes(categoryParam = null, sortBy = 'id', sortDir = 'desc', keyword = '', pageSize = 20) {
+  const [activePage, setActivePage] = useState(0);
+  
+  // Reset page when any filter changes
+  useEffect(() => {
+    setActivePage(0);
+  }, [categoryParam, sortBy, sortDir, keyword]);
+
   const [state, setState] = useState({
     costumes: [],
+    totalPages: 1,
+    totalElements: 0,
     isLoading: false,
     error: null,
     requestKey: null,
@@ -14,8 +22,7 @@ export function useCatalogCostumes(categoryKey) {
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
-    const requestKey = categoryKey || '__all__';
-    const resolvedCategoryName = categoryKey ? categoryApiNames[categoryKey] || categoryKey : null;
+    const requestKey = `${categoryParam}_${sortBy}_${sortDir}_${keyword}_${activePage}`;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((currentState) => ({
@@ -27,56 +34,67 @@ export function useCatalogCostumes(categoryKey) {
 
     const fetchData = async () => {
       try {
-        let categoryId = null;
+        const isGroupedCategory = typeof categoryParam === 'string' && categoryParam !== '';
+        
+        let fetchPageNo = activePage;
+        let fetchPageSize = pageSize;
+        let fetchCategoryId = null;
 
-        // Step 1: If a category is requested, fetch all categories to find the corresponding ID
-        if (resolvedCategoryName) {
-          const categories = await fetchPublicCategories();
-          if (controller.signal.aborted) return;
-          
-          const targetCategory = (categories || []).find(
-            (c) => c.name.toLowerCase() === resolvedCategoryName.toLowerCase()
-          );
-          
-          // If the category is specified but doesn't exactly match on backend, we just won't pass categoryId.
-          // We will filter locally after mapping.
-          if (targetCategory) {
-            categoryId = targetCategory.id;
-          }
+        // If it's a number, it's a DB category ID
+        if (typeof categoryParam === 'number') {
+          fetchCategoryId = categoryParam;
+        } 
+        // If it's a string, it's a grouped UI category (Events, Cosplay)
+        else if (isGroupedCategory) {
+          fetchPageNo = 0;
+          fetchPageSize = 200; // Fetch all to filter locally
         }
 
-        // Step 2: Fetch costumes with the found categoryId (or null for all)
         const data = await fetchCostumes({ 
-          categoryId, 
-          pageSize: 100, 
+          categoryId: fetchCategoryId, 
+          keyword,
+          sortBy,
+          sortDir,
+          pageNo: fetchPageNo,
+          pageSize: fetchPageSize, 
           signal: controller.signal 
         });
         
         if (controller.signal.aborted || !isMounted) return;
 
-        let mappedCostumes = Array.isArray(data) ? data.map(mapCostumeToProduct) : [];
-        
-        if (resolvedCategoryName) {
+        const actualData = Array.isArray(data) ? data : (data?.data || []);
+        let mappedCostumes = actualData.map(mapCostumeToProduct);
+
+        let totalPages = data?.totalPages || 1;
+        let totalElements = data?.totalElements || mappedCostumes.length;
+
+        // Apply Local Filtering & Pagination for Grouped UI Categories
+        if (isGroupedCategory) {
+          const resolvedCategoryName = categoryApiNames[categoryParam] || categoryParam;
           mappedCostumes = mappedCostumes.filter(
-            (c) => c.category.toLowerCase() === resolvedCategoryName.toLowerCase()
+            (c) => c.rawCategory.toLowerCase() === resolvedCategoryName.toLowerCase()
           );
+
+          totalElements = mappedCostumes.length;
+          totalPages = Math.ceil(totalElements / pageSize) || 1;
+          
+          const startIndex = activePage * pageSize;
+          mappedCostumes = mappedCostumes.slice(startIndex, startIndex + pageSize);
         }
 
         setState({
           costumes: mappedCostumes,
+          totalPages,
+          totalElements,
           isLoading: false,
           error: null,
           requestKey,
         });
-      } catch (requestError) {
-        if (controller.signal.aborted || !isMounted) return;
-
-        setState({
-          costumes: [],
-          isLoading: false,
-          error: requestError,
-          requestKey,
-        });
+      } catch (err) {
+        if (err.name === 'AbortError' || controller.signal.aborted) return;
+        if (isMounted) {
+          setState((prev) => ({ ...prev, isLoading: false, error: err }));
+        }
       }
     };
 
@@ -86,16 +104,7 @@ export function useCatalogCostumes(categoryKey) {
       isMounted = false;
       controller.abort();
     };
-  }, [categoryKey]);
+  }, [categoryParam, sortBy, sortDir, keyword, activePage, pageSize]);
 
-  return useMemo(() => {
-    const requestKey = categoryKey || '__all__';
-    const isCurrentRequest = state.requestKey === requestKey;
-
-    return {
-      costumes: isCurrentRequest ? state.costumes : [],
-      isLoading: !isCurrentRequest || state.isLoading,
-      error: isCurrentRequest ? state.error : null,
-    };
-  }, [categoryKey, state]);
+  return { ...state, activePage, setActivePage };
 }

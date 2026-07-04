@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import ProductHero from '../components/product/ProductHero';
 import ProductReviewsSection from '../components/product/ProductReviewsSection';
 import SimilarProductsSection from '../components/product/SimilarProductsSection';
@@ -8,6 +8,7 @@ import AlertMessage from '../components/ui/AlertMessage';
 import { fetchCostumeById } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
 import { mapCostumeToProduct, toCartItem } from '../utils/productMapper';
+import { adminContact } from '../utils/shopMock';
 
 const initialMockReviews = [
   {
@@ -49,6 +50,7 @@ const initialMockReviews = [
 
 export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, currentUser }) {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -249,12 +251,16 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     return null;
   }
 
+  // Seller info derived from product data
+  const sellerName = product?.sellerName || product?.owner?.fullName || product?.owner?.email || adminContact.name;
+  const sellerEmail = product?.sellerEmail || product?.owner?.email || '';
+
   return (
-    <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f9f9f9] px-4 pb-12 pt-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1200px]">
         <button
-          onClick={() => onNavigate?.('catalog')}
-          className="mb-8 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:text-black"
+          onClick={() => navigate(-1)}
+          className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:text-black"
         >
           <span className="material-symbols-outlined text-[16px]">west</span>
           Quay lại
@@ -262,6 +268,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
 
         {loadError && <AlertMessage text={loadError} className="mb-6" />}
 
+        {/* ── Hero: Image + Variants + CTAs (Above the Fold) ── */}
         <ProductHero
           product={product}
           selectedItem={selectedItem}
@@ -269,24 +276,65 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
           isLoading={isLoading}
           onAddToCart={handleAddToCartClick}
           onRentNow={handleRentNowClick}
-          onNavigate={onNavigate}
           rentalStartDate={rentalStartDate}
           rentalEndDate={rentalEndDate}
           onStartDateChange={setRentalStartDate}
           onEndDateChange={setRentalEndDate}
         />
 
+        {/* ── Description + Seller Info (Below the Fold) ── */}
+        {product && (
+          <div className="mt-6 grid gap-6 md:grid-cols-[1fr_340px]">
+            {/* Description */}
+            <div className="border border-[#cfc4c5] bg-white p-6">
+              <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">Mô tả sản phẩm</h3>
+              <p className="text-sm leading-7 text-[#5f5e5e]">
+                {product.description || 'Trang phục cao cấp mang đến trải nghiệm nổi bật cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu chỉn chu và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
+              </p>
+            </div>
+
+            {/* Seller Card */}
+            <div className="flex flex-col justify-between border border-[#cfc4c5] bg-white p-5">
+              <div className="flex items-center gap-4">
+                <img
+                  src={adminContact.avatar}
+                  alt={sellerName}
+                  className="h-14 w-14 rounded-full border border-[#cfc4c5]/50 object-cover"
+                />
+                <div>
+                  <h4 className="font-serif text-lg font-bold">{sellerName}</h4>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-[#5f5e5e]">
+                    <span className="flex items-center text-[#99854e]">
+                      <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                      {adminContact.rating}
+                    </span>
+                    <span>•</span>
+                    <span>{sellerEmail || adminContact.address.split(',').slice(-2).join(', ').trim()}</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigate?.('chat', product)}
+                className="mt-4 w-full border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
+              >
+                Chatbot tư vấn
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Similar Products ── */}
         {product && (
           <SimilarProductsSection
             recommendations={similarRecommendations}
             isLoading={isSimilarLoading}
             error={similarError}
             onNavigate={onNavigate}
-            onAddToCart={onAddToCart}
             onRecommendationClick={handleRecommendationClick}
           />
         )}
 
+        {/* ── Reviews ── */}
         {product && (
           <ProductReviewsSection
             stats={stats}

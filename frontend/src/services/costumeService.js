@@ -20,7 +20,7 @@ export const fetchCostumes = async (options = {}) => {
     categoryId,
     keyword,
     pageNo = 0,
-    pageSize = 100,
+    pageSize = 20,
     sortBy = 'id',
     sortDir = 'desc',
   } = requestOptions;
@@ -42,7 +42,23 @@ export const fetchCostumes = async (options = {}) => {
     'Không thể tải dữ liệu sản phẩm từ database.'
   );
 
-  return normalizeListResponse(payload);
+  // Return structured pagination metadata for DB-level paging
+  if (payload && typeof payload === 'object' && Array.isArray(payload.content)) {
+    return {
+      data: payload.content,
+      totalPages: payload.totalPages || 1,
+      totalElements: payload.totalElements || 0,
+      currentPage: payload.pageNo ?? payload.number ?? pageNo,
+    };
+  }
+
+  // Fallback for non-paginated responses
+  return {
+    data: normalizeListResponse(payload),
+    totalPages: 1,
+    totalElements: normalizeListResponse(payload).length,
+    currentPage: 0,
+  };
 };
 
 export const fetchCostumeById = async (id) =>
