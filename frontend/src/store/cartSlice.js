@@ -150,10 +150,25 @@ const cartSlice = createSlice({
       state.items = groupCartItems(flatItems);
       persistItems(state.items);
     },
+    updateCartItemVariant: (state, action) => {
+      const { cartId, costumeItemId, sku, size, color, rentalStartDate, rentalEndDate, quantity } = action.payload;
+      const item = state.items.find((i) => i.cartId === cartId || i.cartItemId === cartId);
+      if (item) {
+        if (costumeItemId !== undefined) item.costumeItemId = costumeItemId;
+        if (sku !== undefined) item.sku = sku;
+        if (size !== undefined) item.size = size;
+        if (color !== undefined) item.color = color;
+        if (rentalStartDate !== undefined) item.rentalStartDate = rentalStartDate;
+        if (rentalEndDate !== undefined) item.rentalEndDate = rentalEndDate;
+        if (quantity !== undefined) item.quantity = quantity;
+        item.meta = [item.size, item.color].filter(Boolean).join(' • ');
+        persistItems(state.items);
+      }
+    },
   },
 });
 
-export const { addCartItem, updateCartQuantity, updateCartItemDates, removeCartItem, clearCart, setCartItems } = cartSlice.actions;
+export const { addCartItem, updateCartQuantity, updateCartItemDates, updateCartItemVariant, removeCartItem, clearCart, setCartItems } = cartSlice.actions;
 
 export const selectCartItems = (state) => state.cart.items;
 export const selectCartCount = (state) =>

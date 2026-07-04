@@ -60,6 +60,7 @@ ERRORS.md
 
 # Markdown
 *.md
-!update_28_6.md
 !backend/src/main/resources/ai/*.md
 !backend/src/main/resources/ai/**/*.md
+
+

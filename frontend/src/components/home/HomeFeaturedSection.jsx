@@ -5,7 +5,7 @@ import { featuredTabs } from './homeData';
 function ProductCard({ product, onAddToCart, onNavigate }) {
   return (
     <article className="group cursor-pointer" onClick={() => onNavigate?.('productDetail', product)}>
-      <div className="relative mb-6 aspect-[3/4] overflow-hidden border border-[#cfc4c5]/20 bg-white transition duration-500 group-hover:border-[#99854e]/40">
+      <div className="relative mb-6 aspect-[4/5] overflow-hidden border border-[#cfc4c5]/20 bg-white transition duration-500 group-hover:border-[#99854e]/40">
         <img
           src={product.image}
           alt={product.name}

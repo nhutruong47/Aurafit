@@ -11,45 +11,111 @@ const categoryPathByKey = {
   accessories: 'phu-kien',
 };
 
-function normalizeOptions(options) {
-  if (typeof options === 'string') {
-    return { categoryKey: options };
+function normalizeOptions(optionsOrCategoryParam, sortBy, sortDir, keyword, pageSize) {
+  if (optionsOrCategoryParam && typeof optionsOrCategoryParam === 'object' && !Array.isArray(optionsOrCategoryParam)) {
+    return {
+      sortBy: 'id',
+      sortDir: 'desc',
+      keyword: '',
+      pageSize: 20,
+      ...optionsOrCategoryParam,
+    };
   }
 
-  if (options && typeof options === 'object') {
-    return options;
+  if (typeof optionsOrCategoryParam === 'number') {
+    return {
+      categoryId: optionsOrCategoryParam,
+      sortBy,
+      sortDir,
+      keyword,
+      pageSize,
+    };
   }
 
-  return {};
+  if (typeof optionsOrCategoryParam === 'string' && optionsOrCategoryParam.trim()) {
+    return {
+      categoryKey: optionsOrCategoryParam.trim(),
+      sortBy,
+      sortDir,
+      keyword,
+      pageSize,
+    };
+  }
+
+  return {
+    sortBy,
+    sortDir,
+    keyword,
+    pageSize,
+  };
 }
 
-export function useCatalogCostumes(options) {
-  const normalizedOptions = normalizeOptions(options);
+function resolveCategoryPath(categoryKey, explicitCategoryPath) {
+  if (explicitCategoryPath && typeof explicitCategoryPath === 'string') {
+    const normalizedPath = explicitCategoryPath.trim().toLowerCase();
+    return normalizedPath || null;
+  }
+
+  if (!categoryKey || typeof categoryKey !== 'string') {
+    return null;
+  }
+
+  const normalizedKey = categoryKey.trim().toLowerCase();
+  return categoryPathByKey[normalizedKey] || normalizedKey || null;
+}
+
+export function useCatalogCostumes(
+  optionsOrCategoryParam = null,
+  sortByArg = 'id',
+  sortDirArg = 'desc',
+  keywordArg = '',
+  pageSizeArg = 20
+) {
+  const normalizedOptions = useMemo(
+    () => normalizeOptions(optionsOrCategoryParam, sortByArg, sortDirArg, keywordArg, pageSizeArg),
+    [keywordArg, optionsOrCategoryParam, pageSizeArg, sortByArg, sortDirArg]
+  );
+
   const {
-    categoryKey,
-    categoryPath: explicitCategoryPath,
-    keyword,
+    categoryId = null,
+    categoryKey = null,
+    categoryPath: explicitCategoryPath = null,
+    keyword = '',
+    sortBy = 'id',
+    sortDir = 'desc',
+    pageSize = 20,
   } = normalizedOptions;
 
-  const resolvedCategoryPath = explicitCategoryPath || (categoryKey ? categoryPathByKey[categoryKey] || null : null);
+  const resolvedCategoryPath = resolveCategoryPath(categoryKey, explicitCategoryPath);
   const normalizedKeyword = keyword?.trim() || '';
 
+  const [activePage, setActivePage] = useState(1);
   const [state, setState] = useState({
     costumes: [],
+    totalPages: 1,
+    totalElements: 0,
     isLoading: false,
     error: null,
     requestKey: null,
   });
 
   useEffect(() => {
+    setActivePage(1);
+  }, [categoryId, normalizedKeyword, pageSize, resolvedCategoryPath, sortBy, sortDir]);
+
+  useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
     const requestKey = JSON.stringify({
+      activePage,
+      categoryId: categoryId || null,
       categoryPath: resolvedCategoryPath || null,
       keyword: normalizedKeyword || null,
+      pageSize,
+      sortBy,
+      sortDir,
     });
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((currentState) => ({
       ...currentState,
       isLoading: true,
@@ -60,29 +126,51 @@ export function useCatalogCostumes(options) {
     const fetchData = async () => {
       try {
         const data = await fetchCostumes({
+          categoryId,
           categoryPath: resolvedCategoryPath,
           keyword: normalizedKeyword || undefined,
-          pageSize: 100,
+          sortBy,
+          sortDir,
+          pageNo: Math.max(activePage - 1, 0),
+          pageSize,
           signal: controller.signal,
         });
 
-        if (controller.signal.aborted || !isMounted) return;
+        if (controller.signal.aborted || !isMounted) {
+          return;
+        }
+
+        const actualData = Array.isArray(data) ? data : data?.data || [];
+        const totalPages = Math.max(1, Number(data?.totalPages || 1));
+        const totalElements = Number(data?.totalElements ?? actualData.length);
+        const currentPage = Number(data?.currentPage ?? Math.max(activePage - 1, 0)) + 1;
 
         setState({
-          costumes: Array.isArray(data) ? data.map(mapCostumeToProduct) : [],
+          costumes: actualData.map(mapCostumeToProduct),
+          totalPages,
+          totalElements,
           isLoading: false,
           error: null,
           requestKey,
         });
-      } catch (requestError) {
-        if (controller.signal.aborted || !isMounted) return;
 
-        setState({
+        if (currentPage !== activePage) {
+          setActivePage(currentPage);
+        }
+      } catch (requestError) {
+        if (controller.signal.aborted || !isMounted) {
+          return;
+        }
+
+        setState((currentState) => ({
+          ...currentState,
           costumes: [],
+          totalPages: 1,
+          totalElements: 0,
           isLoading: false,
           error: requestError,
           requestKey,
-        });
+        }));
       }
     };
 
@@ -92,19 +180,37 @@ export function useCatalogCostumes(options) {
       isMounted = false;
       controller.abort();
     };
-  }, [normalizedKeyword, resolvedCategoryPath]);
+  }, [activePage, categoryId, normalizedKeyword, pageSize, resolvedCategoryPath, sortBy, sortDir]);
 
   return useMemo(() => {
     const requestKey = JSON.stringify({
+      activePage,
+      categoryId: categoryId || null,
       categoryPath: resolvedCategoryPath || null,
       keyword: normalizedKeyword || null,
+      pageSize,
+      sortBy,
+      sortDir,
     });
     const isCurrentRequest = state.requestKey === requestKey;
 
     return {
       costumes: isCurrentRequest ? state.costumes : [],
+      totalPages: isCurrentRequest ? state.totalPages : 1,
+      totalElements: isCurrentRequest ? state.totalElements : 0,
+      activePage,
+      setActivePage,
       isLoading: !isCurrentRequest || state.isLoading,
       error: isCurrentRequest ? state.error : null,
     };
-  }, [normalizedKeyword, resolvedCategoryPath, state]);
+  }, [
+    activePage,
+    categoryId,
+    normalizedKeyword,
+    pageSize,
+    resolvedCategoryPath,
+    sortBy,
+    sortDir,
+    state,
+  ]);
 }

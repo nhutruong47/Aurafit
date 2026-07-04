@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ProductHero from '../components/product/ProductHero';
 import SimilarProductsSection from '../components/product/SimilarProductsSection';
 import AlertMessage from '../components/ui/AlertMessage';
@@ -10,6 +10,7 @@ import { mapCostumeToProduct, toCartItem } from '../utils/productMapper';
 
 export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, currentUser }) {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -48,15 +49,22 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
 
     fetchCostumeById(productId)
       .then((costume) => {
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
+
         const mappedProduct = costume ? mapCostumeToProduct(costume) : null;
         setProduct(mappedProduct);
+
         if (mappedProduct?.items?.length > 0) {
           setSelectedItem(mappedProduct.items[0]);
         }
       })
       .catch((error) => {
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
+
         setLoadError(error.message || 'Không thể tải chi tiết sản phẩm.');
         setProduct(null);
       })
@@ -78,7 +86,9 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   }, [isLoading, loadError, onNavigate, product]);
 
   useEffect(() => {
-    if (!product?.id) return;
+    if (!product?.id) {
+      return;
+    }
 
     logUserInteraction({
       eventType: 'VIEW_PRODUCT',
@@ -94,7 +104,9 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   }, [product]);
 
   useEffect(() => {
-    if (!product?.id || !similarRecommendations.length) return;
+    if (!product?.id || !similarRecommendations.length) {
+      return;
+    }
 
     const recommendedIds = similarRecommendations
       .map((item) => item?.product?.id)
@@ -141,7 +153,9 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
       return;
     }
 
-    if (!selectedItem) return;
+    if (!selectedItem) {
+      return;
+    }
 
     const baseItem = toCartItem(product, selectedItem);
     onRentNow?.({
@@ -174,12 +188,15 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     return null;
   }
 
+  const sellerName = product?.sellerName || product?.owner?.fullName || product?.owner?.email || 'AuraFit';
+  const sellerEmail = product?.sellerEmail || product?.owner?.email || '';
+
   return (
-    <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f9f9f9] px-4 pb-12 pt-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1200px]">
         <button
-          onClick={() => onNavigate?.('catalog')}
-          className="mb-8 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:text-black"
+          onClick={() => navigate(-1)}
+          className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:text-black"
         >
           <span className="material-symbols-outlined text-[16px]">west</span>
           Quay lại
@@ -194,12 +211,43 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
           isLoading={isLoading}
           onAddToCart={handleAddToCartClick}
           onRentNow={handleRentNowClick}
-          onNavigate={onNavigate}
           rentalStartDate={rentalStartDate}
           rentalEndDate={rentalEndDate}
           onStartDateChange={setRentalStartDate}
           onEndDateChange={setRentalEndDate}
         />
+
+        {product && (
+          <div className="mt-6 grid gap-6 md:grid-cols-[1fr_340px]">
+            <div className="border border-[#cfc4c5] bg-white p-6">
+              <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">Mô tả sản phẩm</h3>
+              <p className="text-sm leading-7 text-[#5f5e5e]">
+                {product.description ||
+                  'Trang phục cao cấp mang đến trải nghiệm nổi bật cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu chỉn chu và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
+              </p>
+            </div>
+
+            <div className="flex flex-col justify-between border border-[#cfc4c5] bg-white p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#cfc4c5]/50 bg-black font-serif text-xl text-white">
+                  {(sellerName || 'A').charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h4 className="font-serif text-lg font-bold">{sellerName}</h4>
+                  <div className="mt-1 text-xs text-[#5f5e5e]">
+                    {sellerEmail || 'Thông tin người bán được lấy từ backend khi có dữ liệu owner.'}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigate?.('chat', product)}
+                className="mt-4 w-full border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
+              >
+                Chatbot tư vấn
+              </button>
+            </div>
+          </div>
+        )}
 
         {product && (
           <SimilarProductsSection

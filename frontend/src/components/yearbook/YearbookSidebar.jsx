@@ -1,4 +1,3 @@
-// Sidebar bo loc va thong diep uu dai nhom cho Yearbook.
 import CostumeCheckboxFilterGroup from '../costume/CostumeCheckboxFilterGroup';
 
 export default function YearbookSidebar({ styles, materials, genders }) {

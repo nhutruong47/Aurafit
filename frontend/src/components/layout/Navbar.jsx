@@ -19,6 +19,7 @@ export default function Navbar({
 
   const navLinks = [
     { label: 'Shop', page: 'shop', action: () => goPage('shop') },
+    { label: 'Bộ sưu tập', page: 'catalog', action: () => goPage('catalog') },
     { label: 'Cosplay', page: 'cosplay', action: () => goPage('cosplay') },
     { label: 'Sự kiện', page: 'events', action: () => goPage('events') },
     { label: 'Yearbook', page: 'yearbook', action: () => goPage('yearbook') },

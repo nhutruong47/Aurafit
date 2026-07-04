@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CheckoutSummary from '../components/checkout/CheckoutSummary';
 import RentalItemCard from '../components/checkout/RentalItemCard';
 import { toRentalItem } from '../components/checkout/checkoutData';
 import EmptyState from '../components/ui/EmptyState';
 import { clearAiStylistCartAttribution, toAiStylistAttributionRequest } from '../services/interactionsService';
 import { createOrder } from '../services/rentalOrderService';
-import { useDirectOrderStore } from '../store/useDirectOrderStore';
+import { useLocation } from 'react-router-dom';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useCheckoutStore } from '@/store/useCheckoutStore';
 import ConfirmDialog from '../components/common/ConfirmDialog';
@@ -23,7 +23,7 @@ export default function RentalOrderCheckoutPage({
   onNavigate,
 }) {
   const dispatch = useDispatch();
-  const { directItem, clearDirectItem, setDirectItem } = useDirectOrderStore();
+  const location = useLocation();
   const { setPendingOrderId } = useCheckoutStore();
   const addToast = useToastStore((state) => state.addToast);
   const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
@@ -32,17 +32,26 @@ export default function RentalOrderCheckoutPage({
   const [submitError, setSubmitError] = useState('');
   const [problematicSku, setProblematicSku] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
+  const autoSelectId = location.state?.autoSelectId;
+
   const [selectedCartItemIds, setSelectedCartItemIds] = useState(() => {
+    if (autoSelectId) {
+      return new Set([autoSelectId]);
+    }
     const ids = cartItems.map((item) => item.cartId || item.id || item.costumeItemId);
     return new Set(ids);
   });
 
-  const directDisplayItem = directItem ? toRentalItem(directItem, 0) : null;
-  const cartDisplayItems = cartItems.map((item, index) => toRentalItem(item, index + 1));
-  const hasItems = !!(directDisplayItem || cartDisplayItems.length > 0);
-  const isSingleItem = (directDisplayItem ? 1 : 0) + cartDisplayItems.length === 1;
-  const isDirectOnly = !!directItem && cartItems.length === 0;
+  useEffect(() => {
+    if (autoSelectId) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [autoSelectId]);
 
+  const cartDisplayItems = cartItems.map((item, index) => toRentalItem(item, index + 1));
+  const hasItems = cartDisplayItems.length > 0;
+  const isSingleItem = cartDisplayItems.length === 1;
 
   const handleDeliveryChange = (event) => {
     const { name, value } = event.target;
@@ -57,18 +66,13 @@ export default function RentalOrderCheckoutPage({
 
   const itemsToOrder = useMemo(() => {
     const nextItems = [];
-    if (directDisplayItem) {
-      nextItems.push(directDisplayItem);
-    }
-
     cartDisplayItems.forEach((item) => {
       if (selectedCartItemIds.has(item.id)) {
         nextItems.push(item);
       }
     });
-
     return nextItems;
-  }, [cartDisplayItems, directDisplayItem, selectedCartItemIds]);
+  }, [cartDisplayItems, selectedCartItemIds]);
 
   const handleProceedToCheckout = async () => {
     if (!currentUser?.id) {
@@ -120,7 +124,6 @@ export default function RentalOrderCheckoutPage({
       });
 
       setPendingOrderId(orderResponse.id);
-      clearDirectItem();
       itemsToOrder.forEach((item) => {
         clearAiStylistCartAttribution(item);
       });
@@ -151,21 +154,10 @@ export default function RentalOrderCheckoutPage({
       return next;
     });
 
-    if (directItem && (directItem.cartId === itemId || directItem.id === itemId)) {
-      clearDirectItem();
-      return;
-    }
-
     onRemoveFromCart?.(itemId);
   };
 
   const handleUpdateItemDates = async (cartItemId, localCartId, data) => {
-    // RentalItemCard calls this with 3 arguments: (cartItemId, localCartId, { rentalStartDate, rentalEndDate })
-    const checkoutItemTargetId = localCartId || cartItemId;
-    if (directItem && (directItem.cartId === checkoutItemTargetId || directItem.id === checkoutItemTargetId || directDisplayItem?.id === checkoutItemTargetId)) {
-      setDirectItem({ ...directItem, rentalStartDate: data.rentalStartDate, rentalEndDate: data.rentalEndDate });
-      return;
-    }
     await onUpdateCartItem?.(cartItemId, localCartId, data);
   };
 
@@ -210,14 +202,31 @@ export default function RentalOrderCheckoutPage({
     return formatCurrency(rawTotalDue);
   }, [rawTotalDue]);
 
-  const headingLabel = isSingleItem || isDirectOnly ? 'Đơn thuê của bạn' : 'Giỏ hàng thuê';
+  const headingLabel = isSingleItem ? 'Đơn thuê của bạn' : 'Giỏ hàng thuê';
   const selectedCount = cartDisplayItems.filter((item) => selectedCartItemIds.has(item.id)).length;
-  const totalDisplayCount = (directDisplayItem ? 1 : 0) + cartDisplayItems.length;
-  const selectedDisplayCount = (directDisplayItem ? 1 : 0) + selectedCount;
+  const totalDisplayCount = cartDisplayItems.length;
+  const selectedDisplayCount = selectedCount;
+
+  const isCartEmpty = !cartItems || cartItems.length === 0;
+  if (isCartEmpty) {
+    return (
+      <div className="bg-[#f9f9f9] pb-20 text-[#1a1c1c] md:pb-0">
+        <main className="mx-auto max-w-[1440px] px-5 pb-28 pt-8 md:px-20 md:pb-40 md:pt-12">
+          <EmptyState
+            icon="shopping_bag"
+            title="Chưa có sản phẩm nào"
+            message="Hãy chọn sản phẩm bạn muốn thuê từ danh mục của AuraFit."
+            actionLabel="Xem bộ sưu tập"
+            onAction={() => onNavigate?.('catalog')}
+          />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#f9f9f9] pb-20 text-[#1a1c1c] md:pb-0">
-      <main className="mx-auto max-w-[1440px] px-5 pb-28 pt-36 md:px-20 md:pb-40">
+      <main className="mx-auto max-w-[1440px] px-5 pb-28 pt-8 md:px-20 md:pb-40 md:pt-12">
         <header className="mb-16 animate-[fadeIn_0.8s_ease-out_forwards]">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
@@ -253,7 +262,7 @@ export default function RentalOrderCheckoutPage({
                               return next;
                             });
                           } else {
-                            setSelectedCartItemIds(new Set(directDisplayItem ? [directDisplayItem.id] : []));
+                            setSelectedCartItemIds(new Set());
                           }
                         }}
                         className="h-4 w-4 accent-[#99854e]"
@@ -280,34 +289,13 @@ export default function RentalOrderCheckoutPage({
 
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
           <section className="space-y-16 lg:col-span-8">
-            {!hasItems ? (
-              <EmptyState
-                icon="shopping_bag"
-                title="Chưa có sản phẩm nào"
-                message="Hãy chọn sản phẩm bạn muốn thuê từ danh mục của AuraFit."
-                actionLabel="Xem bộ sưu tập"
-                onAction={() => onNavigate?.('catalog')}
-              />
-            ) : (
-              <>
-                {directDisplayItem && (
-                  <RentalItemCard
-                    item={directDisplayItem}
-                    delay={1}
-                    showCheckbox={false}
-                    isProblematic={problematicSku === directDisplayItem.sku}
-                    onRemoveFromCart={handleRemoveFromCart}
-                    onUpdateCartItem={handleUpdateItemDates}
-                  />
-                )}
-
                 {cartDisplayItems.length > 0 && (
                   <div className="space-y-8">
                     {cartDisplayItems.map((item, index) => (
                       <RentalItemCard
                         key={item.id}
                         item={item}
-                        delay={index + 1 + (directDisplayItem ? 1 : 0)}
+                        delay={index + 1}
                         showCheckbox
                         isProblematic={problematicSku === item.sku}
                         isChecked={selectedCartItemIds.has(item.id)}
@@ -323,8 +311,7 @@ export default function RentalOrderCheckoutPage({
                           });
                         }}
                         onRemoveFromCart={handleRemoveFromCart}
-                        onUpdateCartItem={handleUpdateItemDates}
-                      />
+                          />
                     ))}
                   </div>
                 )}
@@ -410,8 +397,6 @@ export default function RentalOrderCheckoutPage({
                     </p>
                   )}
                 </div>
-              </>
-            )}
           </section>
 
           <aside className="lg:col-span-4 sticky top-24 h-fit">

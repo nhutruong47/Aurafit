@@ -6,7 +6,7 @@ function PersonalizedSkeleton() {
       {Array.from({ length: 6 }).map((_, index) => (
         <div key={index} className="border border-[#d8d0cf] bg-white p-4">
           <div className="mb-4 h-5 w-40 animate-pulse bg-[#ece7e6]" />
-          <div className="aspect-[3/4] animate-pulse bg-[#f1eceb]" />
+          <div className="aspect-[4/5] animate-pulse bg-[#f1eceb]" />
           <div className="mt-4 space-y-3">
             <div className="h-4 w-3/4 animate-pulse bg-[#ece7e6]" />
             <div className="h-4 w-1/2 animate-pulse bg-[#f1eceb]" />
@@ -62,7 +62,6 @@ export default function HomePersonalizedSection({
 
                 <ShopProductCard
                   product={recommendation.product}
-                  onAddToCart={onAddToCart}
                   onNavigate={(page, product) => {
                     onRecommendationClick?.(recommendation, index, page, product);
                     onNavigate?.(page, product);

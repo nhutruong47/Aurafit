@@ -2,7 +2,7 @@
 export default function CheckoutSuggestionCard({ item, onAddToCart }) {
   return (
     <article className="group cursor-pointer">
-      <div className="relative mb-4 aspect-[3/4] overflow-hidden bg-[#f7f7f7]">
+      <div className="relative mb-4 aspect-[4/5] overflow-hidden bg-[#f7f7f7]">
         <img
           className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
           src={item.image}

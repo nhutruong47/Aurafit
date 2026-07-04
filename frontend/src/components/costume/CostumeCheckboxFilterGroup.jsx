@@ -12,16 +12,20 @@ export default function CostumeCheckboxFilterGroup({
       <h3 className="mb-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#999999]">{title}</h3>
       <div className="space-y-3">
         {items.map((item) => {
+          const isObject = typeof item === 'object' && item !== null;
+          const id = isObject ? item.id : item;
+          const label = isObject ? item.label : item;
+          
           const inputProps = isControlled
             ? {
-                checked: selectedItems.includes(item),
-                onChange: () => onToggle(item),
+                checked: selectedItems.includes(id),
+                onChange: () => onToggle(id),
               }
             : {};
 
           return (
-            <label key={item} className="flex cursor-pointer items-center justify-between gap-4 text-sm text-[#4c4546]">
-              <span>{item}</span>
+            <label key={id} className="flex cursor-pointer items-center justify-between gap-4 text-sm text-[#4c4546]">
+              <span>{label}</span>
               <input className="h-4 w-4 accent-[#99854e]" type="checkbox" {...inputProps} />
             </label>
           );
