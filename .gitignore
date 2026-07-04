@@ -62,5 +62,5 @@ ERRORS.md
 *.md
 !backend/src/main/resources/ai/*.md
 !backend/src/main/resources/ai/**/*.md
-*.json
+
 
