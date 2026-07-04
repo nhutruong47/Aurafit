@@ -65,6 +65,25 @@ export function useLegacyNavigate() {
         return;
       }
 
+      if (page === 'catalog' && data && typeof data === 'object') {
+        const params = new URLSearchParams();
+        if (data.categoryPath) {
+          params.set('categoryPath', data.categoryPath);
+        }
+        if (data.categoryId !== undefined && data.categoryId !== null) {
+          params.set('categoryId', String(data.categoryId));
+        }
+        if (data.keyword) {
+          params.set('keyword', data.keyword);
+        }
+
+        navigate(
+          params.toString() ? `${pagePathMap.catalog}?${params.toString()}` : pagePathMap.catalog,
+          options
+        );
+        return;
+      }
+
       if (['shopDetail', 'becomeLessor', 'sellerDashboard'].includes(page)) {
         navigate(pagePathMap.catalog, options);
         return;

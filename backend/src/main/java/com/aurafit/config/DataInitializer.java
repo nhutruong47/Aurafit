@@ -40,6 +40,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private static final String DEV_SELLER_EMAIL = "seller@aurafit.local";
     private static final String DEV_SELLER_PASSWORD = "Seller@123";
+    private static final String LEGACY_TRADITIONAL_ROOT_PREFIX = "ky-yeu/trang-phuc-truyen-thong/";
 
     private static final ItemStatus[] EXTRA_ITEM_STATUS_CYCLE = {
             ItemStatus.AVAILABLE,
@@ -56,6 +57,9 @@ public class DataInitializer implements CommandLineRunner {
             ItemStatus.LOST
     };
 
+    private static final List<CategoryTreeSeed> CATEGORY_TREE_SEEDS = buildCategoryTreeSeeds();
+    private static final Map<String, CategoryTreeSeedEntry> CATEGORY_TREE_SEEDS_BY_PATH = indexCategoryTreeSeeds(CATEGORY_TREE_SEEDS, null);
+    private static final Map<String, String> CATALOG_CATEGORY_PATH_BY_SEED_NAME = buildCatalogCategoryPathBySeedName();
     private static final List<CategorySeed> CATEGORY_SEEDS = buildCategorySeeds();
 
     private final CategoryRepository categoryRepository;
@@ -72,19 +76,27 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedCatalog() {
+        log.info("Starting DEV catalog seed sync.");
+
         User catalogOwner = resolveCatalogOwner();
 
-        Map<String, Category> categoriesByKey = categoryRepository.findAll().stream()
+        Map<String, Category> categoriesByPath = categoryRepository.findAll().stream()
+                .filter(category -> category.getPath() != null && !category.getPath().isBlank())
                 .collect(Collectors.toMap(
-                        category -> normalizeKey(category.getName()),
+                        Category::getPath,
                         category -> category,
                         (left, right) -> left,
                         LinkedHashMap::new
                 ));
 
+        int seededCategoryCount = syncCategoryTree(CATEGORY_TREE_SEEDS, null, categoriesByPath);
+        int deactivatedCategoryCount = deactivateStaleCategories(categoriesByPath);
+        ensureCatalogCategoryPathsExist(categoriesByPath);
+        int migratedLegacyTraditionalCostumeCount = migrateLegacyTraditionalCostumeCategories(categoriesByPath);
+
         Map<String, Costume> costumesByKey = costumeRepository.findAllWithItems().stream()
                 .collect(Collectors.toMap(
-                        costume -> costumeKey(costume.getCategory() != null ? costume.getCategory().getName() : null, costume.getName()),
+                        costume -> costumeKey(costume.getCategory() != null ? costume.getCategory().getPath() : null, costume.getName()),
                         costume -> costume,
                         (left, right) -> left,
                         LinkedHashMap::new
@@ -102,7 +114,7 @@ public class DataInitializer implements CommandLineRunner {
         int extraItemCursor = 0;
 
         for (CategorySeed categorySeed : CATEGORY_SEEDS) {
-            Category category = upsertCategory(categorySeed, categoriesByKey);
+            Category category = resolveCatalogCategory(categorySeed, categoriesByPath);
 
             for (int categoryCostumeIndex = 0; categoryCostumeIndex < categorySeed.costumes().size(); categoryCostumeIndex++) {
                 CostumeSeed costumeSeed = categorySeed.costumes().get(categoryCostumeIndex);
@@ -113,22 +125,161 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        log.info("DEV catalog seed synced: {} categories, {} costumes, {} costume items.",
-                CATEGORY_SEEDS.size(), totalSeedCostumes(), totalSeedItems());
+        int autoCompletedLeafCategoryCount = ensureLeafCategoryCoverage(
+                categoriesByPath,
+                costumesByKey,
+                itemsBySku,
+                catalogOwner,
+                globalCostumeIndex,
+                extraItemCursor
+        );
+
+        log.info("DEV catalog seed synced: {} categories, {} stale categories deactivated, {} legacy traditional costumes migrated, {} costumes, {} costume items, {} leaf categories auto-completed.",
+                seededCategoryCount,
+                deactivatedCategoryCount,
+                migratedLegacyTraditionalCostumeCount,
+                costumesByKey.size(),
+                itemsBySku.size(),
+                autoCompletedLeafCategoryCount);
     }
 
-    private Category upsertCategory(CategorySeed seed, Map<String, Category> categoriesByKey) {
-        Category category = categoriesByKey.get(normalizeKey(seed.name()));
-        if (category == null) {
-            category = new Category();
+    private int syncCategoryTree(List<CategoryTreeSeed> seeds, Category parent, Map<String, Category> categoriesByPath) {
+        int count = 0;
+
+        for (int index = 0; index < seeds.size(); index++) {
+            CategoryTreeSeed seed = seeds.get(index);
+            String slug = slugify(seed.name());
+            String path = parent == null ? slug : parent.getPath() + "/" + slug;
+
+            Category category = categoriesByPath.get(path);
+            if (category == null) {
+                category = new Category();
+            }
+
+            category.setName(seed.name());
+            category.setSlug(slug);
+            category.setPath(path);
+            category.setDescription(seed.description());
+            category.setParent(parent);
+            category.setSortOrder(index);
+            category.setIsActive(true);
+
+            Category savedCategory = categoryRepository.save(category);
+            categoriesByPath.put(savedCategory.getPath(), savedCategory);
+
+            count++;
+            count += syncCategoryTree(seed.children(), savedCategory, categoriesByPath);
         }
 
-        category.setName(seed.name());
-        category.setDescription(seed.description());
+        return count;
+    }
+
+    private int deactivateStaleCategories(Map<String, Category> categoriesByPath) {
+        int count = 0;
+
+        for (Category category : categoriesByPath.values()) {
+            String path = category.getPath();
+            if (path == null || path.isBlank() || CATEGORY_TREE_SEEDS_BY_PATH.containsKey(path)) {
+                continue;
+            }
+
+            if (Boolean.FALSE.equals(category.getIsActive())) {
+                continue;
+            }
+
+            category.setIsActive(false);
+            categoryRepository.save(category);
+            count++;
+        }
+
+        return count;
+    }
+
+    private int migrateLegacyTraditionalCostumeCategories(Map<String, Category> categoriesByPath) {
+        List<Costume> costumes = costumeRepository.findAllWithItems();
+        LinkedHashSet<String> occupiedKeys = costumes.stream()
+                .map(costume -> costumeKey(costume.getCategory() != null ? costume.getCategory().getPath() : null, costume.getName()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        int migratedCount = 0;
+
+        for (Costume costume : costumes) {
+            Category currentCategory = costume.getCategory();
+            String currentPath = currentCategory != null ? currentCategory.getPath() : null;
+            if (currentPath == null || !currentPath.startsWith(LEGACY_TRADITIONAL_ROOT_PREFIX)) {
+                continue;
+            }
+
+            String targetPath = currentPath.substring("ky-yeu/".length());
+            Category targetCategory = categoriesByPath.get(targetPath);
+            if (targetCategory == null) {
+                continue;
+            }
+
+            String targetKey = costumeKey(targetPath, costume.getName());
+            String currentKey = costumeKey(currentPath, costume.getName());
+            if (occupiedKeys.contains(targetKey) && !currentKey.equals(targetKey)) {
+                continue;
+            }
+
+            costume.setCategory(targetCategory);
+            costumeRepository.save(costume);
+
+            occupiedKeys.remove(currentKey);
+            occupiedKeys.add(targetKey);
+            migratedCount++;
+        }
+
+        return migratedCount;
+    }
+
+    private void ensureCatalogCategoryPathsExist(Map<String, Category> categoriesByPath) {
+        for (String categoryPath : new LinkedHashSet<>(CATALOG_CATEGORY_PATH_BY_SEED_NAME.values())) {
+            ensureCategoryPathExists(categoryPath, categoriesByPath);
+        }
+    }
+
+    private Category ensureCategoryPathExists(String categoryPath, Map<String, Category> categoriesByPath) {
+        Category existingCategory = categoriesByPath.get(categoryPath);
+        if (existingCategory != null) {
+            return existingCategory;
+        }
+
+        CategoryTreeSeedEntry seedEntry = CATEGORY_TREE_SEEDS_BY_PATH.get(categoryPath);
+        if (seedEntry == null) {
+            throw new IllegalStateException("Chưa cấu hình category seed cho path: " + categoryPath);
+        }
+
+        String parentPath = extractParentPath(categoryPath);
+        Category parent = parentPath == null ? null : ensureCategoryPathExists(parentPath, categoriesByPath);
+
+        Category category = new Category();
+        category.setName(seedEntry.name());
+        category.setSlug(seedEntry.slug());
+        category.setPath(categoryPath);
+        category.setDescription(seedEntry.description());
+        category.setParent(parent);
+        category.setSortOrder(seedEntry.sortOrder());
+        category.setIsActive(true);
 
         Category savedCategory = categoryRepository.save(category);
-        categoriesByKey.put(normalizeKey(savedCategory.getName()), savedCategory);
+        categoriesByPath.put(savedCategory.getPath(), savedCategory);
         return savedCategory;
+    }
+
+    private Category resolveCatalogCategory(CategorySeed seed, Map<String, Category> categoriesByPath) {
+        String categoryPath = CATALOG_CATEGORY_PATH_BY_SEED_NAME.get(seed.name());
+        if (categoryPath == null) {
+            throw new IllegalStateException("Chưa cấu hình category path cho catalog seed: " + seed.name());
+        }
+
+        ensureCategoryPathExists(categoryPath, categoriesByPath);
+        Category category = categoriesByPath.get(categoryPath);
+        if (category == null) {
+            throw new IllegalStateException("Không tìm thấy category đã seed theo path: " + categoryPath);
+        }
+
+        return category;
     }
 
     private Costume upsertCostume(CategorySeed categorySeed,
@@ -138,7 +289,7 @@ public class DataInitializer implements CommandLineRunner {
                                   int globalCostumeIndex,
                                   User catalogOwner,
                                   Map<String, Costume> costumesByKey) {
-        String key = costumeKey(categorySeed.name(), costumeSeed.name());
+        String key = costumeKey(category != null ? category.getPath() : null, costumeSeed.name());
         Costume costume = costumesByKey.get(key);
         if (costume == null) {
             costume = new Costume();
@@ -156,6 +307,588 @@ public class DataInitializer implements CommandLineRunner {
         Costume savedCostume = costumeRepository.save(costume);
         costumesByKey.put(key, savedCostume);
         return savedCostume;
+    }
+
+    private int ensureLeafCategoryCoverage(Map<String, Category> categoriesByPath,
+                                           Map<String, Costume> costumesByKey,
+                                           Map<String, CostumeItem> itemsBySku,
+                                           User catalogOwner,
+                                           int globalCostumeIndex,
+                                           int extraItemCursor) {
+        LinkedHashSet<String> parentPaths = CATEGORY_TREE_SEEDS_BY_PATH.keySet().stream()
+                .map(DataInitializer::extractParentPath)
+                .filter(parentPath -> parentPath != null && !parentPath.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<String> leafPaths = CATEGORY_TREE_SEEDS_BY_PATH.keySet().stream()
+                .filter(path -> !parentPaths.contains(path))
+                .sorted()
+                .collect(Collectors.toList());
+
+        LinkedHashSet<String> categoryPathsWithCostumes = costumesByKey.values().stream()
+                .map(Costume::getCategory)
+                .filter(category -> category != null && category.getPath() != null && !category.getPath().isBlank())
+                .map(Category::getPath)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        int generatedLeafCategoryCount = 0;
+
+        for (int leafIndex = 0; leafIndex < leafPaths.size(); leafIndex++) {
+            String leafPath = leafPaths.get(leafIndex);
+            if (categoryPathsWithCostumes.contains(leafPath)) {
+                continue;
+            }
+
+            Category category = categoriesByPath.get(leafPath);
+            if (category == null) {
+                throw new IllegalStateException("Không tìm thấy category lá đã sync theo path: " + leafPath);
+            }
+
+            CategorySeed generatedCategorySeed = buildGeneratedLeafCategorySeed(category, leafIndex + 1);
+            CostumeSeed generatedCostumeSeed = generatedCategorySeed.costumes().get(0);
+
+            Costume costume = upsertCostume(
+                    generatedCategorySeed,
+                    category,
+                    generatedCostumeSeed,
+                    0,
+                    globalCostumeIndex,
+                    catalogOwner,
+                    costumesByKey
+            );
+            upsertMetadata(generatedCategorySeed, generatedCostumeSeed, costume, 0);
+            extraItemCursor = upsertItems(
+                    generatedCategorySeed,
+                    generatedCostumeSeed,
+                    costume,
+                    0,
+                    globalCostumeIndex,
+                    extraItemCursor,
+                    itemsBySku
+            );
+
+            categoryPathsWithCostumes.add(leafPath);
+            generatedLeafCategoryCount++;
+            globalCostumeIndex++;
+        }
+
+        return generatedLeafCategoryCount;
+    }
+
+    private CategorySeed buildGeneratedLeafCategorySeed(Category category, int sequence) {
+        String categoryPath = category.getPath();
+        String rootSlug = extractRootSlug(categoryPath);
+        String parentSlug = extractParentSlug(categoryPath);
+        String leafName = category.getName();
+        List<String> sizeOptions = resolveGeneratedSizeOptions(rootSlug, parentSlug);
+        List<String> colorPalette = resolveGeneratedColorPalette(rootSlug, parentSlug);
+
+        CostumeSeed generatedCostume = new CostumeSeed(
+                resolveGeneratedCostumeName(rootSlug, parentSlug, leafName),
+                colorPalette.get(0),
+                resolveGeneratedMaterial(rootSlug, parentSlug),
+                resolveGeneratedSilhouette(rootSlug, parentSlug),
+                resolveGeneratedRentalPrice(rootSlug, parentSlug),
+                resolveGeneratedDepositPrice(rootSlug, parentSlug),
+                colorPalette,
+                resolveGeneratedAccentTags(rootSlug, parentSlug, leafName),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                resolveGeneratedFitNote(rootSlug, parentSlug, leafName)
+        );
+
+        return new CategorySeed(
+                String.format("LF%03d", sequence),
+                leafName,
+                category.getDescription(),
+                resolveGeneratedStyle(rootSlug, parentSlug),
+                resolveGeneratedOccasion(rootSlug, parentSlug, leafName),
+                resolveGeneratedSeasons(rootSlug, parentSlug),
+                resolveGeneratedGender(rootSlug, parentSlug, leafName),
+                resolveGeneratedBodyType(rootSlug, parentSlug),
+                "Da sáng đến ngăm",
+                resolveGeneratedSizeLabel(rootSlug, parentSlug),
+                sizeOptions,
+                resolveGeneratedSharedTags(rootSlug, parentSlug, leafName),
+                List.of(generatedCostume)
+        );
+    }
+
+    private String resolveGeneratedCostumeName(String rootSlug, String parentSlug, String leafName) {
+        return switch (rootSlug) {
+            case "su-kien" -> switch (parentSlug) {
+                case "mascot" -> "Mascot " + leafName + " sự kiện";
+                case "da-hoi" -> leafName + " cao cấp";
+                case "le-hoi" -> "Trang phục " + leafName + " lễ hội";
+                case "bieu-dien" -> "Trang phục " + leafName + " sân khấu";
+                case "gan-ket-doi-nhom" -> leafName + " đội nhóm";
+                default -> leafName + " sự kiện";
+            };
+            case "cosplay" -> switch (parentSlug) {
+                case "tro-choi" -> "Cosplay " + leafName + " chiến đấu";
+                case "gia-tuong" -> "Trang phục " + leafName + " giả tưởng";
+                case "hoang-gia" -> "Cosplay " + leafName + " hoàng gia";
+                case "phim-se-ri" -> "Trang phục " + leafName + " điện ảnh";
+                default -> "Trang phục cosplay " + leafName;
+            };
+            case "trang-phuc-truyen-thong" -> switch (parentSlug) {
+                case "nhat-ban" -> leafName + " truyền thống Nhật Bản";
+                case "han-quoc" -> leafName + " truyền thống Hàn Quốc";
+                case "viet-nam" -> leafName + " truyền thống Việt Nam";
+                case "trung-quoc" -> leafName + " truyền thống Trung Quốc";
+                case "au-my" -> leafName + " cổ điển Âu - Mỹ";
+                default -> leafName + " truyền thống";
+            };
+            case "ky-yeu" -> switch (parentSlug) {
+                case "concept-chup-anh" -> "Concept " + leafName + " kỷ yếu";
+                case "cu-nhan" -> leafName + " tốt nghiệp";
+                default -> leafName + " kỷ yếu";
+            };
+            case "phu-kien" -> switch (parentSlug) {
+                case "toc-gia" -> "Tóc giả " + leafName + " tạo kiểu";
+                case "giay" -> leafName + " thuê kèm";
+                case "vu-khi-mo-hinh" -> leafName + " mô hình cosplay";
+                case "trang-suc" -> leafName + " chụp concept";
+                case "dao-cu-chup-anh" -> leafName + " chụp ảnh concept";
+                case "trang-diem" -> "Gói " + leafName;
+                default -> "Phụ kiện " + leafName;
+            };
+            default -> "Trang phục " + leafName;
+        };
+    }
+
+    private String resolveGeneratedStyle(String rootSlug, String parentSlug) {
+        return switch (rootSlug) {
+            case "su-kien" -> switch (parentSlug) {
+                case "vest-trang-trong" -> "Trang trọng sự kiện";
+                case "da-hoi" -> "Dạ hội nổi bật";
+                case "le-hoi" -> "Lễ hội nhận diện cao";
+                case "mascot" -> "Mascot hoạt náo";
+                case "bieu-dien" -> "Sân khấu linh hoạt";
+                case "gan-ket-doi-nhom" -> "Đồng bộ tập thể";
+                default -> "Sự kiện chỉn chu";
+            };
+            case "cosplay" -> switch (parentSlug) {
+                case "anime" -> "Nhân vật anime";
+                case "tro-choi" -> "Game fantasy";
+                case "gia-tuong" -> "Giả tưởng huyền ảo";
+                case "hoang-gia" -> "Hoàng gia cổ điển";
+                case "phim-se-ri" -> "Điện ảnh nhận diện cao";
+                default -> "Cosplay nhân vật";
+            };
+            case "trang-phuc-truyen-thong" -> switch (parentSlug) {
+                case "nhat-ban" -> "Truyền thống Nhật Bản";
+                case "han-quoc" -> "Truyền thống Hàn Quốc";
+                case "viet-nam" -> "Truyền thống Việt Nam";
+                case "trung-quoc" -> "Truyền thống Trung Hoa";
+                case "au-my" -> "Cổ điển Âu - Mỹ";
+                default -> "Trang phục truyền thống";
+            };
+            case "ky-yeu" -> switch (parentSlug) {
+                case "ao-dai" -> "Thanh lịch truyền thống";
+                case "vest-tot-nghiep" -> "Trang trọng tốt nghiệp";
+                case "cu-nhan" -> "Graduation tiêu chuẩn";
+                case "dong-phuc-hoc-sinh" -> "Thanh xuân học đường";
+                case "concept-chup-anh" -> "Concept chụp ảnh";
+                default -> "Kỷ yếu chỉn chu";
+            };
+            case "phu-kien" -> switch (parentSlug) {
+                case "toc-gia" -> "Tạo hình nhân vật";
+                case "giay" -> "Hoàn thiện outfit";
+                case "vu-khi-mo-hinh" -> "Đạo cụ nhân vật";
+                case "trang-suc" -> "Điểm nhấn concept";
+                case "dao-cu-chup-anh" -> "Phối cảnh chụp ảnh";
+                case "trang-diem" -> "Makeup theo concept";
+                default -> "Phụ kiện bổ trợ";
+            };
+            default -> "Catalog dev";
+        };
+    }
+
+    private String resolveGeneratedOccasion(String rootSlug, String parentSlug, String leafName) {
+        return switch (rootSlug) {
+            case "su-kien" -> switch (parentSlug) {
+                case "da-hoi" -> "Dạ tiệc và prom";
+                case "le-hoi" -> "Lễ hội và hoạt náo";
+                case "mascot" -> "Activation thương hiệu";
+                case "bieu-dien" -> "Biểu diễn sân khấu";
+                case "gan-ket-doi-nhom" -> "Teambuilding và sự kiện nội bộ";
+                default -> "Sự kiện trang trọng";
+            };
+            case "cosplay" -> switch (parentSlug) {
+                case "tro-choi" -> "Cosplay game và offline cộng đồng";
+                case "phim-se-ri" -> "Fan event và chụp concept";
+                default -> "Cosplay và chụp concept";
+            };
+            case "trang-phuc-truyen-thong" -> switch (parentSlug) {
+                case "nhat-ban", "han-quoc", "viet-nam", "trung-quoc", "au-my" -> "Lễ hội văn hóa và chụp concept";
+                default -> "Trang phục truyền thống và chụp ảnh";
+            };
+            case "ky-yeu" -> switch (parentSlug) {
+                case "cu-nhan" -> "Lễ tốt nghiệp";
+                case "concept-chup-anh" -> "Chụp ảnh kỷ yếu";
+                default -> "Kỷ yếu và chụp ảnh";
+            };
+            case "phu-kien" -> switch (parentSlug) {
+                case "trang-diem" -> "Trang điểm theo lịch hẹn";
+                case "dao-cu-chup-anh" -> "Chụp ảnh concept";
+                default -> "Phụ kiện phối kèm";
+            };
+            default -> "Catalog " + leafName;
+        };
+    }
+
+    private List<String> resolveGeneratedSeasons(String rootSlug, String parentSlug) {
+        if ("su-kien".equals(rootSlug) && "da-hoi".equals(parentSlug)) {
+            return list("Thu", "Đông");
+        }
+        if ("su-kien".equals(rootSlug) && "le-hoi".equals(parentSlug)) {
+            return list("Thu", "Đông", "Quanh năm");
+        }
+        if ("trang-phuc-truyen-thong".equals(rootSlug)) {
+            return list("Xuân", "Hè", "Thu");
+        }
+        if ("ky-yeu".equals(rootSlug)) {
+            return list("Xuân", "Hè");
+        }
+        return list("Quanh năm");
+    }
+
+    private String resolveGeneratedGender(String rootSlug, String parentSlug, String leafName) {
+        String leafSlug = slugify(leafName);
+        if (leafSlug.contains("nam") || List.of("hoang-tu", "hiep-si").contains(leafSlug)) {
+            return "Nam";
+        }
+        if (leafSlug.contains("nu")
+                || List.of("dam-da-hoi", "dam-prom", "dam-cocktail", "ao-dai-trang", "ao-dai-truyen-thong",
+                "ao-dai-cach-tan", "cong-chua", "hoang-hau", "tien-nu").contains(leafSlug)) {
+            return "Nữ";
+        }
+        if ("phu-kien".equals(rootSlug) || "trang-diem".equals(parentSlug)) {
+            return "Unisex";
+        }
+        return "Unisex";
+    }
+
+    private String resolveGeneratedBodyType(String rootSlug, String parentSlug) {
+        if ("phu-kien".equals(rootSlug) || "mascot".equals(parentSlug)) {
+            return "Phù hợp nhiều dáng người";
+        }
+        return "Dáng cân đối";
+    }
+
+    private String resolveGeneratedSizeLabel(String rootSlug, String parentSlug) {
+        if ("phu-kien".equals(rootSlug) && "giay".equals(parentSlug)) {
+            return "37-42";
+        }
+        if ("phu-kien".equals(rootSlug)) {
+            return "Freesize";
+        }
+        if ("mascot".equals(parentSlug)) {
+            return "M-XL";
+        }
+        return "S-XL";
+    }
+
+    private List<String> resolveGeneratedSizeOptions(String rootSlug, String parentSlug) {
+        if ("phu-kien".equals(rootSlug) && "giay".equals(parentSlug)) {
+            return list("37", "38", "39", "40", "41", "42");
+        }
+        if ("phu-kien".equals(rootSlug)) {
+            return list("Freesize");
+        }
+        if ("mascot".equals(parentSlug)) {
+            return list("M", "L", "XL");
+        }
+        return list("S", "M", "L", "XL");
+    }
+
+    private List<String> resolveGeneratedSharedTags(String rootSlug, String parentSlug, String leafName) {
+        return list(rootSlug, parentSlug, slugify(leafName), "dev-seed");
+    }
+
+    private List<String> resolveGeneratedAccentTags(String rootSlug, String parentSlug, String leafName) {
+        return list(slugify(leafName), parentSlug, rootSlug);
+    }
+
+    private List<String> resolveGeneratedColorPalette(String rootSlug, String parentSlug) {
+        return switch (rootSlug) {
+            case "su-kien" -> switch (parentSlug) {
+                case "vest-trang-trong" -> list("Đen", "Xanh navy");
+                case "da-hoi" -> list("Đỏ rượu", "Champagne");
+                case "le-hoi" -> list("Cam cháy", "Đen");
+                case "mascot" -> list("Vàng mật", "Nâu");
+                case "bieu-dien" -> list("Bạc ánh kim", "Đen");
+                case "gan-ket-doi-nhom" -> list("Xanh dương", "Trắng");
+                default -> list("Đen", "Trắng");
+            };
+            case "cosplay" -> switch (parentSlug) {
+                case "anime" -> list("Cam sáng", "Đen");
+                case "tro-choi" -> list("Xanh ngọc", "Đen");
+                case "gia-tuong" -> list("Tím khói", "Bạc");
+                case "hoang-gia" -> list("Đỏ đô", "Vàng");
+                case "phim-se-ri" -> list("Xanh navy", "Xám khói");
+                default -> list("Đen", "Đỏ");
+            };
+            case "trang-phuc-truyen-thong" -> switch (parentSlug) {
+                case "nhat-ban" -> list("Đỏ son", "Kem");
+                case "han-quoc" -> list("Hồng phấn", "Xanh ngọc");
+                case "viet-nam" -> list("Trắng ngà", "Vàng kem");
+                case "trung-quoc" -> list("Đỏ đô", "Vàng");
+                case "au-my" -> list("Kem ngọc trai", "Xanh cổ vịt");
+                default -> list("Đỏ đô", "Kem");
+            };
+            case "ky-yeu" -> switch (parentSlug) {
+                case "ao-dai" -> list("Trắng ngà", "Kem");
+                case "vest-tot-nghiep" -> list("Đen", "Xanh navy");
+                case "cu-nhan" -> list("Đen", "Vàng");
+                case "dong-phuc-hoc-sinh" -> list("Trắng", "Xanh than");
+                case "concept-chup-anh" -> list("Be cát", "Nâu mocha");
+                default -> list("Trắng", "Đen");
+            };
+            case "phu-kien" -> switch (parentSlug) {
+                case "toc-gia" -> list("Nâu lạnh", "Đen");
+                case "giay" -> list("Đen", "Nâu");
+                case "vu-khi-mo-hinh" -> list("Bạc", "Đen");
+                case "trang-suc" -> list("Vàng", "Bạc");
+                case "dao-cu-chup-anh" -> list("Be", "Nâu");
+                case "trang-diem" -> list("Hồng nude", "Nâu tây");
+                default -> list("Đen", "Trắng");
+            };
+            default -> list("Đen", "Trắng");
+        };
+    }
+
+    private String resolveGeneratedMaterial(String rootSlug, String parentSlug) {
+        return switch (rootSlug) {
+            case "su-kien" -> switch (parentSlug) {
+                case "vest-trang-trong" -> "tuytsi pha";
+                case "da-hoi" -> "satin ánh nhẹ";
+                case "le-hoi" -> "cotton phối thun";
+                case "mascot" -> "nỉ lông mềm";
+                case "bieu-dien" -> "thun co giãn";
+                case "gan-ket-doi-nhom" -> "cotton lạnh";
+                default -> "poly cao cấp";
+            };
+            case "cosplay" -> switch (parentSlug) {
+                case "anime" -> "kaki pha cotton";
+                case "tro-choi" -> "gabardine phối da";
+                case "gia-tuong" -> "voan phối nhung";
+                case "hoang-gia" -> "gấm ánh kim";
+                case "phim-se-ri" -> "poly twill";
+                default -> "poly dày";
+            };
+            case "trang-phuc-truyen-thong" -> switch (parentSlug) {
+                case "nhat-ban" -> "lụa gân nhẹ";
+                case "han-quoc" -> "lụa pha organza";
+                case "viet-nam" -> "lụa matte";
+                case "trung-quoc" -> "gấm pha lụa";
+                case "au-my" -> "taffeta phối ren";
+                default -> "lụa pha";
+            };
+            case "ky-yeu" -> switch (parentSlug) {
+                case "ao-dai" -> "lụa matte";
+                case "vest-tot-nghiep" -> "tuytsi đứng form";
+                case "cu-nhan" -> "poly graduation";
+                case "dong-phuc-hoc-sinh" -> "cotton oxford";
+                case "concept-chup-anh" -> "linen pha";
+                default -> "poly mềm";
+            };
+            case "phu-kien" -> switch (parentSlug) {
+                case "toc-gia" -> "sợi tơ nhiệt";
+                case "giay" -> "da tổng hợp";
+                case "vu-khi-mo-hinh" -> "foam cứng phủ sơn";
+                case "trang-suc" -> "hợp kim mạ";
+                case "dao-cu-chup-anh" -> "gỗ phủ sơn";
+                case "trang-diem" -> "mỹ phẩm chuyên dụng";
+                default -> "vật liệu tổng hợp";
+            };
+            default -> "poly";
+        };
+    }
+
+    private String resolveGeneratedSilhouette(String rootSlug, String parentSlug) {
+        return switch (rootSlug) {
+            case "su-kien" -> switch (parentSlug) {
+                case "vest-trang-trong" -> "form đứng gọn";
+                case "da-hoi" -> "phom dài tôn dáng";
+                case "le-hoi" -> "layer linh hoạt";
+                case "mascot" -> "jumpsuit rộng dễ vận động";
+                case "bieu-dien" -> "phom sân khấu bắt sáng";
+                case "gan-ket-doi-nhom" -> "form đồng bộ thoải mái";
+                default -> "phom chỉn chu";
+            };
+            case "cosplay" -> switch (parentSlug) {
+                case "anime" -> "phom nhân vật rõ nét";
+                case "tro-choi" -> "form chiến đấu nhiều lớp";
+                case "gia-tuong" -> "layer bay nhẹ";
+                case "hoang-gia" -> "phom cổ điển sang trọng";
+                case "phim-se-ri" -> "form điện ảnh nhận diện cao";
+                default -> "form nhập vai";
+            };
+            case "trang-phuc-truyen-thong" -> switch (parentSlug) {
+                case "nhat-ban" -> "phom truyền thống xếp nếp";
+                case "han-quoc" -> "phom áo váy mềm nhiều lớp";
+                case "viet-nam" -> "tà dài mềm thanh lịch";
+                case "trung-quoc" -> "phom cổ phục bay nhẹ";
+                case "au-my" -> "corset cổ điển và tùng xòe";
+                default -> "phom truyền thống dễ mặc";
+            };
+            case "ky-yeu" -> switch (parentSlug) {
+                case "ao-dai" -> "tà dài mềm";
+                case "vest-tot-nghiep" -> "form đứng chuẩn ảnh";
+                case "cu-nhan" -> "áo choàng suông";
+                case "dong-phuc-hoc-sinh" -> "phom học đường gọn gàng";
+                case "concept-chup-anh" -> "form chụp ảnh hài hòa";
+                default -> "form dễ mặc";
+            };
+            case "phu-kien" -> switch (parentSlug) {
+                case "toc-gia" -> "phom tóc ôm đầu tự nhiên";
+                case "giay" -> "form ôm chân chắc chắn";
+                case "vu-khi-mo-hinh" -> "tỷ lệ gọn tay";
+                case "trang-suc" -> "chi tiết nhỏ nổi bật";
+                case "dao-cu-chup-anh" -> "tỷ lệ phối cảnh vừa khung hình";
+                case "trang-diem" -> "layout tôn đường nét";
+                default -> "dễ phối đồ";
+            };
+            default -> "form tiêu chuẩn";
+        };
+    }
+
+    private String resolveGeneratedRentalPrice(String rootSlug, String parentSlug) {
+        return switch (rootSlug) {
+            case "su-kien" -> switch (parentSlug) {
+                case "vest-trang-trong" -> "350000";
+                case "da-hoi" -> "750000";
+                case "le-hoi" -> "280000";
+                case "mascot" -> "950000";
+                case "bieu-dien" -> "420000";
+                case "gan-ket-doi-nhom" -> "220000";
+                default -> "300000";
+            };
+            case "cosplay" -> switch (parentSlug) {
+                case "anime" -> "450000";
+                case "tro-choi" -> "520000";
+                case "gia-tuong" -> "580000";
+                case "hoang-gia" -> "850000";
+                case "phim-se-ri" -> "680000";
+                default -> "480000";
+            };
+            case "trang-phuc-truyen-thong" -> switch (parentSlug) {
+                case "nhat-ban" -> "420000";
+                case "han-quoc" -> "390000";
+                case "viet-nam" -> "320000";
+                case "trung-quoc" -> "430000";
+                case "au-my" -> "560000";
+                default -> "380000";
+            };
+            case "ky-yeu" -> switch (parentSlug) {
+                case "ao-dai" -> "320000";
+                case "vest-tot-nghiep" -> "350000";
+                case "cu-nhan" -> "220000";
+                case "dong-phuc-hoc-sinh" -> "180000";
+                case "concept-chup-anh" -> "260000";
+                default -> "250000";
+            };
+            case "phu-kien" -> switch (parentSlug) {
+                case "toc-gia" -> "90000";
+                case "giay" -> "120000";
+                case "vu-khi-mo-hinh" -> "140000";
+                case "trang-suc" -> "70000";
+                case "dao-cu-chup-anh" -> "60000";
+                case "trang-diem" -> "150000";
+                default -> "80000";
+            };
+            default -> "250000";
+        };
+    }
+
+    private String resolveGeneratedDepositPrice(String rootSlug, String parentSlug) {
+        return switch (rootSlug) {
+            case "su-kien" -> switch (parentSlug) {
+                case "vest-trang-trong" -> "800000";
+                case "da-hoi" -> "1800000";
+                case "le-hoi" -> "650000";
+                case "mascot" -> "2200000";
+                case "bieu-dien" -> "900000";
+                case "gan-ket-doi-nhom" -> "450000";
+                default -> "600000";
+            };
+            case "cosplay" -> switch (parentSlug) {
+                case "anime" -> "900000";
+                case "tro-choi" -> "1100000";
+                case "gia-tuong" -> "1200000";
+                case "hoang-gia" -> "1800000";
+                case "phim-se-ri" -> "1400000";
+                default -> "950000";
+            };
+            case "trang-phuc-truyen-thong" -> switch (parentSlug) {
+                case "nhat-ban" -> "950000";
+                case "han-quoc" -> "900000";
+                case "viet-nam" -> "700000";
+                case "trung-quoc" -> "1000000";
+                case "au-my" -> "1400000";
+                default -> "850000";
+            };
+            case "ky-yeu" -> switch (parentSlug) {
+                case "ao-dai" -> "700000";
+                case "vest-tot-nghiep" -> "800000";
+                case "cu-nhan" -> "500000";
+                case "dong-phuc-hoc-sinh" -> "400000";
+                case "concept-chup-anh" -> "600000";
+                default -> "500000";
+            };
+            case "phu-kien" -> switch (parentSlug) {
+                case "toc-gia" -> "220000";
+                case "giay" -> "300000";
+                case "vu-khi-mo-hinh" -> "300000";
+                case "trang-suc" -> "180000";
+                case "dao-cu-chup-anh" -> "150000";
+                case "trang-diem" -> "300000";
+                default -> "200000";
+            };
+            default -> "500000";
+        };
+    }
+
+    private String resolveGeneratedFitNote(String rootSlug, String parentSlug, String leafName) {
+        return switch (rootSlug) {
+            case "su-kien" -> switch (parentSlug) {
+                case "mascot" -> "Bộ mascot " + leafName + " được dựng phom ổn định, phù hợp hoạt náo trong nhiều không gian.";
+                case "da-hoi" -> "Thiết kế ưu tiên lên ảnh và giữ phom đẹp khi di chuyển trong sự kiện dài.";
+                default -> "Mẫu " + leafName + " dễ phối phụ kiện, phù hợp nhu cầu thuê nhanh cho sự kiện.";
+            };
+            case "cosplay" -> "Trang phục " + leafName + " ưu tiên nhận diện nhân vật và giữ phom ổn định khi chụp hình.";
+            case "trang-phuc-truyen-thong" -> "Set " + leafName + " giữ tinh thần trang phục truyền thống, phù hợp lễ hội văn hóa, chụp concept và hoạt động trình diễn.";
+            case "ky-yeu" -> "Set " + leafName + " dễ mặc, lên ảnh sáng và phù hợp lịch chụp kỷ yếu nhiều bối cảnh.";
+            case "phu-kien" -> "Phụ kiện " + leafName + " giúp hoàn thiện outfit mà vẫn gọn nhẹ khi di chuyển.";
+            default -> "Mẫu seed dev được bổ sung tự động để hoàn thiện catalog.";
+        };
+    }
+
+    private static String extractRootSlug(String path) {
+        int separatorIndex = path.indexOf('/');
+        if (separatorIndex < 0) {
+            return path;
+        }
+        return path.substring(0, separatorIndex);
+    }
+
+    private static String extractParentSlug(String path) {
+        String parentPath = extractParentPath(path);
+        if (parentPath == null) {
+            return path;
+        }
+        int separatorIndex = parentPath.lastIndexOf('/');
+        if (separatorIndex < 0) {
+            return parentPath;
+        }
+        return parentPath.substring(separatorIndex + 1);
     }
 
     private User resolveCatalogOwner() {
@@ -358,33 +1091,228 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private String slugify(String value) {
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+        return toSlug(value);
+    }
+
+    private static String toSlug(String value) {
+        String normalized = Normalizer.normalize(
+                        value.replace('Đ', 'D').replace('đ', 'd'),
+                        Normalizer.Form.NFD
+                )
                 .replaceAll("\\p{M}", "")
                 .replaceAll("[^a-zA-Z0-9]+", "-")
-                .replaceAll("(^-|-$)", "");
+                .replaceAll("(^-+|-+$)", "");
         return normalized.toLowerCase(Locale.ROOT);
+    }
+
+    private static String extractParentPath(String path) {
+        int separatorIndex = path.lastIndexOf('/');
+        if (separatorIndex < 0) {
+            return null;
+        }
+        return path.substring(0, separatorIndex);
+    }
+
+    private static Map<String, CategoryTreeSeedEntry> indexCategoryTreeSeeds(List<CategoryTreeSeed> seeds, String parentPath) {
+        Map<String, CategoryTreeSeedEntry> indexedSeeds = new LinkedHashMap<>();
+
+        for (int index = 0; index < seeds.size(); index++) {
+            CategoryTreeSeed seed = seeds.get(index);
+            String slug = toSlug(seed.name());
+            String path = parentPath == null ? slug : parentPath + "/" + slug;
+
+            indexedSeeds.put(path, new CategoryTreeSeedEntry(
+                    seed.name(),
+                    slug,
+                    seed.description(),
+                    index
+            ));
+            indexedSeeds.putAll(indexCategoryTreeSeeds(seed.children(), path));
+        }
+
+        return indexedSeeds;
     }
 
     private BigDecimal money(String value) {
         return new BigDecimal(value);
     }
 
-    private int totalSeedCostumes() {
-        return CATEGORY_SEEDS.stream()
-                .mapToInt(category -> category.costumes().size())
-                .sum();
+    private static Map<String, String> buildCatalogCategoryPathBySeedName() {
+        return Map.ofEntries(
+                Map.entry("Áo dài", "trang-phuc-truyen-thong/viet-nam/ao-dai-truyen-thong"),
+                Map.entry("Vest", "su-kien/vest-trang-trong/vest-nam"),
+                Map.entry("Váy dạ hội", "su-kien/da-hoi/dam-da-hoi"),
+                Map.entry("Đầm dự tiệc", "su-kien/da-hoi/dam-cocktail"),
+                Map.entry("Kimono", "trang-phuc-truyen-thong/nhat-ban/kimono"),
+                Map.entry("Hanbok", "trang-phuc-truyen-thong/han-quoc/hanbok"),
+                Map.entry("Cosplay Anime", "cosplay/anime/naruto"),
+                Map.entry("Cosplay Game", "cosplay/tro-choi/genshin-impact"),
+                Map.entry("Halloween", "su-kien/le-hoi/halloween"),
+                Map.entry("Noel", "su-kien/le-hoi/noel"),
+                Map.entry("Tốt nghiệp", "ky-yeu/cu-nhan/ao-cu-nhan"),
+                Map.entry("Biểu diễn", "su-kien/bieu-dien/san-khau")
+        );
     }
 
-    private int totalSeedItems() {
-        int total = 0;
-        int costumeIndex = 0;
-        for (CategorySeed categorySeed : CATEGORY_SEEDS) {
-            for (int ignored = 0; ignored < categorySeed.costumes().size(); ignored++) {
-                total += 3 + (costumeIndex % 6);
-                costumeIndex++;
-            }
-        }
-        return total;
+    private static List<CategoryTreeSeed> buildCategoryTreeSeeds() {
+        return List.of(
+                tree("Sự kiện",
+                        tree("Vest & trang trọng",
+                                tree("Vest nam"),
+                                tree("Vest nữ"),
+                                tree("Tuxedo"),
+                                tree("Blazer")
+                        ),
+                        tree("Dạ hội",
+                                tree("Đầm dạ hội"),
+                                tree("Đầm prom"),
+                                tree("Đầm cocktail")
+                        ),
+                        tree("Lễ hội",
+                                tree("Halloween"),
+                                tree("Noel"),
+                                tree("Trung Thu"),
+                                tree("Carnival")
+                        ),
+                        tree("Mascot",
+                                tree("Gấu"),
+                                tree("Thỏ"),
+                                tree("Khủng long"),
+                                tree("Linh vật doanh nghiệp")
+                        ),
+                        tree("Biểu diễn",
+                                tree("MC"),
+                                tree("Ca sĩ"),
+                                tree("Nhảy múa"),
+                                tree("Sân khấu")
+                        ),
+                        tree("Gắn kết đội nhóm",
+                                tree("Đồng phục sự kiện"),
+                                tree("Áo nhóm"),
+                                tree("Trang phục trò chơi")
+                        )
+                ),
+                tree("Cosplay",
+                        tree("Anime",
+                                tree("Naruto"),
+                                tree("One Piece"),
+                                tree("Demon Slayer"),
+                                tree("Jujutsu Kaisen"),
+                                tree("Attack on Titan"),
+                                tree("Spy x Family")
+                        ),
+                        tree("Trò chơi",
+                                tree("Genshin Impact"),
+                                tree("Honkai Star Rail"),
+                                tree("League of Legends"),
+                                tree("Valorant"),
+                                tree("Identity V")
+                        ),
+                        tree("Giả tưởng",
+                                tree("Tiên tộc"),
+                                tree("Phù thủy"),
+                                tree("Pháp sư"),
+                                tree("Tiên nữ"),
+                                tree("Thiên thần"),
+                                tree("Ác quỷ")
+                        ),
+                        tree("Hoàng gia",
+                                tree("Hoàng tử"),
+                                tree("Công chúa"),
+                                tree("Hoàng hậu"),
+                                tree("Hiệp sĩ"),
+                                tree("Quý tộc châu Âu")
+                        ),
+                        tree("Phim & sê-ri",
+                                tree("Harry Potter"),
+                                tree("Marvel"),
+                                tree("DC"),
+                                tree("Star Wars")
+                        )
+                ),
+                tree("Trang phục truyền thống",
+                        tree("Nhật Bản",
+                                tree("Kimono"),
+                                tree("Yukata"),
+                                tree("Hakama")
+                        ),
+                        tree("Hàn Quốc",
+                                tree("Hanbok"),
+                                tree("Dangui"),
+                                tree("Cheollik")
+                        ),
+                        tree("Việt Nam",
+                                tree("Áo dài trắng"),
+                                tree("Áo dài truyền thống"),
+                                tree("Áo dài cách tân")
+                        ),
+                        tree("Trung Quốc",
+                                tree("Hán phục"),
+                                tree("Sườn xám"),
+                                tree("Đường trang")
+                        ),
+                        tree("Âu - Mỹ",
+                                tree("Victorian"),
+                                tree("Rococo"),
+                                tree("Gatsby")
+                        )
+                ),
+                tree("Kỷ yếu",
+                        tree("Vest tốt nghiệp",
+                                tree("Vest nam"),
+                                tree("Vest nữ")
+                        ),
+                        tree("Cử nhân",
+                                tree("Áo cử nhân"),
+                                tree("Mũ cử nhân")
+                        ),
+                        tree("Đồng phục học sinh",
+                                tree("THPT"),
+                                tree("Sinh viên")
+                        ),
+                        tree("Concept chụp ảnh",
+                                tree("Thanh xuân"),
+                                tree("Studio"),
+                                tree("Ngoại cảnh"),
+                                tree("Lookbook")
+                        )
+                ),
+                tree("Phụ kiện",
+                        tree("Tóc giả",
+                                tree("Anime"),
+                                tree("Giả tưởng"),
+                                tree("Idol")
+                        ),
+                        tree("Giày",
+                                tree("Bốt"),
+                                tree("Giày tây"),
+                                tree("Giày cosplay")
+                        ),
+                        tree("Vũ khí mô hình",
+                                tree("Kiếm"),
+                                tree("Cung"),
+                                tree("Gậy phép"),
+                                tree("Khiên")
+                        ),
+                        tree("Trang sức",
+                                tree("Vương miện"),
+                                tree("Dây chuyền"),
+                                tree("Bông tai"),
+                                tree("Nhẫn")
+                        ),
+                        tree("Đạo cụ chụp ảnh",
+                                tree("Quạt"),
+                                tree("Ô"),
+                                tree("Sách cổ"),
+                                tree("Hoa")
+                        ),
+                        tree("Trang điểm",
+                                tree("Trang điểm cosplay"),
+                                tree("Trang điểm kỷ yếu"),
+                                tree("Trang điểm dạ hội")
+                        )
+                )
+        );
     }
 
     private static List<CategorySeed> buildCategorySeeds() {
@@ -856,6 +1784,10 @@ public class DataInitializer implements CommandLineRunner {
         return List.of(values);
     }
 
+    private static CategoryTreeSeed tree(String name, CategoryTreeSeed... children) {
+        return new CategoryTreeSeed(name, null, List.of(children));
+    }
+
     private record CategorySeed(
             String code,
             String name,
@@ -870,6 +1802,21 @@ public class DataInitializer implements CommandLineRunner {
             List<String> sizeOptions,
             List<String> sharedTags,
             List<CostumeSeed> costumes
+    ) {
+    }
+
+    private record CategoryTreeSeed(
+            String name,
+            String description,
+            List<CategoryTreeSeed> children
+    ) {
+    }
+
+    private record CategoryTreeSeedEntry(
+            String name,
+            String slug,
+            String description,
+            int sortOrder
     ) {
     }
 
@@ -892,4 +1839,5 @@ public class DataInitializer implements CommandLineRunner {
             String fitNote
     ) {
     }
+
 }

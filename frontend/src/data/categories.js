@@ -67,14 +67,40 @@ export const categoryTaxonomy = [
     ],
   },
   {
+    id: 'trang-phuc-truyen-thong',
+    label: 'Trang phục truyền thống',
+    subcategories: [
+      {
+        id: 'nhat-ban',
+        label: 'Nhật Bản',
+        tags: ['Kimono', 'Yukata', 'Hakama'],
+      },
+      {
+        id: 'han-quoc',
+        label: 'Hàn Quốc',
+        tags: ['Hanbok', 'Dangui', 'Cheollik'],
+      },
+      {
+        id: 'viet-nam',
+        label: 'Việt Nam',
+        tags: ['Áo dài trắng', 'Áo dài truyền thống', 'Áo dài cách tân'],
+      },
+      {
+        id: 'trung-quoc',
+        label: 'Trung Quốc',
+        tags: ['Hán phục', 'Sườn xám', 'Đường trang'],
+      },
+      {
+        id: 'au-my',
+        label: 'Âu - Mỹ',
+        tags: ['Victorian', 'Rococo', 'Gatsby'],
+      },
+    ],
+  },
+  {
     id: 'ky-yeu',
     label: 'Kỷ yếu',
     subcategories: [
-      {
-        id: 'ao-dai',
-        label: 'Áo dài',
-        tags: ['Áo dài trắng', 'Áo dài truyền thống', 'Áo dài cách tân'],
-      },
       {
         id: 'vest-tot-nghiep',
         label: 'Vest tốt nghiệp',

@@ -25,7 +25,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * for the Page object.</p>
      *
      * @param status     Only return costumes with this status (e.g. ACTIVE)
-     * @param categoryId Optional category filter. Pass null to skip.
+     * @param categoryPath Optional category path filter. Pass null to skip.
      * @param keyword    Optional search term matched against costume name (case-insensitive). Pass null to skip.
      * @param pageable   Pagination and sorting parameters.
      * @return A Page of Costume entities with their Category eagerly loaded.
@@ -40,26 +40,29 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
                 c.status,
                 category.id,
                 category.name,
+                category.path,
                 COALESCE(SUM(CASE WHEN item.status = :availableStatus THEN 1 ELSE 0 END), 0)
             )
             FROM Costume c
             JOIN c.category category
             LEFT JOIN c.items item
             WHERE c.status = :status
-              AND (:categoryId IS NULL OR category.id = :categoryId)
+              AND category.isActive = true
+              AND (:categoryPath IS NULL OR category.path = :categoryPath OR category.path LIKE CONCAT(:categoryPath, '/%'))
               AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-            GROUP BY c.id, c.name, c.rentalPrice, c.depositPrice, c.imageUrl, c.status, category.id, category.name
+            GROUP BY c.id, c.name, c.rentalPrice, c.depositPrice, c.imageUrl, c.status, category.id, category.name, category.path
             """,
             countQuery = """
             SELECT COUNT(c) FROM Costume c
             WHERE c.status = :status
-              AND (:categoryId IS NULL OR c.category.id = :categoryId)
+              AND c.category.isActive = true
+              AND (:categoryPath IS NULL OR c.category.path = :categoryPath OR c.category.path LIKE CONCAT(:categoryPath, '/%'))
               AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
             """)
     Page<CostumeListDTO> findAllSummariesWithFilters(
             @Param("status") CostumeStatus status,
             @Param("availableStatus") ItemStatus availableStatus,
-            @Param("categoryId") Long categoryId,
+            @Param("categoryPath") String categoryPath,
             @Param("keyword") String keyword,
             Pageable pageable
     );
@@ -68,7 +71,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Fetches a single Costume by ID with its Category eagerly loaded.
      * Avoids an extra query when mapping to CostumeDTO.
      */
-    @Query("SELECT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata WHERE c.id = :id")
+    @Query("SELECT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata WHERE c.id = :id AND c.category.isActive = true")
     Optional<Costume> findByIdWithCategory(@Param("id") Long id);
 
     /**
@@ -82,6 +85,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
             LEFT JOIN FETCH c.metadata
             LEFT JOIN FETCH c.items
             WHERE c.status = :status
+              AND c.category.isActive = true
             ORDER BY SIZE(c.items) DESC
             """)
     List<Costume> findSeasonalCostumes(@Param("status") CostumeStatus status, Pageable pageable);
@@ -91,10 +95,10 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Currently returns random active costumes as a simple baseline.
      * TODO: Replace with ML-based collaborative filtering using user interaction history.
      */
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.owner LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.status = :status")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.owner LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.status = :status AND c.category.isActive = true")
     List<Costume> findActiveCostumesForRecommendations(@Param("status") CostumeStatus status);
 
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.owner LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.owner LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id AND c.category.isActive = true")
     Optional<Costume> findByIdWithItems(@Param("id") Long id);
 
     @Query("""
@@ -104,6 +108,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
             LEFT JOIN FETCH c.metadata
             LEFT JOIN FETCH c.items
             WHERE c.status = :status
+              AND c.category.isActive = true
             ORDER BY c.id DESC
             """)
     List<Costume> findActiveWithItems(@Param("status") CostumeStatus status);
@@ -115,6 +120,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
             LEFT JOIN FETCH c.metadata
             LEFT JOIN FETCH c.items
             WHERE c.status = :status
+              AND c.category.isActive = true
               AND c.id <> :excludeId
             """)
     List<Costume> findActiveWithItemsExcludingId(

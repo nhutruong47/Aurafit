@@ -13,6 +13,7 @@ public record CostumeListDTO(
         CostumeStatus status,
         Long categoryId,
         String categoryName,
+        String categoryPath,
         long availableItemCount
 ) {
 }

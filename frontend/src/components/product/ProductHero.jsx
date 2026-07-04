@@ -1,5 +1,3 @@
-// Hero section for Product Detail — Luxury Editorial with Shopee-style variant selectors.
-// All purchase-critical UI (variants, qty, dates, CTAs) fits above the fold.
 import { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { formatCurrency } from '../../utils/formatCurrency';
@@ -19,10 +17,10 @@ export default function ProductHero({
   onEndDateChange,
 }) {
   const getLocalDateString = (dateInput = new Date()) => {
-    const d = new Date(dateInput);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const date = new Date(dateInput);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
 
@@ -30,43 +28,45 @@ export default function ProductHero({
   const [dateError, setDateError] = useState('');
   const [quantity, setQuantity] = useState(1);
   const cartItems = useSelector((state) => state.cart.items);
+  const availableItems = useMemo(() => product?.items || [], [product?.items]);
 
-  const availableItems = product?.items || [];
+  const allUniqueSizes = useMemo(
+    () => [...new Set(availableItems.map((item) => item.size || ''))],
+    [availableItems]
+  );
+  const allUniqueColors = useMemo(
+    () => [...new Set(availableItems.map((item) => item.color || ''))],
+    [availableItems]
+  );
 
-  // ── Shopee-style: extract ALL unique sizes and colors ──
-  const allUniqueSizes = useMemo(() => {
-    if (!availableItems.length) return [];
-    return [...new Set(availableItems.map((i) => i.size || ''))];
-  }, [availableItems]);
+  if (!product) {
+    return null;
+  }
 
-  const allUniqueColors = useMemo(() => {
-    if (!availableItems.length) return [];
-    return [...new Set(availableItems.map((i) => i.color || ''))];
-  }, [availableItems]);
-
-  // Derive selectedSize/selectedColor from the currently selected item
   const selectedSize = selectedItem?.size || '';
   const selectedColor = selectedItem?.color || '';
 
-  // ── Stock Validation Helpers ──
   const getVariantStock = (size, color) => {
-    if (!product?.inventorySummary?.length) return product?.availableItemCount || 0;
+    if (!product.inventorySummary?.length) {
+      return product.availableItemCount || 0;
+    }
+
     const summary = product.inventorySummary.find(
-      (s) => (s.size || '') === (size || '') && (s.color || '') === (color || '')
+      (item) => (item.size || '') === (size || '') && (item.color || '') === (color || '')
     );
+
     return summary?.availableCount ?? 0;
   };
 
-  const getInCartQty = (size, color) => {
-    return cartItems
-      .filter((ci) => {
-        const matchesCostume = ci.costumeId === product?.id || ci.id === product?.id;
-        const matchesSize = (ci.size || '') === (size || '');
-        const matchesColor = (ci.color || '') === (color || '');
+  const getInCartQty = (size, color) =>
+    cartItems
+      .filter((cartItem) => {
+        const matchesCostume = cartItem.costumeId === product.id || cartItem.id === product.id;
+        const matchesSize = (cartItem.size || '') === (size || '');
+        const matchesColor = (cartItem.color || '') === (color || '');
         return matchesCostume && matchesSize && matchesColor;
       })
-      .reduce((sum, ci) => sum + (ci.quantity || 1), 0);
-  };
+      .reduce((sum, cartItem) => sum + (cartItem.quantity || 1), 0);
 
   const isVariantInStock = (size, color) => {
     const stock = getVariantStock(size, color);
@@ -74,34 +74,44 @@ export default function ProductHero({
     return Math.max(0, stock - inCart) > 0;
   };
 
-  // Check if a specific size has ANY available items in stock across all colors
   const isSizeAvailable = (size) => {
-    const colorsForSize = availableItems.filter(i => (i.size || '') === size).map(i => i.color || '');
-    if (colorsForSize.length === 0) return isVariantInStock(size, ''); 
-    return colorsForSize.some(color => isVariantInStock(size, color));
-  };
+    const colorsForSize = availableItems
+      .filter((item) => (item.size || '') === size)
+      .map((item) => item.color || '');
 
-  // Check if a specific color exists for the SELECTED size AND is in stock
-  const isColorAvailableForSize = (color) => {
-    const sizeToCheck = selectedSize;
-    const itemExists = availableItems.some((i) => (i.size || '') === sizeToCheck && (i.color || '') === color);
-    if (!itemExists) return false;
-    return isVariantInStock(sizeToCheck, color);
-  };
-
-  // ── Variant selection handlers ──
-  const handleSizeChange = (size) => {
-    if (!isSizeAvailable(size)) return;
-    
-    // Find matching items for the new size
-    const matchingItems = availableItems.filter((i) => (i.size || '') === size);
-    
-    // Try to keep the same color if available, otherwise pick the first IN STOCK color
-    let bestMatch = matchingItems.find((i) => (i.color || '') === selectedColor && isVariantInStock(size, i.color || ''));
-    if (!bestMatch) {
-      bestMatch = matchingItems.find((i) => isVariantInStock(size, i.color || '')) || matchingItems[0];
+    if (colorsForSize.length === 0) {
+      return isVariantInStock(size, '');
     }
-    
+
+    return colorsForSize.some((color) => isVariantInStock(size, color));
+  };
+
+  const isColorAvailableForSize = (color) => {
+    const itemExists = availableItems.some(
+      (item) => (item.size || '') === selectedSize && (item.color || '') === color
+    );
+
+    if (!itemExists) {
+      return false;
+    }
+
+    return isVariantInStock(selectedSize, color);
+  };
+
+  const handleSizeChange = (size) => {
+    if (!isSizeAvailable(size)) {
+      return;
+    }
+
+    const matchingItems = availableItems.filter((item) => (item.size || '') === size);
+    let bestMatch = matchingItems.find(
+      (item) => (item.color || '') === selectedColor && isVariantInStock(size, item.color || '')
+    );
+
+    if (!bestMatch) {
+      bestMatch = matchingItems.find((item) => isVariantInStock(size, item.color || '')) || matchingItems[0];
+    }
+
     if (bestMatch) {
       onSelectItem?.(bestMatch);
       setQuantity(1);
@@ -109,84 +119,77 @@ export default function ProductHero({
   };
 
   const handleColorChange = (color) => {
-    if (!isColorAvailableForSize(color)) return;
-    
-    // Find the exact item for current size + this color
+    if (!isColorAvailableForSize(color)) {
+      return;
+    }
+
     const exactMatch = availableItems.find(
-      (i) => (i.size || '') === selectedSize && (i.color || '') === color
+      (item) => (item.size || '') === selectedSize && (item.color || '') === color
     );
+
     if (exactMatch) {
       onSelectItem?.(exactMatch);
       setQuantity(1);
     }
   };
 
-  // ── Date handlers ──
-  const handleStartDateChange = (e) => {
-    const val = e.target.value;
-    onStartDateChange(val);
+  const handleStartDateChange = (event) => {
+    const value = event.target.value;
+    onStartDateChange(value);
     setDateError('');
-    if (rentalEndDate && val >= rentalEndDate) {
+
+    if (rentalEndDate && value >= rentalEndDate) {
       onEndDateChange('');
     }
   };
 
-  const handleEndDateChange = (e) => {
-    const val = e.target.value;
-    if (rentalStartDate && val <= rentalStartDate) {
+  const handleEndDateChange = (event) => {
+    const value = event.target.value;
+    if (rentalStartDate && value <= rentalStartDate) {
       setDateError('Ngày trả phải sau ngày nhận.');
       return;
     }
-    onEndDateChange(val);
+
+    onEndDateChange(value);
     setDateError('');
   };
 
-  const canRentNow = product?.available && rentalStartDate && rentalEndDate && !dateError;
-
-  // ── Selected Item Stock ──
+  const canRentNow = product.available && rentalStartDate && rentalEndDate && !dateError;
   const totalStock = getVariantStock(selectedSize, selectedColor);
   const inCartQty = getInCartQty(selectedSize, selectedColor);
   const effectiveStock = Math.max(0, totalStock - inCartQty);
   const isVariantAvailable = effectiveStock > 0;
 
-  // ── Rent Now handler ──
   const handleRentNow = () => {
-    if (!canRentNow || !isVariantAvailable) return;
+    if (!canRentNow || !isVariantAvailable) {
+      return;
+    }
+
     const item = selectedItem || product.items?.[0] || null;
-    const itemWithDates = {
+    onRentNow?.({
       ...toCartItem(product, item),
       quantity,
       rentalStartDate: rentalStartDate ? getLocalDateString(rentalStartDate) : null,
       rentalEndDate: rentalEndDate ? getLocalDateString(rentalEndDate) : null,
-    };
-    onRentNow?.(itemWithDates);
+    });
   };
-
-  if (!product) return null;
-
-  const discountPercentage = product.discountPercentage || 0;
-  let salePrice = product.priceValue;
-  if (discountPercentage > 0) {
-    salePrice = Math.round(product.priceValue * (1 - discountPercentage / 100));
-  }
 
   return (
     <div className="flex flex-col gap-0 border border-[#cfc4c5] bg-white md:flex-row">
-      {/* ── Left: Image ── */}
       <div className="flex w-full justify-center overflow-hidden border-b border-[#cfc4c5]/30 bg-[#f5f4f3] md:w-[42%] md:border-b-0 md:border-r">
         <div className="w-full">
           <img
             src={product.image}
             alt={product.name}
-            onError={(event) => { event.currentTarget.src = fallbackProductImage; }}
-            className="w-full object-cover max-h-[60vh] md:max-h-[550px]"
+            onError={(event) => {
+              event.currentTarget.src = fallbackProductImage;
+            }}
+            className="max-h-[60vh] w-full object-cover md:max-h-[550px]"
           />
         </div>
       </div>
 
-      {/* ── Right: Details + Actions ── */}
       <div className="flex w-full flex-col p-4 md:w-[58%] md:p-6">
-        {/* Category + Tag */}
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="bg-black px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-white">
             {product.category}
@@ -198,28 +201,24 @@ export default function ProductHero({
           )}
         </div>
 
-        {/* Name */}
         <h1 className="mb-1 font-serif text-xl text-black md:text-3xl">{product.name}</h1>
         <p className="mb-3 text-xs text-[#777777]">{product.subcategory}</p>
 
-        {/* Price */}
         <div className="mb-3 grid grid-cols-2 gap-4 border-y border-[#e8e4e3] py-2.5">
           <div>
-            <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">Giá thuê</span>
-            <div className="flex items-baseline gap-2">
-              <span className="font-serif text-xl text-black">{formatCurrency(discountPercentage > 0 ? salePrice : product.priceValue)}</span>
-              {discountPercentage > 0 && (
-                <span className="font-serif text-sm text-[#cfc4c5] line-through">{formatCurrency(product.priceValue)}</span>
-              )}
-            </div>
+            <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">
+              Giá thuê
+            </span>
+            <span className="font-serif text-xl text-black">{formatCurrency(product.priceValue)}</span>
           </div>
           <div>
-            <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">Tiền cọc</span>
+            <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">
+              Tiền cọc
+            </span>
             <span className="font-serif text-xl text-[#99854e]">{formatCurrency(product.depositValue)}</span>
           </div>
         </div>
 
-        {/* ── Size Selector (Shopee-style pills) ── */}
         {allUniqueSizes.length > 0 && !(allUniqueSizes.length === 1 && allUniqueSizes[0] === '') && (
           <div className="mb-3">
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
@@ -229,39 +228,28 @@ export default function ProductHero({
               {allUniqueSizes.map((size) => {
                 const available = isSizeAvailable(size);
                 const isSelected = selectedSize === size;
-                const tooltipText = "Tạm hết hàng"; // Sizes from allUniqueSizes always exist, so if disabled, it's out of stock
 
                 return (
-                  <div key={size || '__freesize__'} className="group relative flex items-center justify-center">
-                    <button
-                      onClick={() => handleSizeChange(size)}
-                      disabled={!available}
-                      className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${
-                        isSelected
-                          ? 'border-black bg-black text-white'
-                          : available
-                            ? 'border-[#cfc4c5] bg-white text-black hover:border-black'
-                            : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
-                      }`}
-                    >
-                      {size || 'Freesize'}
-                    </button>
-                    {!available && (
-                      <span className="pointer-events-none absolute bottom-full z-10 mb-1.5 hidden w-max bg-black px-2 py-1 text-[9px] font-medium tracking-wider text-white opacity-0 shadow-sm transition-opacity group-hover:block group-hover:opacity-100">
-                        {tooltipText}
-                        <svg className="absolute left-1/2 top-full h-1 w-2 -translate-x-1/2 text-black" viewBox="0 0 8 4" fill="currentColor">
-                          <path d="M0 0h8L4 4z" />
-                        </svg>
-                      </span>
-                    )}
-                  </div>
+                  <button
+                    key={size || '__freesize__'}
+                    onClick={() => handleSizeChange(size)}
+                    disabled={!available}
+                    className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${
+                      isSelected
+                        ? 'border-black bg-black text-white'
+                        : available
+                          ? 'border-[#cfc4c5] bg-white text-black hover:border-black'
+                          : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
+                    }`}
+                  >
+                    {size || 'Freesize'}
+                  </button>
                 );
               })}
             </div>
           </div>
         )}
 
-        {/* ── Color Selector (Shopee-style pills) ── */}
         {allUniqueColors.length > 0 && !(allUniqueColors.length === 1 && allUniqueColors[0] === '') && (
           <div className="mb-3">
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
@@ -269,53 +257,42 @@ export default function ProductHero({
             </p>
             <div className="flex flex-wrap gap-2">
               {allUniqueColors.map((color) => {
-                const itemExists = availableItems.some((i) => (i.size || '') === selectedSize && (i.color || '') === color);
+                const itemExists = availableItems.some(
+                  (item) => (item.size || '') === selectedSize && (item.color || '') === color
+                );
                 const available = itemExists && isVariantInStock(selectedSize, color);
                 const isSelected = selectedColor === color;
-                
-                let tooltipText = "";
-                if (!available) {
-                  tooltipText = !itemExists ? "Không có mẫu này" : "Tạm hết hàng";
-                }
 
                 return (
-                  <div key={color || '__default__'} className="group relative flex items-center justify-center">
-                    <button
-                      onClick={() => handleColorChange(color)}
-                      disabled={!available}
-                      className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${
-                        isSelected
-                          ? 'border-[#99854e] bg-[#99854e] text-white'
-                          : available
-                            ? 'border-[#cfc4c5] bg-white text-black hover:border-[#99854e]'
-                            : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
-                      }`}
-                    >
-                      {color || 'Mặc định'}
-                    </button>
-                    {!available && (
-                      <span className="pointer-events-none absolute bottom-full z-10 mb-1.5 hidden w-max bg-black px-2 py-1 text-[9px] font-medium tracking-wider text-white opacity-0 shadow-sm transition-opacity group-hover:block group-hover:opacity-100">
-                        {tooltipText}
-                        <svg className="absolute left-1/2 top-full h-1 w-2 -translate-x-1/2 text-black" viewBox="0 0 8 4" fill="currentColor">
-                          <path d="M0 0h8L4 4z" />
-                        </svg>
-                      </span>
-                    )}
-                  </div>
+                  <button
+                    key={color || '__default__'}
+                    onClick={() => handleColorChange(color)}
+                    disabled={!available}
+                    className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${
+                      isSelected
+                        ? 'border-[#99854e] bg-[#99854e] text-white'
+                        : available
+                          ? 'border-[#cfc4c5] bg-white text-black hover:border-[#99854e]'
+                          : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
+                    }`}
+                  >
+                    {color || 'Mặc định'}
+                  </button>
                 );
               })}
             </div>
           </div>
         )}
 
-        {/* ── Quantity + Stock Status ── */}
         {selectedItem && (
           <div className="mb-3 flex items-center justify-between">
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Số lượng</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+                Số lượng
+              </span>
               <div className="flex h-8 items-center border border-[#cfc4c5]">
                 <button
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
                   className="flex h-full w-8 items-center justify-center text-black transition hover:bg-[#f9f9f9] hover:text-[#99854e]"
                 >
                   <span className="material-symbols-outlined text-[12px]">remove</span>
@@ -324,10 +301,12 @@ export default function ProductHero({
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity((q) => Math.min(effectiveStock, q + 1))}
+                  onClick={() => setQuantity((current) => Math.min(effectiveStock, current + 1))}
                   disabled={quantity >= effectiveStock}
                   className={`flex h-full w-8 items-center justify-center transition ${
-                    quantity >= effectiveStock ? 'cursor-not-allowed bg-gray-50 text-gray-400' : 'text-black hover:bg-[#f9f9f9] hover:text-[#99854e]'
+                    quantity >= effectiveStock
+                      ? 'cursor-not-allowed bg-gray-50 text-gray-400'
+                      : 'text-black hover:bg-[#f9f9f9] hover:text-[#99854e]'
                   }`}
                 >
                   <span className="material-symbols-outlined text-[12px]">add</span>
@@ -354,9 +333,10 @@ export default function ProductHero({
           </div>
         )}
 
-        {/* ── Rental Date Picker ── */}
         <div className="mb-4">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Thời gian thuê</p>
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+            Thời gian thuê
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="mb-1 block text-[8px] uppercase tracking-wide text-[#999]">Ngày nhận</label>
@@ -373,7 +353,11 @@ export default function ProductHero({
               <input
                 type="date"
                 value={rentalEndDate}
-                min={rentalStartDate ? getLocalDateString(new Date(new Date(rentalStartDate).getTime() + 86400000)) : today}
+                min={
+                  rentalStartDate
+                    ? getLocalDateString(new Date(new Date(rentalStartDate).getTime() + 86400000))
+                    : today
+                }
                 onChange={handleEndDateChange}
                 className="w-full border border-[#cfc4c5] bg-white px-2 py-1.5 text-xs focus:border-black focus:outline-none"
               />
@@ -382,20 +366,22 @@ export default function ProductHero({
           {dateError && <p className="mt-1 text-[10px] text-red-500">{dateError}</p>}
         </div>
 
-        {/* ── Action Buttons ── */}
         <div className="mt-auto flex flex-col gap-2">
           <button
             disabled={!isVariantAvailable || isLoading || isAddingToCart}
             onClick={async () => {
-              if (!isVariantAvailable || isLoading || isAddingToCart) return;
+              if (!isVariantAvailable || isLoading || isAddingToCart) {
+                return;
+              }
+
               const item = selectedItem || product.items?.[0] || null;
-              const itemWithDates = {
+              const success = await onAddToCart?.({
                 ...toCartItem(product, item),
                 quantity,
                 rentalStartDate: rentalStartDate ? getLocalDateString(rentalStartDate) : null,
                 rentalEndDate: rentalEndDate ? getLocalDateString(rentalEndDate) : null,
-              };
-              const success = await onAddToCart?.(itemWithDates);
+              });
+
               if (success !== false) {
                 setQuantity(1);
               }
@@ -406,7 +392,13 @@ export default function ProductHero({
                 : 'text-black hover:bg-black hover:text-white'
             }`}
           >
-            {isAddingToCart ? 'Đang thêm...' : isLoading ? 'Đang tải...' : !isVariantAvailable ? 'ĐÃ ĐẠT GIỚI HẠN TỒN KHO' : 'Thêm vào giỏ hàng'}
+            {isAddingToCart
+              ? 'Đang thêm...'
+              : isLoading
+                ? 'Đang tải...'
+                : !isVariantAvailable
+                  ? 'Đã đạt giới hạn tồn kho'
+                  : 'Thêm vào giỏ hàng'}
           </button>
           <button
             disabled={!canRentNow || !isVariantAvailable || isAddingToCart}
@@ -417,7 +409,8 @@ export default function ProductHero({
                 : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
             }`}
           >
-            Thuê ngay {!canRentNow && !isAddingToCart && isVariantAvailable && (
+            Thuê ngay{' '}
+            {!canRentNow && !isAddingToCart && isVariantAvailable && (
               <span className="ml-1 font-normal normal-case tracking-normal text-white/60">
                 (Hãy chọn ngày thuê)
               </span>

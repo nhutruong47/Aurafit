@@ -18,13 +18,19 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update                    # Auto-create/alter tables in dev
+      ddl-auto: update                   # Auto-create/alter tables in dev
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
         generate_statistics: false
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/init/categories-backfill.sql
+      separator: "@@"
 
   # -- Gmail SMTP (App Password) -----------------------------------------------
   mail:

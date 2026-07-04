@@ -2,22 +2,31 @@ package com.aurafit.service;
 
 import com.aurafit.dto.request.CategoryCreateRequest;
 import com.aurafit.dto.request.CategoryUpdateRequest;
-import com.aurafit.dto.response.CategoryDTO;
+import com.aurafit.dto.response.CategoryResponse;
+import com.aurafit.dto.response.CategoryTreeResponse;
 import com.aurafit.dto.response.PaginatedResponse;
 
 import java.util.List;
 
 public interface CategoryService {
 
-    CategoryDTO createCategory(CategoryCreateRequest request);
+    CategoryResponse createCategory(CategoryCreateRequest request);
 
-    CategoryDTO updateCategory(Long id, CategoryUpdateRequest request);
+    CategoryResponse updateCategory(Long id, CategoryUpdateRequest request);
 
     void deleteCategory(Long id);
 
-    CategoryDTO getCategoryById(Long id);
+    CategoryResponse getCategoryById(Long id);
 
-    List<CategoryDTO> getAllCategories();
+    CategoryResponse getCategoryByPath(String path);
 
-    PaginatedResponse<CategoryDTO> searchCategories(String keyword, int pageNo, int pageSize, String sortBy, String sortDir);
+    List<CategoryResponse> getAllCategories();
+
+    List<CategoryResponse> getRootCategories();
+
+    List<CategoryResponse> getChildrenByCategoryId(Long parentId);
+
+    List<CategoryTreeResponse> getCategoryTree();
+
+    PaginatedResponse<CategoryResponse> searchCategories(String keyword, int pageNo, int pageSize, String sortBy, String sortDir);
 }

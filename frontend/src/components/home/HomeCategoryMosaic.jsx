@@ -1,31 +1,40 @@
-import { useEffect, useState } from 'react';
-import { fetchPublicCategories } from '../../services/catalogService';
-import { mosaicCategories } from './homeData';
+import { useMemo } from 'react';
+import { useCatalogCategories } from '../../hooks/useCatalogCategories';
 
-const categoryKeyByName = {
-  cosplay: 'cosplay',
-  'anime cosplay': 'cosplay',
-  'gaming characters': 'cosplay',
-  'sự kiện': 'events',
-  events: 'events',
-  event: 'events',
-  'event & formal': 'events',
-  'dạ tiệc': 'events',
-  'kỷ yếu': 'yearbook',
-  yearbook: 'yearbook',
-  'traditional & vintage': 'yearbook',
-  'phụ kiện': 'accessories',
-  accessories: 'accessories',
-  'concept chụp ảnh': 'yearbook',
+const categoryVisualsByPath = {
+  'su-kien': {
+    copy: 'Váy dạ hội, suit và trang phục nổi bật cho những dịp quan trọng',
+    cta: 'Xem bộ sưu tập',
+    wide: true,
+    image:
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=85',
+  },
+  cosplay: {
+    copy: 'Trang phục nhân vật cùng phụ kiện đồng bộ cho concept nổi bật',
+    cta: 'Khám phá ngay',
+    wide: true,
+    image:
+      'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=85',
+  },
+  'ky-yeu': {
+    cta: 'Xem ngay',
+    image:
+      'https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=800&q=85',
+  },
+  'trang-phuc-truyen-thong': {
+    cta: 'Khám phá ngay',
+    image:
+      'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=85',
+  },
+  'phu-kien': {
+    cta: 'Xem ngay',
+    image:
+      'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=800&q=85',
+  },
 };
 
-const placeholderImage =
+const fallbackImage =
   'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=85';
-
-function resolveCategoryKey(name) {
-  if (!name) return null;
-  return categoryKeyByName[String(name).trim().toLowerCase()] || null;
-}
 
 function CategoryTile({ category, wide = false, onClick }) {
   return (
@@ -34,7 +43,7 @@ function CategoryTile({ category, wide = false, onClick }) {
       className={`group relative cursor-pointer overflow-hidden bg-black ${wide ? 'aspect-[16/10]' : 'aspect-square'}`}
     >
       <img
-        src={category.image || placeholderImage}
+        src={category.image || fallbackImage}
         alt={category.title}
         className="h-full w-full object-cover opacity-60 transition duration-1000 group-hover:scale-105"
       />
@@ -55,42 +64,28 @@ function CategoryTile({ category, wide = false, onClick }) {
 }
 
 export default function HomeCategoryMosaic({ onNavigate }) {
-  const [categories, setCategories] = useState([]);
+  const { categoryTree } = useCatalogCategories();
 
-  useEffect(() => {
-    let isMounted = true;
+  const displayCategories = useMemo(() => {
+    return categoryTree
+      .map((category) => {
+        const visual = categoryVisualsByPath[category.path] || {};
 
-    fetchPublicCategories()
-      .then((data) => {
-        if (!isMounted) return;
-        setCategories(Array.isArray(data) ? data : []);
+        return {
+          id: category.id,
+          path: category.path,
+          title: category.name,
+          copy: visual.copy || category.description || '',
+          cta: visual.cta || 'Xem ngay',
+          wide: Boolean(visual.wide),
+          image: visual.image || fallbackImage,
+        };
       })
-      .catch(() => {
-        if (isMounted) setCategories([]);
-      });
+      .filter((category) => category.path in categoryVisualsByPath);
+  }, [categoryTree]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const mergedCategories = mosaicCategories.map((mosaic) => {
-    const mosaicKey = resolveCategoryKey(mosaic.title);
-    const match = categories.find((category) => resolveCategoryKey(category.name) === mosaicKey);
-
-    return {
-      ...mosaic,
-      apiCategory: match || null,
-    };
-  });
-
-  const handleClick = (mergedCategory) => {
-    const key = resolveCategoryKey(mergedCategory.apiCategory?.name) || resolveCategoryKey(mergedCategory.title);
-    onNavigate?.('catalog', { categoryKey: key, categoryId: mergedCategory.apiCategory?.id });
-  };
-
-  const wideTiles = mergedCategories.filter((category) => category.wide);
-  const regularTiles = mergedCategories.filter((category) => !category.wide);
+  const wideTiles = displayCategories.filter((category) => category.wide);
+  const regularTiles = displayCategories.filter((category) => !category.wide);
 
   return (
     <section className="bg-[#f9f9f9] py-24 md:py-[120px]" id="categories">
@@ -102,13 +97,22 @@ export default function HomeCategoryMosaic({ onNavigate }) {
 
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           {wideTiles.map((category) => (
-            <CategoryTile key={category.title} category={category} wide onClick={() => handleClick(category)} />
+            <CategoryTile
+              key={category.id}
+              category={category}
+              wide
+              onClick={() => onNavigate?.('catalog', { categoryPath: category.path, categoryId: category.id })}
+            />
           ))}
         </div>
 
         <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
           {regularTiles.map((category) => (
-            <CategoryTile key={category.title} category={category} onClick={() => handleClick(category)} />
+            <CategoryTile
+              key={category.id}
+              category={category}
+              onClick={() => onNavigate?.('catalog', { categoryPath: category.path, categoryId: category.id })}
+            />
           ))}
         </div>
       </div>

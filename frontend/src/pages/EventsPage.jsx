@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import UniversalFilterSidebar from '../components/catalog/UniversalFilterSidebar';
-import EventsCollectionHeader from '../components/events/EventsCollectionHeader';
 import EventServicesSection from '../components/events/EventServicesSection';
 import EventsHero from '../components/events/EventsHero';
 import ShopProductCard from '../components/shop/ShopProductCard';

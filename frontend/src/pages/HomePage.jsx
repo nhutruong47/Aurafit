@@ -28,10 +28,10 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
 
   const products = useMemo(
     () => ({
-      event: costumes.filter((product) => product.rawCategory === 'Events').slice(0, 4),
-      cosplay: costumes.filter((product) => product.rawCategory === 'Cosplay').slice(0, 4),
-      yearbook: costumes.filter((product) => product.rawCategory === 'Yearbook').slice(0, 4),
-      accessories: costumes.filter((product) => product.rawCategory === 'Accessories').slice(0, 4),
+      event: costumes.filter((product) => product.rootCategoryKey === 'events').slice(0, 4),
+      cosplay: costumes.filter((product) => product.rootCategoryKey === 'cosplay').slice(0, 4),
+      yearbook: costumes.filter((product) => product.rootCategoryKey === 'yearbook').slice(0, 4),
+      accessories: costumes.filter((product) => product.rootCategoryKey === 'accessories').slice(0, 4),
     }),
     [costumes]
   );

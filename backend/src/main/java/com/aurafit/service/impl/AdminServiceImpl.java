@@ -56,8 +56,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public AdminCostumeDTO createCostume(CostumeCreateRequest request, String authenticatedEmail) {
         User actor = requireProductManager(authenticatedEmail);
-        Category category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.categoryId()));
+        Category category = requireLeafActiveCategory(request.categoryId());
         User owner = resolveOwnerForCreate(actor, request.ownerUserId());
 
         Costume costume = Costume.builder()
@@ -93,8 +92,7 @@ public class AdminServiceImpl implements AdminService {
         if (request.depositPrice() != null) costume.setDepositPrice(request.depositPrice());
         if (request.imageUrl() != null) costume.setImageUrl(request.imageUrl());
         if (request.categoryId() != null) {
-            Category category = categoryRepository.findById(request.categoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.categoryId()));
+            Category category = requireLeafActiveCategory(request.categoryId());
             costume.setCategory(category);
         }
         if (request.ownerUserId() != null) {
@@ -164,5 +162,16 @@ public class AdminServiceImpl implements AdminService {
                 !costume.getOwner().getId().equals(actor.getId())) {
             throw new AccessDeniedException("Seller accounts can only manage their own costumes.");
         }
+    }
+
+    private Category requireLeafActiveCategory(Long categoryId) {
+        Category category = categoryRepository.findByIdAndIsActiveTrue(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục đang hoạt động với id: " + categoryId));
+
+        if (!categoryRepository.findByParentIdAndIsActiveTrueOrderBySortOrderAsc(categoryId).isEmpty()) {
+            throw new BadRequestException("Chỉ có thể gắn trang phục vào danh mục cấp cuối.");
+        }
+
+        return category;
     }
 }

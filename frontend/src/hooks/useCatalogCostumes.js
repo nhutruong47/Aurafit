@@ -1,15 +1,95 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchCostumes } from '../services/costumeService';
-import { categoryApiNames, mapCostumeToProduct } from '../utils/productMapper';
+import { mapCostumeToProduct } from '../utils/productMapper';
 
-export function useCatalogCostumes(categoryParam = null, sortBy = 'id', sortDir = 'desc', keyword = '', pageSize = 20) {
-  const [activePage, setActivePage] = useState(0);
-  
-  // Reset page when any filter changes
-  useEffect(() => {
-    setActivePage(0);
-  }, [categoryParam, sortBy, sortDir, keyword]);
+const categoryPathByKey = {
+  cosplay: 'cosplay',
+  event: 'su-kien',
+  events: 'su-kien',
+  yearbook: 'ky-yeu',
+  traditional: 'trang-phuc-truyen-thong',
+  accessories: 'phu-kien',
+};
 
+function normalizeOptions(optionsOrCategoryParam, sortBy, sortDir, keyword, pageSize) {
+  if (optionsOrCategoryParam && typeof optionsOrCategoryParam === 'object' && !Array.isArray(optionsOrCategoryParam)) {
+    return {
+      sortBy: 'id',
+      sortDir: 'desc',
+      keyword: '',
+      pageSize: 20,
+      ...optionsOrCategoryParam,
+    };
+  }
+
+  if (typeof optionsOrCategoryParam === 'number') {
+    return {
+      categoryId: optionsOrCategoryParam,
+      sortBy,
+      sortDir,
+      keyword,
+      pageSize,
+    };
+  }
+
+  if (typeof optionsOrCategoryParam === 'string' && optionsOrCategoryParam.trim()) {
+    return {
+      categoryKey: optionsOrCategoryParam.trim(),
+      sortBy,
+      sortDir,
+      keyword,
+      pageSize,
+    };
+  }
+
+  return {
+    sortBy,
+    sortDir,
+    keyword,
+    pageSize,
+  };
+}
+
+function resolveCategoryPath(categoryKey, explicitCategoryPath) {
+  if (explicitCategoryPath && typeof explicitCategoryPath === 'string') {
+    const normalizedPath = explicitCategoryPath.trim().toLowerCase();
+    return normalizedPath || null;
+  }
+
+  if (!categoryKey || typeof categoryKey !== 'string') {
+    return null;
+  }
+
+  const normalizedKey = categoryKey.trim().toLowerCase();
+  return categoryPathByKey[normalizedKey] || normalizedKey || null;
+}
+
+export function useCatalogCostumes(
+  optionsOrCategoryParam = null,
+  sortByArg = 'id',
+  sortDirArg = 'desc',
+  keywordArg = '',
+  pageSizeArg = 20
+) {
+  const normalizedOptions = useMemo(
+    () => normalizeOptions(optionsOrCategoryParam, sortByArg, sortDirArg, keywordArg, pageSizeArg),
+    [keywordArg, optionsOrCategoryParam, pageSizeArg, sortByArg, sortDirArg]
+  );
+
+  const {
+    categoryId = null,
+    categoryKey = null,
+    categoryPath: explicitCategoryPath = null,
+    keyword = '',
+    sortBy = 'id',
+    sortDir = 'desc',
+    pageSize = 20,
+  } = normalizedOptions;
+
+  const resolvedCategoryPath = resolveCategoryPath(categoryKey, explicitCategoryPath);
+  const normalizedKeyword = keyword?.trim() || '';
+
+  const [activePage, setActivePage] = useState(1);
   const [state, setState] = useState({
     costumes: [],
     totalPages: 1,
@@ -20,11 +100,22 @@ export function useCatalogCostumes(categoryParam = null, sortBy = 'id', sortDir 
   });
 
   useEffect(() => {
+    setActivePage(1);
+  }, [categoryId, normalizedKeyword, pageSize, resolvedCategoryPath, sortBy, sortDir]);
+
+  useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
-    const requestKey = `${categoryParam}_${sortBy}_${sortDir}_${keyword}_${activePage}`;
+    const requestKey = JSON.stringify({
+      activePage,
+      categoryId: categoryId || null,
+      categoryPath: resolvedCategoryPath || null,
+      keyword: normalizedKeyword || null,
+      pageSize,
+      sortBy,
+      sortDir,
+    });
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((currentState) => ({
       ...currentState,
       isLoading: true,
@@ -34,67 +125,52 @@ export function useCatalogCostumes(categoryParam = null, sortBy = 'id', sortDir 
 
     const fetchData = async () => {
       try {
-        const isGroupedCategory = typeof categoryParam === 'string' && categoryParam !== '';
-        
-        let fetchPageNo = activePage;
-        let fetchPageSize = pageSize;
-        let fetchCategoryId = null;
-
-        // If it's a number, it's a DB category ID
-        if (typeof categoryParam === 'number') {
-          fetchCategoryId = categoryParam;
-        } 
-        // If it's a string, it's a grouped UI category (Events, Cosplay)
-        else if (isGroupedCategory) {
-          fetchPageNo = 0;
-          fetchPageSize = 200; // Fetch all to filter locally
-        }
-
-        const data = await fetchCostumes({ 
-          categoryId: fetchCategoryId, 
-          keyword,
+        const data = await fetchCostumes({
+          categoryId,
+          categoryPath: resolvedCategoryPath,
+          keyword: normalizedKeyword || undefined,
           sortBy,
           sortDir,
-          pageNo: fetchPageNo,
-          pageSize: fetchPageSize, 
-          signal: controller.signal 
+          pageNo: Math.max(activePage - 1, 0),
+          pageSize,
+          signal: controller.signal,
         });
-        
-        if (controller.signal.aborted || !isMounted) return;
 
-        const actualData = Array.isArray(data) ? data : (data?.data || []);
-        let mappedCostumes = actualData.map(mapCostumeToProduct);
-
-        let totalPages = data?.totalPages || 1;
-        let totalElements = data?.totalElements || mappedCostumes.length;
-
-        // Apply Local Filtering & Pagination for Grouped UI Categories
-        if (isGroupedCategory) {
-          const resolvedCategoryName = categoryApiNames[categoryParam] || categoryParam;
-          mappedCostumes = mappedCostumes.filter(
-            (c) => c.rawCategory.toLowerCase() === resolvedCategoryName.toLowerCase()
-          );
-
-          totalElements = mappedCostumes.length;
-          totalPages = Math.ceil(totalElements / pageSize) || 1;
-          
-          const startIndex = activePage * pageSize;
-          mappedCostumes = mappedCostumes.slice(startIndex, startIndex + pageSize);
+        if (controller.signal.aborted || !isMounted) {
+          return;
         }
 
+        const actualData = Array.isArray(data) ? data : data?.data || [];
+        const totalPages = Math.max(1, Number(data?.totalPages || 1));
+        const totalElements = Number(data?.totalElements ?? actualData.length);
+        const currentPage = Number(data?.currentPage ?? Math.max(activePage - 1, 0)) + 1;
+
         setState({
-          costumes: mappedCostumes,
+          costumes: actualData.map(mapCostumeToProduct),
           totalPages,
           totalElements,
           isLoading: false,
           error: null,
           requestKey,
         });
-      } catch (err) {
-        if (err.name === 'AbortError' || controller.signal.aborted) return;
-        if (isMounted) {
-          setState((prev) => ({ ...prev, isLoading: false, error: err }));
+
+        if (currentPage !== activePage) {
+          setActivePage(currentPage);
         }
+      } catch (requestError) {
+        if (controller.signal.aborted || !isMounted) {
+          return;
+        }
+
+        setState((currentState) => ({
+          ...currentState,
+          costumes: [],
+          totalPages: 1,
+          totalElements: 0,
+          isLoading: false,
+          error: requestError,
+          requestKey,
+        }));
       }
     };
 
@@ -104,7 +180,37 @@ export function useCatalogCostumes(categoryParam = null, sortBy = 'id', sortDir 
       isMounted = false;
       controller.abort();
     };
-  }, [categoryParam, sortBy, sortDir, keyword, activePage, pageSize]);
+  }, [activePage, categoryId, normalizedKeyword, pageSize, resolvedCategoryPath, sortBy, sortDir]);
 
-  return { ...state, activePage, setActivePage };
+  return useMemo(() => {
+    const requestKey = JSON.stringify({
+      activePage,
+      categoryId: categoryId || null,
+      categoryPath: resolvedCategoryPath || null,
+      keyword: normalizedKeyword || null,
+      pageSize,
+      sortBy,
+      sortDir,
+    });
+    const isCurrentRequest = state.requestKey === requestKey;
+
+    return {
+      costumes: isCurrentRequest ? state.costumes : [],
+      totalPages: isCurrentRequest ? state.totalPages : 1,
+      totalElements: isCurrentRequest ? state.totalElements : 0,
+      activePage,
+      setActivePage,
+      isLoading: !isCurrentRequest || state.isLoading,
+      error: isCurrentRequest ? state.error : null,
+    };
+  }, [
+    activePage,
+    categoryId,
+    normalizedKeyword,
+    pageSize,
+    resolvedCategoryPath,
+    sortBy,
+    sortDir,
+    state,
+  ]);
 }

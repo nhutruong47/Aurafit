@@ -4,9 +4,11 @@ import com.aurafit.dto.response.CategoryDTO;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.CostumeListDTO;
 import com.aurafit.dto.response.PaginatedResponse;
+import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
 import com.aurafit.enums.CostumeStatus;
 import com.aurafit.enums.ItemStatus;
+import com.aurafit.exception.BadRequestException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CategoryRepository;
 import com.aurafit.repository.CostumeRepository;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @Transactional(readOnly = true)   // all methods are read-only by default
@@ -50,7 +53,7 @@ public class CostumeServiceImpl implements CostumeService {
     }
 
     @Override
-    public PaginatedResponse<CostumeListDTO> getAllActiveCostumes(Long categoryId, String keyword,
+    public PaginatedResponse<CostumeListDTO> getAllActiveCostumes(Long categoryId, String categoryPath, String keyword,
                                                                   int pageNo, int pageSize,
                                                                   String sortBy, String sortDir, Long userId) {
         // Build Sort object from parameters
@@ -62,11 +65,12 @@ public class CostumeServiceImpl implements CostumeService {
 
         // Normalize null keyword to empty string so 'LIKE %%' matches all
         String normalizedKeyword = (keyword == null) ? "" : keyword.trim();
+        String resolvedCategoryPath = resolveCategoryPath(categoryId, categoryPath);
 
         Page<CostumeListDTO> page = costumeRepository.findAllSummariesWithFilters(
                 CostumeStatus.ACTIVE,
                 ItemStatus.AVAILABLE,
-                categoryId,
+                resolvedCategoryPath,
                 normalizedKeyword,
                 pageable
         );
@@ -96,7 +100,7 @@ public class CostumeServiceImpl implements CostumeService {
 
     @Override
     public List<CategoryDTO> getAllCategories() {
-        return categoryRepository.findAll()
+        return categoryRepository.findByIsActiveTrueOrderBySortOrderAsc()
                 .stream()
                 .map(CategoryDTO::fromEntity)
                 .toList();
@@ -120,5 +124,24 @@ public class CostumeServiceImpl implements CostumeService {
                 .limit(limit)
                 .map(CostumeDTO::fromEntity)
                 .toList();
+    }
+
+    private String resolveCategoryPath(Long categoryId, String categoryPath) {
+        if (categoryPath != null && !categoryPath.trim().isEmpty()) {
+            return categoryPath.trim().toLowerCase(Locale.ROOT);
+        }
+
+        if (categoryId == null) {
+            return null;
+        }
+
+        Category category = categoryRepository.findByIdAndIsActiveTrue(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục đang hoạt động với id: " + categoryId));
+
+        if (category.getPath() == null || category.getPath().isBlank()) {
+            throw new BadRequestException("Danh mục chưa có đường dẫn hợp lệ để lọc.");
+        }
+
+        return category.getPath();
     }
 }

@@ -1,64 +1,83 @@
-import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import UniversalFilterSidebar from '../components/catalog/UniversalFilterSidebar';
-import ShopProductCard from '../components/shop/ShopProductCard';
-import ShopPagination from '../components/shop/ShopPagination';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import CatalogActiveFilters from '../components/catalog/CatalogActiveFilters';
+import CatalogFilterSidebar from '../components/catalog/CatalogFilterSidebar';
+import CatalogProductCard from '../components/catalog/CatalogProductCard';
 import CatalogSearchBar from '../components/catalog/CatalogSearchBar';
 import CatalogSortBar from '../components/catalog/CatalogSortBar';
+import ShopPagination from '../components/shop/ShopPagination';
 import EmptyState from '../components/ui/EmptyState';
+import { useCatalogCategories } from '../hooks/useCatalogCategories';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 import { logUserInteraction } from '../services/interactionsService';
-import { fetchPublicCategories } from '../services/catalogService';
+import { buildAncestorPaths, buildSelectedCategoryState } from '../utils/catalogCategory';
+
+const CLIENT_PAGE_SIZE = 12;
 
 export default function CatalogPage({ onNavigate }) {
   const searchInputRef = useRef(null);
+  const location = useLocation();
   const [searchParams] = useSearchParams();
-
-  // Categories state
-  const [categories, setCategories] = useState([]);
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-
-  // Filter & Sort States
-  const [selectedIds, setSelectedIds] = useState([]);
   const [sortBy, setSortBy] = useState('id');
   const [sortDir, setSortDir] = useState('desc');
-  const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch DB Categories on mount
-  useEffect(() => {
-    let isMounted = true;
-    const loadCategories = async () => {
-      try {
-        const data = await fetchPublicCategories();
-        if (isMounted && data) {
-          setCategories(data);
-        }
-      } catch (err) {
-        // Handle silently or log
-      }
-    };
-    loadCategories();
-    return () => { isMounted = false; };
-  }, []);
-
-  // Currently backend only supports a single categoryId filter in the endpoint.
-  // We'll pass the first selected category ID to the hook.
-  const categoryId = selectedIds.length > 0 ? selectedIds[0] : null;
-
-  // Fetch costumes
-  const { costumes, activePage, totalPages, totalElements, setActivePage, isLoading, error } = useCatalogCostumes(
-    categoryId,
-    sortBy,
-    sortDir,
-    searchTerm,
-    20
+  const initialCategoryPath = useMemo(
+    () => searchParams.get('categoryPath') || location.state?.categoryPath || null,
+    [location.state, searchParams]
   );
+
+  const {
+    categoryTree,
+    categoriesByPath,
+    isLoading: isLoadingCategories,
+    error: categoryError,
+  } = useCatalogCategories();
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategoryPath, setSelectedCategoryPath] = useState(initialCategoryPath);
+  const [selectedTag, setSelectedTag] = useState(null);
+  const [manualExpandedPaths, setManualExpandedPaths] = useState([]);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  const selectedFilter = useMemo(
+    () => buildSelectedCategoryState(selectedCategoryPath, categoriesByPath, selectedTag),
+    [categoriesByPath, selectedCategoryPath, selectedTag]
+  );
+  const expandedPaths = useMemo(() => {
+    const ancestorPaths = selectedCategoryPath
+      ? buildAncestorPaths(selectedCategoryPath, categoriesByPath)
+      : [];
+
+    return [...new Set([...ancestorPaths, ...manualExpandedPaths])];
+  }, [categoriesByPath, manualExpandedPaths, selectedCategoryPath]);
 
   useEffect(() => {
     if (searchParams.get('focus') === 'search') {
       window.setTimeout(() => searchInputRef.current?.focus(), 120);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedCategoryPath(initialCategoryPath);
+    setSelectedTag(null);
+  }, [initialCategoryPath]);
+
+  const {
+    costumes,
+    activePage,
+    totalPages,
+    totalElements,
+    setActivePage,
+    isLoading,
+    error,
+  } = useCatalogCostumes({
+    categoryPath: selectedFilter.categoryPath,
+    keyword: searchTerm.trim(),
+    sortBy,
+    sortDir,
+    pageSize: CLIENT_PAGE_SIZE,
+  });
 
   useEffect(() => {
     const normalizedSearch = searchTerm.trim();
@@ -72,38 +91,68 @@ export default function CatalogPage({ onNavigate }) {
         targetType: 'SEARCH',
         queryText: normalizedSearch,
         metadata: {
-          categoryId,
+          categoryPath: selectedFilter.categoryPath,
+          categoryName: selectedFilter.category,
+          subcategory: selectedFilter.subcategory,
+          tag: selectedFilter.tag,
         },
       }).catch(() => {});
     }, 500);
 
     return () => window.clearTimeout(timer);
-  }, [searchTerm, categoryId]);
+  }, [searchTerm, selectedFilter]);
 
-  const handleClearFilters = () => {
-    setSelectedIds([]);
-    setSortBy('id');
-    setSortDir('desc');
+  const availableTags = useMemo(() => {
+    const tagSet = new Set();
+
+    costumes.forEach((costume) => {
+      (costume.tags || []).forEach((tag) => {
+        if (tag) {
+          tagSet.add(tag);
+        }
+      });
+    });
+
+    return [...tagSet].sort((left, right) => left.localeCompare(right, 'vi'));
+  }, [costumes]);
+
+  const displayedCostumes = useMemo(() => {
+    if (!selectedFilter.tag) {
+      return costumes;
+    }
+
+    return costumes.filter((costume) => (costume.tags || []).includes(selectedFilter.tag));
+  }, [costumes, selectedFilter.tag]);
+
+  const displayedTotal = selectedFilter.tag ? displayedCostumes.length : totalElements;
+  const displayedTotalPages = selectedFilter.tag ? 1 : totalPages;
+
+  const applyFilter = (level, value) => {
+    if (level === 'category') {
+      setSelectedCategoryPath(value);
+      setSelectedTag(null);
+    }
+
+    if (level === 'tag') {
+      setSelectedTag((current) => (current === value ? null : value));
+    }
+
+    setIsMobileFilterOpen(false);
+  };
+
+  const toggleCategory = (categoryPath) => {
+    setManualExpandedPaths((current) =>
+      current.includes(categoryPath)
+        ? current.filter((path) => path !== categoryPath)
+        : [...current, categoryPath]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedCategoryPath(null);
+    setSelectedTag(null);
     setSearchTerm('');
   };
-
-  const handleSortChange = (newSortBy, newSortDir) => {
-    setSortBy(newSortBy);
-    setSortDir(newSortDir);
-  };
-
-  const handleToggleFilter = (id) => {
-    // If multiple selection is allowed in the future, we can toggle.
-    // For now, if it's already selected, unselect it. Otherwise, set it as the only selected.
-    setSelectedIds((prev) => (prev.includes(id) ? [] : [id]));
-  };
-
-  const filterGroups = [
-    {
-      title: 'Danh mục sản phẩm',
-      options: categories.map(cat => ({ id: cat.id, label: cat.name }))
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8">
@@ -112,30 +161,22 @@ export default function CatalogPage({ onNavigate }) {
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
           <h1 className="mb-4 font-serif text-4xl font-normal italic text-black sm:text-5xl">Bộ sưu tập trang phục</h1>
           <p className="max-w-2xl text-lg leading-8 text-[#5f5e5e]">
-            Khám phá hàng ngàn sản phẩm đa dạng với chất lượng cao cấp nhất.
+            Danh mục và sản phẩm trên trang này được lấy trực tiếp từ database qua category tree API và costume catalog API của backend.
           </p>
         </div>
 
         <div className="flex flex-col gap-8 lg:flex-row">
-          <aside className="w-full flex-shrink-0 lg:w-72">
-            {/* Mobile Toggle Button */}
-            <button
-              onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
-              className="mb-4 flex w-full items-center justify-between border border-[#cfc4c5] bg-white px-5 py-3 text-sm font-semibold uppercase tracking-[0.1em] lg:hidden"
-            >
-              <span>Lọc danh mục</span>
-              <span className="material-symbols-outlined">{isMobileFilterOpen ? 'expand_less' : 'expand_more'}</span>
-            </button>
-
-            <div className={`${isMobileFilterOpen ? 'block' : 'hidden'} lg:block`}>
-              <UniversalFilterSidebar
-                filterGroups={filterGroups}
-                selectedIds={selectedIds}
-                onToggle={handleToggleFilter}
-                onClearAll={handleClearFilters}
-              />
-            </div>
-          </aside>
+          <CatalogFilterSidebar
+            categoryTree={categoryTree}
+            availableTags={availableTags}
+            selectedFilter={selectedFilter}
+            expandedPaths={expandedPaths}
+            isMobileFilterOpen={isMobileFilterOpen}
+            onSetMobileFilterOpen={setIsMobileFilterOpen}
+            onClearFilters={clearFilters}
+            onApplyFilter={applyFilter}
+            onToggleCategory={toggleCategory}
+          />
 
           <div className="flex-1">
             <CatalogSearchBar
@@ -145,23 +186,29 @@ export default function CatalogPage({ onNavigate }) {
               onClearSearch={() => setSearchTerm('')}
             />
 
-            <CatalogSortBar 
-              sortBy={sortBy} 
-              sortDir={sortDir} 
-              onSortChange={handleSortChange} 
+            <CatalogSortBar
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSortChange={(nextSortBy, nextSortDir) => {
+                setSortBy(nextSortBy);
+                setSortDir(nextSortDir);
+              }}
             />
+
+            <CatalogActiveFilters selectedFilter={selectedFilter} />
 
             <div className="mb-6">
               <p className="text-sm text-[#5f5e5e]">
-                {isLoading ? (
+                {isLoading || isLoadingCategories ? (
                   'Đang tải sản phẩm từ database...'
                 ) : (
                   <>
-                    Đang hiển thị <span className="font-medium text-black">{costumes.length}</span> / <span className="font-medium text-black">{totalElements}</span> trang phục
+                    Đang hiển thị <span className="font-medium text-black">{displayedCostumes.length}</span> /{' '}
+                    <span className="font-medium text-black">{displayedTotal}</span> trang phục
                   </>
                 )}
               </p>
-              {error && (
+              {(error || categoryError) && (
                 <p className="mt-2 text-sm text-red-600">
                   Chưa kết nối được backend/database. Vui lòng chạy BE ở port 8080 rồi tải lại trang.
                 </p>
@@ -169,29 +216,25 @@ export default function CatalogPage({ onNavigate }) {
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {costumes.map((costume) => (
-                <ShopProductCard
-                  key={costume.id}
-                  product={costume}
-                  onNavigate={onNavigate}
-                />
+              {displayedCostumes.map((costume) => (
+                <CatalogProductCard key={costume.id} costume={costume} onNavigate={onNavigate} />
               ))}
             </div>
 
-            {costumes.length === 0 && !isLoading && (
+            {displayedTotal === 0 && !isLoading && !isLoadingCategories && (
               <EmptyState
                 className="py-20"
                 icon="search_off"
                 title="Không tìm thấy trang phục"
-                message="Thử chọn danh mục khác hoặc xóa bộ lọc để xem thêm."
+                message="Thử chọn danh mục khác hoặc xóa bộ lọc để xem thêm dữ liệu thật từ database."
                 actionLabel="Xóa tất cả bộ lọc"
-                onAction={handleClearFilters}
+                onAction={clearFilters}
               />
             )}
 
-            {totalPages > 1 && (
+            {displayedTotalPages > 1 && !isLoading && !isLoadingCategories && !selectedFilter.tag && (
               <div className="mt-12">
-                <ShopPagination currentPage={activePage} totalPages={totalPages} onPageChange={setActivePage} />
+                <ShopPagination currentPage={activePage} totalPages={displayedTotalPages} onPageChange={setActivePage} />
               </div>
             )}
           </div>

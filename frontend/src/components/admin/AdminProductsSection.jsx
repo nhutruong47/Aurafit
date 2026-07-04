@@ -85,7 +85,7 @@ export default function AdminProductsSection({
               >
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
-                    {category.name}
+                    {category.path || category.name}
                   </option>
                 ))}
               </select>
@@ -183,8 +183,8 @@ export default function AdminProductsSection({
           >
             <option value="all">Tất cả danh mục</option>
             {categories.map((category) => (
-              <option key={category.id} value={category.name}>
-                {category.name}
+              <option key={category.id} value={category.path}>
+                {category.path || category.name}
               </option>
             ))}
           </select>

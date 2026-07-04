@@ -2,10 +2,7 @@ package com.aurafit.dto.response;
 
 import com.aurafit.entity.Category;
 
-/**
- * Read-only projection of the Category entity for API responses.
- */
-public record CategoryDTO(
+public record CategoryResponse(
         Long id,
         String name,
         String slug,
@@ -16,12 +13,12 @@ public record CategoryDTO(
         Integer sortOrder,
         Boolean isActive
 ) {
-    public static CategoryDTO fromEntity(Category category) {
+    public static CategoryResponse fromEntity(Category category) {
         if (category == null) {
             return null;
         }
 
-        return new CategoryDTO(
+        return new CategoryResponse(
                 category.getId(),
                 category.getName(),
                 category.getSlug(),
