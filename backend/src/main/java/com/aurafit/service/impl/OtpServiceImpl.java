@@ -48,10 +48,10 @@ public class OtpServiceImpl implements OtpService {
      */
     public OtpVerification getValidEntry(String email) {
         OtpVerification entry = repository.findByEmail(email)
-                .orElseThrow(() -> new BadRequestException("Ban chua yeu cau ma OTP. Vui long gui lai."));
+                .orElseThrow(() -> new BadRequestException("Bạn chưa yêu cầu mã xác thực OTP. Vui lòng yêu cầu lại."));
         if (entry.isExpired()) {
             repository.deleteByEmail(email);
-            throw new BadRequestException("Ma OTP da het han (qua 5 phut). Vui long gui lai.");
+            throw new BadRequestException("Mã xác thực OTP đã hết hạn. Vui lòng yêu cầu gửi lại mã mới.");
         }
         return entry;
     }
@@ -62,7 +62,7 @@ public class OtpServiceImpl implements OtpService {
     public void verify(String email, String inputCode) {
         OtpVerification entry = getValidEntry(email);
         if (!entry.getOtpCode().equals(inputCode)) {
-            throw new BadRequestException("Ma OTP khong dung. Vui long thu lai.");
+            throw new BadRequestException("Mã xác thực OTP không chính xác. Vui lòng thử lại.");
         }
     }
 

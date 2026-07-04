@@ -145,16 +145,16 @@ function App() {
           }
 
           dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
-          addToast(`Da them "${item.name}" vao gio hang.`);
+          addToast(`Sản phẩm "${item.name}" đã được thêm vào giỏ hàng.`);
           return;
         } catch (error) {
-          addToast(error?.message || 'Lỗi: Không thể thêm vào giỏ hàng, vui lòng thử lại.', 'error');
+          addToast(error?.message || 'Hệ thống gặp sự cố khi thêm sản phẩm vào giỏ hàng. Quý khách vui lòng thử lại.', 'error');
           return;
         }
       }
 
       dispatch(addCartItem(aiStylistAttribution ? { ...item, attribution: aiStylistAttribution } : item));
-      addToast(`Da them "${item.name}" vao gio hang.`);
+      addToast(`Sản phẩm "${item.name}" đã được thêm vào giỏ hàng.`);
     },
     [currentUser, dispatch, addToast]
   );
@@ -170,7 +170,7 @@ function App() {
       }
 
       await handleAddToCart(item);
-      addToast(`Dang chuyen den trang thanh toan "${item.name}"...`);
+      addToast(`Đang chuyển hướng đến trang thanh toán cho "${item.name}"...`);
       handleNavigate('checkout', null, { state: { autoSelectId: item.id } });
     },
     [currentUser, handleNavigate, addToast, handleAddToCart]
@@ -203,7 +203,7 @@ function App() {
             if (error?.response?.status === 404) {
               dispatch(removeCartItem(cartId));
             } else {
-              addToast('Lỗi: Không thể xoá sản phẩm. Vui lòng tải lại trang.', 'error');
+              addToast('Hệ thống gặp sự cố khi xóa sản phẩm. Quý khách vui lòng tải lại trang.', 'error');
             }
             return;
           }
@@ -222,16 +222,16 @@ function App() {
           const cart = await updateCartItemApi(cartItemId, data);
           dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
           isApiUpdated = true;
-          addToast('Cập nhật giỏ hàng thành công.');
+          addToast('Giỏ hàng đã được cập nhật thành công.');
         } catch {
-          addToast('Không thể cập nhật giỏ hàng trên máy chủ.');
+          addToast('Hệ thống không thể cập nhật giỏ hàng trên máy chủ.');
           return; // Stop here if API fails, do not proceed to local success
         }
       }
       
       if (!isApiUpdated) {
         dispatch(updateCartItemDates({ cartId: localCartId, ...data }));
-        addToast('Cập nhật thời gian thành công (cục bộ).');
+        addToast('Thời gian thuê đã được cập nhật thành công.');
       }
     },
     [currentUser?.id, dispatch, addToast]

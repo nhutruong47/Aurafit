@@ -26,7 +26,7 @@ export function useAdminUsers(currentUser) {
       })
       .catch((loadError) => {
         if (!mounted) return;
-        setError(loadError.message || 'Không thể tải danh sách tài khoản.');
+        setError(loadError.message || 'Hệ thống không thể truy xuất danh sách tài khoản.');
       })
       .finally(() => {
         if (mounted) setIsLoading(false);
@@ -64,7 +64,7 @@ export function useAdminUsers(currentUser) {
       );
       setMessage(enabled ? 'Đã cấp quyền cho thuê sản phẩm.' : 'Đã thu hồi quyền cho thuê sản phẩm.');
     } catch (updateError) {
-      setError(updateError.message || 'Không thể cập nhật quyền tài khoản.');
+      setError(updateError.message || 'Hệ thống gặp sự cố khi cập nhật phân quyền tài khoản.');
     } finally {
       setUpdatingUserId(null);
     }
@@ -90,7 +90,7 @@ export function useAdminUsers(currentUser) {
       setMessage(`Đã tạo tài khoản staff cho ${createdStaff.fullName || createdStaff.email}.`);
       return createdStaff;
     } catch (createError) {
-      setError(createError.message || 'Không thể tạo tài khoản staff.');
+      setError(createError.message || 'Hệ thống gặp sự cố khi khởi tạo tài khoản nhân viên.');
       return null;
     } finally {
       setIsCreatingStaff(false);

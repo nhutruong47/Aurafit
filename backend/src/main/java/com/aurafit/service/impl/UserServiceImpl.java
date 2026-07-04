@@ -61,10 +61,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public AuthResponseDTO login(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Sai tai khoan hoac mat khau."));
+                .orElseThrow(() -> new BadCredentialsException("Tài khoản hoặc mật khẩu không chính xác."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new BadCredentialsException("Sai tai khoan hoac mat khau.");
+            throw new BadCredentialsException("Tài khoản hoặc mật khẩu không chính xác.");
         }
 
         return buildAuthResponse(user);
@@ -73,18 +73,18 @@ public class UserServiceImpl implements UserService {
     @Override
     public AuthResponseDTO refresh(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new UnauthorizedException("Phien lam viec da het han hoac khong hop le, vui long dang nhap lai.");
+            throw new UnauthorizedException("Phiên làm việc không hợp lệ hoặc đã hết hạn, vui lòng đăng nhập lại.");
         }
 
         String email = jwtTokenProvider.extractUsername(refreshToken);
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
         if (!jwtTokenProvider.validateToken(refreshToken, userDetails)) {
-            throw new UnauthorizedException("Ma xac thuc khong hop le, vui long dang nhap lai.");
+            throw new UnauthorizedException("Mã xác thực không hợp lệ, vui lòng đăng nhập lại.");
         }
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay nguoi dung hop le."));
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại trong hệ thống."));
 
         return buildAuthResponse(user);
     }
@@ -107,14 +107,14 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponseDTO updateUserRole(Long userId, Role role) {
         if (role != Role.CUSTOMER && role != Role.SELLER) {
-            throw new BadRequestException("Admin chi duoc cap hoac thu hoi quyen SELLER cho tai khoan ban hang.");
+            throw new BadRequestException("Admin chỉ được cấp hoặc thu hồi quyền SELLER cho tài khoản bán hàng.");
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
         if (user.getRole() != Role.CUSTOMER && user.getRole() != Role.SELLER) {
-            throw new BadRequestException("Chi co the cap hoac thu hoi quyen SELLER cho tai khoan CUSTOMER/SELLER.");
+            throw new BadRequestException("Chỉ có thể thay đổi quyền SELLER cho tài khoản CUSTOMER/SELLER.");
         }
 
         user.setRole(role);

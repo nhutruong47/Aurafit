@@ -70,7 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new BadRequestException(
-                    "Don hang nay khong o trang thai cho phep thanh toan. Trang thai hien tai: "
+                    "Đơn hàng không ở trạng thái hợp lệ để thanh toán. Trạng thái hiện tại: "
                     + order.getStatus()
             );
         }

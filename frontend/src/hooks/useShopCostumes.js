@@ -51,7 +51,7 @@ export function useShopCostumes(currentUserId) {
       })
       .catch((requestError) => {
         if (controller.signal.aborted || !isMounted) return;
-        setError(requestError.message || 'Không thể tải dữ liệu shop chung.');
+        setError(requestError.message || 'Hệ thống không thể truy xuất dữ liệu cửa hàng.');
         setIsLoading(false);
         setLoadedUserKey(requestKey);
       });
@@ -80,7 +80,7 @@ export function useShopCostumes(currentUserId) {
       })
       .catch((requestError) => {
         if (controller.signal.aborted || !isMounted) return;
-        setError(requestError.message || 'Không thể tải dữ liệu sản phẩm.');
+        setError(requestError.message || 'Hệ thống không thể truy xuất dữ liệu sản phẩm.');
         setIsLoading(false);
       });
 

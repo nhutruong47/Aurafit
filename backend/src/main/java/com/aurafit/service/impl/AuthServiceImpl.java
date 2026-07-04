@@ -63,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
             throw new ConflictException("Chi email Gmail can xac thuc OTP.");
         }
         if (userRepository.existsByEmailAndEmailVerifiedTrue(request.email())) {
-            throw new ConflictException("Email nay da duoc su dung. Vui long su dung email khac.");
+            throw new ConflictException("Email này đã tồn tại trong hệ thống. Vui lòng sử dụng email khác.");
         }
 
         String hashedPassword = passwordEncoder.encode(request.password());
@@ -92,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
         OtpVerification entry = otpService.getValidEntry(request.email());
 
         if (userRepository.existsByEmailAndEmailVerifiedTrue(request.email())) {
-            throw new ConflictException("Email nay da duoc su dung. Vui long su dung email khac.");
+            throw new ConflictException("Email này đã tồn tại trong hệ thống. Vui lòng sử dụng email khác.");
         }
 
         User user = userRepository.findByEmail(request.email()).orElseGet(User::new);

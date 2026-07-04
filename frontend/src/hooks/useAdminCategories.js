@@ -22,7 +22,7 @@ export function useAdminCategories(currentUser) {
     setIsLoading(true);
     fetchPublicCategories()
       .then((data) => setCategories(Array.isArray(data) ? data : []))
-      .catch(() => setError('Không thể tải danh sách danh mục.'))
+      .catch(() => setError('Hệ thống không thể truy xuất danh sách danh mục.'))
       .finally(() => setIsLoading(false));
   }, [isAdmin]);
 
@@ -71,7 +71,7 @@ export function useAdminCategories(currentUser) {
 
       resetForm();
     } catch (err) {
-      setError(err.message || 'Không thể lưu danh mục.');
+      setError(err.message || 'Hệ thống gặp sự cố khi lưu thông tin danh mục.');
     } finally {
       setIsSaving(false);
     }
@@ -86,7 +86,7 @@ export function useAdminCategories(currentUser) {
       setMessage(`Đã xóa danh mục "${name}".`);
       if (editingCategoryId === id) resetForm();
     } catch (err) {
-      setError(err.message || 'Không thể xóa danh mục.');
+      setError(err.message || 'Hệ thống gặp sự cố khi xóa danh mục.');
     }
   };
 

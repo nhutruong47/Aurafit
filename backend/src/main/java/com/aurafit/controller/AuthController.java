@@ -60,7 +60,7 @@ public class AuthController {
 
         userService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Dang ky tai khoan thanh cong.", HttpStatus.CREATED));
+                .body(ApiResponse.success("Đăng ký tài khoản thành công.", HttpStatus.CREATED));
     }
 
     // ── OTP Flow ─────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ public class AuthController {
             @Valid @RequestBody OtpRequestDTO request) {
 
         OtpSentResponse result = authService.requestOtp(request);
-        return ResponseEntity.ok(ApiResponse.success("Gui ma OTP thanh cong.", result));
+        return ResponseEntity.ok(ApiResponse.success("Gửi mã xác thực OTP thành công.", result));
     }
 
     /**
@@ -89,7 +89,7 @@ public class AuthController {
 
         AuthResponseDTO result = authService.verifyOtpAndRegister(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Dang ky tai khoan thanh cong!", result));
+                .body(ApiResponse.success("Đăng ký tài khoản thành công!", result));
     }
 
     // ── Login & Session ──────────────────────────────────────────────────
@@ -102,7 +102,7 @@ public class AuthController {
         ResponseCookie cookie = buildRefreshCookie(authResponse.refreshToken());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(ApiResponse.success("Dang nhap thanh cong.", authResponse));
+                .body(ApiResponse.success("Đăng nhập thành công.", authResponse));
     }
 
     @PostMapping("/refresh")
@@ -114,7 +114,7 @@ public class AuthController {
         ResponseCookie cookie = buildRefreshCookie(authResponse.refreshToken());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(ApiResponse.success("Lam moi access token thanh cong.", authResponse));
+                .body(ApiResponse.success("Cập nhật phiên đăng nhập thành công.", authResponse));
     }
 
     // ── Private helpers ──────────────────────────────────────────────────
@@ -138,6 +138,6 @@ public class AuthController {
                 }
             }
         }
-        throw new UnauthorizedException("Phien lam viec da het han, vui long dang nhap lai.");
+        throw new UnauthorizedException("Phiên làm việc đã hết hạn, vui lòng đăng nhập lại.");
     }
 }

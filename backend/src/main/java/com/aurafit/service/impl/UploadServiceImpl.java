@@ -69,7 +69,7 @@ public class UploadServiceImpl implements UploadService {
 
         String rawOriginalFileName = file.getOriginalFilename();
         if (!StringUtils.hasText(rawOriginalFileName)) {
-            throw new BadRequestException("Ten tep tai len khong hop le.");
+            throw new BadRequestException("Tên tệp tải lên không hợp lệ.");
         }
 
         String originalFileName = StringUtils.cleanPath(rawOriginalFileName);
@@ -105,7 +105,7 @@ public class UploadServiceImpl implements UploadService {
 
     private void validateMultipartFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new BadRequestException("Tep tai len khong duoc de trong.");
+            throw new BadRequestException("Vui lòng chọn tệp để tải lên.");
         }
     }
 
@@ -119,7 +119,7 @@ public class UploadServiceImpl implements UploadService {
         try {
             return file.getBytes();
         } catch (IOException ex) {
-            throw new FileUploadException("Khong the doc du lieu tep tai len.", ex);
+            throw new FileUploadException("Không thể đọc dữ liệu từ tệp tải lên.", ex);
         }
     }
 
@@ -155,7 +155,7 @@ public class UploadServiceImpl implements UploadService {
             return "webp";
         }
 
-        throw new BadRequestException("Noi dung tep khong phai anh hop le.");
+        throw new BadRequestException("Tệp tải lên không phải là định dạng ảnh hợp lệ.");
     }
 
     private void validateExtensionMatchesFormat(String extension, String detectedFormat) {
@@ -163,7 +163,7 @@ public class UploadServiceImpl implements UploadService {
         boolean exactMatch = detectedFormat.equals(extension);
 
         if (!jpegMatch && !exactMatch) {
-            throw new BadRequestException("Duoi tep khong khop voi noi dung anh tai len.");
+            throw new BadRequestException("Định dạng tệp không khớp với nội dung ảnh tải lên.");
         }
     }
 
@@ -178,7 +178,7 @@ public class UploadServiceImpl implements UploadService {
                     "filename_override", originalFileName
             ));
         } catch (IOException ex) {
-            throw new FileUploadException("Tai anh len Cloudinary that bai.", ex);
+            throw new FileUploadException("Tải ảnh lên máy chủ lưu trữ thất bại.", ex);
         }
     }
 

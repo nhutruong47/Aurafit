@@ -84,7 +84,7 @@ export default function CancelOrderModal({ isOpen, onClose, onConfirm, isSubmitt
             disabled={isSubmitting}
             className="bg-black px-6 py-3 text-sm font-medium uppercase tracking-wider text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
-            {isSubmitting ? 'Đang xử lý...' : 'Xác nhận hủy'}
+            {isSubmitting ? 'Đang xử lý yêu cầu...' : 'Xác nhận hủy'}
           </button>
         </div>
       </div>

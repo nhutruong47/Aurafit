@@ -89,13 +89,13 @@ export default function ImageUploadField({
       setSelectedFile(nextFile);
     } catch (validationError) {
       setSelectedFile(null);
-      setError(validationError.message || 'Tệp ảnh không hợp lệ.');
+      setError(validationError.message || 'Tệp hình ảnh không hợp lệ.');
     }
   };
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setError('Vui lòng chọn ảnh trước khi tải lên.');
+      setError('Quý khách vui lòng chọn tệp hình ảnh trước khi tải lên.');
       return;
     }
 
@@ -107,7 +107,7 @@ export default function ImageUploadField({
       setUploadedAsset(asset);
       onUploaded?.(asset);
     } catch (uploadError) {
-      setError(uploadError.message || 'Không thể tải ảnh lên.');
+      setError(uploadError.message || 'Hệ thống không thể tải hình ảnh lên máy chủ.');
     } finally {
       setIsUploading(false);
     }

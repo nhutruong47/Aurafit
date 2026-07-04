@@ -95,7 +95,7 @@ public class OrderServiceImpl implements OrderService {
         // ── Step 1: Validate item list is present and non-empty ─────────────────
         List<CheckoutItemRequest> items = request.items();
         if (items == null || items.isEmpty()) {
-            throw new BadRequestException("Danh sach mat hang thanh toan khong duoc de trong.");
+            throw new BadRequestException("Danh sách sản phẩm thanh toán không được để trống.");
         }
 
         // ── Step 2: Load authenticated user (fail-fast) ────────────────────────
@@ -141,7 +141,7 @@ public class OrderServiceImpl implements OrderService {
             // ── 4c. Validate rental date window ────────────────────────────────
             if (!item.rentalEndDate().isAfter(item.rentalStartDate())) {
                 throw new BadRequestException(
-                        "Ngay tra (rentalEndDate) cua san pham [SKU: " + item.sku()
+                        "Ngày trả (rentalEndDate) của sản phẩm [SKU: " + item.sku()
                         + "] phai sau ngay nhan (rentalStartDate)."
                 );
             }
@@ -153,7 +153,7 @@ public class OrderServiceImpl implements OrderService {
             );
             if (rentalDays <= 0) {
                 throw new BadRequestException(
-                        "So ngay thue phai lon hon 0 cho san pham [SKU: " + item.sku() + "]."
+                        "Số ngày thuê phải lớn hơn 0 đối với sản phẩm [SKU: " + item.sku() + "]."
                 );
             }
 
@@ -518,7 +518,7 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getStatus() != com.aurafit.enums.OrderStatus.PENDING &&
             order.getStatus() != com.aurafit.enums.OrderStatus.CONFIRMED) {
-            throw new BadRequestException("Khong the huy don hang voi trang thai: " + order.getStatus());
+            throw new BadRequestException("Không thể hủy đơn hàng đang ở trạng thái: " + order.getStatus());
         }
 
         // Return items to AVAILABLE
@@ -615,7 +615,7 @@ public class OrderServiceImpl implements OrderService {
             RentalOrderDetail detail = order.getDetails().stream()
                     .filter(d -> d.getId().equals(assessment.rentalOrderDetailId()))
                     .findFirst()
-                    .orElseThrow(() -> new BadRequestException("Khong tim thay chi tiet don hang voi ID: " + assessment.rentalOrderDetailId()));
+                    .orElseThrow(() -> new BadRequestException("Không tìm thấy chi tiết đơn hàng với mã ID: " + assessment.rentalOrderDetailId()));
 
             detail.setReturnStatus(assessment.returnStatus());
             

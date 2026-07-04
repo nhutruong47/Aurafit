@@ -21,7 +21,7 @@ export function useRentalOrders(currentUser) {
       const detail = await fetchOrderDetail(orderId);
       setSelectedOrder(detail || null);
     } catch (err) {
-      setError(err.message || 'Không thể tải chi tiết đơn hàng.');
+      setError(err.message || 'Hệ thống không thể truy xuất chi tiết đơn hàng.');
       setSelectedOrder(null);
     } finally {
       setIsLoadingDetail(false);
@@ -52,7 +52,7 @@ export function useRentalOrders(currentUser) {
       setSelectedOrderId(nextSelectedOrderId);
       await loadOrderDetail(nextSelectedOrderId);
     } catch (err) {
-      setError(err.message || 'Không thể tải danh sách lịch sử đơn hàng.');
+      setError(err.message || 'Hệ thống không thể truy xuất danh sách lịch sử đơn hàng.');
       setOrders([]);
       setSelectedOrderId(null);
       setSelectedOrder(null);

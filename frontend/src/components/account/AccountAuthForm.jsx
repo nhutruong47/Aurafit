@@ -93,13 +93,13 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
         phone: form.phone,
         password: form.password,
       });
-      addToast('Mã xác thực đã được gửi đến email của bạn');
+      addToast('Mã xác thực OTP đã được gửi đến email của Quý khách');
       setStage('verify-otp');
       setOtpCountdown(OTP_TTL_SECONDS);
       const fallbackMsg = `Yêu cầu đăng ký đã được ghi nhận. Mã OTP đã được gửi tới ${form.email}. Vui lòng kiểm tra hộp thư và nhập mã để kích hoạt tài khoản.`;
       setInfoMessage(response?.message || fallbackMsg);
     } catch (err) {
-      setLocalError(err.message || 'Không thể đăng ký và gửi mã OTP. Vui lòng thử lại.');
+      setLocalError(err.message || 'Hệ thống gặp sự cố khi xử lý đăng ký. Quý khách vui lòng thử lại.');
     } finally {
       setIsSendingOtp(false);
     }
@@ -118,9 +118,9 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
         password: form.password,
       });
       setOtpCountdown(OTP_TTL_SECONDS);
-      setInfoMessage('Mã OTP đã được gửi lại. Vui lòng kiểm tra email của bạn.');
+      setInfoMessage('Mã xác thực OTP đã được gửi lại. Quý khách vui lòng kiểm tra hộp thư.');
     } catch (err) {
-      setLocalError(err.message || 'Không thể gửi lại mã OTP.');
+      setLocalError(err.message || 'Hệ thống không thể gửi lại mã xác thực OTP.');
     }
   };
 
@@ -129,7 +129,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
     setLocalError('');
 
     if (!form.otpCode || form.otpCode.length !== 6) {
-      setLocalError('Vui lòng nhập đủ 6 chữ số của mã OTP.');
+      setLocalError('Quý khách vui lòng nhập đầy đủ 6 chữ số của mã xác thực OTP.');
       return;
     }
 
@@ -231,7 +231,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   disabled={isSubmitting}
                   className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
                 >
-                  {isSubmitting ? 'Đang xử lý...' : 'Đăng nhập'}
+                  {isSubmitting ? 'Đang xử lý yêu cầu...' : 'Đăng nhập'}
                 </button>
               </form>
             ) : stage === 'details' ? (
@@ -358,7 +358,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   disabled={isSubmitting}
                   className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
                 >
-                  {isSubmitting ? 'Đang xử lý...' : 'Xác thực và tạo tài khoản'}
+                  {isSubmitting ? 'Đang xử lý yêu cầu...' : 'Xác thực và tạo tài khoản'}
                 </button>
 
                 <button

@@ -6,16 +6,16 @@ import lombok.Data;
 
 @Data
 public class RegisterRequest {
-    @NotBlank(message = "Ho ten khong duoc de trong.")
+    @NotBlank(message = "Vui lòng nhập họ tên.")
     private String fullName;
 
-    @NotBlank(message = "Email khong duoc de trong.")
-    @Email(message = "Email khong dung dinh dang.")
+    @NotBlank(message = "Vui lòng cung cấp địa chỉ email.")
+    @Email(message = "Địa chỉ email không đúng định dạng.")
     private String email;
 
-    @NotBlank(message = "So dien thoai khong duoc de trong.")
+    @NotBlank(message = "Vui lòng cung cấp số điện thoại.")
     private String phone;
 
-    @NotBlank(message = "Mat khau khong duoc de trong.")
+    @NotBlank(message = "Vui lòng nhập mật khẩu.")
     private String password;
 }

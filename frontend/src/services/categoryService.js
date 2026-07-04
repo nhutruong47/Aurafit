@@ -15,5 +15,5 @@ export const updateCategory = async (id, payload) =>
 export const deleteCategory = async (id) =>
   requestJson(
     { url: `/categories/${id}`, method: 'DELETE' },
-    'Không thể xóa danh mục.'
+    'Hệ thống gặp sự cố khi xóa danh mục.'
   );

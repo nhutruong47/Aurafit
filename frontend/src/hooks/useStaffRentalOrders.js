@@ -67,7 +67,7 @@ export function useStaffRentalOrders(currentUser) {
       setError('');
       setLoadedUserKey(requestKey);
     } catch (loadError) {
-      setError(loadError.message || 'Không thể tải danh sách đơn.');
+      setError(loadError.message || 'Hệ thống không thể truy xuất danh sách đơn hàng.');
       setLoadedUserKey(requestKey);
     } finally {
       setIsLoading(false);
@@ -104,7 +104,7 @@ export function useStaffRentalOrders(currentUser) {
         setError('');
       } catch (loadError) {
         if (!mounted) return;
-        setError(loadError.message || 'Không thể tải danh sách đơn.');
+        setError(loadError.message || 'Hệ thống không thể truy xuất danh sách đơn hàng.');
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -130,7 +130,7 @@ export function useStaffRentalOrders(currentUser) {
       setActiveOrder(order);
       setSelectedDetailId(order.details?.[0]?.id || '');
     } catch (loadError) {
-      setError(loadError.message || 'Không thể tải chi tiết đơn.');
+      setError(loadError.message || 'Hệ thống không thể truy xuất chi tiết đơn hàng.');
     }
   };
 
@@ -181,7 +181,7 @@ export function useStaffRentalOrders(currentUser) {
 
       await loadOrders(activeOrder.id);
     } catch (submitError) {
-      setError(submitError.message || 'Không thể lưu biên bản.');
+      setError(submitError.message || 'Hệ thống gặp sự cố khi lưu biên bản.');
     } finally {
       setIsSubmitting(false);
     }

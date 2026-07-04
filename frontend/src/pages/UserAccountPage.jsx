@@ -52,7 +52,7 @@ export default function UserAccountPage({ onNavigate, currentUser, onAuthChange 
       onAuthChange?.(user);
       onNavigate?.(resolveRolePage(user));
     } catch (error) {
-      setFormError(error.message || 'Không thể đăng nhập. Vui lòng thử lại.');
+      setFormError(error.message || 'Đăng nhập không thành công. Quý khách vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -69,11 +69,11 @@ export default function UserAccountPage({ onNavigate, currentUser, onAuthChange 
         onAuthChange?.(user);
         onNavigate?.(resolveRolePage(user));
       } else {
-        setFormError('Đăng ký thành công nhưng bạn chưa được đăng nhập tự động. Vui lòng đăng nhập lại.');
+        setFormError('Đăng ký thành công. Quý khách vui lòng đăng nhập lại để tiếp tục.');
         setMode('login');
       }
     } catch (error) {
-      setFormError(error.message || 'Không thể hoàn tất đăng ký. Vui lòng thử lại.');
+      setFormError(error.message || 'Đăng ký không thành công. Quý khách vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }

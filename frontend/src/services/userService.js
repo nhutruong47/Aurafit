@@ -6,7 +6,7 @@ export const fetchUsers = async () =>
       url: '/users',
       method: 'GET',
     },
-    'Không thể tải danh sách tài khoản.'
+    'Hệ thống không thể truy xuất danh sách tài khoản.'
   );
 
 export const updateUserRole = async (userId, role) =>
@@ -16,7 +16,7 @@ export const updateUserRole = async (userId, role) =>
       method: 'PATCH',
       data: { role },
     },
-    'Không thể cập nhật quyền tài khoản.'
+    'Hệ thống gặp sự cố khi cập nhật phân quyền tài khoản.'
   );
 
 export const createStaffAccount = async (payload) =>
@@ -26,7 +26,7 @@ export const createStaffAccount = async (payload) =>
       method: 'POST',
       data: payload,
     },
-    'Không thể tạo tài khoản staff.'
+    'Hệ thống gặp sự cố khi khởi tạo tài khoản nhân viên.'
   );
 
 export const updateProfile = async (payload) =>

@@ -39,7 +39,7 @@ public class EmailServiceImpl implements EmailService {
 
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Khong the gui email xac thuc. Vui long thu lai sau.", e);
+            throw new RuntimeException("Không thể gửi email xác thực. Vui lòng thử lại sau.", e);
         }
     }
 

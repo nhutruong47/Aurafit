@@ -10,8 +10,8 @@ import jakarta.validation.constraints.Pattern;
  * stored in the in-memory OTP cache until this call verifies it.
  */
 public record VerifyOtpRequestDTO(
-        @NotBlank(message = "Email khong duoc de trong.")
-        @Email(message = "Email khong dung dinh dang.")
+        @NotBlank(message = "Vui lòng cung cấp địa chỉ email.")
+        @Email(message = "Địa chỉ email không đúng định dạng.")
         String email,
 
         @NotBlank(message = "Ma OTP khong duoc de trong.")

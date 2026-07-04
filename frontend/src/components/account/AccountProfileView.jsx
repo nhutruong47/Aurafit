@@ -24,7 +24,7 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.fullName.trim()) { setError('Họ tên không được để trống.'); return; }
+    if (!form.fullName.trim()) { setError('Quý khách vui lòng cung cấp họ và tên.'); return; }
     setIsSubmitting(true);
     setError('');
     try {
@@ -32,7 +32,7 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
       onSaved(updated);
       onClose();
     } catch (err) {
-      setError(err.message || 'Lỗi cập nhật hồ sơ.');
+      setError(err.message || 'Hệ thống gặp sự cố khi cập nhật hồ sơ.');
     } finally {
       setIsSubmitting(false);
     }
@@ -76,8 +76,8 @@ function ChangePasswordModal({ onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.newPassword.length < 6) { setError('Mật khẩu mới phải có ít nhất 6 ký tự.'); return; }
-    if (form.newPassword !== form.confirmPassword) { setError('Mật khẩu xác nhận không khớp.'); return; }
+    if (form.newPassword.length < 6) { setError('Mật khẩu bảo mật cần chứa ít nhất 6 ký tự.'); return; }
+    if (form.newPassword !== form.confirmPassword) { setError('Mật khẩu xác nhận không trùng khớp.'); return; }
     setIsSubmitting(true);
     setError('');
     try {
@@ -85,7 +85,7 @@ function ChangePasswordModal({ onClose }) {
       addToast('Đổi mật khẩu thành công!');
       onClose();
     } catch (err) {
-      setError(err.message || 'Lỗi đổi mật khẩu.');
+      setError(err.message || 'Hệ thống gặp sự cố khi thay đổi mật khẩu.');
     } finally {
       setIsSubmitting(false);
     }
@@ -110,7 +110,7 @@ function ChangePasswordModal({ onClose }) {
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-3">
           <button type="submit" disabled={isSubmitting} className="flex-1 bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:opacity-50">
-            {isSubmitting ? 'Đang xử lý...' : 'Đổi mật khẩu'}
+            {isSubmitting ? 'Đang xử lý yêu cầu...' : 'Đổi mật khẩu'}
           </button>
           <button type="button" onClick={onClose} className="flex-1 border border-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:border-[#99854e] hover:text-[#99854e]">
             Hủy

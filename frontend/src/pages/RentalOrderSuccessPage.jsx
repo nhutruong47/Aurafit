@@ -52,7 +52,7 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
       })
       .catch((requestError) => {
         if (!isMounted) return;
-        setError(requestError.message || 'Không thể tải chi tiết đơn hàng vừa tạo.');
+        setError(requestError.message || 'Hệ thống không thể truy xuất thông tin chi tiết đơn hàng vừa tạo.');
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);

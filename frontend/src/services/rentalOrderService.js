@@ -55,7 +55,7 @@ const normalizeStaffOrder = (order) => {
 export const fetchOrders = async () => {
   const payload = await requestJson(
     { url: '/orders', method: 'GET' },
-    'Không thể tải danh sách lịch sử đơn hàng.'
+    'Hệ thống không thể truy xuất danh sách lịch sử đơn hàng.'
   );
   return Array.isArray(payload) ? payload.map(normalizeOrderSummary) : [];
 };
@@ -87,7 +87,7 @@ export const cancelOrder = async (orderId, cancelReason) => {
 export const fetchOrderDetail = async (orderId) =>
   requestJson(
     { url: `/orders/${encodeURIComponent(orderId)}`, method: 'GET' },
-    'Không thể tải chi tiết đơn hàng.'
+    'Hệ thống không thể truy xuất chi tiết đơn hàng.'
   ).then(normalizeOrderDetail);
 
 export const fetchStaffOrders = async () => {

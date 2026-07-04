@@ -92,8 +92,12 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Only handle 401 once per request
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    // Skip refresh logic for login endpoint or if we already retried
+    if (
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      originalRequest.url?.includes('/auth/login')
+    ) {
       return Promise.reject(error);
     }
 

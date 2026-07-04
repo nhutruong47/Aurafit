@@ -19,7 +19,7 @@ export const getErrorMessage = (error, fallbackMessage) => {
   return responseMessage || fallbackMessage;
 };
 
-export const requestJson = async (config, fallbackMessage = 'Không thể kết nối backend/database.') => {
+export const requestJson = async (config, fallbackMessage = 'Đã xảy ra lỗi hệ thống.') => {
   try {
     const response = await apiClient.request(config);
     return unwrapApiResponse(response.data);

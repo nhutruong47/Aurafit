@@ -67,13 +67,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<ErrorResponse> handleMultipart(MultipartException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request",
-                "Yeu cau upload tep khong hop le.", request.getRequestURI());
+                "Yêu cầu tải lên tệp không hợp lệ.", request.getRequestURI());
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported Media Type",
-                "Loai noi dung khong duoc ho tro.", request.getRequestURI());
+                "Định dạng nội dung không được hỗ trợ.", request.getRequestURI());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
