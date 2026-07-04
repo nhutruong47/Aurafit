@@ -45,7 +45,7 @@ public class Costume extends BaseEntity {
     @Column(nullable = false)
     private CostumeStatus status = CostumeStatus.ACTIVE;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 

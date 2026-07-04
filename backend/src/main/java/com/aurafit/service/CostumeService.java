@@ -12,7 +12,8 @@ public interface CostumeService {
     /**
      * Fetches a paginated, filtered list of ACTIVE costumes for the public catalog.
      *
-     * @param categoryId Optional filter by category. Pass null to include all categories.
+     * @param categoryId Optional filter by category id. Pass null to skip.
+     * @param categoryPath Optional filter by category path. Pass null to skip.
      * @param keyword    Optional search term matched against costume name. Pass null to skip.
      * @param pageNo     Zero-based page index.
      * @param pageSize   Number of items per page.
@@ -20,7 +21,7 @@ public interface CostumeService {
      * @param sortDir    Sort direction: "asc" or "desc".
      * @return A paginated response containing CostumeDTOs.
      */
-    PaginatedResponse<CostumeListDTO> getAllActiveCostumes(Long categoryId, String keyword,
+    PaginatedResponse<CostumeListDTO> getAllActiveCostumes(Long categoryId, String categoryPath, String keyword,
                                                            int pageNo, int pageSize,
                                                            String sortBy, String sortDir, Long userId);
 

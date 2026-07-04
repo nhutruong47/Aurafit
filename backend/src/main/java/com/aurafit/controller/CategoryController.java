@@ -3,7 +3,8 @@ package com.aurafit.controller;
 import com.aurafit.dto.request.CategoryCreateRequest;
 import com.aurafit.dto.request.CategoryUpdateRequest;
 import com.aurafit.dto.response.ApiResponse;
-import com.aurafit.dto.response.CategoryDTO;
+import com.aurafit.dto.response.CategoryResponse;
+import com.aurafit.dto.response.CategoryTreeResponse;
 import com.aurafit.dto.response.PaginatedResponse;
 import com.aurafit.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,56 +30,91 @@ public class CategoryController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all categories", description = "Returns all costume categories")
-    public ResponseEntity<ApiResponse<List<CategoryDTO>>> getAllCategories() {
-        return ResponseEntity.ok(ApiResponse.success("Categories retrieved successfully.", categoryService.getAllCategories()));
+    @Operation(summary = "Lấy tất cả danh mục", description = "Trả về danh sách danh mục đang hoạt động")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách danh mục thành công.", categoryService.getAllCategories()));
+    }
+
+    @GetMapping("/tree")
+    @Operation(summary = "Lấy cây danh mục", description = "Trả về cây danh mục để hiển thị menu hoặc sidebar")
+    public ResponseEntity<ApiResponse<List<CategoryTreeResponse>>> getCategoryTree() {
+        return ResponseEntity.ok(ApiResponse.success("Lấy cây danh mục thành công.", categoryService.getCategoryTree()));
+    }
+
+    @GetMapping("/root")
+    @Operation(summary = "Lấy danh mục gốc", description = "Trả về danh sách danh mục cấp gốc")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getRootCategories() {
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh mục gốc thành công.", categoryService.getRootCategories()));
+    }
+
+    @GetMapping("/by-path")
+    @Operation(summary = "Lấy danh mục theo đường dẫn", description = "Trả về danh mục theo path duy nhất")
+    public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryByPath(@RequestParam String path) {
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh mục theo đường dẫn thành công.", categoryService.getCategoryByPath(path)));
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Search categories with pagination and filtering", description = "Returns paginated list of categories matching keyword")
-    public ResponseEntity<ApiResponse<PaginatedResponse<CategoryDTO>>> searchCategories(
+    @Operation(summary = "Tìm kiếm danh mục", description = "Trả về danh sách danh mục phân trang theo từ khóa")
+    public ResponseEntity<ApiResponse<PaginatedResponse<CategoryResponse>>> searchCategories(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
     ) {
-        PaginatedResponse<CategoryDTO> response = categoryService.searchCategories(keyword, pageNo, pageSize, sortBy, sortDir);
-        return ResponseEntity.ok(ApiResponse.success("Categories retrieved successfully.", response));
+        PaginatedResponse<CategoryResponse> response = categoryService.searchCategories(keyword, pageNo, pageSize, sortBy, sortDir);
+        return ResponseEntity.ok(ApiResponse.success("Tìm kiếm danh mục thành công.", response));
+    }
+
+    @GetMapping("/{id}/children")
+    @Operation(summary = "Lấy danh mục con", description = "Trả về danh sách danh mục con trực tiếp của một danh mục")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getChildrenByCategoryId(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh mục con thành công.", categoryService.getChildrenByCategoryId(id)));
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get category details", description = "Returns a single category by ID")
-    public ResponseEntity<ApiResponse<CategoryDTO>> getCategoryById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success("Category retrieved successfully.", categoryService.getCategoryById(id)));
+    @Operation(summary = "Lấy chi tiết danh mục", description = "Trả về chi tiết một danh mục theo id")
+    public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryById(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết danh mục thành công.", categoryService.getCategoryById(id)));
     }
 
     @PostMapping
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Create a new category (Admin)")
-    public ResponseEntity<ApiResponse<CategoryDTO>> createCategory(@Valid @RequestBody CategoryCreateRequest request) {
+    @Operation(summary = "Tạo danh mục mới (Admin)")
+    public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(@Valid @RequestBody CategoryCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Category created successfully.", categoryService.createCategory(request), HttpStatus.CREATED));
+                .body(ApiResponse.success("Tạo danh mục thành công.", categoryService.createCategory(request), HttpStatus.CREATED));
     }
 
     @PutMapping("/{id}")
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update an existing category (Admin)")
-    public ResponseEntity<ApiResponse<CategoryDTO>> updateCategory(
+    @Operation(summary = "Cập nhật danh mục (Admin)")
+    public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
             @PathVariable Long id,
             @Valid @RequestBody CategoryUpdateRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Category updated successfully.", categoryService.updateCategory(id, request)));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật danh mục thành công.", categoryService.updateCategory(id, request)));
+    }
+
+    @PatchMapping("/{id}")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cập nhật một phần danh mục (Admin)")
+    public ResponseEntity<ApiResponse<CategoryResponse>> patchCategory(
+            @PathVariable Long id,
+            @Valid @RequestBody CategoryUpdateRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật danh mục thành công.", categoryService.updateCategory(id, request)));
     }
 
     @DeleteMapping("/{id}")
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Delete an existing category (Admin)")
+    @Operation(summary = "Ẩn danh mục (Admin)")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
-        return ResponseEntity.ok(ApiResponse.success("Category deleted successfully.", HttpStatus.OK));
+        return ResponseEntity.ok(ApiResponse.success("Ẩn danh mục thành công.", HttpStatus.OK));
     }
 }

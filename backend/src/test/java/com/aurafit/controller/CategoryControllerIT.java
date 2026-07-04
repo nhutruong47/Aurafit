@@ -77,7 +77,14 @@ class CategoryControllerIT {
 
     @Test
     void createCategory_AsAdmin_ShouldSucceed() throws Exception {
-        CategoryCreateRequest request = new CategoryCreateRequest("Fitness Gymwear", "Gym and workout gears");
+        CategoryCreateRequest request = new CategoryCreateRequest(
+                "Fitness Gymwear",
+                null,
+                "Gym and workout gears",
+                null,
+                0,
+                true
+        );
 
         mockMvc.perform(post("/api/categories")
                         .header("Authorization", "Bearer " + adminToken)
@@ -91,7 +98,14 @@ class CategoryControllerIT {
 
     @Test
     void createCategory_AsCustomer_ShouldReturnForbidden() throws Exception {
-        CategoryCreateRequest request = new CategoryCreateRequest("Forbidden Cat", "Desc");
+        CategoryCreateRequest request = new CategoryCreateRequest(
+                "Forbidden Cat",
+                null,
+                "Desc",
+                null,
+                0,
+                true
+        );
 
         mockMvc.perform(post("/api/categories")
                         .header("Authorization", "Bearer " + customerToken)
@@ -102,13 +116,16 @@ class CategoryControllerIT {
 
     @Test
     void createCategory_WithDuplicateName_ShouldReturnConflict() throws Exception {
-        Category category = Category.builder()
-                .name("Unique Anime Cosplay")
-                .description("Cosplay description")
-                .build();
-        categoryRepository.saveAndFlush(category);
+        categoryRepository.saveAndFlush(buildCategory("Unique Anime Cosplay", "unique-anime-cosplay", "Cosplay description"));
 
-        CategoryCreateRequest request = new CategoryCreateRequest("Unique Anime Cosplay", "Another description");
+        CategoryCreateRequest request = new CategoryCreateRequest(
+                "Unique Anime Cosplay",
+                null,
+                "Another description",
+                null,
+                0,
+                true
+        );
 
         mockMvc.perform(post("/api/categories")
                         .header("Authorization", "Bearer " + adminToken)
@@ -116,12 +133,19 @@ class CategoryControllerIT {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status", is(409)))
-                .andExpect(jsonPath("$.message", containsString("Category name already exists")));
+                .andExpect(jsonPath("$.message", containsString("Đường dẫn danh mục đã tồn tại")));
     }
 
     @Test
     void createCategory_WithInvalidData_ShouldReturnBadRequest() throws Exception {
-        CategoryCreateRequest request = new CategoryCreateRequest("", "Too long description".repeat(100));
+        CategoryCreateRequest request = new CategoryCreateRequest(
+                "",
+                null,
+                "Too long description".repeat(100),
+                null,
+                0,
+                true
+        );
 
         mockMvc.perform(post("/api/categories")
                         .header("Authorization", "Bearer " + adminToken)
@@ -134,8 +158,8 @@ class CategoryControllerIT {
 
     @Test
     void getCategories_ShouldSucceedWithoutAuth() throws Exception {
-        Category category1 = Category.builder().name("Test Cat A").description("Desc A").build();
-        Category category2 = Category.builder().name("Test Cat B").description("Desc B").build();
+        Category category1 = buildCategory("Test Cat A", "test-cat-a", "Desc A");
+        Category category2 = buildCategory("Test Cat B", "test-cat-b", "Desc B");
         categoryRepository.save(category1);
         categoryRepository.save(category2);
 
@@ -147,8 +171,8 @@ class CategoryControllerIT {
 
     @Test
     void searchCategories_ShouldSucceedWithPagingAndFiltering() throws Exception {
-        Category category1 = Category.builder().name("Special Active Cosplay").description("Desc A").build();
-        Category category2 = Category.builder().name("Special Traditional Wear").description("Desc B").build();
+        Category category1 = buildCategory("Special Active Cosplay", "special-active-cosplay", "Desc A");
+        Category category2 = buildCategory("Special Traditional Wear", "special-traditional-wear", "Desc B");
         categoryRepository.save(category1);
         categoryRepository.save(category2);
 
@@ -164,10 +188,17 @@ class CategoryControllerIT {
 
     @Test
     void updateCategory_AsAdmin_ShouldSucceed() throws Exception {
-        Category category = Category.builder().name("Old Cat Name").description("Old Desc").build();
+        Category category = buildCategory("Old Cat Name", "old-cat-name", "Old Desc");
         category = categoryRepository.save(category);
 
-        CategoryUpdateRequest request = new CategoryUpdateRequest("New Cat Name", "New Desc");
+        CategoryUpdateRequest request = new CategoryUpdateRequest(
+                "New Cat Name",
+                null,
+                "New Desc",
+                null,
+                null,
+                null
+        );
 
         mockMvc.perform(put("/api/categories/" + category.getId())
                         .header("Authorization", "Bearer " + adminToken)
@@ -181,7 +212,7 @@ class CategoryControllerIT {
 
     @Test
     void deleteCategory_AsAdmin_ShouldSucceed() throws Exception {
-        Category category = Category.builder().name("Test Delete Me").description("Desc").build();
+        Category category = buildCategory("Test Delete Me", "test-delete-me", "Desc");
         category = categoryRepository.save(category);
 
         mockMvc.perform(delete("/api/categories/" + category.getId())
@@ -190,7 +221,18 @@ class CategoryControllerIT {
                 .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.message", containsString("deleted successfully")));
 
-        mockMvc.perform(get("/api/categories/" + category.getId()))
-                .andExpect(status().isNotFound());
+        Category deletedCategory = categoryRepository.findById(category.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertFalse(Boolean.TRUE.equals(deletedCategory.getIsActive()));
+    }
+
+    private Category buildCategory(String name, String slug, String description) {
+        return Category.builder()
+                .name(name)
+                .slug(slug)
+                .path(slug)
+                .description(description)
+                .sortOrder(0)
+                .isActive(true)
+                .build();
     }
 }

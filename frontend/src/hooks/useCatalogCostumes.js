@@ -1,9 +1,39 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchCostumes } from '../services/costumeService';
-import { fetchPublicCategories } from '../services/catalogService';
-import { categoryApiNames, mapCostumeToProduct } from '../utils/productMapper';
+import { mapCostumeToProduct } from '../utils/productMapper';
 
-export function useCatalogCostumes(categoryKey) {
+const categoryPathByKey = {
+  cosplay: 'cosplay',
+  event: 'su-kien',
+  events: 'su-kien',
+  yearbook: 'ky-yeu',
+  traditional: 'trang-phuc-truyen-thong',
+  accessories: 'phu-kien',
+};
+
+function normalizeOptions(options) {
+  if (typeof options === 'string') {
+    return { categoryKey: options };
+  }
+
+  if (options && typeof options === 'object') {
+    return options;
+  }
+
+  return {};
+}
+
+export function useCatalogCostumes(options) {
+  const normalizedOptions = normalizeOptions(options);
+  const {
+    categoryKey,
+    categoryPath: explicitCategoryPath,
+    keyword,
+  } = normalizedOptions;
+
+  const resolvedCategoryPath = explicitCategoryPath || (categoryKey ? categoryPathByKey[categoryKey] || null : null);
+  const normalizedKeyword = keyword?.trim() || '';
+
   const [state, setState] = useState({
     costumes: [],
     isLoading: false,
@@ -14,8 +44,10 @@ export function useCatalogCostumes(categoryKey) {
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
-    const requestKey = categoryKey || '__all__';
-    const resolvedCategoryName = categoryKey ? categoryApiNames[categoryKey] || categoryKey : null;
+    const requestKey = JSON.stringify({
+      categoryPath: resolvedCategoryPath || null,
+      keyword: normalizedKeyword || null,
+    });
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((currentState) => ({
@@ -27,43 +59,17 @@ export function useCatalogCostumes(categoryKey) {
 
     const fetchData = async () => {
       try {
-        let categoryId = null;
-
-        // Step 1: If a category is requested, fetch all categories to find the corresponding ID
-        if (resolvedCategoryName) {
-          const categories = await fetchPublicCategories();
-          if (controller.signal.aborted) return;
-          
-          const targetCategory = (categories || []).find(
-            (c) => c.name.toLowerCase() === resolvedCategoryName.toLowerCase()
-          );
-          
-          // If the category is specified but doesn't exactly match on backend, we just won't pass categoryId.
-          // We will filter locally after mapping.
-          if (targetCategory) {
-            categoryId = targetCategory.id;
-          }
-        }
-
-        // Step 2: Fetch costumes with the found categoryId (or null for all)
-        const data = await fetchCostumes({ 
-          categoryId, 
-          pageSize: 100, 
-          signal: controller.signal 
+        const data = await fetchCostumes({
+          categoryPath: resolvedCategoryPath,
+          keyword: normalizedKeyword || undefined,
+          pageSize: 100,
+          signal: controller.signal,
         });
-        
+
         if (controller.signal.aborted || !isMounted) return;
 
-        let mappedCostumes = Array.isArray(data) ? data.map(mapCostumeToProduct) : [];
-        
-        if (resolvedCategoryName) {
-          mappedCostumes = mappedCostumes.filter(
-            (c) => c.category.toLowerCase() === resolvedCategoryName.toLowerCase()
-          );
-        }
-
         setState({
-          costumes: mappedCostumes,
+          costumes: Array.isArray(data) ? data.map(mapCostumeToProduct) : [],
           isLoading: false,
           error: null,
           requestKey,
@@ -86,10 +92,13 @@ export function useCatalogCostumes(categoryKey) {
       isMounted = false;
       controller.abort();
     };
-  }, [categoryKey]);
+  }, [normalizedKeyword, resolvedCategoryPath]);
 
   return useMemo(() => {
-    const requestKey = categoryKey || '__all__';
+    const requestKey = JSON.stringify({
+      categoryPath: resolvedCategoryPath || null,
+      keyword: normalizedKeyword || null,
+    });
     const isCurrentRequest = state.requestKey === requestKey;
 
     return {
@@ -97,5 +106,5 @@ export function useCatalogCostumes(categoryKey) {
       isLoading: !isCurrentRequest || state.isLoading,
       error: isCurrentRequest ? state.error : null,
     };
-  }, [categoryKey, state]);
+  }, [normalizedKeyword, resolvedCategoryPath, state]);
 }

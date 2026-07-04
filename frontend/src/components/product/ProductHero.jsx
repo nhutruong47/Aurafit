@@ -1,9 +1,7 @@
-// Hero chi tiet san pham voi gia, thong tin va hanh dong them vao gio.
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
-import { adminContact } from '../../utils/shopMock';
 
 export default function ProductHero({
   product,
@@ -20,46 +18,47 @@ export default function ProductHero({
   onEndDateChange,
 }) {
   const getLocalDateString = (dateInput = new Date()) => {
-    const d = new Date(dateInput);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const date = new Date(dateInput);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
+
   const today = getLocalDateString();
   const [dateError, setDateError] = useState('');
   const [showSizeSelector, setShowSizeSelector] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const cartItems = useSelector((state) => state.cart.items);
 
-  const availableItems = product?.items || [];
-
   if (!product) return null;
 
-  const sellerName = product.sellerName || product.owner?.fullName || product.owner?.email || adminContact.name;
+  const availableItems = product.items || [];
+  const sellerName = product.sellerName || product.owner?.fullName || product.owner?.email || 'AuraFit';
   const sellerEmail = product.sellerEmail || product.owner?.email || '';
 
   const handleSelectItem = (item) => {
     onSelectItem?.(item);
-    setQuantity(1); // Reset quantity when changing variant
+    setQuantity(1);
   };
 
-  const handleStartDateChange = (e) => {
-    const val = e.target.value;
-    onStartDateChange(val);
+  const handleStartDateChange = (event) => {
+    const value = event.target.value;
+    onStartDateChange(value);
     setDateError('');
-    if (rentalEndDate && val >= rentalEndDate) {
+    if (rentalEndDate && value >= rentalEndDate) {
       onEndDateChange('');
     }
   };
 
-  const handleEndDateChange = (e) => {
-    const val = e.target.value;
-    if (rentalStartDate && val <= rentalStartDate) {
+  const handleEndDateChange = (event) => {
+    const value = event.target.value;
+    if (rentalStartDate && value <= rentalStartDate) {
       setDateError('Ngày trả phải sau ngày nhận.');
       return;
     }
-    onEndDateChange(val);
+
+    onEndDateChange(value);
     setDateError('');
   };
 
@@ -68,38 +67,33 @@ export default function ProductHero({
   const handleRentNow = () => {
     if (!canRentNow) return;
     const item = selectedItem || product.items?.[0] || null;
-    const itemWithDates = {
+    onRentNow?.({
       ...toCartItem(product, item),
       rentalStartDate,
       rentalEndDate,
       quantity,
-    };
-    onRentNow?.(itemWithDates);
+    });
   };
-
-  // ── Context-Aware Effective Stock (Redux-First) ──
 
   const getSelectedVariantStock = () => {
     if (!selectedItem || !product.inventorySummary) return product.availableItemCount;
-    
+
     const summary = product.inventorySummary.find(
-      (s) => s.size === (selectedItem.size || '') && s.color === (selectedItem.color || '')
+      (item) => item.size === (selectedItem.size || '') && item.color === (selectedItem.color || '')
     );
-    if (!summary) return 0;
-    return summary.availableCount;
+
+    return summary ? summary.availableCount : 0;
   };
 
   const totalStock = getSelectedVariantStock();
-
-  // Calculate inCartQty from live Redux state (real-time, not stale API data)
   const inCartQty = cartItems
-    .filter((ci) => {
-      const matchesCostume = ci.costumeId === product.id || ci.id === product.id;
-      const matchesSize = (ci.size || '') === (selectedItem?.size || '');
-      const matchesColor = (ci.color || '') === (selectedItem?.color || '');
+    .filter((cartItem) => {
+      const matchesCostume = cartItem.costumeId === product.id || cartItem.id === product.id;
+      const matchesSize = (cartItem.size || '') === (selectedItem?.size || '');
+      const matchesColor = (cartItem.color || '') === (selectedItem?.color || '');
       return matchesCostume && matchesSize && matchesColor;
     })
-    .reduce((sum, ci) => sum + (ci.quantity || 1), 0);
+    .reduce((sum, cartItem) => sum + (cartItem.quantity || 1), 0);
 
   const effectiveStock = Math.max(0, totalStock - inCartQty);
   const isVariantAvailable = effectiveStock > 0;
@@ -155,16 +149,17 @@ export default function ProductHero({
           </div>
         </div>
 
-        {/* Size / Color Selector */}
         {availableItems.length > 0 && (
           <div className="mb-6">
             <button
               type="button"
-              onClick={() => setShowSizeSelector((v) => !v)}
+              onClick={() => setShowSizeSelector((current) => !current)}
               className="flex w-full items-center justify-between border border-[#cfc4c5] px-4 py-2 text-left"
             >
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
-                {selectedItem ? `Size: ${selectedItem.size || 'Freesize'}${selectedItem.color ? ` / ${selectedItem.color}` : ''}` : 'Chọn size'}
+                {selectedItem
+                  ? `Size: ${selectedItem.size || 'Freesize'}${selectedItem.color ? ` / ${selectedItem.color}` : ''}`
+                  : 'Chọn size'}
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
                 {showSizeSelector ? 'Thu gọn' : 'Chọn size'}
@@ -194,14 +189,13 @@ export default function ProductHero({
           </div>
         )}
 
-        {/* Quantity Selector and Stock Status */}
         {selectedItem && (
           <div className="mb-6 flex items-center justify-between">
             <div className="flex flex-col gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Số lượng</span>
               <div className="flex h-10 items-center border border-[#cfc4c5]">
                 <button
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
                   className="flex h-full w-10 items-center justify-center text-black transition hover:bg-[#f9f9f9] hover:text-[#99854e]"
                 >
                   <span className="material-symbols-outlined text-sm">remove</span>
@@ -210,17 +204,19 @@ export default function ProductHero({
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity((q) => Math.min(effectiveStock, q + 1))}
+                  onClick={() => setQuantity((current) => Math.min(effectiveStock, current + 1))}
                   disabled={quantity >= effectiveStock}
                   className={`flex h-full w-10 items-center justify-center transition ${
-                    quantity >= effectiveStock ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-black hover:bg-[#f9f9f9] hover:text-[#99854e]'
+                    quantity >= effectiveStock
+                      ? 'cursor-not-allowed bg-gray-50 text-gray-400'
+                      : 'text-black hover:bg-[#f9f9f9] hover:text-[#99854e]'
                   }`}
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
                 </button>
               </div>
             </div>
-            
+
             <div className="flex flex-col items-end gap-2 pt-6">
               <span
                 className={`inline-block rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-wider ${
@@ -232,7 +228,7 @@ export default function ProductHero({
                 {isVariantAvailable ? `Còn ${effectiveStock} sản phẩm` : 'Hết hàng'}
               </span>
               {inCartQty > 0 && (
-                <span className="text-[10px] text-amber-600 italic font-medium">
+                <span className="text-[10px] font-medium italic text-amber-600">
                   Đã có {inCartQty} sản phẩm trong giỏ hàng
                 </span>
               )}
@@ -240,7 +236,6 @@ export default function ProductHero({
           </div>
         )}
 
-        {/* Rental Date Picker */}
         <div className="mb-6">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Thời gian thuê</p>
           <div className="grid grid-cols-2 gap-3">
@@ -259,7 +254,11 @@ export default function ProductHero({
               <input
                 type="date"
                 value={rentalEndDate}
-                min={rentalStartDate ? getLocalDateString(new Date(new Date(rentalStartDate).getTime() + 86400000)) : today}
+                min={
+                  rentalStartDate
+                    ? getLocalDateString(new Date(new Date(rentalStartDate).getTime() + 86400000))
+                    : today
+                }
                 onChange={handleEndDateChange}
                 className="w-full border border-[#cfc4c5] bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
               />
@@ -271,27 +270,21 @@ export default function ProductHero({
         <div className="mb-10">
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.1em] text-black">Mô tả sản phẩm</h3>
           <p className="text-base leading-7 text-[#5f5e5e]">
-            {product.description || 'Trang phục cao cấp mang đến trải nghiệm nổi bật cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu chỉn chu và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
+            {product.description ||
+              'Trang phục cao cấp mang đến trải nghiệm nổi bật cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu chỉnh chu và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
           </p>
         </div>
 
         <div className="mb-8 flex items-center justify-between gap-4 border border-[#cfc4c5] bg-[#f9f9f9] p-5">
           <div className="flex items-center gap-4">
-            <img
-              src={adminContact.avatar}
-              alt={sellerName}
-              className="h-14 w-14 rounded-full border border-[#cfc4c5]/50 object-cover"
-            />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#cfc4c5]/50 bg-black font-serif text-xl text-white">
+              {(sellerName || 'A').charAt(0).toUpperCase()}
+            </div>
             <div>
               <h4 className="font-serif text-lg font-bold">{sellerName}</h4>
-              <div className="mt-1 flex items-center gap-2 text-xs text-[#5f5e5e]">
-                <span className="flex items-center text-[#99854e]">
-                  <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  {adminContact.rating}
-                </span>
-                <span>•</span>
-                <span>{sellerEmail || adminContact.address.split(',').slice(-2).join(', ').trim()}</span>
-              </div>
+              <p className="mt-1 text-xs text-[#5f5e5e]">
+                {sellerEmail || 'Thông tin người bán được lấy từ backend khi có dữ liệu owner.'}
+              </p>
             </div>
           </div>
           <button
@@ -308,11 +301,10 @@ export default function ProductHero({
             onClick={async () => {
               if (!isVariantAvailable || isLoading || isAddingToCart) return;
               const item = selectedItem || product.items?.[0] || null;
-              const itemWithDates = {
+              const success = await onAddToCart?.({
                 ...toCartItem(product, item),
                 quantity,
-              };
-              const success = await onAddToCart?.(itemWithDates);
+              });
               if (success !== false) {
                 setQuantity(1);
               }
@@ -323,7 +315,13 @@ export default function ProductHero({
                 : ''
             }`}
           >
-            {isAddingToCart ? 'Đang thêm...' : isLoading ? 'Đang tải...' : !isVariantAvailable ? 'ĐÃ ĐẠT GIỚI HẠN TỒN KHO' : 'Thêm vào giỏ hàng'}
+            {isAddingToCart
+              ? 'Đang thêm...'
+              : isLoading
+                ? 'Đang tải...'
+                : !isVariantAvailable
+                  ? 'Đã đạt giới hạn tồn kho'
+                  : 'Thêm vào giỏ hàng'}
           </button>
           <button
             disabled={!canRentNow || !isVariantAvailable || isAddingToCart}
@@ -334,7 +332,8 @@ export default function ProductHero({
                 : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
             }`}
           >
-            Thuê ngay {!canRentNow && !isAddingToCart && isVariantAvailable && (
+            Thuê ngay{' '}
+            {!canRentNow && !isAddingToCart && isVariantAvailable && (
               <span className="ml-1 font-normal normal-case tracking-normal text-white/60">
                 (Hãy chọn ngày thuê)
               </span>

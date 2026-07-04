@@ -13,7 +13,6 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
     return `${year}-${month}-${day}`;
   };
   const today = getLocalDateString(0);
-  const [items, setItems] = useState(() => product.items || []);
   const [selectedItem, setSelectedItem] = useState(() => product.items?.[0] || null);
   const [showDates, setShowDates] = useState(false);
   const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
@@ -33,7 +32,6 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
       fetchCostumeItems(product.id)
         .then((fetched) => {
           if (fetched && fetched.length > 0) {
-            setItems(fetched);
             setSelectedItem((prev) => prev || fetched[0]);
           }
         })

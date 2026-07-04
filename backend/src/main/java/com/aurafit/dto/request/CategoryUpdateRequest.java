@@ -3,9 +3,18 @@ package com.aurafit.dto.request;
 import jakarta.validation.constraints.Size;
 
 public record CategoryUpdateRequest(
-        @Size(min = 1, max = 100, message = "Category name must be between 1 and 100 characters")
+        @Size(max = 100, message = "Tên danh mục không được vượt quá 100 ký tự")
         String name,
 
-        @Size(max = 500, message = "Description cannot exceed 500 characters")
-        String description
+        @Size(max = 120, message = "Slug danh mục không được vượt quá 120 ký tự")
+        String slug,
+
+        @Size(max = 1000, message = "Mô tả danh mục không được vượt quá 1000 ký tự")
+        String description,
+
+        Long parentId,
+
+        Integer sortOrder,
+
+        Boolean isActive
 ) {}

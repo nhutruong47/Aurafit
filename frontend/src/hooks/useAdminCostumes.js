@@ -78,7 +78,7 @@ export function useAdminCostumes(currentUser) {
           .some((value) => value.toLowerCase().includes(query));
       const matchesCategory =
         productCategoryFilter === 'all' ||
-        product.category?.name === productCategoryFilter;
+        product.category?.path === productCategoryFilter;
       const matchesStatus =
         productStatusFilter === 'all' ||
         (productStatusFilter === 'available' && product.status === 'ACTIVE') ||

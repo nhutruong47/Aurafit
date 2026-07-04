@@ -1,75 +1,32 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ProductHero from '../components/product/ProductHero';
-import ProductReviewsSection from '../components/product/ProductReviewsSection';
 import SimilarProductsSection from '../components/product/SimilarProductsSection';
-import { useSimilarProducts } from '../hooks/useSimilarProducts';
 import AlertMessage from '../components/ui/AlertMessage';
+import { useSimilarProducts } from '../hooks/useSimilarProducts';
 import { fetchCostumeById } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
 import { mapCostumeToProduct, toCartItem } from '../utils/productMapper';
-
-const initialMockReviews = [
-  {
-    id: 1,
-    author: 'Nguyễn Minh Anh',
-    rating: 5,
-    date: '10/05/2026',
-    comment: 'Trang phục rất đẹp, chất liệu vải cao cấp và lên form cực chuẩn. Dịch vụ tư vấn nhiệt tình, giao hàng nhanh chóng.',
-  },
-  {
-    id: 2,
-    author: 'Trần Hải Đăng',
-    rating: 4,
-    date: '02/06/2026',
-    comment: 'Đồ lên form chuẩn, màu sắc y như hình chụp. Có một chút vết nhăn nhỏ do vận chuyển nhưng ủi sơ là đẹp ngay.',
-  },
-  {
-    id: 3,
-    author: 'Lê Ngọc Diệp',
-    rating: 5,
-    date: '12/06/2026',
-    comment: 'Tuyệt vời! Mình thuê đồ đi dự dạ hội ai cũng khen. Sẽ tiếp tục ủng hộ AuraFit trong những sự kiện tới.',
-  },
-  {
-    id: 4,
-    author: 'Phạm Thu Hà',
-    rating: 3,
-    date: '15/06/2026',
-    comment: 'Đồ tạm ổn nhưng form hơi rộng so với bảng size. Phải dùng thêm kẹp phía sau mới vừa.',
-  },
-  {
-    id: 5,
-    author: 'Hoàng Văn Thái',
-    rating: 5,
-    date: '20/06/2026',
-    comment: 'Quá ưng ý. Đồ giặt thơm tho sạch sẽ, bọc trong túi xách rất chuyên nghiệp.',
-  },
-];
 
 export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, currentUser }) {
   const { productId } = useParams();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [reviews, setReviews] = useState(initialMockReviews);
-  const [filterRating, setFilterRating] = useState('all');
-  const [showAllReviews, setShowAllReviews] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [newReviewData, setNewReviewData] = useState({ rating: 5, comment: '' });
   const [selectedItem, setSelectedItem] = useState(null);
+  const impressionKeyRef = useRef('');
+
   const getLocalDateString = (daysOffset = 0) => {
-    const d = new Date();
-    d.setDate(d.getDate() + daysOffset);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const date = new Date();
+    date.setDate(date.getDate() + daysOffset);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
 
   const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
   const [rentalEndDate, setRentalEndDate] = useState(() => getLocalDateString(1));
-  const impressionKeyRef = useRef('');
 
   const {
     recommendations: similarRecommendations,
@@ -92,10 +49,10 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     fetchCostumeById(productId)
       .then((costume) => {
         if (!isMounted) return;
-        const mapped = costume ? mapCostumeToProduct(costume) : null;
-        setProduct(mapped);
-        if (mapped?.items?.length > 0) {
-          setSelectedItem(mapped.items[0]);
+        const mappedProduct = costume ? mapCostumeToProduct(costume) : null;
+        setProduct(mappedProduct);
+        if (mappedProduct?.items?.length > 0) {
+          setSelectedItem(mappedProduct.items[0]);
         }
       })
       .catch((error) => {
@@ -162,33 +119,17 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     }).catch(() => {});
   }, [product?.id, similarRecommendations]);
 
-  const stats = useMemo(() => {
-    const total = reviews.length;
-    const avg = total > 0 ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / total).toFixed(1) : 0;
-    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    reviews.forEach((review) => {
-      counts[review.rating] += 1;
-    });
-    return { total, avg, counts };
-  }, [reviews]);
-
-  const filteredReviews = useMemo(() => {
-    const activeReviews = filterRating === 'all' ? reviews : reviews.filter((review) => review.rating === Number(filterRating));
-    return activeReviews.sort((a, b) => b.id - a.id);
-  }, [reviews, filterRating]);
-
-  const displayedReviews = showAllReviews ? filteredReviews : filteredReviews.slice(0, 3);
-
   const handleAddToCartClick = async (itemFromHero) => {
     if (!currentUser?.id) {
       onNavigate?.('account');
       return false;
     }
-    if (!selectedItem && product.items?.length > 0) {
+
+    if (!selectedItem && product?.items?.length > 0) {
       alert('Vui lòng chọn kích thước/loại trước khi thêm vào giỏ.');
       return false;
     }
-    // itemFromHero contains quantity and dates mapped by ProductHero
+
     const finalItem = itemFromHero || toCartItem(product, selectedItem);
     await onAddToCart?.(finalItem);
     return true;
@@ -199,31 +140,15 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
       onNavigate?.('account');
       return;
     }
+
     if (!selectedItem) return;
+
     const baseItem = toCartItem(product, selectedItem);
     onRentNow?.({
       ...baseItem,
       rentalStartDate,
       rentalEndDate,
     });
-  };
-
-  const handleSubmitReview = (event) => {
-    event.preventDefault();
-    if (!newReviewData.comment.trim()) return;
-
-    const newReview = {
-      id: Date.now(),
-      author: 'Bạn (Khách hàng)',
-      rating: newReviewData.rating,
-      date: new Date().toLocaleDateString('vi-VN'),
-      comment: newReviewData.comment,
-    };
-
-    setReviews((currentReviews) => [newReview, ...currentReviews]);
-    setNewReviewData({ rating: 5, comment: '' });
-    setShowReviewForm(false);
-    setFilterRating('all');
   };
 
   const handleRecommendationClick = (recommendation, index, page, recommendedProduct) => {
@@ -284,23 +209,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
             onNavigate={onNavigate}
             onAddToCart={onAddToCart}
             onRecommendationClick={handleRecommendationClick}
-          />
-        )}
-
-        {product && (
-          <ProductReviewsSection
-            stats={stats}
-            filterRating={filterRating}
-            filteredReviews={filteredReviews}
-            displayedReviews={displayedReviews}
-            showAllReviews={showAllReviews}
-            showReviewForm={showReviewForm}
-            newReviewData={newReviewData}
-            onFilterRatingChange={setFilterRating}
-            onToggleShowAll={setShowAllReviews}
-            onToggleReviewForm={setShowReviewForm}
-            onReviewDataChange={setNewReviewData}
-            onSubmitReview={handleSubmitReview}
           />
         )}
       </div>

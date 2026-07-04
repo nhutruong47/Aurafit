@@ -1,17 +1,73 @@
-// Sidebar bo loc theo danh muc, muc dich va doi tuong cho catalog.
-import { categoryTaxonomy } from '../../data/categories';
+function CategoryNode({
+  category,
+  expandedPaths,
+  selectedCategoryPath,
+  onApplyFilter,
+  onToggleCategory,
+}) {
+  const hasChildren = Array.isArray(category.children) && category.children.length > 0;
+  const isExpanded = expandedPaths.includes(category.path);
+  const isActive = selectedCategoryPath === category.path;
+
+  return (
+    <div className="border-b border-[#cfc4c5]/30 pb-4 last:border-0 last:pb-0">
+      <div className="group flex items-center justify-between gap-3">
+        <button
+          onClick={() => onApplyFilter('category', category.path)}
+          className={`text-left transition-colors ${
+            isActive
+              ? 'text-[13px] font-semibold uppercase tracking-[0.1em] text-[#99854e]'
+              : category.parentPath
+                ? 'text-sm text-[#5f5e5e] hover:text-black'
+                : 'text-[13px] font-semibold uppercase tracking-[0.1em] text-black hover:text-[#99854e]'
+          }`}
+        >
+          {category.name}
+        </button>
+
+        {hasChildren && (
+          <button
+            onClick={() => onToggleCategory(category.path)}
+            className="p-1 text-[#999999] hover:text-black"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {isExpanded ? 'remove' : 'add'}
+            </span>
+          </button>
+        )}
+      </div>
+
+      {hasChildren && isExpanded && (
+        <div className="mt-3 space-y-3 border-l border-[#cfc4c5]/30 pl-3">
+          {category.children.map((child) => (
+            <CategoryNode
+              key={child.path}
+              category={{ ...child, parentPath: category.path }}
+              expandedPaths={expandedPaths}
+              selectedCategoryPath={selectedCategoryPath}
+              onApplyFilter={onApplyFilter}
+              onToggleCategory={onToggleCategory}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CatalogFilterSidebar({
+  categoryTree,
+  availableTags,
   selectedFilter,
-  expandedCategories,
-  expandedSubcategories,
+  expandedPaths,
   isMobileFilterOpen,
   onSetMobileFilterOpen,
   onClearFilters,
   onApplyFilter,
   onToggleCategory,
-  onToggleSubcategory,
 }) {
+  const hasActiveFilter = Boolean(selectedFilter.categoryPath || selectedFilter.tag);
+
   return (
     <>
       <button
@@ -29,7 +85,7 @@ export default function CatalogFilterSidebar({
       >
         <div className="mb-6 flex items-center justify-between border-b border-[#cfc4c5]/50 pb-4">
           <h2 className="text-sm font-semibold uppercase tracking-[0.1em]">Danh mục sản phẩm</h2>
-          {(selectedFilter.category || selectedFilter.subcategory || selectedFilter.tag) && (
+          {hasActiveFilter && (
             <button
               onClick={onClearFilters}
               className="text-[11px] font-semibold uppercase text-[#99854e] hover:text-black"
@@ -40,86 +96,44 @@ export default function CatalogFilterSidebar({
         </div>
 
         <div className="space-y-4">
-          {categoryTaxonomy.map((category) => (
-            <div key={category.id} className="border-b border-[#cfc4c5]/30 pb-4 last:border-0 last:pb-0">
-              <div className="group flex cursor-pointer items-center justify-between">
-                <button
-                  onClick={() => onApplyFilter('category', category.label)}
-                  className={`text-[13px] font-semibold uppercase tracking-[0.1em] transition-colors ${
-                    selectedFilter.category === category.label && !selectedFilter.subcategory
-                      ? 'text-[#99854e]'
-                      : 'text-black hover:text-[#99854e]'
-                  }`}
-                >
-                  {category.label}
-                </button>
-                <button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onToggleCategory(category.label);
-                  }}
-                  className="p-1 text-[#999999] hover:text-black"
-                >
-                  <span className="material-symbols-outlined text-[20px]">
-                    {expandedCategories.includes(category.label) ? 'remove' : 'add'}
-                  </span>
-                </button>
-              </div>
-
-              {expandedCategories.includes(category.label) && (
-                <div className="mt-3 space-y-3 border-l border-[#cfc4c5]/30 pl-3">
-                  {category.subcategories.map((subcategory) => (
-                    <div key={subcategory.id}>
-                      <div className="group flex cursor-pointer items-center justify-between">
-                        <button
-                          onClick={() => onApplyFilter('subcategory', subcategory.label)}
-                          className={`text-sm transition-colors ${
-                            selectedFilter.subcategory === subcategory.label && !selectedFilter.tag
-                              ? 'font-medium text-[#99854e]'
-                              : 'text-[#5f5e5e] hover:text-black'
-                          }`}
-                        >
-                          {subcategory.label}
-                        </button>
-                        {subcategory.tags && subcategory.tags.length > 0 && (
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              onToggleSubcategory(subcategory.label);
-                            }}
-                            className="text-[#999999] hover:text-black"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              {expandedSubcategories.includes(subcategory.label) ? 'expand_less' : 'expand_more'}
-                            </span>
-                          </button>
-                        )}
-                      </div>
-
-                      {expandedSubcategories.includes(subcategory.label) && subcategory.tags && (
-                        <div className="mt-2 flex flex-col items-start space-y-2 pl-3">
-                          {subcategory.tags.map((tag) => (
-                            <button
-                              key={tag}
-                              onClick={() => onApplyFilter('tag', tag)}
-                              className={`text-left text-[13px] transition-colors ${
-                                selectedFilter.tag === tag
-                                  ? 'font-medium text-[#99854e]'
-                                  : 'text-[#777777] hover:text-black'
-                              }`}
-                            >
-                              - {tag}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          {categoryTree.map((category) => (
+            <CategoryNode
+              key={category.path}
+              category={category}
+              expandedPaths={expandedPaths}
+              selectedCategoryPath={selectedFilter.categoryPath}
+              onApplyFilter={onApplyFilter}
+              onToggleCategory={onToggleCategory}
+            />
           ))}
         </div>
+
+        {availableTags.length > 0 && (
+          <div className="mt-8 border-t border-[#cfc4c5]/50 pt-6">
+            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5f5e5e]">
+              Tags metadata
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.slice(0, 18).map((tag) => {
+                const isActive = selectedFilter.tag === tag;
+
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => onApplyFilter('tag', tag)}
+                    className={`rounded-full border px-3 py-1 text-[11px] transition ${
+                      isActive
+                        ? 'border-[#99854e] bg-[#99854e] text-white'
+                        : 'border-[#d7d2c8] text-[#5f5e5e] hover:border-black hover:text-black'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </aside>
     </>
   );

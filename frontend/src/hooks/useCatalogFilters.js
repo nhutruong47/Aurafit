@@ -1,81 +1,137 @@
-import { useMemo, useState } from 'react';
-import { categoryTaxonomy } from '../data/categories';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  buildAncestorPaths,
+  buildSelectedCategoryState,
+  flattenCategoryTree,
+} from '../utils/catalogCategory';
 
-export function useCatalogFilters(costumes) {
+export function useCatalogFilters(costumes, categoryTree, initialCategoryPath = null) {
+  const flatCategories = useMemo(() => flattenCategoryTree(categoryTree), [categoryTree]);
+  const categoriesByPath = useMemo(
+    () => new Map(flatCategories.map((category) => [category.path, category])),
+    [flatCategories]
+  );
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState({ category: null, subcategory: null, tag: null });
-  const [expandedCategories, setExpandedCategories] = useState(['Cosplay', 'Event', 'Kỷ yếu', 'Phụ kiện']);
-  const [expandedSubcategories, setExpandedSubcategories] = useState([]);
+  const [selectedFilter, setSelectedFilter] = useState(() =>
+    buildSelectedCategoryState(initialCategoryPath, categoriesByPath)
+  );
+  const [expandedPaths, setExpandedPaths] = useState(() =>
+    initialCategoryPath ? buildAncestorPaths(initialCategoryPath, categoriesByPath) : []
+  );
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  const toggleCategory = (catLabel) => {
-    setExpandedCategories((prev) =>
-      prev.includes(catLabel) ? prev.filter((category) => category !== catLabel) : [...prev, catLabel]
-    );
-  };
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedFilter((current) => {
+      if (current.categoryPath === initialCategoryPath && current.tag === null) {
+        return current;
+      }
 
-  const toggleSubcategory = (subLabel) => {
-    setExpandedSubcategories((prev) =>
-      prev.includes(subLabel) ? prev.filter((subcategory) => subcategory !== subLabel) : [...prev, subLabel]
+      return buildSelectedCategoryState(initialCategoryPath, categoriesByPath);
+    });
+
+    if (!initialCategoryPath) {
+      return;
+    }
+
+    const ancestorPaths = buildAncestorPaths(initialCategoryPath, categoriesByPath);
+    setExpandedPaths((current) => [...new Set([...current, ...ancestorPaths])]);
+  }, [categoriesByPath, initialCategoryPath]);
+
+  const toggleCategory = (categoryPath) => {
+    setExpandedPaths((current) =>
+      current.includes(categoryPath)
+        ? current.filter((path) => path !== categoryPath)
+        : [...current, categoryPath]
     );
   };
 
   const applyFilter = (level, value) => {
     if (level === 'category') {
-      setSelectedFilter({ category: value, subcategory: null, tag: null });
-    } else if (level === 'subcategory') {
-      const parentCat = categoryTaxonomy.find((category) =>
-        category.subcategories.some((subcategory) => subcategory.label === value)
-      )?.label;
-      setSelectedFilter({ category: parentCat, subcategory: value, tag: null });
-    } else if (level === 'tag') {
-      const parentSub = categoryTaxonomy
-        .flatMap((category) => category.subcategories)
-        .find((subcategory) => subcategory.tags.includes(value))?.label;
-      const parentCat = categoryTaxonomy.find((category) =>
-        category.subcategories.some((subcategory) => subcategory.label === parentSub)
-      )?.label;
-      setSelectedFilter({ category: parentCat, subcategory: parentSub, tag: value });
+      setSelectedFilter(buildSelectedCategoryState(value, categoriesByPath));
     }
+
+    if (level === 'tag') {
+      setSelectedFilter((current) => ({
+        ...current,
+        tag: current.tag === value ? null : value,
+      }));
+    }
+
     setIsMobileFilterOpen(false);
   };
 
   const clearFilters = () => {
-    setSelectedFilter({ category: null, subcategory: null, tag: null });
+    setSelectedFilter(buildSelectedCategoryState(null, categoriesByPath));
+    setSearchTerm('');
   };
+
+  const availableTags = useMemo(() => {
+    const tagSet = new Set();
+
+    costumes.forEach((costume) => {
+      (costume.tags || []).forEach((tag) => {
+        if (tag) {
+          tagSet.add(tag);
+        }
+      });
+    });
+
+    return [...tagSet].sort((left, right) => left.localeCompare(right, 'vi'));
+  }, [costumes]);
 
   const filteredCostumes = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
     return costumes.filter((costume) => {
-      if (selectedFilter.tag && costume.tag !== selectedFilter.tag) return false;
-      if (!selectedFilter.tag && selectedFilter.subcategory && costume.subcategory !== selectedFilter.subcategory) {
-        return false;
+      if (selectedFilter.categoryPath) {
+        const costumePath = costume.categoryPath || '';
+        const matchesSelectedCategory =
+          costumePath === selectedFilter.categoryPath ||
+          costumePath.startsWith(`${selectedFilter.categoryPath}/`);
+
+        if (!matchesSelectedCategory) {
+          return false;
+        }
       }
-      if (!selectedFilter.subcategory && selectedFilter.category && costume.category !== selectedFilter.category) {
+
+      if (selectedFilter.tag && !(costume.tags || []).includes(selectedFilter.tag)) {
         return false;
       }
 
       if (normalizedSearch) {
-        const searchableText = `${costume.name} ${costume.category} ${costume.subcategory} ${costume.tag}`.toLowerCase();
-        if (!searchableText.includes(normalizedSearch)) return false;
+        const searchableText = [
+          costume.name,
+          costume.description,
+          costume.category,
+          costume.subcategory,
+          costume.tag,
+          ...(costume.tags || []),
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        if (!searchableText.includes(normalizedSearch)) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [costumes, searchTerm, selectedFilter]);
+  }, [costumes, searchTerm, selectedFilter.categoryPath, selectedFilter.tag]);
 
   return {
     searchTerm,
     selectedFilter,
-    expandedCategories,
-    expandedSubcategories,
+    expandedPaths,
     isMobileFilterOpen,
+    availableTags,
     filteredCostumes,
     setSearchTerm,
     setIsMobileFilterOpen,
     toggleCategory,
-    toggleSubcategory,
     applyFilter,
     clearFilters,
   };

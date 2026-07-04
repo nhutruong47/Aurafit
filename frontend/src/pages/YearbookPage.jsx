@@ -5,7 +5,7 @@ import YearbookQuoteSection from '../components/yearbook/YearbookQuoteSection';
 import YearbookSidebar from '../components/yearbook/YearbookSidebar';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 
-const styles = ['Học thuật', 'Truyền thống', 'Thanh xuân', 'Concept Hàn Quốc'];
+const styles = ['Học thuật', 'Tốt nghiệp', 'Thanh xuân', 'Ngoại cảnh'];
 const materials = ['Lụa', 'Cotton', 'Kaki', 'Tuytsi'];
 const genders = ['Tất cả', 'Nữ', 'Nam', 'Cặp đôi'];
 

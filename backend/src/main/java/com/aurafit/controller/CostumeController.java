@@ -49,6 +49,7 @@ public class CostumeController {
     public ResponseEntity<ApiResponse<PaginatedResponse<CostumeListDTO>>> getAllCostumes(
             Authentication authentication,
             @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String categoryPath,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "12") int pageSize,
@@ -57,7 +58,7 @@ public class CostumeController {
     ) {
         Long userId = extractUserIdSafely(authentication);
         PaginatedResponse<CostumeListDTO> response = costumeService.getAllActiveCostumes(
-                categoryId, keyword, pageNo, pageSize, sortBy, sortDir, userId
+                categoryId, categoryPath, keyword, pageNo, pageSize, sortBy, sortDir, userId
         );
         return ResponseEntity.ok(ApiResponse.success("Costumes retrieved successfully.", response));
     }

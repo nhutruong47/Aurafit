@@ -21,7 +21,6 @@ export default function CatalogProductCard({ costume, onNavigate, onAddToCart, o
   };
   const today = getLocalDateString();
 
-  const [items, setItems] = useState(() => costume.items || []);
   const [selectedItem, setSelectedItem] = useState(() => costume.items?.[0] || null);
   const [showDates, setShowDates] = useState(false);
   const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
@@ -38,7 +37,6 @@ export default function CatalogProductCard({ costume, onNavigate, onAddToCart, o
       fetchCostumeItems(costume.id)
         .then((fetched) => {
           if (fetched && fetched.length > 0) {
-            setItems(fetched);
             setSelectedItem((prev) => prev || fetched[0]);
           }
         })

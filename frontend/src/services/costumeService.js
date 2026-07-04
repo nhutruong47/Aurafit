@@ -18,6 +18,7 @@ export const fetchCostumes = async (options = {}) => {
   const {
     signal,
     categoryId,
+    categoryPath,
     keyword,
     pageNo = 0,
     pageSize = 100,
@@ -31,6 +32,7 @@ export const fetchCostumes = async (options = {}) => {
       method: 'GET',
       params: {
         ...(categoryId ? { categoryId } : {}),
+        ...(categoryPath ? { categoryPath } : {}),
         ...(keyword ? { keyword } : {}),
         pageNo,
         pageSize,
