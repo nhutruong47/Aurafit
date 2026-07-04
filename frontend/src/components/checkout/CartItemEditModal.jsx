@@ -85,10 +85,18 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
 
   // ── Find exact matching CostumeItem ──
   const matchedItem = useMemo(() => {
-    return availableItems.find(
+    const found = availableItems.find(
       (i) => (i.size || '') === selectedSize && (i.color || '') === selectedColor
-    ) || null;
-  }, [availableItems, selectedSize, selectedColor]);
+    );
+    if (found) return found;
+
+    // Hotfix: If not found in available items, but matches the currently held item
+    const isCurrentVariant = (item?.size || '') === selectedSize && (item?.color || '') === selectedColor;
+    if (isCurrentVariant) {
+      return { id: item.costumeItemId, size: item.size, color: item.color };
+    }
+    return null;
+  }, [availableItems, selectedSize, selectedColor, item]);
 
   // ── Stock validation ──
   // Count how many of this exact variant are already in cart (excluding current item being edited)
@@ -106,14 +114,33 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
 
   // Count available stock for the variant (simple count of AVAILABLE items with matching size+color)
   const totalVariantStock = useMemo(() => {
-    return availableItems.filter(
+    let count = availableItems.filter(
       (i) => (i.size || '') === selectedSize &&
              (i.color || '') === selectedColor &&
              i.status === 'AVAILABLE'
     ).length;
-  }, [availableItems, selectedSize, selectedColor]);
 
-  const effectiveStock = Math.max(0, totalVariantStock - inCartQty);
+    // Hotfix: Ensure the current user's held item is counted if they are editing the same variant
+    const isCurrentVariant = (item?.size || '') === selectedSize && (item?.color || '') === selectedColor;
+    const isAlreadyInAvailable = availableItems.some((i) => i.id === item?.costumeItemId);
+    
+    if (isCurrentVariant && !isAlreadyInAvailable) {
+      count += 1;
+    }
+
+    return count;
+  }, [availableItems, selectedSize, selectedColor, item]);
+
+  const baseEffectiveStock = Math.max(0, totalVariantStock - inCartQty);
+  
+  // Aggressive Override: Force validation to respect the cart
+  const isCurrentVariant = (item?.size || '') === selectedSize && (item?.color || '') === selectedColor;
+  
+  // If the user already owns this variant, it is available and has at least their current quantity
+  const effectiveStock = isCurrentVariant 
+    ? Math.max(item?.quantity || 1, baseEffectiveStock)
+    : baseEffectiveStock;
+
   const isVariantAvailable = effectiveStock > 0;
 
   // Clamp quantity when stock changes
@@ -208,7 +235,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
   if (!isOpen || !item) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0"
@@ -216,7 +243,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-lg max-h-full bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="w-full max-w-lg bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh] relative">
         {/* Header (Fixed) */}
         <div className="flex-none px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white rounded-t-xl">
           <h2 className="font-serif text-xl uppercase tracking-wide">Chỉnh sửa sản phẩm</h2>
@@ -229,7 +256,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
         </div>
 
         {/* Body (Scrollable) */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar bg-white">
+        <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
           {/* Product Info */}
           <div className="mb-5 flex items-center gap-4">
             <img
@@ -377,7 +404,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
         </div>
 
         {/* Footer (Fixed Action Buttons) */}
-        <div className="flex-none px-6 py-4 border-t border-gray-200 flex justify-end gap-3 bg-white rounded-b-xl">
+        <div className="flex-none px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-white">
           <button
             onClick={onClose}
             className="flex-1 border border-[#cfc4c5] py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5f5e5e] transition hover:border-black hover:text-black"
