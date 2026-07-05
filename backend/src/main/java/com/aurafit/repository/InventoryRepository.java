@@ -12,6 +12,18 @@ import java.util.List;
 
 @Repository
 public interface InventoryRepository extends JpaRepository<CostumeItem, Long> {
+
+    @Query("""
+            SELECT ci.costume.id, COUNT(ci)
+            FROM CostumeItem ci
+            WHERE ci.costume.id IN :costumeIds
+              AND ci.status = :status
+            GROUP BY ci.costume.id
+            """)
+    List<Object[]> getAvailableItemCountsByCostumeIds(
+            @Param("costumeIds") List<Long> costumeIds,
+            @Param("status") ItemStatus status
+    );
     
     @Query("SELECT new com.aurafit.dto.response.InventorySummaryDTO(ci.costume.id, ci.color, ci.size, COUNT(ci)) " +
            "FROM CostumeItem ci " +

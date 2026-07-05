@@ -1,6 +1,7 @@
 package com.aurafit.exception;
 
 import com.aurafit.dto.response.ErrorResponse;
+import org.apache.catalina.connector.ClientAbortException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 
@@ -79,6 +81,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", "You do not have permission to access this resource.", request.getRequestURI());
+    }
+
+    @ExceptionHandler({AsyncRequestNotUsableException.class, ClientAbortException.class})
+    public ResponseEntity<Void> handleClientAbort(Exception ex, HttpServletRequest request) {
+        log.warn("Client aborted request at {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.noContent().build();
     }
 
     @ExceptionHandler(Exception.class)

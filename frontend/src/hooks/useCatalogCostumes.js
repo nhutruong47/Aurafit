@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchCostumes } from '../services/costumeService';
-import { mapCostumeToProduct } from '../utils/productMapper';
 
 const categoryPathByKey = {
   cosplay: 'cosplay',
@@ -146,7 +145,7 @@ export function useCatalogCostumes(
         const currentPage = Number(data?.currentPage ?? Math.max(activePage - 1, 0)) + 1;
 
         setState({
-          costumes: actualData.map(mapCostumeToProduct),
+          costumes: actualData,
           totalPages,
           totalElements,
           isLoading: false,

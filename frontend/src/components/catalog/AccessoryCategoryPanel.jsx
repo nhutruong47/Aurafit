@@ -1,3 +1,9 @@
+import {
+  getCostumeDisplayCategory,
+  getCostumePrice,
+  getCostumeSubcategory,
+} from '../../utils/costumeUtils';
+
 export default function AccessoryCategoryPanel({
   eyebrow = 'Phụ kiện',
   title,
@@ -22,10 +28,10 @@ export default function AccessoryCategoryPanel({
               className="block w-full border border-[#e8e4e3] px-4 py-3 text-left transition hover:border-black"
             >
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#99854e]">
-                {product.subcategory || product.category}
+                {getCostumeSubcategory(product) || getCostumeDisplayCategory(product)}
               </p>
               <p className="mt-1 line-clamp-1 text-sm font-semibold text-black">{product.name}</p>
-              <p className="mt-1 text-sm text-[#5f5e5e]">{product.price}</p>
+              <p className="mt-1 text-sm text-[#5f5e5e]">{getCostumePrice(product)}</p>
             </button>
           ))}
         </div>

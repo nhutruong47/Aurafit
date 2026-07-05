@@ -11,6 +11,7 @@ import { useCatalogCategories } from '../hooks/useCatalogCategories';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 import { logUserInteraction } from '../services/interactionsService';
 import { buildAncestorPaths, buildSelectedCategoryState } from '../utils/catalogCategory';
+import { getCostumeTags } from '../utils/costumeUtils';
 
 const CLIENT_PAGE_SIZE = 12;
 
@@ -106,7 +107,7 @@ export default function CatalogPage({ onNavigate }) {
     const tagSet = new Set();
 
     costumes.forEach((costume) => {
-      (costume.tags || []).forEach((tag) => {
+      getCostumeTags(costume).forEach((tag) => {
         if (tag) {
           tagSet.add(tag);
         }
@@ -121,7 +122,7 @@ export default function CatalogPage({ onNavigate }) {
       return costumes;
     }
 
-    return costumes.filter((costume) => (costume.tags || []).includes(selectedFilter.tag));
+    return costumes.filter((costume) => getCostumeTags(costume).includes(selectedFilter.tag));
   }, [costumes, selectedFilter.tag]);
 
   const displayedTotal = selectedFilter.tag ? displayedCostumes.length : totalElements;

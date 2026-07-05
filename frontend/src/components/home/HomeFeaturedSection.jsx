@@ -1,5 +1,11 @@
 // Khu vuc san pham noi bat theo tab tren trang chu.
-import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
+import {
+  fallbackCostumeImage,
+  getCostumeDisplayMeta,
+  getCostumeImage,
+  getCostumePrice,
+  toCartItemFromCostume,
+} from '../../utils/costumeUtils';
 import { featuredTabs } from './homeData';
 
 function ProductCard({ product, onAddToCart, onNavigate }) {
@@ -7,10 +13,10 @@ function ProductCard({ product, onAddToCart, onNavigate }) {
     <article className="group cursor-pointer" onClick={() => onNavigate?.('productDetail', product)}>
       <div className="relative mb-6 aspect-[4/5] overflow-hidden border border-[#cfc4c5]/20 bg-white transition duration-500 group-hover:border-[#99854e]/40">
         <img
-          src={product.image}
+          src={getCostumeImage(product)}
           alt={product.name}
           onError={(event) => {
-            event.currentTarget.src = fallbackProductImage;
+            event.currentTarget.src = fallbackCostumeImage;
           }}
           className="h-full w-full object-cover grayscale-[0.4] transition duration-700 group-hover:scale-105 group-hover:grayscale-0"
         />
@@ -18,7 +24,7 @@ function ProductCard({ product, onAddToCart, onNavigate }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onAddToCart?.(toCartItem(product));
+            onAddToCart?.(toCartItemFromCostume(product));
           }}
           className="absolute bottom-6 left-1/2 w-[80%] -translate-x-1/2 bg-black px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white opacity-0 transition duration-500 hover:bg-[#99854e] group-hover:opacity-100"
         >
@@ -29,8 +35,8 @@ function ProductCard({ product, onAddToCart, onNavigate }) {
         <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition group-hover:text-[#99854e]">
           {product.name}
         </h3>
-        <p className="mb-3 text-xs italic text-[#4c4546]">{product.meta}</p>
-        <span className="font-serif text-3xl text-black">{product.price}</span>
+        <p className="mb-3 text-xs italic text-[#4c4546]">{getCostumeDisplayMeta(product)}</p>
+        <span className="font-serif text-3xl text-black">{getCostumePrice(product)}</span>
       </div>
     </article>
   );

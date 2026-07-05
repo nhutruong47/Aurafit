@@ -6,7 +6,6 @@ import com.aurafit.dto.response.AdminCostumeDTO;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.CostumeItemDTO;
-import com.aurafit.dto.response.CostumeListDTO;
 import com.aurafit.dto.response.PaginatedResponse;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.service.AdminService;
@@ -46,7 +45,7 @@ public class CostumeController {
 
     @GetMapping
     @Operation(summary = "Browse costumes", description = "Returns paginated list of ACTIVE costumes")
-    public ResponseEntity<ApiResponse<PaginatedResponse<CostumeListDTO>>> getAllCostumes(
+    public ResponseEntity<ApiResponse<PaginatedResponse<CostumeDTO>>> getAllCostumes(
             Authentication authentication,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String categoryPath,
@@ -57,7 +56,7 @@ public class CostumeController {
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
         Long userId = extractUserIdSafely(authentication);
-        PaginatedResponse<CostumeListDTO> response = costumeService.getAllActiveCostumes(
+        PaginatedResponse<CostumeDTO> response = costumeService.getAllActiveCostumes(
                 categoryId, categoryPath, keyword, pageNo, pageSize, sortBy, sortDir, userId
         );
         return ResponseEntity.ok(ApiResponse.success("Costumes retrieved successfully.", response));

@@ -1,9 +1,7 @@
 package com.aurafit.repository;
 
 import com.aurafit.entity.Costume;
-import com.aurafit.dto.response.CostumeListDTO;
 import com.aurafit.enums.CostumeStatus;
-import com.aurafit.enums.ItemStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,27 +29,15 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * @return A Page of Costume entities with their Category eagerly loaded.
      */
     @Query(value = """
-            SELECT new com.aurafit.dto.response.CostumeListDTO(
-                c.id,
-                c.name,
-                c.rentalPrice,
-                c.depositPrice,
-                c.imageUrl,
-                c.status,
-                category.id,
-                category.name,
-                category.slug,
-                category.path,
-                COALESCE(SUM(CASE WHEN item.status = :availableStatus THEN 1 ELSE 0 END), 0)
-            )
+            SELECT DISTINCT c
             FROM Costume c
-            JOIN c.category category
-            LEFT JOIN c.items item
+            JOIN FETCH c.category category
+            LEFT JOIN FETCH c.owner
+            LEFT JOIN FETCH c.metadata
             WHERE c.status = :status
               AND category.isActive = true
               AND (:categoryPath IS NULL OR category.path = :categoryPath OR category.path LIKE CONCAT(:categoryPath, '/%'))
               AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-            GROUP BY c.id, c.name, c.rentalPrice, c.depositPrice, c.imageUrl, c.status, category.id, category.name, category.slug, category.path
             """,
             countQuery = """
             SELECT COUNT(c) FROM Costume c
@@ -60,9 +46,8 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
               AND (:categoryPath IS NULL OR c.category.path = :categoryPath OR c.category.path LIKE CONCAT(:categoryPath, '/%'))
               AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
             """)
-    Page<CostumeListDTO> findAllSummariesWithFilters(
+    Page<Costume> findAllWithFilters(
             @Param("status") CostumeStatus status,
-            @Param("availableStatus") ItemStatus availableStatus,
             @Param("categoryPath") String categoryPath,
             @Param("keyword") String keyword,
             Pageable pageable

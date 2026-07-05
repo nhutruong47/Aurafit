@@ -46,7 +46,7 @@ export default function SimilarProductsSection({
       ) : recommendations.length ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {recommendations.map((recommendation, index) => (
-            <div key={recommendation.costume?.id || recommendation.product?.id} className="space-y-3">
+            <div key={recommendation.costume?.id || index} className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="inline-flex rounded-full border border-[#d9cfb1] bg-[#fbf6e8] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7a6730]">
                   {recommendation.reason || 'Còn sẵn để thuê'}
@@ -57,10 +57,10 @@ export default function SimilarProductsSection({
               </div>
 
               <ShopProductCard
-                product={recommendation.product}
-                onNavigate={(page, product) => {
-                  onRecommendationClick?.(recommendation, index, page, product);
-                  onNavigate?.(page, product);
+                product={recommendation.costume}
+                onNavigate={(page, costume) => {
+                  onRecommendationClick?.(recommendation, index, page, costume);
+                  onNavigate?.(page, costume);
                 }}
               />
             </div>

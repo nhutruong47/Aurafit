@@ -1,7 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { formatCurrency } from '../../utils/formatCurrency';
-import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
+import {
+  fallbackCostumeImage,
+  getCostumeDepositPriceValue,
+  getCostumeDisplayCategory,
+  getCostumeImage,
+  getCostumeInventorySummary,
+  getCostumeItems,
+  getCostumeRentalPriceValue,
+  getCostumeSubcategory,
+  getCostumeTag,
+  isCostumeAvailable,
+  toCartItemFromCostume,
+} from '../../utils/costumeUtils';
 
 export default function ProductHero({
   product,
@@ -28,7 +40,11 @@ export default function ProductHero({
   const [dateError, setDateError] = useState('');
   const [quantity, setQuantity] = useState(1);
   const cartItems = useSelector((state) => state.cart.items);
-  const availableItems = useMemo(() => product?.items || [], [product?.items]);
+  const availableItems = useMemo(() => getCostumeItems(product), [product]);
+  const categoryLabel = getCostumeDisplayCategory(product);
+  const tag = getCostumeTag(product);
+  const rentalPriceValue = getCostumeRentalPriceValue(product);
+  const depositPriceValue = getCostumeDepositPriceValue(product);
 
   const allUniqueSizes = useMemo(
     () => [...new Set(availableItems.map((item) => item.size || ''))],
@@ -47,11 +63,12 @@ export default function ProductHero({
   const selectedColor = selectedItem?.color || '';
 
   const getVariantStock = (size, color) => {
-    if (!product.inventorySummary?.length) {
-      return product.availableItemCount || 0;
+    const inventorySummary = getCostumeInventorySummary(product);
+    if (!inventorySummary.length) {
+      return Number(product?.availableItemCount || 0);
     }
 
-    const summary = product.inventorySummary.find(
+    const summary = inventorySummary.find(
       (item) => (item.size || '') === (size || '') && (item.color || '') === (color || '')
     );
 
@@ -154,7 +171,7 @@ export default function ProductHero({
     setDateError('');
   };
 
-  const canRentNow = product.available && rentalStartDate && rentalEndDate && !dateError;
+  const canRentNow = isCostumeAvailable(product) && rentalStartDate && rentalEndDate && !dateError;
   const totalStock = getVariantStock(selectedSize, selectedColor);
   const inCartQty = getInCartQty(selectedSize, selectedColor);
   const effectiveStock = Math.max(0, totalStock - inCartQty);
@@ -165,9 +182,9 @@ export default function ProductHero({
       return;
     }
 
-    const item = selectedItem || product.items?.[0] || null;
+    const item = selectedItem || getCostumeItems(product)[0] || null;
     onRentNow?.({
-      ...toCartItem(product, item),
+      ...toCartItemFromCostume(product, item),
       quantity,
       rentalStartDate: rentalStartDate ? getLocalDateString(rentalStartDate) : null,
       rentalEndDate: rentalEndDate ? getLocalDateString(rentalEndDate) : null,
@@ -179,10 +196,10 @@ export default function ProductHero({
       <div className="flex w-full justify-center overflow-hidden border-b border-[#cfc4c5]/30 bg-[#f5f4f3] md:w-[42%] md:border-b-0 md:border-r">
         <div className="w-full">
           <img
-            src={product.image}
+            src={getCostumeImage(product)}
             alt={product.name}
             onError={(event) => {
-              event.currentTarget.src = fallbackProductImage;
+              event.currentTarget.src = fallbackCostumeImage;
             }}
             className="max-h-[60vh] w-full object-cover md:max-h-[550px]"
           />
@@ -192,30 +209,30 @@ export default function ProductHero({
       <div className="flex w-full flex-col p-4 md:w-[58%] md:p-6">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="bg-black px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-white">
-            {product.category}
+            {categoryLabel}
           </span>
-          {product.tag && (
+          {tag && (
             <span className="bg-[#99854e] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-white">
-              {product.tag}
+              {tag}
             </span>
           )}
         </div>
 
         <h1 className="mb-1 font-serif text-xl text-black md:text-3xl">{product.name}</h1>
-        <p className="mb-3 text-xs text-[#777777]">{product.subcategory}</p>
+        <p className="mb-3 text-xs text-[#777777]">{getCostumeSubcategory(product)}</p>
 
         <div className="mb-3 grid grid-cols-2 gap-4 border-y border-[#e8e4e3] py-2.5">
           <div>
             <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">
               Giá thuê
             </span>
-            <span className="font-serif text-xl text-black">{formatCurrency(product.priceValue)}</span>
+            <span className="font-serif text-xl text-black">{formatCurrency(rentalPriceValue)}</span>
           </div>
           <div>
             <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">
               Tiền cọc
             </span>
-            <span className="font-serif text-xl text-[#99854e]">{formatCurrency(product.depositValue)}</span>
+            <span className="font-serif text-xl text-[#99854e]">{formatCurrency(depositPriceValue)}</span>
           </div>
         </div>
 
@@ -374,9 +391,9 @@ export default function ProductHero({
                 return;
               }
 
-              const item = selectedItem || product.items?.[0] || null;
+              const item = selectedItem || getCostumeItems(product)[0] || null;
               const success = await onAddToCart?.({
-                ...toCartItem(product, item),
+                ...toCartItemFromCostume(product, item),
                 quantity,
                 rentalStartDate: rentalStartDate ? getLocalDateString(rentalStartDate) : null,
                 rentalEndDate: rentalEndDate ? getLocalDateString(rentalEndDate) : null,

@@ -11,16 +11,16 @@ import HomeTrustSection from '../components/home/HomeTrustSection';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 import { fetchRecommendedCostumes, fetchSeasonalCostumes } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
-import { mapCostumeToProduct } from '../utils/productMapper';
+import { getCostumeRootCategory } from '../utils/costumeUtils';
 
 function uniqueProducts(products) {
   const seen = new Set();
-  return products.filter((product) => {
-    if (seen.has(product.id)) {
+  return products.filter((costume) => {
+    if (seen.has(costume.id)) {
       return false;
     }
 
-    seen.add(product.id);
+    seen.add(costume.id);
     return true;
   });
 }
@@ -39,10 +39,10 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
 
   const products = useMemo(
     () => ({
-      event: costumes.filter((product) => product.rootCategoryKey === 'events').slice(0, 4),
-      cosplay: costumes.filter((product) => product.rootCategoryKey === 'cosplay').slice(0, 4),
-      yearbook: costumes.filter((product) => product.rootCategoryKey === 'yearbook').slice(0, 4),
-      accessories: costumes.filter((product) => product.rootCategoryKey === 'accessories').slice(0, 4),
+      event: costumes.filter((costume) => getCostumeRootCategory(costume).key === 'events').slice(0, 4),
+      cosplay: costumes.filter((costume) => getCostumeRootCategory(costume).key === 'cosplay').slice(0, 4),
+      yearbook: costumes.filter((costume) => getCostumeRootCategory(costume).key === 'yearbook').slice(0, 4),
+      accessories: costumes.filter((costume) => getCostumeRootCategory(costume).key === 'accessories').slice(0, 4),
     }),
     [costumes]
   );
@@ -59,8 +59,8 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
           return;
         }
 
-        setRecommendedProducts(uniqueProducts((recommendedData || []).map(mapCostumeToProduct)));
-        setTrendingProducts(uniqueProducts((seasonalData || []).map(mapCostumeToProduct)));
+        setRecommendedProducts(uniqueProducts(recommendedData || []));
+        setTrendingProducts(uniqueProducts(seasonalData || []));
         setShopHighlightsError('');
       })
       .catch((requestError) => {
@@ -85,8 +85,8 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
 
   const homepageRecommendations = useMemo(
     () =>
-      recommendedProducts.map((product, index) => ({
-        product,
+      recommendedProducts.map((costume, index) => ({
+        costume,
         reason: index === 0 ? 'Đề xuất từ shop' : 'Dành cho bạn',
       })),
     [recommendedProducts]
@@ -96,7 +96,7 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
     if (!homepageRecommendations.length) return;
 
     const recommendedIds = homepageRecommendations
-      .map((item) => item?.product?.id)
+      .map((item) => item?.costume?.id)
       .filter((id) => id !== undefined && id !== null);
     const impressionKey = `home:${recommendedIds.join(',')}:${currentUser?.id || 'guest'}`;
 
@@ -143,18 +143,18 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
     }, 2000);
   };
 
-  const handleHomepageRecommendationClick = (recommendation, index, page, product) => {
-    if (page !== 'productDetail' || !product?.id) {
+  const handleHomepageRecommendationClick = (recommendation, index, page, costume) => {
+    if (page !== 'productDetail' || !costume?.id) {
       return;
     }
 
     logUserInteraction({
       eventType: 'RECOMMENDATION_CLICK',
       targetType: 'RECOMMENDATION',
-      targetId: product.id,
+      targetId: costume.id,
       metadata: {
         slot: 'homepage_personalized',
-        recommendedCostumeId: product.id,
+        recommendedCostumeId: costume.id,
         reason: recommendation?.reason || null,
         position: index + 1,
         userType: currentUser?.id ? 'authenticated' : 'guest',

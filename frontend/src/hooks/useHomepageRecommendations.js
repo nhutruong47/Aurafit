@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { fetchHomepageRecommendations, fetchRecommendedCostumes } from '../services/costumeService';
-import { mapCostumeToProduct } from '../utils/productMapper';
 
 const HOMEPAGE_LIMIT = 6;
 
@@ -10,10 +9,7 @@ const normalizePersonalizedItems = (items) =>
         .filter((item) => item?.costume?.id)
         .map((item) => ({
           ...item,
-          product: mapCostumeToProduct({
-            ...item.costume,
-            available: item.availableItemCount > 0,
-          }),
+          costume: item.costume,
         }))
     : [];
 
@@ -22,10 +18,7 @@ const normalizeFallbackItems = (items) =>
     ? items
         .filter((item) => item?.id)
         .map((item) => ({
-          product: mapCostumeToProduct({
-            ...item,
-            available: true,
-          }),
+          costume: item,
         }))
     : [];
 

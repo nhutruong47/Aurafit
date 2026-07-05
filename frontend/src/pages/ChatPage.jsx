@@ -28,8 +28,8 @@ import {
   detectChatReplyLanguage,
   getChatAssistantErrorMessage,
 } from '../utils/chatLanguage';
+import { getCostumePrice } from '../utils/costumeUtils';
 import { formatCurrency } from '../utils/formatCurrency';
-import { mapCostumeToProduct } from '../utils/productMapper';
 
 const formatMessageTime = (createdAt) => {
   if (!createdAt) return 'Bây giờ';
@@ -51,10 +51,7 @@ const mapBackendRecommendations = (recommendations = []) =>
         .filter((item) => item?.costume?.id)
         .map((item) => ({
           ...item,
-          product: mapCostumeToProduct({
-            ...item.costume,
-            available: item.availableItemCount > 0,
-          }),
+          costume: item.costume,
         }))
     : [];
 
@@ -90,7 +87,7 @@ const getLastUserMessageContent = (messages = []) => {
 
 const getRecommendationIds = (recommendations = []) =>
   recommendations
-    .map((item) => item?.costume?.id ?? item?.product?.id ?? null)
+    .map((item) => item?.costume?.id ?? null)
     .filter((id) => id !== undefined && id !== null);
 
 const getStableRentalPeriod = (products = []) => {
@@ -124,9 +121,9 @@ export default function ChatPage({ onNavigate, cartItems = [], currentUser }) {
       }
     });
 
-    return selectedProducts.map((product) => ({
-      ...product,
-      price: product.price || formatCurrency(product.priceValue || 0),
+    return selectedProducts.map((costume) => ({
+      ...costume,
+      price: costume.price || getCostumePrice(costume) || formatCurrency(costume.priceValue || 0),
     }));
   }, [cartItems, contextProduct]);
 

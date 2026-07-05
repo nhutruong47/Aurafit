@@ -1,5 +1,13 @@
 // The san pham dung chung cho cac bo suu tap costume.
-import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
+import {
+  fallbackCostumeImage,
+  getCostumeDisplayCategory,
+  getCostumeDisplayMeta,
+  getCostumeImage,
+  getCostumePrice,
+  getCostumeSubcategory,
+  toCartItemFromCostume,
+} from '../../utils/costumeUtils';
 
 export default function CollectionProductCard({
   product,
@@ -15,17 +23,17 @@ export default function CollectionProductCard({
         onClick={() => onNavigate?.('productDetail', product)}
       >
         <img
-          src={product.image}
+          src={getCostumeImage(product)}
           alt={product.name}
           onError={(event) => {
-            event.currentTarget.src = fallbackProductImage;
+            event.currentTarget.src = fallbackCostumeImage;
           }}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
         />
         <button
           onClick={(event) => {
             event.stopPropagation();
-            onAddToCart?.(toCartItem(product));
+            onAddToCart?.(toCartItemFromCostume(product));
           }}
           className={`absolute ${buttonInsetClassName} bg-white px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-black opacity-0 transition duration-300 hover:bg-[#99854e] hover:text-white group-hover:opacity-100`}
         >
@@ -33,16 +41,16 @@ export default function CollectionProductCard({
         </button>
       </div>
       <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#99854e]">
-        {product.subcategory || product.category}
+        {getCostumeSubcategory(product) || getCostumeDisplayCategory(product)}
       </p>
-      <p className="mb-2 text-xs italic text-[#777777]">{product.meta}</p>
+      <p className="mb-2 text-xs italic text-[#777777]">{getCostumeDisplayMeta(product)}</p>
       <h3
         className="cursor-pointer text-[12px] font-semibold uppercase tracking-[0.18em] transition group-hover:text-[#99854e]"
         onClick={() => onNavigate?.('productDetail', product)}
       >
         {product.name}
       </h3>
-      <p className="mt-3 font-serif text-2xl">{product.price}</p>
+      <p className="mt-3 font-serif text-2xl">{getCostumePrice(product)}</p>
     </article>
   );
 }

@@ -10,25 +10,33 @@ import ShopPagination from '../components/shop/ShopPagination';
 import EmptyState from '../components/ui/EmptyState';
 import { useCatalogCategories } from '../hooks/useCatalogCategories';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
+import {
+  getCostumeCategoryPath,
+  getCostumeDisplayCategory,
+  getCostumeDisplayMeta,
+  getCostumeRentalPriceValue,
+  getCostumeSubcategory,
+  getCostumeTags,
+} from '../utils/costumeUtils';
 
 const PAGE_SIZE = 12;
 const ROOT_PAGE_SIZE = 120;
 
-function matchesCategoryPath(product, categoryPath) {
+function matchesCategoryPath(costume, categoryPath) {
   if (!categoryPath) {
     return true;
   }
 
   const normalizedCategoryPath = categoryPath.trim().toLowerCase();
-  const productCategoryPath = String(product.categoryPath || '').toLowerCase();
+  const costumeCategoryPath = String(getCostumeCategoryPath(costume) || '').toLowerCase();
 
   return (
-    productCategoryPath === normalizedCategoryPath ||
-    productCategoryPath.startsWith(`${normalizedCategoryPath}/`)
+    costumeCategoryPath === normalizedCategoryPath ||
+    costumeCategoryPath.startsWith(`${normalizedCategoryPath}/`)
   );
 }
 
-function matchesSearchTerm(product, searchTerm) {
+function matchesSearchTerm(costume, searchTerm) {
   if (!searchTerm) {
     return true;
   }
@@ -39,12 +47,12 @@ function matchesSearchTerm(product, searchTerm) {
   }
 
   const haystack = [
-    product.name,
-    product.description,
-    product.category,
-    product.subcategory,
-    product.meta,
-    ...(product.tags || []),
+    costume.name,
+    costume.description,
+    getCostumeDisplayCategory(costume),
+    getCostumeSubcategory(costume),
+    getCostumeDisplayMeta(costume),
+    ...getCostumeTags(costume),
   ]
     .filter(Boolean)
     .join(' ')
@@ -58,7 +66,7 @@ function sortProducts(products, sortBy, sortDir) {
 
   return [...products].sort((left, right) => {
     if (sortBy === 'rentalPrice') {
-      return (Number(left.priceValue || 0) - Number(right.priceValue || 0)) * direction;
+      return (getCostumeRentalPriceValue(left) - getCostumeRentalPriceValue(right)) * direction;
     }
 
     if (sortBy === 'name') {

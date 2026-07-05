@@ -1,4 +1,8 @@
-const fallbackProductImage = 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=900&q=85';
+import {
+  fallbackCostumeImage,
+  getCostumeImage,
+  getCostumePrice,
+} from '../../utils/costumeUtils';
 
 export default function ChatProductSelector({ products, activeProduct, onSelectProduct }) {
   if (!products.length) return null;
@@ -21,17 +25,17 @@ export default function ChatProductSelector({ products, activeProduct, onSelectP
             >
               <div className="h-12 w-10 flex-shrink-0 overflow-hidden bg-[#eeeeee]">
                 <img
-                  src={product.image}
+                  src={getCostumeImage(product)}
                   alt={product.name}
                   onError={(event) => {
-                    event.currentTarget.src = fallbackProductImage;
+                    event.currentTarget.src = fallbackCostumeImage;
                   }}
                   className="h-full w-full object-cover"
                 />
               </div>
               <div className="min-w-0">
                 <h4 className="w-40 truncate text-xs font-bold">{product.name}</h4>
-                <p className="mt-0.5 text-[10px] text-[#5f5e5e]">{product.price}</p>
+                <p className="mt-0.5 text-[10px] text-[#5f5e5e]">{product.price || getCostumePrice(product)}</p>
               </div>
             </button>
           );

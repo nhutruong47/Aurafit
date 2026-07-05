@@ -1,27 +1,31 @@
 import { formatCurrency } from '../../utils/formatCurrency';
-import { fallbackProductImage } from '../../utils/productMapper';
-
-const extractCategoryName = (value) => {
-  if (!value) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'object' && value.name) return value.name;
-  return '';
-};
+import {
+  fallbackCostumeImage,
+  getCostumeApiCategoryName,
+  getCostumeDepositPriceValue,
+  getCostumeDisplayCategory,
+  getCostumeImage,
+  getCostumeRentalPriceValue,
+  getCostumeSubcategory,
+  getCostumeTag,
+  isCostumeAvailable,
+} from '../../utils/costumeUtils';
 
 export default function CatalogProductCard({ costume, product, onNavigate }) {
   const item = product || costume;
-  const categoryLabel = extractCategoryName(item.category);
-  const subcategoryLabel = extractCategoryName(item.subcategory);
-  const available = item.available;
+  const categoryLabel = getCostumeDisplayCategory(item);
+  const subcategoryLabel = getCostumeSubcategory(item) || getCostumeApiCategoryName(item);
+  const available = isCostumeAvailable(item);
+  const tag = getCostumeTag(item);
 
   return (
     <article className="group flex flex-col overflow-hidden border border-[#cfc4c5] bg-white transition-all duration-500 hover:border-[#99854e]/50">
       <div onClick={() => onNavigate?.('productDetail', item)} className="relative h-64 cursor-pointer overflow-hidden">
         <img
-          src={item.image}
+          src={getCostumeImage(item)}
           alt={item.name}
           onError={(event) => {
-            event.currentTarget.src = fallbackProductImage;
+            event.currentTarget.src = fallbackCostumeImage;
           }}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
         />
@@ -31,9 +35,9 @@ export default function CatalogProductCard({ costume, product, onNavigate }) {
           <span className="rounded-full border border-white/10 bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
             {categoryLabel}
           </span>
-          {item.tag && (
+          {tag && (
             <span className="rounded-sm border border-white/20 bg-white/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white backdrop-blur-md">
-              {item.tag}
+              {tag}
             </span>
           )}
         </div>
@@ -64,18 +68,18 @@ export default function CatalogProductCard({ costume, product, onNavigate }) {
           </h3>
           <p className="mb-4 line-clamp-1 text-[11px] text-[#777777]">
             {subcategoryLabel || categoryLabel}
-            {item.tag ? ` • ${item.tag}` : ''}
+            {tag ? ` • ${tag}` : ''}
           </p>
         </div>
 
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div>
             <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#999999]">Giá thuê</span>
-            <span className="font-serif text-xl text-black">{formatCurrency(item.priceValue)}</span>
+            <span className="font-serif text-xl text-black">{formatCurrency(getCostumeRentalPriceValue(item))}</span>
           </div>
           <div>
             <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#999999]">Tiền cọc</span>
-            <span className="font-serif text-xl text-black">{formatCurrency(item.depositValue)}</span>
+            <span className="font-serif text-xl text-black">{formatCurrency(getCostumeDepositPriceValue(item))}</span>
           </div>
         </div>
 

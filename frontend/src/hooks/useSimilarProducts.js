@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { fetchSimilarCostumes } from '../services/costumeService';
-import { mapCostumeToProduct } from '../utils/productMapper';
 
 const SIMILAR_LIMIT = 4;
 
@@ -36,10 +35,7 @@ export function useSimilarProducts(costumeId) {
               .filter((item) => item?.costume?.id)
               .map((item) => ({
                 ...item,
-                product: mapCostumeToProduct({
-                  ...item.costume,
-                  available: item.availableItemCount > 0,
-                }),
+                costume: item.costume,
               }))
           : [];
 

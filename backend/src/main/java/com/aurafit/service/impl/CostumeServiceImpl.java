@@ -2,7 +2,6 @@ package com.aurafit.service.impl;
 
 import com.aurafit.dto.response.CategoryDTO;
 import com.aurafit.dto.response.CostumeDTO;
-import com.aurafit.dto.response.CostumeListDTO;
 import com.aurafit.dto.response.PaginatedResponse;
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
@@ -26,9 +25,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)   // all methods are read-only by default
@@ -53,9 +54,9 @@ public class CostumeServiceImpl implements CostumeService {
     }
 
     @Override
-    public PaginatedResponse<CostumeListDTO> getAllActiveCostumes(Long categoryId, String categoryPath, String keyword,
-                                                                  int pageNo, int pageSize,
-                                                                  String sortBy, String sortDir, Long userId) {
+    public PaginatedResponse<CostumeDTO> getAllActiveCostumes(Long categoryId, String categoryPath, String keyword,
+                                                              int pageNo, int pageSize,
+                                                              String sortBy, String sortDir, Long userId) {
         // Build Sort object from parameters
         Sort sort = sortDir.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
@@ -67,15 +68,22 @@ public class CostumeServiceImpl implements CostumeService {
         String normalizedKeyword = (keyword == null) ? "" : keyword.trim();
         String resolvedCategoryPath = resolveCategoryPath(categoryId, categoryPath);
 
-        Page<CostumeListDTO> page = costumeRepository.findAllSummariesWithFilters(
+        Page<Costume> page = costumeRepository.findAllWithFilters(
                 CostumeStatus.ACTIVE,
-                ItemStatus.AVAILABLE,
                 resolvedCategoryPath,
                 normalizedKeyword,
                 pageable
         );
 
-        return PaginatedResponse.from(page, costume -> costume);
+        Map<Long, Integer> availableCountsByCostumeId = getAvailableCountsByCostumeId(page.getContent());
+
+        return PaginatedResponse.from(
+                page,
+                costume -> CostumeDTO.fromSummaryEntity(
+                        costume,
+                        availableCountsByCostumeId.getOrDefault(costume.getId(), 0)
+                )
+        );
     }
 
     @Override
@@ -143,5 +151,27 @@ public class CostumeServiceImpl implements CostumeService {
         }
 
         return category.getPath();
+    }
+
+    private Map<Long, Integer> getAvailableCountsByCostumeId(List<Costume> costumes) {
+        if (costumes == null || costumes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Long> costumeIds = costumes.stream()
+                .map(Costume::getId)
+                .toList();
+
+        Map<Long, Integer> counts = new HashMap<>();
+        inventoryRepository.getAvailableItemCountsByCostumeIds(costumeIds, ItemStatus.AVAILABLE)
+                .forEach(row -> {
+                    Long costumeId = row[0] instanceof Number number ? number.longValue() : null;
+                    Integer availableCount = row[1] instanceof Number number ? number.intValue() : 0;
+                    if (costumeId != null) {
+                        counts.put(costumeId, availableCount);
+                    }
+                });
+
+        return counts;
     }
 }

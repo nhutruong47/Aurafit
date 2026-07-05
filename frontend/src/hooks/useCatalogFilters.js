@@ -4,6 +4,13 @@ import {
   buildSelectedCategoryState,
   flattenCategoryTree,
 } from '../utils/catalogCategory';
+import {
+  getCostumeCategoryPath,
+  getCostumeDisplayCategory,
+  getCostumeSubcategory,
+  getCostumeTag,
+  getCostumeTags,
+} from '../utils/costumeUtils';
 
 export function useCatalogFilters(costumes, categoryTree, initialCategoryPath = null) {
   const flatCategories = useMemo(() => flattenCategoryTree(categoryTree), [categoryTree]);
@@ -71,7 +78,7 @@ export function useCatalogFilters(costumes, categoryTree, initialCategoryPath = 
     const tagSet = new Set();
 
     costumes.forEach((costume) => {
-      (costume.tags || []).forEach((tag) => {
+      getCostumeTags(costume).forEach((tag) => {
         if (tag) {
           tagSet.add(tag);
         }
@@ -86,7 +93,7 @@ export function useCatalogFilters(costumes, categoryTree, initialCategoryPath = 
 
     return costumes.filter((costume) => {
       if (selectedFilter.categoryPath) {
-        const costumePath = costume.categoryPath || '';
+        const costumePath = getCostumeCategoryPath(costume) || '';
         const matchesSelectedCategory =
           costumePath === selectedFilter.categoryPath ||
           costumePath.startsWith(`${selectedFilter.categoryPath}/`);
@@ -96,7 +103,7 @@ export function useCatalogFilters(costumes, categoryTree, initialCategoryPath = 
         }
       }
 
-      if (selectedFilter.tag && !(costume.tags || []).includes(selectedFilter.tag)) {
+      if (selectedFilter.tag && !getCostumeTags(costume).includes(selectedFilter.tag)) {
         return false;
       }
 
@@ -104,10 +111,10 @@ export function useCatalogFilters(costumes, categoryTree, initialCategoryPath = 
         const searchableText = [
           costume.name,
           costume.description,
-          costume.category,
-          costume.subcategory,
-          costume.tag,
-          ...(costume.tags || []),
+          getCostumeDisplayCategory(costume),
+          getCostumeSubcategory(costume),
+          getCostumeTag(costume),
+          ...getCostumeTags(costume),
         ]
           .filter(Boolean)
           .join(' ')

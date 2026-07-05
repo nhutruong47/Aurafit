@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { formatCurrency } from '../../utils/formatCurrency';
-import { fallbackProductImage, toCartItem } from '../../utils/productMapper';
+import {
+  fallbackCostumeImage,
+  getCostumeDepositPriceValue,
+  getCostumeDisplayCategory,
+  getCostumeDisplayMeta,
+  getCostumeImage,
+  getCostumeItems,
+  getCostumeRentalPriceValue,
+  getCostumeSubcategory,
+  getCostumeTag,
+  isCostumeAvailable,
+  toCartItemFromCostume,
+} from '../../utils/costumeUtils';
 import { fetchCostumeItems } from '../../services/costumeService';
 
 export default function ShopProductCard({ product, onNavigate, onAddToCart, onRentNow }) {
@@ -13,22 +25,27 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
   };
 
   const today = getLocalDateString();
-  const [selectedItem, setSelectedItem] = useState(() => product.items?.[0] || null);
+  const [selectedItem, setSelectedItem] = useState(() => getCostumeItems(product)[0] || null);
   const [showDates, setShowDates] = useState(false);
   const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
   const [rentalEndDate, setRentalEndDate] = useState(() => getLocalDateString(1));
   const [dateError, setDateError] = useState('');
 
   const hasInlineRentalActions = Boolean(onAddToCart || onRentNow);
-  const available = product.available;
+  const available = isCostumeAvailable(product);
   const discountPercentage = product.discountPercentage || 0;
-  let salePrice = product.priceValue;
+  const rentalPriceValue = getCostumeRentalPriceValue(product);
+  const depositPriceValue = getCostumeDepositPriceValue(product);
+  const categoryLabel = getCostumeDisplayCategory(product);
+  const subcategoryLabel = getCostumeSubcategory(product);
+  const tag = getCostumeTag(product);
+  let salePrice = rentalPriceValue;
   if (discountPercentage > 0) {
-    salePrice = Math.round(product.priceValue * (1 - discountPercentage / 100));
+    salePrice = Math.round(rentalPriceValue * (1 - discountPercentage / 100));
   }
 
   useEffect(() => {
-    if ((!product.items || product.items.length === 0) && product.id) {
+    if (getCostumeItems(product).length === 0 && product.id) {
       fetchCostumeItems(product.id)
         .then((fetched) => {
           if (fetched?.length) {
@@ -37,7 +54,7 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
         })
         .catch(() => {});
     }
-  }, [product.id, product.items]);
+  }, [product]);
 
   const handleStartDateChange = (event) => {
     const value = event.target.value;
@@ -62,7 +79,7 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
   const buildCartItem = useCallback(() => {
     if (selectedItem) {
       return {
-        ...toCartItem(product, selectedItem),
+        ...toCartItemFromCostume(product, selectedItem),
         rentalStartDate,
         rentalEndDate,
         discountPercentage,
@@ -71,19 +88,19 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
 
     return {
       id: product.id,
-      costumeId: product.costumeId || product.id,
+      costumeId: product.id,
       costumeItemId: null,
       name: product.name,
-      meta: product.meta || product.description || product.tag,
-      rawCategory: product.rawCategory,
-      category: product.category,
-      subcategory: product.subcategory,
-      tag: product.tag,
-      price: product.price,
-      priceValue: product.priceValue,
-      deposit: product.deposit,
-      depositValue: product.depositValue,
-      image: product.image,
+      meta: getCostumeDisplayMeta(product) || product.description || tag,
+      rawCategory: categoryLabel,
+      category: categoryLabel,
+      subcategory: subcategoryLabel,
+      tag,
+      price: formatCurrency(rentalPriceValue),
+      priceValue: rentalPriceValue,
+      deposit: formatCurrency(depositPriceValue),
+      depositValue: depositPriceValue,
+      image: getCostumeImage(product),
       sku: null,
       size: null,
       color: null,
@@ -91,7 +108,7 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
       rentalEndDate,
       discountPercentage,
     };
-  }, [discountPercentage, product, rentalEndDate, rentalStartDate, selectedItem]);
+  }, [categoryLabel, depositPriceValue, discountPercentage, product, rentalEndDate, rentalPriceValue, rentalStartDate, selectedItem, subcategoryLabel, tag]);
 
   const canRentNow = available && rentalStartDate && rentalEndDate && !dateError;
 
@@ -102,10 +119,10 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
         className="relative aspect-[4/5] cursor-pointer overflow-hidden bg-[#eeeeee]"
       >
         <img
-          src={product.image}
+          src={getCostumeImage(product)}
           alt={product.name}
           onError={(event) => {
-            event.currentTarget.src = fallbackProductImage;
+            event.currentTarget.src = fallbackCostumeImage;
           }}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
         />
@@ -117,7 +134,7 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
         <span
           className={`absolute ${discountPercentage > 0 ? 'left-3 top-10' : 'left-3 top-3'} z-10 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white`}
         >
-          {product.category}
+          {categoryLabel}
         </span>
         <span
           className={`absolute right-3 top-3 z-10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
@@ -131,8 +148,8 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
       <div className="flex flex-1 flex-col p-4">
         <div onClick={() => onNavigate?.('productDetail', product)} className="cursor-pointer">
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">
-            {product.subcategory || product.rawCategory}
-            {product.tag ? ` · ${product.tag}` : ''}
+            {subcategoryLabel || categoryLabel}
+            {tag ? ` · ${tag}` : ''}
           </p>
           <h3 className="line-clamp-2 min-h-[44px] font-serif text-xl italic leading-tight transition group-hover:text-[#99854e]">
             {product.name}
@@ -146,18 +163,18 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
               {discountPercentage > 0 ? (
                 <>
                   <span className="mr-1.5 text-xs text-[#999999] line-through">
-                    {formatCurrency(product.priceValue)}
+                    {formatCurrency(rentalPriceValue)}
                   </span>
                   <span className="text-[#ba1a1a]">{formatCurrency(salePrice)}</span>
                 </>
               ) : (
-                formatCurrency(product.priceValue)
+                formatCurrency(rentalPriceValue)
               )}
             </p>
           </div>
           <div>
             <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#999999]">Tiền cọc</p>
-            <p className="mt-0.5 font-medium">{formatCurrency(product.depositValue)}</p>
+            <p className="mt-0.5 font-medium">{formatCurrency(depositPriceValue)}</p>
           </div>
         </div>
 

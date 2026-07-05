@@ -1,4 +1,8 @@
-import { fallbackProductImage } from '../../utils/productMapper';
+import {
+  fallbackCostumeImage,
+  getCostumeImage,
+  getCostumePrice,
+} from '../../utils/costumeUtils';
 
 export default function HomeTrendingSection({ trending, isLoading = false, error = '', onNavigate }) {
   return (
@@ -43,16 +47,16 @@ export default function HomeTrendingSection({ trending, isLoading = false, error
               >
                 <div className="mb-6 aspect-square overflow-hidden border border-[#cfc4c5]/20 bg-white">
                   <img
-                    src={item.image}
+                    src={getCostumeImage(item)}
                     alt={item.name}
                     onError={(event) => {
-                      event.currentTarget.src = fallbackProductImage;
+                      event.currentTarget.src = fallbackCostumeImage;
                     }}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                   />
                 </div>
                 <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em]">{item.name}</h3>
-                <p className="font-serif text-2xl text-[#99854e]">{item.price}</p>
+                <p className="font-serif text-2xl text-[#99854e]">{getCostumePrice(item)}</p>
               </article>
             ))}
           </div>

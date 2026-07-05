@@ -6,7 +6,7 @@ import AlertMessage from '../components/ui/AlertMessage';
 import { useSimilarProducts } from '../hooks/useSimilarProducts';
 import { fetchCostumeById } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
-import { mapCostumeToProduct, toCartItem } from '../utils/productMapper';
+import { getCostumeApiCategoryName, toCartItemFromCostume } from '../utils/costumeUtils';
 
 export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, currentUser }) {
   const { productId } = useParams();
@@ -53,11 +53,10 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
           return;
         }
 
-        const mappedProduct = costume ? mapCostumeToProduct(costume) : null;
-        setProduct(mappedProduct);
+        setProduct(costume || null);
 
-        if (mappedProduct?.items?.length > 0) {
-          setSelectedItem(mappedProduct.items[0]);
+        if (Array.isArray(costume?.items) && costume.items.length > 0) {
+          setSelectedItem(costume.items[0]);
         }
       })
       .catch((error) => {
@@ -95,10 +94,10 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
       targetType: 'COSTUME',
       targetId: product.id,
       metadata: {
-        category: product.apiCategoryName || product.category,
-        style: product.style,
-        occasion: product.occasion,
-        season: product.season,
+        category: getCostumeApiCategoryName(product),
+        style: product.metadata?.style,
+        occasion: product.metadata?.occasion,
+        season: product.metadata?.season,
       },
     }).catch(() => {});
   }, [product]);
@@ -109,7 +108,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     }
 
     const recommendedIds = similarRecommendations
-      .map((item) => item?.product?.id)
+      .map((item) => item?.costume?.id)
       .filter((id) => id !== undefined && id !== null);
     const impressionKey = `${product.id}:${recommendedIds.join(',')}`;
 
@@ -142,7 +141,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
       return false;
     }
 
-    const finalItem = itemFromHero || toCartItem(product, selectedItem);
+    const finalItem = itemFromHero || toCartItemFromCostume(product, selectedItem);
     await onAddToCart?.(finalItem);
     return true;
   };
@@ -157,7 +156,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
       return;
     }
 
-    const baseItem = toCartItem(product, selectedItem);
+    const baseItem = toCartItemFromCostume(product, selectedItem);
     onRentNow?.({
       ...baseItem,
       rentalStartDate,
@@ -188,8 +187,8 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     return null;
   }
 
-  const sellerName = product?.sellerName || product?.owner?.fullName || product?.owner?.email || 'AuraFit';
-  const sellerEmail = product?.sellerEmail || product?.owner?.email || '';
+  const sellerName = product?.owner?.fullName || product?.owner?.email || 'AuraFit';
+  const sellerEmail = product?.owner?.email || '';
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] px-4 pb-12 pt-4 sm:px-6 lg:px-8">

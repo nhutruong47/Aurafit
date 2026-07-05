@@ -26,6 +26,41 @@ public record CostumeDTO(
         List<CostumeItemDTO> items,
         List<InventorySummaryDTO> inventorySummary
 ) {
+    public static CostumeDTO fromSummaryEntity(Costume costume) {
+        long availableCount = costume.getItems() == null ? 0 :
+                costume.getItems().stream()
+                        .filter(item -> item.getStatus() == com.aurafit.enums.ItemStatus.AVAILABLE)
+                        .count();
+
+        return fromSummaryEntity(costume, (int) availableCount);
+    }
+
+    public static CostumeDTO fromSummaryEntity(Costume costume, int availableCount) {
+        return new CostumeDTO(
+                costume.getId(),
+                costume.getName(),
+                costume.getDescription(),
+                costume.getRentalPrice(),
+                costume.getDepositPrice(),
+                costume.getImageUrl(),
+                costume.getStatus(),
+                availableCount,
+                CategoryDTO.fromEntity(costume.getCategory()),
+                costume.getOwner() != null ? new UserResponseDTO(
+                        costume.getOwner().getId(),
+                        costume.getOwner().getFullName(),
+                        costume.getOwner().getEmail(),
+                        costume.getOwner().getPhone(),
+                        costume.getOwner().getAddress(),
+                        costume.getOwner().getRole(),
+                        costume.getOwner().getStatus()
+                ) : null,
+                CostumeMetadataDTO.fromEntity(costume.getMetadata()),
+                List.of(),
+                List.of()
+        );
+    }
+
     public static CostumeDTO fromEntity(Costume costume, List<InventorySummaryDTO> inventorySummary) {
         long availableCount = costume.getItems() == null ? 0 :
                 costume.getItems().stream()

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { getChatTypingText } from '../../utils/chatLanguage';
+import { getCostumePrice } from '../../utils/costumeUtils';
 
 function RecommendationCards({ messageId, recommendations, onNavigate, onRecommendationClick }) {
   if (!recommendations?.length) return null;
@@ -8,15 +9,15 @@ function RecommendationCards({ messageId, recommendations, onNavigate, onRecomme
     <div className="mt-4 space-y-3">
       {recommendations.map((recommendation, index) => (
         <button
-          key={recommendation.costume?.id || recommendation.product?.id || index}
+          key={recommendation.costume?.id || index}
           onClick={() => {
             onRecommendationClick?.({
               messageId,
               recommendation,
               index,
-              product: recommendation.product,
+              product: recommendation.costume,
             });
-            onNavigate?.('productDetail', recommendation.product);
+            onNavigate?.('productDetail', recommendation.costume);
           }}
           className="block w-full border border-[#d9d4d3] bg-white p-3 text-left transition hover:border-black"
         >
@@ -25,10 +26,10 @@ function RecommendationCards({ messageId, recommendations, onNavigate, onRecomme
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#99854e]">
                 Gợi ý #{index + 1}
               </p>
-              <h4 className="mt-1 font-serif text-lg italic text-black">{recommendation.product?.name}</h4>
+              <h4 className="mt-1 font-serif text-lg italic text-black">{recommendation.costume?.name}</h4>
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#777777]">
-              {recommendation.product?.price}
+              {getCostumePrice(recommendation.costume)}
             </span>
           </div>
           <p className="mt-2 text-xs leading-5 text-[#5f5e5e]">{recommendation.reason || 'Còn sẵn để thuê'}</p>
