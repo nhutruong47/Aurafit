@@ -8,17 +8,18 @@ const extractCategoryName = (value) => {
   return '';
 };
 
-export default function CatalogProductCard({ costume, onNavigate }) {
-  const categoryLabel = extractCategoryName(costume.category);
-  const subcategoryLabel = extractCategoryName(costume.subcategory);
-  const available = costume.available;
+export default function CatalogProductCard({ costume, product, onNavigate }) {
+  const item = product || costume;
+  const categoryLabel = extractCategoryName(item.category);
+  const subcategoryLabel = extractCategoryName(item.subcategory);
+  const available = item.available;
 
   return (
     <article className="group flex flex-col overflow-hidden border border-[#cfc4c5] bg-white transition-all duration-500 hover:border-[#99854e]/50">
-      <div onClick={() => onNavigate?.('productDetail', costume)} className="relative h-64 cursor-pointer overflow-hidden">
+      <div onClick={() => onNavigate?.('productDetail', item)} className="relative h-64 cursor-pointer overflow-hidden">
         <img
-          src={costume.image}
-          alt={costume.name}
+          src={item.image}
+          alt={item.name}
           onError={(event) => {
             event.currentTarget.src = fallbackProductImage;
           }}
@@ -30,9 +31,9 @@ export default function CatalogProductCard({ costume, onNavigate }) {
           <span className="rounded-full border border-white/10 bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
             {categoryLabel}
           </span>
-          {costume.tag && (
+          {item.tag && (
             <span className="rounded-sm border border-white/20 bg-white/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white backdrop-blur-md">
-              {costume.tag}
+              {item.tag}
             </span>
           )}
         </div>
@@ -57,30 +58,30 @@ export default function CatalogProductCard({ costume, onNavigate }) {
       </div>
 
       <div className="flex flex-1 flex-col p-5">
-        <div onClick={() => onNavigate?.('productDetail', costume)} className="cursor-pointer">
+        <div onClick={() => onNavigate?.('productDetail', item)} className="cursor-pointer">
           <h3 className="mb-1 line-clamp-1 text-base font-semibold text-black transition-colors duration-300 group-hover:text-[#99854e]">
-            {costume.name}
+            {item.name}
           </h3>
           <p className="mb-4 line-clamp-1 text-[11px] text-[#777777]">
             {subcategoryLabel || categoryLabel}
-            {costume.tag ? ` • ${costume.tag}` : ''}
+            {item.tag ? ` • ${item.tag}` : ''}
           </p>
         </div>
 
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div>
             <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#999999]">Giá thuê</span>
-            <span className="font-serif text-xl text-black">{formatCurrency(costume.priceValue)}</span>
+            <span className="font-serif text-xl text-black">{formatCurrency(item.priceValue)}</span>
           </div>
           <div>
             <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#999999]">Tiền cọc</span>
-            <span className="font-serif text-xl text-black">{formatCurrency(costume.depositValue)}</span>
+            <span className="font-serif text-xl text-black">{formatCurrency(item.depositValue)}</span>
           </div>
         </div>
 
         <div className="mt-auto">
           <button
-            onClick={() => onNavigate?.('productDetail', costume)}
+            onClick={() => onNavigate?.('productDetail', item)}
             className="w-full border border-black px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-black transition-all duration-300 hover:bg-black hover:text-white"
           >
             Xem chi tiết

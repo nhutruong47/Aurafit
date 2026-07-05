@@ -27,9 +27,10 @@ export const mapCostumeToProduct = (costume) => {
   const depositPrice = Number(costume.depositPrice ?? costume.deposit_price ?? costume.deposit ?? 0);
   const metadata = costume.metadata || null;
   const metadataTags = Array.isArray(metadata?.tags) ? metadata.tags : [];
-  const availableItemCount = Number(costume.availableItemCount ?? 0);
+  const availableItemCount = Number(costume.availableItemCount ?? costume.availableQuantity ?? 0);
   const isActive = String(costume.status || '').toUpperCase() !== 'INACTIVE';
   const categoryPath = costume.category?.path ?? costume.categoryPath ?? null;
+  const categorySlug = costume.category?.slug ?? costume.categorySlug ?? null;
   const apiCategoryName = extractCategoryName(costume.category) || costume.categoryName || '';
   const rootCategory = resolveRootCategory(
     categoryPath,
@@ -68,6 +69,8 @@ export const mapCostumeToProduct = (costume) => {
     price: formatCurrency(rentalPrice),
     deposit: formatCurrency(depositPrice),
     categoryId: costume.category?.id ?? costume.categoryId ?? null,
+    categoryName: apiCategoryName || categoryLabels[normalizedCategory] || normalizedCategory,
+    categorySlug,
     categoryPath,
     rootCategoryKey: rootCategory.key,
     rootCategoryPath: rootCategory.rootPath,
@@ -81,6 +84,7 @@ export const mapCostumeToProduct = (costume) => {
     occasion: metadata?.occasion || '',
     season: metadata?.season || '',
     tags: metadataTags,
+    availableQuantity: availableItemCount,
     inventorySummary: Array.isArray(costume.inventorySummary)
       ? costume.inventorySummary.map((summary) => ({
           color: summary.color || '',
@@ -89,8 +93,17 @@ export const mapCostumeToProduct = (costume) => {
           alreadyInCartCount: Number(summary.alreadyInCartCount || 0),
         }))
       : [],
-    items: Array.isArray(costume.items)
-      ? costume.items.map((item) => ({
+    items: Array.isArray(costume.items ?? costume.costumeItems)
+      ? (costume.items ?? costume.costumeItems).map((item) => ({
+          id: item.id,
+          sku: item.sku,
+          size: item.size,
+          color: item.color,
+          status: item.status,
+        }))
+      : [],
+    costumeItems: Array.isArray(costume.items ?? costume.costumeItems)
+      ? (costume.items ?? costume.costumeItems).map((item) => ({
           id: item.id,
           sku: item.sku,
           size: item.size,

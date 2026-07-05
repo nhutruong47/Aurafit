@@ -16,8 +16,8 @@ import PaymentPage from './pages/PaymentPage';
 import RentalOrderCheckoutPage from './pages/RentalOrderCheckoutPage';
 import RentalOrdersPage from './pages/RentalOrdersPage';
 import RentalOrderSuccessPage from './pages/RentalOrderSuccessPage';
-import ShopPage from './pages/ShopPage';
 import StaffDashboardPage from './pages/StaffDashboardPage';
+import TraditionalPage from './pages/TraditionalPage';
 import UserAccountPage from './pages/UserAccountPage';
 import YearbookPage from './pages/YearbookPage';
 import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from './routing/navigation';
@@ -252,10 +252,6 @@ function App() {
         <Route path="/" element={<HomePage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/catalog" element={<CatalogPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} onRentNow={handleRentNow} />} />
         <Route
-          path="/shop"
-          element={<ShopPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} onRentNow={handleRentNow} />}
-        />
-        <Route
           path="/checkout"
           element={
             <RentalOrderCheckoutPage
@@ -276,6 +272,7 @@ function App() {
         <Route path="/yearbook" element={<YearbookPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/cosplay" element={<CosplayPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/events" element={<EventsPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/traditional" element={<TraditionalPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/care" element={<CustomerCarePage onNavigate={handleNavigate} />} />
         <Route path="/account" element={<UserAccountPage currentUser={currentUser} onAuthChange={handleAuthChange} onNavigate={handleNavigate} />} />
         <Route

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 export const pagePathMap = {
   home: '/',
   catalog: '/catalog',
-  shop: '/shop',
   checkout: '/checkout',
   'direct-rental': '/direct-rental',
   payment: '/payment',
@@ -16,6 +15,7 @@ export const pagePathMap = {
   yearbook: '/yearbook',
   cosplay: '/cosplay',
   events: '/events',
+  traditional: '/traditional',
   care: '/care',
   account: '/account',
 };

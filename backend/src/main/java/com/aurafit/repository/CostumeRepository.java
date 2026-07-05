@@ -40,6 +40,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
                 c.status,
                 category.id,
                 category.name,
+                category.slug,
                 category.path,
                 COALESCE(SUM(CASE WHEN item.status = :availableStatus THEN 1 ELSE 0 END), 0)
             )
@@ -50,7 +51,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
               AND category.isActive = true
               AND (:categoryPath IS NULL OR category.path = :categoryPath OR category.path LIKE CONCAT(:categoryPath, '/%'))
               AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-            GROUP BY c.id, c.name, c.rentalPrice, c.depositPrice, c.imageUrl, c.status, category.id, category.name, category.path
+            GROUP BY c.id, c.name, c.rentalPrice, c.depositPrice, c.imageUrl, c.status, category.id, category.name, category.slug, category.path
             """,
             countQuery = """
             SELECT COUNT(c) FROM Costume c

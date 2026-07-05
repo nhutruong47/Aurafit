@@ -17,11 +17,9 @@ export default function CosplayCollectionHeader({
       <div>
         <h2 className="font-serif text-4xl font-normal italic md:text-5xl">Nhân vật nổi bật</h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[#5f5e5e]">
-          {isLoading
-            ? 'Đang tải sản phẩm Cosplay...'
-            : `Đang hiển thị ${filteredCount} / ${totalCount} set.`}
+          {isLoading ? 'Đang chuẩn bị danh sách cho bạn...' : `Đang hiển thị ${filteredCount} / ${totalCount} set.`}
         </p>
-        {error && <p className="mt-2 text-sm text-red-600">Chưa kết nối được backend/database.</p>}
+        {error && <p className="mt-2 text-sm text-red-600">Hiện chưa thể tải danh sách sản phẩm. Vui lòng thử lại sau.</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
         {quickFilterButtons.map((button) => (

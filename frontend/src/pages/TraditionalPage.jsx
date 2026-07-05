@@ -3,8 +3,7 @@ import CatalogSearchBar from '../components/catalog/CatalogSearchBar';
 import CatalogProductCard from '../components/catalog/CatalogProductCard';
 import CatalogSortBar from '../components/catalog/CatalogSortBar';
 import UniversalFilterSidebar from '../components/catalog/UniversalFilterSidebar';
-import EventServicesSection from '../components/events/EventServicesSection';
-import EventsHero from '../components/events/EventsHero';
+import CosplayStepsSection from '../components/cosplay/CosplayStepsSection';
 import CostumeCheckboxFilterGroup from '../components/costume/CostumeCheckboxFilterGroup';
 import ShopPagination from '../components/shop/ShopPagination';
 import EmptyState from '../components/ui/EmptyState';
@@ -69,7 +68,7 @@ function sortProducts(products, sortBy, sortDir) {
   });
 }
 
-export default function EventsPage({ onNavigate }) {
+export default function TraditionalPage({ onNavigate }) {
   const [sortBy, setSortBy] = useState('id');
   const [sortDir, setSortDir] = useState('desc');
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,8 +76,8 @@ export default function EventsPage({ onNavigate }) {
   const [activePage, setActivePage] = useState(1);
   const { categoriesByPath, error: categoryError } = useCatalogCategories();
 
-  const thematicFilters = useMemo(() => {
-    const root = categoriesByPath.get('su-kien');
+  const traditionalFilters = useMemo(() => {
+    const root = categoriesByPath.get('trang-phuc-truyen-thong');
     const options = Array.isArray(root?.children)
       ? root.children.map((category) => ({
           id: category.path,
@@ -88,7 +87,7 @@ export default function EventsPage({ onNavigate }) {
 
     return [
       {
-        title: 'Danh mục sự kiện',
+        title: 'Danh mục truyền thống',
         options,
       },
     ];
@@ -105,35 +104,30 @@ export default function EventsPage({ onNavigate }) {
       : [];
   }, [categoriesByPath]);
 
-  const eventServices = useMemo(() => {
-    const root = categoriesByPath.get('su-kien');
-    const icons = ['event_available', 'straighten', 'local_shipping'];
+  const processSteps = useMemo(() => {
+    const traditionalRoot = categoriesByPath.get('trang-phuc-truyen-thong');
     const sourceCategories = [
-      ...(Array.isArray(root?.children) ? root.children.slice(0, 2) : []),
-      ...(accessoryCategories.length > 0
-        ? [
-            {
-              name: accessoryCategories[0].label,
-              description: accessoryCategories[0].description,
-            },
-          ]
-        : []),
-    ].slice(0, 3);
+      ...(traditionalRoot?.children || []),
+      ...accessoryCategories.map((category) => ({
+        name: category.label,
+        description: category.description,
+      })),
+    ].slice(0, 4);
 
     return sourceCategories.map((category, index) => [
-      icons[index] || 'style',
+      String(index + 1).padStart(2, '0'),
       category.name,
       category.description ||
-        'Gợi ý giúp bạn phối đồ gọn hơn cho những dịp cần sự chỉn chu và nổi bật.',
+        `Một gợi ý nhẹ nhàng để bạn hoàn thiện set đồ cho buổi chụp ảnh, lễ hội hoặc sự kiện văn hóa.`,
     ]);
   }, [accessoryCategories, categoriesByPath]);
 
   const {
-    costumes: eventProducts,
-    isLoading: isLoadingEvents,
-    error: eventsError,
+    costumes: traditionalProducts,
+    isLoading: isLoadingTraditional,
+    error: traditionalError,
   } = useCatalogCostumes({
-    categoryPath: 'su-kien',
+    categoryPath: 'trang-phuc-truyen-thong',
     sortBy,
     sortDir,
     pageSize: ROOT_PAGE_SIZE,
@@ -161,14 +155,14 @@ export default function EventsPage({ onNavigate }) {
   const mergedProducts = useMemo(() => {
     const productsById = new Map();
 
-    [...eventProducts, ...accessoryProducts].forEach((product) => {
+    [...traditionalProducts, ...accessoryProducts].forEach((product) => {
       if (!productsById.has(product.id)) {
         productsById.set(product.id, product);
       }
     });
 
     return Array.from(productsById.values());
-  }, [accessoryProducts, eventProducts]);
+  }, [accessoryProducts, traditionalProducts]);
 
   const filteredProducts = useMemo(() => {
     const sourceProducts = selectedBrowsePaths.length
@@ -188,8 +182,8 @@ export default function EventsPage({ onNavigate }) {
     const startIndex = Math.max(activePage - 1, 0) * PAGE_SIZE;
     return filteredProducts.slice(startIndex, startIndex + PAGE_SIZE);
   }, [activePage, filteredProducts]);
-  const isLoading = isLoadingEvents || isLoadingAccessories;
-  const error = eventsError || accessoryError || categoryError;
+  const isLoading = isLoadingTraditional || isLoadingAccessories;
+  const error = traditionalError || accessoryError || categoryError;
 
   useEffect(() => {
     setActivePage(1);
@@ -223,15 +217,61 @@ export default function EventsPage({ onNavigate }) {
   };
 
   return (
-    <div className="bg-[#f9f9f9] text-[#1a1c1c]">
-      <EventsHero onNavigate={onNavigate} />
-      <EventServicesSection services={eventServices} />
+    <div className="bg-[#f7f7f7] text-[#111111]">
+      <section className="overflow-hidden border-b border-[#cfc4c5] bg-[#f3eee7]">
+        <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-10 px-5 py-16 md:grid-cols-12 md:px-20 md:py-24">
+          <div className="md:col-span-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">
+              Bộ sưu tập truyền thống
+            </p>
+            <h1 className="mt-4 max-w-4xl font-serif text-4xl italic leading-tight text-black md:text-6xl">
+              Những set đồ mang nét duyên riêng cho buổi chụp ảnh, lễ hội và sự kiện văn hóa
+            </h1>
+            <p className="mt-6 max-w-2xl text-sm leading-7 text-[#5f5e5e] md:text-base">
+              Từ áo dài, kimono đến hanbok, bạn có thể chọn nhanh theo từng phong cách yêu thích và kết hợp thêm phụ
+              kiện để hoàn thiện tổng thể hài hòa hơn.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <button
+                onClick={() => document.getElementById('traditional-products')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-black px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#99854e]"
+              >
+                Xem bộ sưu tập
+              </button>
+              <button
+                onClick={() => onNavigate?.('catalog', { categoryPath: 'trang-phuc-truyen-thong' })}
+                className="border border-black px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-black transition hover:bg-black hover:text-white"
+              >
+                Xem danh mục chung
+              </button>
+            </div>
+          </div>
+          <div className="md:col-span-5">
+            <div className="relative h-full min-h-[320px] overflow-hidden bg-black">
+              <img
+                src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=85"
+                alt="Trang phục truyền thống"
+                className="h-full w-full object-cover opacity-75"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 p-6 md:p-8">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">
+                  Việt Nam · Nhật Bản · Hàn Quốc · Trung Hoa
+                </p>
+                <p className="mt-3 font-serif text-3xl italic text-white md:text-4xl">
+                  Áo dài, kimono, hanbok và nhiều lựa chọn duyên dáng khác
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <section id="event-products" className="py-20 md:py-28">
+      <section id="traditional-products" className="py-20 md:py-28">
         <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-12 px-5 md:grid-cols-12 md:px-20">
           <aside className="md:col-span-3">
             <UniversalFilterSidebar
-              filterGroups={thematicFilters}
+              filterGroups={traditionalFilters}
               selectedIds={selectedBrowsePaths}
               onToggle={handleToggleBrowsePath}
               onClearAll={handleClearFilters}
@@ -248,17 +288,17 @@ export default function EventsPage({ onNavigate }) {
           <div className="md:col-span-9">
             <div className="mb-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
-                Gợi ý cho dịp đặc biệt
+                Gợi ý cho phong cách truyền thống
               </p>
               <h2 className="mt-3 font-serif text-3xl italic leading-tight text-black md:text-4xl">
                 {selectedBrowseCategories.length
                   ? selectedBrowseCategories.map((category) => category.name).join(' + ')
-                  : 'Chọn trang phục nổi bật cho buổi tiệc của bạn'}
+                  : 'Chọn set đồ truyền thống theo phong cách bạn yêu thích'}
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-[#5f5e5e]">
                 {selectedBrowseCategories.length
                   ? `Bạn đang xem các mẫu thuộc ${selectedBrowseCategories.length} nhóm đã chọn để so sánh dễ hơn.`
-                  : 'Từ trang phục chính đến điểm nhấn đi kèm, bạn có thể lọc theo từng nhóm để chọn set phù hợp cho gala, prom, tiệc cưới hay buổi biểu diễn.'}
+                  : 'Lọc theo quốc gia, kiểu trang phục hoặc phụ kiện để tìm ra set phù hợp cho buổi chụp ảnh, lễ hội hay sự kiện văn hóa.'}
               </p>
               <p className="mt-4 text-sm text-[#5f5e5e]">
                 {isLoading ? (
@@ -294,7 +334,7 @@ export default function EventsPage({ onNavigate }) {
             ) : (
               !isLoading && (
                 <EmptyState
-                  icon="search_off"
+                  icon="filter_alt_off"
                   title="Chưa tìm thấy mẫu phù hợp"
                   message="Bạn hãy thử đổi từ khóa hoặc nới bớt bộ lọc để xem thêm lựa chọn khác."
                   actionLabel="Xóa toàn bộ bộ lọc"
@@ -312,6 +352,8 @@ export default function EventsPage({ onNavigate }) {
           </div>
         </div>
       </section>
+
+      <CosplayStepsSection steps={processSteps} />
     </div>
   );
 }

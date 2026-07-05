@@ -35,7 +35,11 @@ export default function OrderSuccessFooter({ footerColumns, mobileNavLinks, onNa
         {mobileNavLinks.map(([icon, label]) => (
           <button
             key={label}
-            onClick={() => onNavigate?.(label === 'Shop' ? 'shop' : label === 'Sự kiện' ? 'events' : label.toLowerCase())}
+            onClick={() =>
+              onNavigate?.(
+                label === 'Bộ sưu tập' ? 'catalog' : label === 'Sự kiện' ? 'events' : label.toLowerCase()
+              )
+            }
             className="flex flex-col items-center justify-center p-2 text-[#5f5e5e]"
           >
             <span className="material-symbols-outlined">{icon}</span>

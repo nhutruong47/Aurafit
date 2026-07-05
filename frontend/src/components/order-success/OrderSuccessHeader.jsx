@@ -9,7 +9,11 @@ export default function OrderSuccessHeader({ navLinks, onNavigate }) {
         {navLinks.map((link) => (
           <button
             key={link}
-            onClick={() => onNavigate?.(link === 'Shop' ? 'shop' : link === 'Sự kiện' ? 'events' : link.toLowerCase())}
+            onClick={() =>
+              onNavigate?.(
+                link === 'Bộ sưu tập' ? 'catalog' : link === 'Sự kiện' ? 'events' : link.toLowerCase()
+              )
+            }
             className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e] transition hover:text-[#99854e]"
           >
             {link}

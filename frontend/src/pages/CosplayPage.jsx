@@ -1,37 +1,200 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import CatalogSearchBar from '../components/catalog/CatalogSearchBar';
+import CatalogSortBar from '../components/catalog/CatalogSortBar';
+import CatalogProductCard from '../components/catalog/CatalogProductCard';
 import UniversalFilterSidebar from '../components/catalog/UniversalFilterSidebar';
 import CosplayHero from '../components/cosplay/CosplayHero';
 import CosplayStepsSection from '../components/cosplay/CosplayStepsSection';
-import ShopProductCard from '../components/shop/ShopProductCard';
+import CostumeCheckboxFilterGroup from '../components/costume/CostumeCheckboxFilterGroup';
 import ShopPagination from '../components/shop/ShopPagination';
-import CatalogSortBar from '../components/catalog/CatalogSortBar';
 import EmptyState from '../components/ui/EmptyState';
+import { useCatalogCategories } from '../hooks/useCatalogCategories';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 
-const accessoryHints = ['Tóc giả', 'Vũ khí mô phỏng', 'Trang sức', 'Bọc ủng'];
+const PAGE_SIZE = 12;
+const ROOT_PAGE_SIZE = 120;
 
-const thematicFilters = [
-  { title: 'Thể loại', options: ['Anime', 'Game', 'Phim / TV', 'Manga', 'Giả tưởng'] },
-  { title: 'Bộ sưu tập', options: ['Naruto', 'Demon Slayer', 'Genshin Impact', 'One Piece', 'Jujutsu Kaisen'] },
-  { title: 'Size', options: ['S', 'M', 'L', 'XL', 'Free Size'] },
-];
+function matchesCategoryPath(product, categoryPath) {
+  if (!categoryPath) {
+    return true;
+  }
 
-const processSteps = [
-  ['01', 'Chọn nhân vật', 'Tìm set theo nguồn cảm hứng hoặc gửi reference cho stylist.'],
-  ['02', 'Khóa phụ kiện', 'Thêm tóc giả, prop, bọc ủng và trang sức ngay trong giỏ hàng.'],
-  ['03', 'Fitting nhanh', 'Đội ngũ kiểm tra form, độ dài tà và khả năng di chuyển.'],
-  ['04', 'Hoàn trả gọn gàng', 'Trả đồ sau sự kiện, AuraFit xử lý vệ sinh và bảo quản.'],
-];
+  const normalizedCategoryPath = categoryPath.trim().toLowerCase();
+  const productCategoryPath = String(product.categoryPath || '').toLowerCase();
+
+  return (
+    productCategoryPath === normalizedCategoryPath ||
+    productCategoryPath.startsWith(`${normalizedCategoryPath}/`)
+  );
+}
+
+function matchesSearchTerm(product, searchTerm) {
+  if (!searchTerm) {
+    return true;
+  }
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  if (!normalizedSearch) {
+    return true;
+  }
+
+  const haystack = [
+    product.name,
+    product.description,
+    product.category,
+    product.subcategory,
+    product.meta,
+    ...(product.tags || []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return haystack.includes(normalizedSearch);
+}
+
+function sortProducts(products, sortBy, sortDir) {
+  const direction = sortDir === 'asc' ? 1 : -1;
+
+  return [...products].sort((left, right) => {
+    if (sortBy === 'rentalPrice') {
+      return (Number(left.priceValue || 0) - Number(right.priceValue || 0)) * direction;
+    }
+
+    if (sortBy === 'name') {
+      return left.name.localeCompare(right.name, 'vi') * direction;
+    }
+
+    return (Number(left.id || 0) - Number(right.id || 0)) * direction;
+  });
+}
 
 export default function CosplayPage({ onNavigate }) {
   const [sortBy, setSortBy] = useState('id');
   const [sortDir, setSortDir] = useState('desc');
-  
-  // Thematic filters are currently decorative since the backend groups "cosplay" already.
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBrowsePaths, setSelectedBrowsePaths] = useState([]);
+  const [activePage, setActivePage] = useState(1);
+  const { categoriesByPath, error: categoryError } = useCatalogCategories();
 
-  const { costumes, activePage, totalPages, totalElements, setActivePage, isLoading, error } =
-    useCatalogCostumes('cosplay', sortBy, sortDir);
+  const thematicFilters = useMemo(() => {
+    const root = categoriesByPath.get('cosplay');
+    const options = Array.isArray(root?.children)
+      ? root.children.map((category) => ({
+          id: category.path,
+          label: category.name,
+        }))
+      : [];
+
+    return [
+      {
+        title: 'Danh mục cosplay',
+        options,
+      },
+    ];
+  }, [categoriesByPath]);
+
+  const accessoryCategories = useMemo(() => {
+    const root = categoriesByPath.get('phu-kien');
+    return Array.isArray(root?.children)
+      ? root.children.map((category) => ({
+          id: category.path,
+          label: category.name,
+          description: category.description || '',
+        }))
+      : [];
+  }, [categoriesByPath]);
+
+  const processSteps = useMemo(() => {
+    const cosplayRoot = categoriesByPath.get('cosplay');
+    const sourceCategories = [
+      ...(cosplayRoot?.children || []),
+      ...accessoryCategories.map((category) => ({
+        name: category.label,
+        description: category.description,
+      })),
+    ].slice(0, 4);
+
+    return sourceCategories.map((category, index) => [
+      String(index + 1).padStart(2, '0'),
+      category.name,
+      category.description ||
+        'Một gợi ý nhỏ để bạn hoàn thiện tạo hình và chọn set phù hợp với nhân vật mình muốn thể hiện.',
+    ]);
+  }, [accessoryCategories, categoriesByPath]);
+
+  const {
+    costumes: cosplayProducts,
+    isLoading: isLoadingCosplay,
+    error: cosplayError,
+  } = useCatalogCostumes({
+    categoryPath: 'cosplay',
+    sortBy,
+    sortDir,
+    pageSize: ROOT_PAGE_SIZE,
+  });
+
+  const {
+    costumes: accessoryProducts,
+    isLoading: isLoadingAccessories,
+    error: accessoryError,
+  } = useCatalogCostumes({
+    categoryPath: 'phu-kien',
+    sortBy,
+    sortDir,
+    pageSize: ROOT_PAGE_SIZE,
+  });
+
+  const selectedBrowseCategories = useMemo(
+    () =>
+      selectedBrowsePaths
+        .map((categoryPath) => categoriesByPath.get(categoryPath))
+        .filter(Boolean),
+    [categoriesByPath, selectedBrowsePaths]
+  );
+
+  const mergedProducts = useMemo(() => {
+    const productsById = new Map();
+
+    [...cosplayProducts, ...accessoryProducts].forEach((product) => {
+      if (!productsById.has(product.id)) {
+        productsById.set(product.id, product);
+      }
+    });
+
+    return Array.from(productsById.values());
+  }, [accessoryProducts, cosplayProducts]);
+
+  const filteredProducts = useMemo(() => {
+    const sourceProducts = selectedBrowsePaths.length
+      ? mergedProducts.filter((product) =>
+          selectedBrowsePaths.some((categoryPath) => matchesCategoryPath(product, categoryPath))
+        )
+      : mergedProducts;
+
+    const searchMatchedProducts = sourceProducts.filter((product) => matchesSearchTerm(product, searchTerm));
+
+    return sortProducts(searchMatchedProducts, sortBy, sortDir);
+  }, [mergedProducts, searchTerm, selectedBrowsePaths, sortBy, sortDir]);
+
+  const totalElements = filteredProducts.length;
+  const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE));
+  const pagedProducts = useMemo(() => {
+    const startIndex = Math.max(activePage - 1, 0) * PAGE_SIZE;
+    return filteredProducts.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [activePage, filteredProducts]);
+  const isLoading = isLoadingCosplay || isLoadingAccessories;
+  const error = cosplayError || accessoryError || categoryError;
+
+  useEffect(() => {
+    setActivePage(1);
+  }, [searchTerm, selectedBrowsePaths, sortBy, sortDir]);
+
+  useEffect(() => {
+    if (activePage > totalPages) {
+      setActivePage(totalPages);
+    }
+  }, [activePage, totalPages]);
 
   const handleSortChange = (newSortBy, newSortDir) => {
     setSortBy(newSortBy);
@@ -41,11 +204,17 @@ export default function CosplayPage({ onNavigate }) {
   const handleClearFilters = () => {
     setSortBy('id');
     setSortDir('desc');
-    setSelectedIds([]);
+    setSearchTerm('');
+    setSelectedBrowsePaths([]);
+    setActivePage(1);
   };
 
-  const handleToggleFilter = (id) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  const handleToggleBrowsePath = (categoryPath) => {
+    setSelectedBrowsePaths((current) =>
+      current.includes(categoryPath)
+        ? current.filter((path) => path !== categoryPath)
+        : [...current, categoryPath]
+    );
   };
 
   return (
@@ -57,58 +226,71 @@ export default function CosplayPage({ onNavigate }) {
           <aside className="md:col-span-3">
             <UniversalFilterSidebar
               filterGroups={thematicFilters}
-              selectedIds={selectedIds}
-              onToggle={handleToggleFilter}
+              selectedIds={selectedBrowsePaths}
+              onToggle={handleToggleBrowsePath}
               onClearAll={handleClearFilters}
             >
-              <div className="border border-[#cfc4c5] bg-white p-6">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">Gợi ý phụ kiện</p>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {accessoryHints.map((hint) => (
-                    <button
-                      key={hint}
-                      className="border border-[#cfc4c5] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5f5e5e] transition hover:border-black hover:text-black"
-                    >
-                      {hint}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <CostumeCheckboxFilterGroup
+                title="Phụ kiện đi kèm"
+                items={accessoryCategories}
+                selectedItems={selectedBrowsePaths}
+                onToggle={handleToggleBrowsePath}
+              />
             </UniversalFilterSidebar>
           </aside>
 
           <div className="md:col-span-9">
             <div className="mb-6">
-              <p className="text-sm text-[#5f5e5e]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
+                Gợi ý cho buổi hóa thân
+              </p>
+              <h2 className="mt-3 font-serif text-3xl italic leading-tight text-black md:text-4xl">
+                {selectedBrowseCategories.length
+                  ? selectedBrowseCategories.map((category) => category.name).join(' + ')
+                  : 'Chọn set phù hợp với nhân vật bạn muốn thể hiện'}
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#5f5e5e]">
+                {selectedBrowseCategories.length
+                  ? `Bạn đang xem các mẫu thuộc ${selectedBrowseCategories.length} nhóm đã chọn để so sánh dễ hơn.`
+                  : 'Từ trang phục chính đến phụ kiện đi kèm, bạn có thể lọc theo từng nhóm để tìm ra set hợp ý nhất cho buổi chụp ảnh hay sự kiện.'}
+              </p>
+              <p className="mt-4 text-sm text-[#5f5e5e]">
                 {isLoading ? (
-                  'Đang tải sản phẩm từ database...'
+                  'Đang chuẩn bị danh sách cho bạn...'
                 ) : (
                   <>
-                    Đang hiển thị <span className="font-medium text-black">{costumes.length}</span> / <span className="font-medium text-black">{totalElements}</span> set cosplay
+                    Đang hiển thị <span className="font-medium text-black">{pagedProducts.length}</span> /{' '}
+                    <span className="font-medium text-black">{totalElements}</span> sản phẩm
                   </>
                 )}
               </p>
               {error && (
                 <p className="mt-2 text-sm text-red-600">
-                  Chưa kết nối được backend/database. Vui lòng chạy BE ở port 8080 rồi tải lại trang.
+                  Hiện chưa thể tải danh sách sản phẩm. Vui lòng thử lại sau.
                 </p>
               )}
             </div>
 
+            <CatalogSearchBar
+              searchTerm={searchTerm}
+              onSearchTermChange={setSearchTerm}
+              onClearSearch={() => setSearchTerm('')}
+            />
+
             <CatalogSortBar sortBy={sortBy} sortDir={sortDir} onSortChange={handleSortChange} />
 
-            {costumes.length > 0 ? (
+            {pagedProducts.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {costumes.map((product) => (
-                  <ShopProductCard key={product.id} product={product} onNavigate={onNavigate} />
+                {pagedProducts.map((product) => (
+                  <CatalogProductCard key={product.id} product={product} onNavigate={onNavigate} />
                 ))}
               </div>
             ) : (
               !isLoading && (
                 <EmptyState
                   icon="filter_alt_off"
-                  title="Không có set phù hợp"
-                  message="Thử bỏ bớt bộ lọc hoặc chọn nhóm trang phục khác để xem thêm lựa chọn."
+                  title="Chưa tìm thấy mẫu phù hợp"
+                  message="Bạn hãy thử đổi từ khóa hoặc nới bớt bộ lọc để xem thêm lựa chọn khác."
                   actionLabel="Xóa toàn bộ bộ lọc"
                   onAction={handleClearFilters}
                   className="px-8 py-16"

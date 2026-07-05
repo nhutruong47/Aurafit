@@ -1,4 +1,4 @@
-import ShopProductCard from '../shop/ShopProductCard';
+import CatalogProductCard from '../catalog/CatalogProductCard';
 
 function PersonalizedSkeleton() {
   return (
@@ -22,7 +22,6 @@ export default function HomePersonalizedSection({
   isLoading = false,
   error = '',
   onNavigate,
-  onAddToCart,
   onRecommendationClick,
 }) {
   return (
@@ -31,15 +30,15 @@ export default function HomePersonalizedSection({
         <div className="mb-14 flex flex-col gap-4 border-b border-[#d7cecd] pb-6 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#99854e]">
-              Dành cho bạn
+              Đề xuất từ shop
             </p>
             <h2 className="font-serif text-4xl font-normal italic md:text-5xl">
-              Gợi ý cá nhân hóa cho trang chủ
+              Gợi ý nổi bật ngay trên trang chủ
             </h2>
           </div>
           <p className="max-w-2xl text-sm leading-7 text-[#5f5e5e]">
-            Hệ thống ưu tiên các costume đang còn sẵn để thuê và xếp hạng theo hành vi gần đây của bạn như xem sản phẩm,
-            tìm kiếm, thêm giỏ hàng và các tương tác liên quan.
+            Khối này đang dùng cùng nguồn dữ liệu đề xuất với trang shop, lấy trực tiếp từ backend để hiển thị nhanh
+            các costume đang có trong hệ thống.
           </p>
         </div>
 
@@ -50,17 +49,17 @@ export default function HomePersonalizedSection({
         ) : recommendations.length ? (
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3">
             {recommendations.map((recommendation, index) => (
-              <div key={recommendation.costume?.id || recommendation.product?.id} className="space-y-3">
+              <div key={recommendation.product?.id} className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <span className="inline-flex rounded-full border border-[#d9cfb1] bg-[#fbf6e8] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7a6730]">
-                    {recommendation.reason || 'Gợi ý cho bạn'}
+                    {recommendation.reason || 'Đề xuất'}
                   </span>
                   <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8d8887]">
                     #{index + 1}
                   </span>
                 </div>
 
-                <ShopProductCard
+                <CatalogProductCard
                   product={recommendation.product}
                   onNavigate={(page, product) => {
                     onRecommendationClick?.(recommendation, index, page, product);
@@ -72,7 +71,7 @@ export default function HomePersonalizedSection({
           </div>
         ) : (
           <div className="border border-dashed border-[#d8d0cf] bg-[#faf8f7] px-5 py-8 text-sm leading-6 text-[#5f5e5e]">
-            Chưa có gợi ý phù hợp lúc này. Hệ thống sẽ tự làm mới khi có thêm dữ liệu hành vi hoặc sản phẩm khả dụng.
+            Chưa có đề xuất phù hợp lúc này. Hệ thống sẽ tự làm mới khi có thêm dữ liệu sản phẩm từ shop.
           </div>
         )}
       </div>

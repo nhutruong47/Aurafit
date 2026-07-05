@@ -9,8 +9,21 @@ import HomeStyleSlider from '../components/home/HomeStyleSlider';
 import HomeTrendingSection from '../components/home/HomeTrendingSection';
 import HomeTrustSection from '../components/home/HomeTrustSection';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
-import { useHomepageRecommendations } from '../hooks/useHomepageRecommendations';
-import { getInteractionSessionId, logUserInteraction } from '../services/interactionsService';
+import { fetchRecommendedCostumes, fetchSeasonalCostumes } from '../services/costumeService';
+import { logUserInteraction } from '../services/interactionsService';
+import { mapCostumeToProduct } from '../utils/productMapper';
+
+function uniqueProducts(products) {
+  const seen = new Set();
+  return products.filter((product) => {
+    if (seen.has(product.id)) {
+      return false;
+    }
+
+    seen.add(product.id);
+    return true;
+  });
+}
 
 export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
   const [activeTab, setActiveTab] = useState('event');
@@ -19,12 +32,10 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
   const sliderRef = useRef(null);
   const homepageImpressionKeyRef = useRef('');
   const { costumes, isLoading } = useCatalogCostumes();
-  const [interactionSessionId] = useState(() => getInteractionSessionId());
-  const {
-    recommendations: homepageRecommendations,
-    isLoading: isHomepageRecommendationsLoading,
-    error: homepageRecommendationsError,
-  } = useHomepageRecommendations(interactionSessionId, currentUser?.id);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [trendingProducts, setTrendingProducts] = useState([]);
+  const [isShopHighlightsLoading, setIsShopHighlightsLoading] = useState(false);
+  const [shopHighlightsError, setShopHighlightsError] = useState('');
 
   const products = useMemo(
     () => ({
@@ -35,7 +46,51 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
     }),
     [costumes]
   );
-  const trending = useMemo(() => costumes.slice(0, 4), [costumes]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    setIsShopHighlightsLoading(true);
+    setShopHighlightsError('');
+
+    Promise.all([fetchRecommendedCostumes(currentUser?.id), fetchSeasonalCostumes()])
+      .then(([recommendedData, seasonalData]) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setRecommendedProducts(uniqueProducts((recommendedData || []).map(mapCostumeToProduct)));
+        setTrendingProducts(uniqueProducts((seasonalData || []).map(mapCostumeToProduct)));
+        setShopHighlightsError('');
+      })
+      .catch((requestError) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setRecommendedProducts([]);
+        setTrendingProducts([]);
+        setShopHighlightsError(requestError.message || 'Không thể tải đề xuất và xu hướng từ shop.');
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsShopHighlightsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id]);
+
+  const homepageRecommendations = useMemo(
+    () =>
+      recommendedProducts.map((product, index) => ({
+        product,
+        reason: index === 0 ? 'Đề xuất từ shop' : 'Dành cho bạn',
+      })),
+    [recommendedProducts]
+  );
 
   useEffect(() => {
     if (!homepageRecommendations.length) return;
@@ -113,10 +168,9 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
       <HomeServicesSection />
       <HomePersonalizedSection
         recommendations={homepageRecommendations}
-        isLoading={isHomepageRecommendationsLoading}
-        error={homepageRecommendationsError}
+        isLoading={isShopHighlightsLoading}
+        error={shopHighlightsError}
         onNavigate={onNavigate}
-        onAddToCart={onAddToCart}
         onRecommendationClick={handleHomepageRecommendationClick}
       />
       <HomeCategoryMosaic onNavigate={onNavigate} />
@@ -130,7 +184,12 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
         onNavigate={onNavigate}
       />
       <HomeTrustSection />
-      <HomeTrendingSection trending={trending} onNavigate={onNavigate} />
+      <HomeTrendingSection
+        trending={trendingProducts}
+        isLoading={isShopHighlightsLoading}
+        error={shopHighlightsError}
+        onNavigate={onNavigate}
+      />
       <HomeInsiderSection
         email={email}
         isSubscribed={isSubscribed}

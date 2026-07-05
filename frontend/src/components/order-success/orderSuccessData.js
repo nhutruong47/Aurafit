@@ -13,7 +13,7 @@ export const fallbackItems = [
   },
 ];
 
-export const navLinks = ['Shop', 'Cosplay', 'Sự kiện', 'Yearbook'];
+export const navLinks = ['Bộ sưu tập', 'Cosplay', 'Sự kiện', 'Yearbook'];
 
 export const storyLinks = ['Instagram', 'Bộ ảnh'];
 
@@ -27,7 +27,7 @@ export const mobileNavLinks = [
   ['theater_comedy', 'Cosplay'],
   ['event', 'Sự kiện'],
   ['menu_book', 'Yearbook'],
-  ['auto_awesome', 'Shop'],
+  ['grid_view', 'Bộ sưu tập'],
 ];
 
 export const getOrderSuccessItems = (cartItems = []) =>
