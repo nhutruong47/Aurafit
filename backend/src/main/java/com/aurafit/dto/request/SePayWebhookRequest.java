@@ -18,5 +18,11 @@ public record SePayWebhookRequest(
         String content,
 
         @NotBlank
-        String code
+        String code,
+
+        @JsonProperty("accountNumber")
+        String accountNumber,
+
+        @JsonProperty("id")
+        Long sePayId
 ) {}

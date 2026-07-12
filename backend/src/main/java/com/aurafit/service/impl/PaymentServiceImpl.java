@@ -27,152 +27,171 @@ import java.util.regex.Pattern;
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
-    private static final Pattern ORDER_ID_PATTERN = Pattern.compile("ARF(\\d+)");
-    private static final String VIETQR_BANK       = "MBBank";
-    private static final String VIETQR_TEMPLATE    = "compact";
+        private static final Pattern ORDER_ID_PATTERN = Pattern.compile("ARF(\\d+)");
+        private static final String VIETQR_BANK = "BIDV";
+        private static final String VIETQR_TEMPLATE = "compact";
 
-    private final PaymentRepository paymentRepository;
-    private final RentalOrderRepository rentalOrderRepository;
-    private final UserRepository userRepository;
+        private final PaymentRepository paymentRepository;
+        private final RentalOrderRepository rentalOrderRepository;
+        private final UserRepository userRepository;
 
-    @Value("${sepay.api-key}")
-    private String sepayApiKey;
+        @Value("${sepay.api-key}")
+        private String sepayApiKey;
 
-    @Value("${sepay.webhook-secret}")
-    private String sepayWebhookSecret;
+        @Value("${sepay.webhook-secret}")
+        private String sepayWebhookSecret;
 
-    @Value("${sepay.va-account}")
-    private String sepayVaAccount;
+        @Value("${sepay.va-account}")
+        private String sepayVaAccount;
 
-    @Value("${sepay.vietqr-base-url:https://qr.sepay.vn/img}")
-    private String sepayVietQrBaseUrl;
+        @Value("${sepay.vietqr-base-url:https://qr.sepay.vn/img}")
+        private String sepayVietQrBaseUrl;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository,
-                              RentalOrderRepository rentalOrderRepository,
-                              UserRepository userRepository) {
-        this.paymentRepository     = paymentRepository;
-        this.rentalOrderRepository = rentalOrderRepository;
-        this.userRepository        = userRepository;
-    }
-
-    @Override
-    public PaymentInitResponse initializePayment(PaymentCreateRequest request, String currentUserEmail) {
-
-        User user = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentUserEmail));
-
-        RentalOrder order = rentalOrderRepository.findById(request.orderId().longValue())
-                .orElseThrow(() -> new ResourceNotFoundException("RentalOrder", "id", request.orderId()));
-
-        if (!order.getUser().getId().equals(user.getId())) {
-            throw new ResourceNotFoundException("RentalOrder", "id", request.orderId());
+        public PaymentServiceImpl(PaymentRepository paymentRepository,
+                        RentalOrderRepository rentalOrderRepository,
+                        UserRepository userRepository) {
+                this.paymentRepository = paymentRepository;
+                this.rentalOrderRepository = rentalOrderRepository;
+                this.userRepository = userRepository;
         }
 
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new BadRequestException(
-                    "Đơn hàng không ở trạng thái hợp lệ để thanh toán. Trạng thái hiện tại: "
-                    + order.getStatus()
-            );
+        @Override
+        public PaymentInitResponse initializePayment(PaymentCreateRequest request, String currentUserEmail) {
+
+                User user = userRepository.findByEmail(currentUserEmail)
+                                .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentUserEmail));
+
+                RentalOrder order = rentalOrderRepository.findById(request.orderId().longValue())
+                                .orElseThrow(() -> new ResourceNotFoundException("RentalOrder", "id",
+                                                request.orderId()));
+
+                if (!order.getUser().getId().equals(user.getId())) {
+                        throw new ResourceNotFoundException("RentalOrder", "id", request.orderId());
+                }
+
+                if (order.getStatus() != OrderStatus.PENDING) {
+                        throw new BadRequestException(
+                                        "Đơn hàng không ở trạng thái hợp lệ để thanh toán. Trạng thái hiện tại: "
+                                                        + order.getStatus());
+                }
+
+                BigDecimal amountPayable = order.getTotalRentalPrice()
+                                .add(order.getTotalDeposit())
+                                .subtract(order.getDiscountAmount());
+
+                Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(
+                                Long.valueOf(request.orderId()), PaymentStatus.PENDING,
+                                com.aurafit.enums.PaymentType.PAYMENT)
+                                .orElseGet(() -> {
+                                        Payment newPayment = Payment.builder()
+                                                        .rentalOrder(order)
+                                                        .amount(amountPayable)
+                                                        .method(PaymentMethod.BANKING)
+                                                        .type(com.aurafit.enums.PaymentType.PAYMENT)
+                                                        .status(PaymentStatus.PENDING)
+                                                        .build();
+                                        return paymentRepository.save(newPayment);
+                                });
+
+                String paymentContent = "ARF" + request.orderId();
+                String qrUrl = buildSepayVietQrUrl(paymentContent, amountPayable);
+
+                if (payment.getId() != null) {
+                        payment.setAmount(amountPayable);
+                        payment = paymentRepository.save(payment);
+                }
+
+                return new PaymentInitResponse(
+                                qrUrl,
+                                paymentContent,
+                                amountPayable,
+                                request.orderId());
         }
 
-        BigDecimal amountPayable = order.getTotalRentalPrice()
-                .add(order.getTotalDeposit())
-                .subtract(order.getDiscountAmount());
+        @Override
+        @Transactional(rollbackFor = Exception.class)
+        public void processSePayWebhook(SePayWebhookRequest webhookBody, String authToken) {
 
-        Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(
-                        Long.valueOf(request.orderId()), PaymentStatus.PENDING, com.aurafit.enums.PaymentType.PAYMENT)
-                .orElseGet(() -> {
-                    Payment newPayment = Payment.builder()
-                            .rentalOrder(order)
-                            .amount(amountPayable)
-                            .method(PaymentMethod.BANKING)
-                            .type(com.aurafit.enums.PaymentType.PAYMENT)
-                            .status(PaymentStatus.PENDING)
-                            .build();
-                    return paymentRepository.save(newPayment);
-                });
+                if (authToken == null || !authToken.equals(sepayWebhookSecret)) {
+                        throw new BadRequestException("Invalid Webhook Token");
+                }
 
-        String paymentContent = "ARF" + request.orderId();
-        String qrUrl = buildSepayVietQrUrl(paymentContent, amountPayable);
+                // 1) Idempotency — SePay may redeliver the same event; if we already credited
+                // this
+                // transaction, ack it silently instead of erroring out and triggering a retry
+                // storm.
+                if (paymentRepository.findFirstByTransactionId(webhookBody.code()).isPresent()) {
+                        return;
+                }
 
-        if (payment.getId() != null) {
-            payment.setAmount(amountPayable);
-            payment = paymentRepository.save(payment);
+                // 2) Sanity check on the receiving account. SePay posts the beneficiary account
+                // that actually received the money; refuse to credit if it isn't ours.
+                if (webhookBody.accountNumber() != null
+                                && !webhookBody.accountNumber().isBlank()
+                                && !webhookBody.accountNumber().equals(sepayVaAccount)) {
+                        throw new BadRequestException(
+                                        "Transfer arrived on a different account. Expected " + sepayVaAccount
+                                                        + ", got " + webhookBody.accountNumber());
+                }
+
+                // 3) Resolve order from transfer content (pattern: ARF<orderId>)
+                Matcher matcher = ORDER_ID_PATTERN.matcher(webhookBody.content());
+                if (!matcher.find()) {
+                        throw new BadRequestException(
+                                        "No valid order reference found in transfer content: " + webhookBody.content());
+                }
+                Long orderId = Long.valueOf(matcher.group(1));
+
+                Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(
+                                orderId, PaymentStatus.PENDING, com.aurafit.enums.PaymentType.PAYMENT)
+                                .orElseThrow(() -> new BadRequestException(
+                                                "No pending payment found for orderId: " + orderId));
+
+                if (webhookBody.transferAmount().compareTo(payment.getAmount()) < 0) {
+                        throw new BadRequestException(
+                                        "Transfer amount mismatch. Expected >= " + payment.getAmount()
+                                                        + ", got " + webhookBody.transferAmount());
+                }
+
+                payment.setStatus(PaymentStatus.PAID);
+                payment.setTransactionId(webhookBody.code());
+                paymentRepository.save(payment);
+
+                RentalOrder order = payment.getRentalOrder();
+                order.setStatus(OrderStatus.CONFIRMED);
+                rentalOrderRepository.save(order);
         }
 
-        return new PaymentInitResponse(
-                qrUrl,
-                paymentContent,
-                amountPayable,
-                request.orderId()
-        );
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void processSePayWebhook(SePayWebhookRequest webhookBody, String authToken) {
-
-        if (authToken == null || !authToken.equals(sepayWebhookSecret)) {
-            throw new BadRequestException("Invalid Webhook Token");
+        private String buildSepayVietQrUrl(String paymentContent, BigDecimal amount) {
+                StringBuilder url = new StringBuilder(sepayVietQrBaseUrl);
+                url.append("?acc=").append(sepayVaAccount);
+                url.append("&bank=").append(VIETQR_BANK);
+                url.append("&amount=").append(amount.toPlainString());
+                url.append("&des=").append(
+                                java.net.URLEncoder.encode(paymentContent, java.nio.charset.StandardCharsets.UTF_8));
+                url.append("&template=").append(VIETQR_TEMPLATE);
+                return url.toString();
         }
 
-        Matcher matcher = ORDER_ID_PATTERN.matcher(webhookBody.content());
-        if (!matcher.find()) {
-            throw new BadRequestException(
-                    "No valid order reference found in transfer content: " + webhookBody.content()
-            );
+        @Override
+        public PaymentStatusResponse getPaymentStatus(Long orderId, String currentUserEmail) {
+                User user = userRepository.findByEmail(currentUserEmail)
+                                .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentUserEmail));
+
+                RentalOrder order = rentalOrderRepository.findById(orderId)
+                                .orElseThrow(() -> new ResourceNotFoundException("RentalOrder", "id", orderId));
+
+                if (!order.getUser().getId().equals(user.getId())) {
+                        throw new ResourceNotFoundException("RentalOrder", "id", orderId);
+                }
+
+                String paymentContent = "ARF" + orderId;
+
+                return paymentRepository
+                                .findByRentalOrderIdAndStatusAndType(orderId, PaymentStatus.PENDING,
+                                                com.aurafit.enums.PaymentType.PAYMENT)
+                                .map(p -> new PaymentStatusResponse(p.getStatus(), paymentContent, p.getAmount(),
+                                                p.getTransactionId()))
+                                .orElseGet(() -> new PaymentStatusResponse(null, paymentContent, null, null));
         }
-        Long orderId = Long.valueOf(matcher.group(1));
-
-        Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(
-                        orderId, PaymentStatus.PENDING, com.aurafit.enums.PaymentType.PAYMENT)
-                .orElseThrow(() -> new BadRequestException(
-                        "No pending payment found for orderId: " + orderId
-                ));
-
-        if (webhookBody.transferAmount().compareTo(payment.getAmount()) < 0) {
-            throw new BadRequestException(
-                    "Transfer amount mismatch. Expected >= " + payment.getAmount()
-                    + ", got " + webhookBody.transferAmount()
-            );
-        }
-
-        payment.setStatus(PaymentStatus.PAID);
-        payment.setTransactionId(webhookBody.code());
-        paymentRepository.save(payment);
-
-        RentalOrder order = payment.getRentalOrder();
-        order.setStatus(OrderStatus.CONFIRMED);
-        rentalOrderRepository.save(order);
-    }
-
-    private String buildSepayVietQrUrl(String paymentContent, BigDecimal amount) {
-        StringBuilder url = new StringBuilder(sepayVietQrBaseUrl);
-        url.append("?acc=").append(sepayVaAccount);
-        url.append("&bank=").append(VIETQR_BANK);
-        url.append("&amount=").append(amount.toPlainString());
-        url.append("&des=").append(java.net.URLEncoder.encode(paymentContent, java.nio.charset.StandardCharsets.UTF_8));
-        url.append("&template=").append(VIETQR_TEMPLATE);
-        return url.toString();
-    }
-
-    @Override
-    public PaymentStatusResponse getPaymentStatus(Long orderId, String currentUserEmail) {
-        User user = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentUserEmail));
-
-        RentalOrder order = rentalOrderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("RentalOrder", "id", orderId));
-
-        if (!order.getUser().getId().equals(user.getId())) {
-            throw new ResourceNotFoundException("RentalOrder", "id", orderId);
-        }
-
-        String paymentContent = "ARF" + orderId;
-
-        return paymentRepository
-                .findByRentalOrderIdAndStatusAndType(orderId, PaymentStatus.PENDING, com.aurafit.enums.PaymentType.PAYMENT)
-                .map(p -> new PaymentStatusResponse(p.getStatus(), paymentContent, p.getAmount(), p.getTransactionId()))
-                .orElseGet(() -> new PaymentStatusResponse(null, paymentContent, null, null));
-    }
 }

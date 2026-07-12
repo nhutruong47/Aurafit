@@ -23,4 +23,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             @Param("status") PaymentStatus status,
             @Param("type") com.aurafit.enums.PaymentType type
     );
+
+    Optional<Payment> findFirstByTransactionId(String transactionId);
 }

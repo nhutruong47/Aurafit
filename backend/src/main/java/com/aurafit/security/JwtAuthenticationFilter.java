@@ -34,6 +34,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        final String path = request.getRequestURI();
+        // Bypass JWT parsing for SePay webhook — SePay signs its own request via X-SePay-Auth-Token,
+        // so attempting to parse a non-existent Authorization header is just wasted CPU.
+        return path.startsWith("/api/public/payment/");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
