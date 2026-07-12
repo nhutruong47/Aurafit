@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createStaffAccount, fetchUsers, updateUserRole } from '../services/userService';
+import { createStaffAccount, fetchUsers } from '../services/userService';
 import { hasUserRole } from '../utils/roles';
 
 export function useAdminUsers(currentUser) {
@@ -48,27 +48,6 @@ export function useAdminUsers(currentUser) {
     );
   }, [userSearch, users]);
 
-  const setSellerPermission = async (user, enabled) => {
-    if (!user?.id || updatingUserId) return;
-
-    setUpdatingUserId(user.id);
-    setMessage('');
-    setError('');
-
-    try {
-      const updatedUser = await updateUserRole(user.id, enabled ? 'SELLER' : 'CUSTOMER');
-      setUsers((currentUsers) =>
-        currentUsers.map((currentUserItem) =>
-          currentUserItem.id === updatedUser.id ? updatedUser : currentUserItem
-        )
-      );
-      setMessage(enabled ? 'Đã cấp quyền cho thuê sản phẩm.' : 'Đã thu hồi quyền cho thuê sản phẩm.');
-    } catch (updateError) {
-      setError(updateError.message || 'Hệ thống gặp sự cố khi cập nhật phân quyền tài khoản.');
-    } finally {
-      setUpdatingUserId(null);
-    }
-  };
 
   const createStaff = async (staffPayload) => {
     if (!isAdmin || isCreatingStaff) return null;
@@ -107,7 +86,6 @@ export function useAdminUsers(currentUser) {
     isCreatingStaff,
     updatingUserId,
     setUserSearch,
-    setSellerPermission,
     createStaff,
   };
 }

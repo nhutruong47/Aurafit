@@ -16,9 +16,7 @@ export default function AdminUsersSection({
   error,
   isLoading,
   isCreatingStaff,
-  updatingUserId,
   onUserSearchChange,
-  onSellerPermissionChange,
   onCreateStaff,
 }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -163,13 +161,10 @@ export default function AdminUsersSection({
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Vai trò</th>
                 <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3 text-right">Quyền cho thuê</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
               {filteredUsers.map((user) => {
-                const canToggleSeller = user.role === 'CUSTOMER' || user.role === 'SELLER';
-                const isSeller = user.role === 'SELLER';
                 return (
                   <tr key={user.id}>
                     <td className="px-4 py-4 font-medium text-black">{user.fullName || 'Chưa cập nhật'}</td>
@@ -180,24 +175,6 @@ export default function AdminUsersSection({
                       </span>
                     </td>
                     <td className="px-4 py-4 text-[#5f5e5e]">{user.status}</td>
-                    <td className="px-4 py-4 text-right">
-                      {canToggleSeller ? (
-                        <button
-                          type="button"
-                          disabled={updatingUserId === user.id}
-                          onClick={() => onSellerPermissionChange(user, !isSeller)}
-                          className={`px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                            isSeller
-                              ? 'border border-[#ba1a1a]/40 text-[#93000a] hover:bg-[#ffdad6]'
-                              : 'bg-black text-white hover:bg-[#7f7041]'
-                          }`}
-                        >
-                          {updatingUserId === user.id ? 'Đang lưu...' : isSeller ? 'Thu hồi' : 'Cấp quyền'}
-                        </button>
-                      ) : (
-                        <span className="text-xs text-[#999999]">Không áp dụng</span>
-                      )}
-                    </td>
                   </tr>
                 );
               })}

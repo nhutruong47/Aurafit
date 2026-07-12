@@ -11,7 +11,7 @@ public record CostumeUpdateRequest(
         BigDecimal depositPrice,
         String imageUrl,
         Long categoryId,
-        Long ownerUserId,
+
         String status,
 
         @Valid

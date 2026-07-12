@@ -63,7 +63,7 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    @Operation(summary = "Get full detail of a specific order (owner only)")
+    @Operation(summary = "Get full detail of a specific order")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrderDetail(
             Authentication authentication,
             @PathVariable Long orderId

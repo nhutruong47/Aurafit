@@ -59,7 +59,6 @@ function DefaultLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
         cartCount={cartCount}
         currentUser={currentUser}
         isAdmin={hasUserRole(currentUser, 'ADMIN')}
-        isSeller={hasUserRole(currentUser, 'SELLER')}
         isStaff={hasUserRole(currentUser, 'STAFF')}
       />
       <main className="flex-1">

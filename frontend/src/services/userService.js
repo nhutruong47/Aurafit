@@ -9,15 +9,6 @@ export const fetchUsers = async () =>
     'Hệ thống không thể truy xuất danh sách tài khoản.'
   );
 
-export const updateUserRole = async (userId, role) =>
-  requestJson(
-    {
-      url: `/users/${encodeURIComponent(userId)}/role`,
-      method: 'PATCH',
-      data: { role },
-    },
-    'Hệ thống gặp sự cố khi cập nhật phân quyền tài khoản.'
-  );
 
 export const createStaffAccount = async (payload) =>
   requestJson(

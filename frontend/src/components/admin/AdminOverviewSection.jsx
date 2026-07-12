@@ -27,10 +27,9 @@ export default function AdminOverviewSection({ metricCards: defaultMetricCards }
         ))}
       </div>
       <Panel title="Luồng quyền hiện tại">
-        <div className="grid gap-4 md:grid-cols-3">
-          <RuleCard icon="admin_panel_settings" title="Admin" text="Quản lý hệ thống và cấp quyền SELLER cho tài khoản bán." />
-          <RuleCard icon="smart_toy" title="Chatbot" text="Khách hàng được tư vấn tự động qua Chatbot AuraFit." />
-          <RuleCard icon="storefront" title="Seller" text="Chỉ tài khoản được Admin cấp quyền mới được đăng đồ cho thuê." />
+          <div className="grid gap-4 md:grid-cols-2">
+            <RuleCard icon="admin_panel_settings" title="Admin" text="Quản lý hệ thống và sản phẩm." />
+            <RuleCard icon="smart_toy" title="Chatbot" text="Khách hàng được tư vấn tự động qua Chatbot AuraFit." />
         </div>
       </Panel>
     </section>

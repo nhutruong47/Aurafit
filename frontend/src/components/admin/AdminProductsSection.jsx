@@ -5,7 +5,6 @@ import { AdminField, Panel } from './AdminDashboardShared';
 export default function AdminProductsSection({
   products,
   categories,
-  sellerUsers = [],
   isAdmin = false,
   filteredProducts,
   productForm,
@@ -49,28 +48,6 @@ export default function AdminProductsSection({
             <AdminField label="Giá thuê" name="rentalPrice" type="number" value={productForm.rentalPrice} onChange={onProductFieldChange} />
             <AdminField label="Tiền cọc" name="depositPrice" type="number" value={productForm.depositPrice} onChange={onProductFieldChange} />
           </div>
-
-          {isAdmin && (
-            <label className="block">
-              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
-                Seller owner
-              </span>
-              <select
-                name="ownerUserId"
-                value={productForm.ownerUserId}
-                onChange={onProductFieldChange}
-                required
-                className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
-              >
-                <option value="">Chon tai khoan SELLER</option>
-                {sellerUsers.map((seller) => (
-                  <option key={seller.id} value={seller.id}>
-                    {seller.fullName || seller.email} ({seller.email})
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
@@ -221,11 +198,7 @@ export default function AdminProductsSection({
                 <p className="mt-1 text-xs text-[#5f5e5e]">
                   Trạng thái: <strong>{product.status === 'ACTIVE' ? 'Đang hiển thị' : product.status}</strong>
                 </p>
-                {product.owner && (
-                  <p className="mt-1 truncate text-xs text-[#5f5e5e]">
-                    Seller owner: <strong>{product.owner.fullName || product.owner.email}</strong>
-                  </p>
-                )}
+
                 {product.metadata?.style && (
                   <p className="mt-1 text-xs text-[#5f5e5e]">
                     Metadata: <strong>{[product.metadata.style, product.metadata.occasion, product.metadata.season].filter(Boolean).join(' • ')}</strong>

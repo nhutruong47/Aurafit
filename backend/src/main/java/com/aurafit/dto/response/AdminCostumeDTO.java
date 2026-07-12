@@ -14,7 +14,7 @@ public record AdminCostumeDTO(
         String imageUrl,
         CostumeStatus status,
         CategoryDTO category,
-        UserResponseDTO owner,
+
         CostumeMetadataDTO metadata,
         int availableItemCount,
         String createdAt,
@@ -34,15 +34,7 @@ public record AdminCostumeDTO(
                 costume.getImageUrl(),
                 costume.getStatus(),
                 CategoryDTO.fromEntity(costume.getCategory()),
-                costume.getOwner() != null ? new UserResponseDTO(
-                        costume.getOwner().getId(),
-                        costume.getOwner().getFullName(),
-                        costume.getOwner().getEmail(),
-                        costume.getOwner().getPhone(),
-                        costume.getOwner().getAddress(),
-                        costume.getOwner().getRole(),
-                        costume.getOwner().getStatus()
-                ) : null,
+
                 CostumeMetadataDTO.fromEntity(costume.getMetadata()),
                 (int) availableCount,
                 costume.getCreatedAt() != null ? costume.getCreatedAt().toString() : null,

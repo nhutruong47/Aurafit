@@ -42,10 +42,8 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public List<AdminCostumeDTO> getAllCostumes(String authenticatedEmail) {
-        User actor = requireProductManager(authenticatedEmail);
-        List<Costume> costumes = actor.getRole() == Role.ADMIN
-                ? costumeRepository.findAllWithItems()
-                : costumeRepository.findAllByOwnerIdWithItems(actor.getId());
+        requireProductManager(authenticatedEmail);
+        List<Costume> costumes = costumeRepository.findAllWithItems();
 
         return costumes.stream()
                 .map(AdminCostumeDTO::fromEntity)
@@ -55,9 +53,8 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public AdminCostumeDTO createCostume(CostumeCreateRequest request, String authenticatedEmail) {
-        User actor = requireProductManager(authenticatedEmail);
+        requireProductManager(authenticatedEmail);
         Category category = requireLeafActiveCategory(request.categoryId());
-        User owner = resolveOwnerForCreate(actor, request.ownerUserId());
 
         Costume costume = Costume.builder()
                 .name(request.name())
@@ -67,7 +64,6 @@ public class AdminServiceImpl implements AdminService {
                 .imageUrl(request.imageUrl())
                 .status(CostumeStatus.ACTIVE)
                 .category(category)
-                .owner(owner)
                 .build();
 
         Costume savedCostume = costumeRepository.save(costume);
@@ -81,10 +77,9 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public AdminCostumeDTO updateCostume(Long id, CostumeUpdateRequest request, String authenticatedEmail) {
-        User actor = requireProductManager(authenticatedEmail);
+        requireProductManager(authenticatedEmail);
         Costume costume = costumeRepository.findByIdWithItems(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Costume", "id", id));
-        ensureCanManageCostume(actor, costume);
 
         if (request.name() != null) costume.setName(request.name());
         if (request.description() != null) costume.setDescription(request.description());
@@ -94,9 +89,6 @@ public class AdminServiceImpl implements AdminService {
         if (request.categoryId() != null) {
             Category category = requireLeafActiveCategory(request.categoryId());
             costume.setCategory(category);
-        }
-        if (request.ownerUserId() != null) {
-            costume.setOwner(resolveOwnerForUpdate(actor, request.ownerUserId()));
         }
         if (request.status() != null) {
             costume.setStatus(CostumeStatus.valueOf(request.status().toUpperCase()));
@@ -112,56 +104,11 @@ public class AdminServiceImpl implements AdminService {
         User actor = userRepository.findByEmail(authenticatedEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", authenticatedEmail));
 
-        if (actor.getRole() != Role.ADMIN && actor.getRole() != Role.SELLER) {
-            throw new AccessDeniedException("Only admin or seller accounts can manage costumes.");
+        if (actor.getRole() != Role.ADMIN && actor.getRole() != Role.STAFF) {
+            throw new AccessDeniedException("Only admin or staff accounts can manage costumes.");
         }
 
         return actor;
-    }
-
-    private User resolveOwnerForCreate(User actor, Long ownerUserId) {
-        if (actor.getRole() == Role.SELLER) {
-            return actor;
-        }
-
-        if (ownerUserId == null) {
-            throw new BadRequestException("Admin must select a SELLER account as costume owner.");
-        }
-
-        return requireSellerOwner(ownerUserId);
-    }
-
-    private User resolveOwnerForUpdate(User actor, Long ownerUserId) {
-        if (actor.getRole() == Role.SELLER) {
-            if (!actor.getId().equals(ownerUserId)) {
-                throw new AccessDeniedException("Seller accounts cannot transfer costumes to another account.");
-            }
-            return actor;
-        }
-
-        return requireSellerOwner(ownerUserId);
-    }
-
-    private User requireSellerOwner(Long ownerUserId) {
-        User owner = userRepository.findById(ownerUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", ownerUserId));
-
-        if (owner.getRole() != Role.SELLER) {
-            throw new BadRequestException("Costume owner must be a SELLER account.");
-        }
-
-        return owner;
-    }
-
-    private void ensureCanManageCostume(User actor, Costume costume) {
-        if (actor.getRole() == Role.ADMIN) {
-            return;
-        }
-
-        if (costume.getOwner() == null || costume.getOwner().getId() == null ||
-                !costume.getOwner().getId().equals(actor.getId())) {
-            throw new AccessDeniedException("Seller accounts can only manage their own costumes.");
-        }
     }
 
     private Category requireLeafActiveCategory(Long categoryId) {

@@ -124,7 +124,6 @@ function ChangePasswordModal({ onClose }) {
 export default function AccountProfileView({ currentUser, onNavigate, onAuthChange }) {
   const roles = getUserRoles(currentUser);
   const isAdmin = roles.includes('ADMIN');
-  const isSeller = roles.includes('SELLER') || isAdmin;
   const isStaff = roles.includes('STAFF') || isAdmin;
   const addToast = useToastStore((state) => state.addToast);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -197,15 +196,6 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                   className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
                 >
                   Vào dashboard Admin
-                </button>
-              )}
-              {isSeller && !isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => onNavigate?.('adminDashboard')}
-                  className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
-                >
-                  Khu đăng sản phẩm cho thuê
                 </button>
               )}
               {isStaff && (
