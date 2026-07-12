@@ -10,8 +10,7 @@ export const emptyProductForm = {
   imageUrl: '',
   rentalPrice: '',
   depositPrice: '',
-  categoryId: 1,
-  ownerUserId: '',
+  categoryId: '',
   status: 'ACTIVE',
   style: '',
   occasion: '',
@@ -48,7 +47,6 @@ const buildMetadataPayload = (productForm) => ({
 export function useAdminCostumes(currentUser) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [sellerUsers, setSellerUsers] = useState([]);
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [editingProductId, setEditingProductId] = useState(null);
   const [productSearch, setProductSearch] = useState('');
@@ -58,7 +56,7 @@ export function useAdminCostumes(currentUser) {
   const [productError, setProductError] = useState('');
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const isAdmin = hasUserRole(currentUser, 'ADMIN');
-  const canManageProducts = hasUserRole(currentUser, 'SELLER');
+  const canManageProducts = hasUserRole(currentUser, 'ADMIN') || hasUserRole(currentUser, 'STAFF');
 
   const filteredProducts = useMemo(() => {
     const query = productSearch.trim().toLowerCase();
@@ -94,21 +92,15 @@ export function useAdminCostumes(currentUser) {
     Promise.all([
       fetchAdminCostumes(),
       fetchPublicCategories(),
-      isAdmin ? fetchUsers() : Promise.resolve([]),
     ])
-      .then(([costumeData, categoryData, userData]) => {
+      .then(([costumeData, categoryData]) => {
         const nextCategories = Array.isArray(categoryData) ? categoryData : [];
-        const nextSellerUsers = Array.isArray(userData)
-          ? userData.filter((user) => String(user.role).toUpperCase() === 'SELLER')
-          : [];
         setProducts(Array.isArray(costumeData) ? costumeData : []);
         setCategories(nextCategories);
-        setSellerUsers(nextSellerUsers);
         if (nextCategories.length > 0) {
           setProductForm((currentForm) => ({
             ...currentForm,
             categoryId: currentForm.categoryId || nextCategories[0].id,
-            ownerUserId: currentForm.ownerUserId || nextSellerUsers[0]?.id || '',
           }));
         }
       })
@@ -141,7 +133,6 @@ export function useAdminCostumes(currentUser) {
       rentalPrice: product.rentalPrice ?? '',
       depositPrice: product.depositPrice ?? '',
       categoryId: product.category?.id || categories[0]?.id || 1,
-      ownerUserId: product.owner?.id || sellerUsers[0]?.id || currentUser?.id || '',
       status: product.status || 'ACTIVE',
       style: metadata.style || '',
       occasion: metadata.occasion || '',
@@ -164,7 +155,6 @@ export function useAdminCostumes(currentUser) {
     setProductForm({
       ...emptyProductForm,
       categoryId: categories[0]?.id || emptyProductForm.categoryId,
-      ownerUserId: sellerUsers[0]?.id || '',
     });
     setProductMessage('');
     setProductError('');
@@ -176,10 +166,6 @@ export function useAdminCostumes(currentUser) {
     setProductError('');
 
     try {
-      if (isAdmin && !productForm.ownerUserId) {
-        setProductError('Admin can chon tai khoan SELLER lam chu san pham.');
-        return false;
-      }
 
       const payload = {
         name: productForm.name,
@@ -188,7 +174,6 @@ export function useAdminCostumes(currentUser) {
         rentalPrice: Number(productForm.rentalPrice),
         depositPrice: Number(productForm.depositPrice),
         categoryId: Number(productForm.categoryId),
-        ...(isAdmin ? { ownerUserId: Number(productForm.ownerUserId) } : {}),
         metadata: buildMetadataPayload(productForm),
       };
 
@@ -213,7 +198,6 @@ export function useAdminCostumes(currentUser) {
       setProductForm({
         ...emptyProductForm,
         categoryId: categories[0]?.id || emptyProductForm.categoryId,
-        ownerUserId: sellerUsers[0]?.id || '',
       });
       return true;
     } catch (error) {
@@ -229,7 +213,6 @@ export function useAdminCostumes(currentUser) {
     canManageProducts,
     products,
     categories,
-    sellerUsers,
     filteredProducts,
     productForm,
     editingProductId,

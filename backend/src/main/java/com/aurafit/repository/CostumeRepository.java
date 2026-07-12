@@ -32,7 +32,6 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
             SELECT DISTINCT c
             FROM Costume c
             JOIN FETCH c.category category
-            LEFT JOIN FETCH c.owner
             LEFT JOIN FETCH c.metadata
             WHERE c.status = :status
               AND category.isActive = true
@@ -67,7 +66,6 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
     @Query(value = """
             SELECT c FROM Costume c
             JOIN FETCH c.category
-            LEFT JOIN FETCH c.owner
             LEFT JOIN FETCH c.metadata
             LEFT JOIN FETCH c.items
             WHERE c.status = :status
@@ -81,16 +79,15 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Currently returns random active costumes as a simple baseline.
      * TODO: Replace with ML-based collaborative filtering using user interaction history.
      */
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.owner LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.status = :status AND c.category.isActive = true")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.status = :status AND c.category.isActive = true")
     List<Costume> findActiveCostumesForRecommendations(@Param("status") CostumeStatus status);
 
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.owner LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id AND c.category.isActive = true")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id AND c.category.isActive = true")
     Optional<Costume> findByIdWithItems(@Param("id") Long id);
 
     @Query("""
             SELECT DISTINCT c FROM Costume c
             JOIN FETCH c.category
-            LEFT JOIN FETCH c.owner
             LEFT JOIN FETCH c.metadata
             LEFT JOIN FETCH c.items
             WHERE c.status = :status
@@ -102,7 +99,6 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
     @Query("""
             SELECT DISTINCT c FROM Costume c
             JOIN FETCH c.category
-            LEFT JOIN FETCH c.owner
             LEFT JOIN FETCH c.metadata
             LEFT JOIN FETCH c.items
             WHERE c.status = :status
@@ -114,17 +110,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
             @Param("excludeId") Long excludeId
     );
 
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.owner LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items ORDER BY c.id DESC")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items ORDER BY c.id DESC")
     List<Costume> findAllWithItems();
 
-    @Query("""
-            SELECT DISTINCT c FROM Costume c
-            JOIN FETCH c.category
-            LEFT JOIN FETCH c.owner
-            LEFT JOIN FETCH c.metadata
-            LEFT JOIN FETCH c.items
-            WHERE c.owner.id = :ownerId
-            ORDER BY c.id DESC
-            """)
-    List<Costume> findAllByOwnerIdWithItems(@Param("ownerId") Long ownerId);
 }

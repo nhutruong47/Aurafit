@@ -25,7 +25,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     canManageProducts,
     products,
     categories,
-    sellerUsers,
     filteredProducts,
     productForm,
     editingProductId,
@@ -70,7 +69,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     isCreatingStaff,
     updatingUserId,
     setUserSearch,
-    setSellerPermission,
     createStaff,
   } = useAdminUsers(currentUser);
 
@@ -143,39 +141,16 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     await submitProduct();
   };
 
-  if (!canManageProducts) {
-    return (
-      <div className="bg-[#f4f4f2] text-[#171717]">
-        <section className="mx-auto min-h-[calc(100dvh-80px)] max-w-[900px] px-5 py-20 md:px-20">
-          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#7f7041]">Quyền cho thuê</p>
-          <h1 className="font-serif text-[46px] font-normal italic leading-tight md:text-[70px]">
-            Cần được Admin cấp quyền SELLER.
-          </h1>
-          <p className="mt-6 max-w-xl text-base leading-8 text-[#5f5e5e]">
-            Tài khoản chưa được cấp quyền chỉ có thể đi thuê sản phẩm. Sau khi Admin cấp quyền SELLER, tài khoản mới
-            được đăng đồ lên AuraFit để cho thuê.
-          </p>
-          <button
-            onClick={() => onNavigate?.('account')}
-            className="mt-9 bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
-          >
-            Về tài khoản
-          </button>
-        </section>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-[calc(100dvh-80px)] bg-[#f4f4f2] text-[#171717]">
       <div className="border-b border-[#d7d2c8] bg-[#fdfdfb]">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-5 px-5 py-6 md:flex-row md:items-center md:justify-between md:px-10">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7f7041]">
-              {isAdmin ? 'AuraFit Admin' : 'AuraFit Seller'}
+              {isAdmin ? 'AuraFit Admin' : 'AuraFit Staff'}
             </p>
             <h1 className="mt-2 font-serif text-4xl font-normal italic leading-[1.15] md:text-5xl">
-              {isAdmin ? 'Trung tâm quản lý sản phẩm và vận hành' : 'Khu đăng sản phẩm cho thuê'}
+              {isAdmin ? 'Trung tâm quản lý sản phẩm và vận hành' : 'Khu vực nhân viên'}
             </h1>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm md:flex md:items-center">

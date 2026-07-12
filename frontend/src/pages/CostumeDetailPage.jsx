@@ -187,9 +187,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     return null;
   }
 
-  const sellerName = product?.owner?.fullName || product?.owner?.email || 'AuraFit';
-  const sellerEmail = product?.owner?.email || '';
-
   return (
     <div className="min-h-screen bg-[#f9f9f9] px-4 pb-12 pt-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1200px]">
@@ -226,21 +223,10 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
               </p>
             </div>
 
-            <div className="flex flex-col justify-between border border-[#cfc4c5] bg-white p-5">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#cfc4c5]/50 bg-black font-serif text-xl text-white">
-                  {(sellerName || 'A').charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h4 className="font-serif text-lg font-bold">{sellerName}</h4>
-                  <div className="mt-1 text-xs text-[#5f5e5e]">
-                    {sellerEmail || 'Thông tin người bán được lấy từ backend khi có dữ liệu owner.'}
-                  </div>
-                </div>
-              </div>
+            <div className="flex flex-col justify-center border border-[#cfc4c5] bg-white p-5">
               <button
                 onClick={() => onNavigate?.('chat', product)}
-                className="mt-4 w-full border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
+                className="w-full border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
               >
                 Chatbot tư vấn
               </button>

@@ -7,7 +7,6 @@ export default function Navbar({
   onSearchOpen,
   cartCount = 0,
   isAdmin = false,
-  isSeller = false,
   isStaff = false,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -104,18 +103,15 @@ export default function Navbar({
               receipt_long
             </span>
           </button>
-          {(isAdmin || isSeller) && (
+          {isAdmin && (
             <button
               onClick={() => goPage('adminDashboard')}
               className={`${iconButtonClass} hidden md:flex ${currentPage === 'adminDashboard' ? 'text-[#99854e]' : ''}`}
-              aria-label={isAdmin ? 'Bảng điều khiển Admin' : 'Khu đăng sản phẩm cho thuê'}
-              title={isAdmin ? 'Bảng điều khiển Admin' : 'Khu đăng sản phẩm cho thuê'}
+              aria-label="Bảng điều khiển Admin"
+              title="Bảng điều khiển Admin"
             >
-              <span
-                className="material-symbols-outlined"
-                style={currentPage === 'adminDashboard' ? { fontVariationSettings: "'FILL' 1" } : undefined}
-              >
-                {isAdmin ? 'admin_panel_settings' : 'storefront'}
+              <span className="material-symbols-outlined transition-transform duration-300 hover:scale-110">
+                admin_panel_settings
               </span>
             </button>
           )}
@@ -170,12 +166,12 @@ export default function Navbar({
                 {link.label}
               </button>
             ))}
-            {(isAdmin || isSeller) && (
+            {isAdmin && (
               <button
                 onClick={() => goPage('adminDashboard')}
                 className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#99854e]"
               >
-                {isAdmin ? 'Admin' : 'Cho thuê'}
+                Admin
               </button>
             )}
             {isStaff && (

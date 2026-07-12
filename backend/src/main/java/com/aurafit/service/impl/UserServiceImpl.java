@@ -103,23 +103,6 @@ public class UserServiceImpl implements UserService {
                 .toList();
     }
 
-    @Override
-    @Transactional
-    public UserResponseDTO updateUserRole(Long userId, Role role) {
-        if (role != Role.CUSTOMER && role != Role.SELLER) {
-            throw new BadRequestException("Admin chỉ được cấp hoặc thu hồi quyền SELLER cho tài khoản bán hàng.");
-        }
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-
-        if (user.getRole() != Role.CUSTOMER && user.getRole() != Role.SELLER) {
-            throw new BadRequestException("Chỉ có thể thay đổi quyền SELLER cho tài khoản CUSTOMER/SELLER.");
-        }
-
-        user.setRole(role);
-        return toUserResponse(userRepository.save(user));
-    }
 
     @Override
     @Transactional

@@ -3,7 +3,7 @@ package com.aurafit.controller;
 import com.aurafit.dto.request.ChangePasswordRequestDTO;
 import com.aurafit.dto.request.StaffCreateRequest;
 import com.aurafit.dto.request.UpdateProfileRequestDTO;
-import com.aurafit.dto.request.UserRoleUpdateRequest;
+
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.StaffAccountResponseDTO;
 import com.aurafit.dto.response.UserResponseDTO;
@@ -45,14 +45,6 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully.", userService.getAllUsers()));
     }
 
-    @PatchMapping("/{userId}/role")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponseDTO>> updateUserRole(
-            @PathVariable Long userId,
-            @Valid @RequestBody UserRoleUpdateRequest request
-    ) {
-        return ResponseEntity.ok(ApiResponse.success("User role updated successfully.", userService.updateUserRole(userId, request.role())));
-    }
 
     @PostMapping("/staff")
     @PreAuthorize("hasRole('ADMIN')")

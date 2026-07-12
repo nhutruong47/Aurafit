@@ -22,7 +22,6 @@ public interface UserService {
 
     List<UserResponseDTO> getAllUsers();
 
-    UserResponseDTO updateUserRole(Long userId, Role role);
 
     StaffAccountResponseDTO createStaffAccount(StaffCreateRequest request);
 
