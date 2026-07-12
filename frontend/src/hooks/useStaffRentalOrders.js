@@ -39,13 +39,40 @@ export function useStaffRentalOrders(currentUser) {
 
   const activeTotals = useMemo(() => {
     const totalOrders = orders.length;
-    const pickedUp = orders.filter((order) => order.status === 'PICKED_UP').length;
+    const pending = orders.filter((order) => order.status === 'PENDING').length;
+    const confirmed = orders.filter((order) => order.status === 'CONFIRMED').length;
+    
+    let renting = 0;
+    let overdue = 0;
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    orders.forEach((order) => {
+      if (order.status === 'PICKED_UP') {
+        let isOverdue = false;
+        if (order.details && order.details.length > 0) {
+          // Check if any detail is overdue
+          isOverdue = order.details.some(d => new Date(d.rentalEndDate) < now);
+        } else if (order.rentalEndDate) {
+          isOverdue = new Date(order.rentalEndDate) < now;
+        }
+        
+        if (isOverdue) {
+          overdue++;
+        } else {
+          renting++;
+        }
+      }
+    });
+
     const returned = orders.filter((order) => order.status === 'RETURNED').length;
-    const waiting = orders.filter((order) => order.status === 'PENDING' || order.status === 'CONFIRMED').length;
-    return { totalOrders, pickedUp, returned, waiting };
+
+    return { totalOrders, pending, confirmed, renting, overdue, returned };
   }, [orders]);
 
   const loadOrders = async (preferredOrderId = null) => {
+    if (isLoading) return;
     setIsLoading(true);
 
     try {
@@ -124,6 +151,17 @@ export function useStaffRentalOrders(currentUser) {
     setActiveOrderId(orderId);
     setError('');
     setMessage('');
+    setHandoverImageUrl('');
+    setNote('');
+    setLateFee(0);
+    setDamageFee(0);
+    setReturnStatus('RETURNED');
+
+    if (!orderId) {
+      setActiveOrder(null);
+      setSelectedDetailId('');
+      return;
+    }
 
     try {
       const order = await fetchStaffOrder(orderId);
@@ -140,6 +178,7 @@ export function useStaffRentalOrders(currentUser) {
 
   const submitHandover = async () => {
     if (!activeOrder || !selectedDetailId) return;
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     setError('');
@@ -157,8 +196,8 @@ export function useStaffRentalOrders(currentUser) {
             {
               rentalOrderDetailId: Number(selectedDetailId),
               returnStatus,
-              lateFee: Number(lateFee) || 0,
-              damageFee: Number(damageFee) || 0,
+              lateFee: Math.max(0, Number(lateFee) || 0),
+              damageFee: Math.max(0, Number(damageFee) || 0),
             }
           ]
         };
@@ -186,6 +225,47 @@ export function useStaffRentalOrders(currentUser) {
       setIsSubmitting(false);
     }
   };
+
+  const priorityOrders = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const isToday = (dateString) => {
+      if (!dateString) return false;
+      const d = new Date(dateString);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === today.getTime();
+    };
+
+    const isOverdue = (dateString) => {
+      if (!dateString) return false;
+      const d = new Date(dateString);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() < today.getTime();
+    };
+
+    return orders.filter(order => {
+      if (['CANCELLED', 'COMPLETED', 'RETURNED'].includes(order.status)) return false;
+      
+      const pickupToday = order.status === 'CONFIRMED' && isToday(order.rentalStartDate);
+      const returnToday = order.status === 'PICKED_UP' && isToday(order.rentalEndDate);
+      const overdue = order.status === 'PICKED_UP' && isOverdue(order.rentalEndDate);
+
+      return pickupToday || returnToday || overdue;
+    }).sort((a, b) => {
+      const aOverdue = a.status === 'PICKED_UP' && isOverdue(a.rentalEndDate);
+      const bOverdue = b.status === 'PICKED_UP' && isOverdue(b.rentalEndDate);
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+
+      const aReturn = a.status === 'PICKED_UP';
+      const bReturn = b.status === 'PICKED_UP';
+      if (aReturn && !bReturn) return -1;
+      if (!aReturn && bReturn) return 1;
+
+      return new Date(a.rentalStartDate) - new Date(b.rentalStartDate);
+    });
+  }, [orders]);
 
   return {
     canUseStaffTools,
@@ -220,5 +300,6 @@ export function useStaffRentalOrders(currentUser) {
     setDamageFee,
     maxDeposit,
     isPenaltyValid,
+    priorityOrders,
   };
 }

@@ -20,6 +20,7 @@ import StaffDashboardPage from './pages/StaffDashboardPage';
 import TraditionalPage from './pages/TraditionalPage';
 import UserAccountPage from './pages/UserAccountPage';
 import YearbookPage from './pages/YearbookPage';
+import StaffLayout from './components/layout/StaffLayout';
 import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from './routing/navigation';
 import { addItemToCart as addItemToCartApi, fetchCart, removeCartItem as removeCartItemApi, updateCartItem as updateCartItemApi } from './services/cartService';
 import {
@@ -49,10 +50,14 @@ function CustomerLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
   const currentPage = getCurrentPageFromPath(location.pathname);
   const hidesFooter = currentPage === 'chat' || currentPage === 'staffDashboard';
 
-  // Admins should not see the customer layout (except /account for login/logout)
   const isAdmin = currentUser?.role === 'ADMIN';
+  const isStaff = currentUser?.role === 'STAFF';
+  
   if (isAdmin && currentPage !== 'account') {
     return <Navigate to="/admin" replace />;
+  }
+  if (isStaff && currentPage !== 'account') {
+    return <Navigate to="/staff" replace />;
   }
 
   return (
@@ -357,7 +362,6 @@ function App() {
 
         <Route path="/chat" element={<ChatPage currentUser={currentUser} onNavigate={handleNavigate} cartItems={cartItems} />} />
         <Route path="/orders" element={<RentalOrdersPage currentUser={currentUser} onNavigate={handleNavigate} />} />
-        <Route path="/staff" element={<StaffDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/yearbook" element={<YearbookPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/cosplay" element={<CosplayPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/events" element={<EventsPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
@@ -368,6 +372,15 @@ function App() {
           path="/products/:productId"
           element={<CostumeDetailPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} onRentNow={handleRentNow} />}
         />
+      </Route>
+
+      {/* Staff layout: no Navbar, no cart, internal dashboard UI */}
+      <Route
+        element={
+          <StaffLayout currentUser={currentUser} />
+        }
+      >
+        <Route path="/staff" element={<StaffDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
       </Route>
 
       <Route element={<BareLayout />}>
