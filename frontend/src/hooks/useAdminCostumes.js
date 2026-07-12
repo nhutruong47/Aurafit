@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchPublicCategories } from '../services/catalogService';
+import { fetchCategoryTree, flattenCategoryTree } from '../services/catalogService';
 import { createCostume, fetchAdminCostumes, updateCostume } from '../services/costumeService';
-import { fetchUsers } from '../services/userService';
+import { useToastStore } from '../store/useToastStore';
 import { hasUserRole } from '../utils/roles';
 
 export const emptyProductForm = {
   name: '',
+  slug: '',
   description: '',
   imageUrl: '',
   rentalPrice: '',
@@ -24,6 +25,20 @@ export const emptyProductForm = {
   material: '',
   fitNote: '',
 };
+
+function generateSlug(name) {
+  if (!name) return '';
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
 
 const metadataTagsToInput = (tags) => (Array.isArray(tags) ? tags.join(', ') : '');
 
@@ -55,64 +70,69 @@ export function useAdminCostumes(currentUser) {
   const [productMessage, setProductMessage] = useState('');
   const [productError, setProductError] = useState('');
   const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(12);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+
   const isAdmin = hasUserRole(currentUser, 'ADMIN');
   const canManageProducts = hasUserRole(currentUser, 'ADMIN') || hasUserRole(currentUser, 'STAFF');
 
-  const filteredProducts = useMemo(() => {
-    const query = productSearch.trim().toLowerCase();
-    return products.filter((product) => {
-      const matchesSearch =
-        !query ||
-        [
-          product.name,
-          product.description,
-          product.metadata?.style,
-          product.metadata?.occasion,
-          product.metadata?.season,
-          product.metadata?.color,
-          Array.isArray(product.metadata?.tags) ? product.metadata.tags.join(' ') : '',
-        ]
-          .filter(Boolean)
-          .some((value) => value.toLowerCase().includes(query));
-      const matchesCategory =
-        productCategoryFilter === 'all' ||
-        product.category?.path === productCategoryFilter;
-      const matchesStatus =
-        productStatusFilter === 'all' ||
-        (productStatusFilter === 'available' && product.status === 'ACTIVE') ||
-        (productStatusFilter === 'hidden' && product.status !== 'ACTIVE');
-
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
-  }, [products, productCategoryFilter, productSearch, productStatusFilter]);
+  const filteredProducts = products; // Server side filtering replaces this
 
   useEffect(() => {
     if (!canManageProducts) return;
 
+    setIsLoading(true);
     Promise.all([
-      fetchAdminCostumes(),
-      fetchPublicCategories(),
+      fetchAdminCostumes({
+        pageNo: page,
+        pageSize: pageSize,
+        keyword: productSearch.trim() || undefined,
+        status: productStatusFilter !== 'all' ? (productStatusFilter === 'available' ? 'ACTIVE' : 'HIDDEN') : undefined,
+        categoryId: productCategoryFilter !== 'all' ? productCategoryFilter : undefined,
+      }),
+      fetchCategoryTree(),
     ])
       .then(([costumeData, categoryData]) => {
-        const nextCategories = Array.isArray(categoryData) ? categoryData : [];
-        setProducts(Array.isArray(costumeData) ? costumeData : []);
+        const nextCategories = flattenCategoryTree(Array.isArray(categoryData) ? categoryData : []);
+        setProducts(costumeData.data || []);
+        setTotalPages(costumeData.totalPages || 1);
+        setTotalElements(costumeData.totalElements || 0);
+
         setCategories(nextCategories);
-        if (nextCategories.length > 0) {
+        if (nextCategories.length > 0 && !productForm.categoryId) {
           setProductForm((currentForm) => ({
             ...currentForm,
-            categoryId: currentForm.categoryId || nextCategories[0].id,
+            categoryId: nextCategories[0].id,
           }));
         }
       })
-      .catch(() => setProductError('Không thể tải danh sách sản phẩm.'));
-  }, [canManageProducts, isAdmin]);
+      .catch((err) => {
+        setProductError(err.message || 'Không thể tải danh sách sản phẩm.');
+        useToastStore.getState().addToast(err.message || 'Không thể tải danh sách sản phẩm.', 'error');
+      })
+      .finally(() => setIsLoading(false));
+  }, [canManageProducts, isAdmin, page, pageSize, productSearch, productStatusFilter, productCategoryFilter]);
+
+  // Reset page to 0 when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [productSearch, productStatusFilter, productCategoryFilter]);
 
   const handleProductFieldChange = (event) => {
     const { name, value, type, checked } = event.target;
-    setProductForm((currentForm) => ({
-      ...currentForm,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    setProductForm((currentForm) => {
+      const next = { ...currentForm, [name]: type === 'checkbox' ? checked : value };
+      // Auto-generate slug when name changes (only if slug wasn't manually edited)
+      if (name === 'name' && (currentForm.slug === '' || currentForm.slug === generateSlug(currentForm.name))) {
+        next.slug = generateSlug(value);
+      }
+      return next;
+    });
   };
 
   const handleProductImageUploaded = (asset) => {
@@ -128,6 +148,7 @@ export function useAdminCostumes(currentUser) {
     setEditingProductId(product.id);
     setProductForm({
       name: product.name || '',
+      slug: product.slug || '',
       description: product.description || '',
       imageUrl: product.imageUrl || '',
       rentalPrice: product.rentalPrice ?? '',
@@ -169,6 +190,7 @@ export function useAdminCostumes(currentUser) {
 
       const payload = {
         name: productForm.name,
+        slug: productForm.slug.trim() || generateSlug(productForm.name),
         description: productForm.description,
         imageUrl: productForm.imageUrl,
         rentalPrice: Number(productForm.rentalPrice),
@@ -188,10 +210,12 @@ export function useAdminCostumes(currentUser) {
           )
         );
         setProductMessage('Sản phẩm đã được cập nhật thành công.');
+        useToastStore.getState().addToast('Sản phẩm đã được cập nhật thành công.', 'success');
       } else {
         const createdProduct = await createCostume(payload);
         setProducts((currentProducts) => [createdProduct, ...currentProducts]);
         setProductMessage('Sản phẩm đã được đăng tải thành công.');
+        useToastStore.getState().addToast('Sản phẩm đã được đăng tải thành công.', 'success');
       }
 
       setEditingProductId(null);
@@ -202,6 +226,7 @@ export function useAdminCostumes(currentUser) {
       return true;
     } catch (error) {
       setProductError(error.message || 'Không thể lưu sản phẩm.');
+      useToastStore.getState().addToast(error.message || 'Không thể lưu sản phẩm.', 'error');
       return false;
     } finally {
       setIsSavingProduct(false);
@@ -209,6 +234,11 @@ export function useAdminCostumes(currentUser) {
   };
 
   return {
+    page,
+    totalPages,
+    totalElements,
+    setPage,
+    isLoading,
     isAdmin,
     canManageProducts,
     products,

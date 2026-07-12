@@ -29,6 +29,9 @@ public class Costume extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
+    @Column(unique = true, length = 200)
+    private String slug;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

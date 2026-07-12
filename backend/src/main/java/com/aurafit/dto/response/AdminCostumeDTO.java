@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 public record AdminCostumeDTO(
         Long id,
         String name,
+        String slug,
         String description,
         BigDecimal rentalPrice,
         BigDecimal depositPrice,
@@ -28,6 +29,7 @@ public record AdminCostumeDTO(
         return new AdminCostumeDTO(
                 costume.getId(),
                 costume.getName(),
+                costume.getSlug(),
                 costume.getDescription(),
                 costume.getRentalPrice(),
                 costume.getDepositPrice(),

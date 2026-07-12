@@ -14,6 +14,7 @@ import java.util.List;
 public record CostumeDTO(
         Long id,
         String name,
+        String slug,
         String description,
         BigDecimal rentalPrice,
         BigDecimal depositPrice,
@@ -39,6 +40,7 @@ public record CostumeDTO(
         return new CostumeDTO(
                 costume.getId(),
                 costume.getName(),
+                costume.getSlug(),
                 costume.getDescription(),
                 costume.getRentalPrice(),
                 costume.getDepositPrice(),
@@ -60,6 +62,7 @@ public record CostumeDTO(
         return new CostumeDTO(
                 costume.getId(),
                 costume.getName(),
+                costume.getSlug(),
                 costume.getDescription(),
                 costume.getRentalPrice(),
                 costume.getDepositPrice(),

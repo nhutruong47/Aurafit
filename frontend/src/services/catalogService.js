@@ -6,8 +6,25 @@ export const fetchCategoryTree = async () =>
       url: '/categories/tree',
       method: 'GET',
     },
-    'KhÃ´ng thá»ƒ táº£i cÃ¢y danh má»¥c.'
+    'Không thể tải cây danh mục.'
   );
+
+export function flattenCategoryTree(tree, depth = 0) {
+  if (!Array.isArray(tree)) return [];
+  let result = [];
+  const prefix = depth > 0 ? '--'.repeat(depth) + ' ' : '';
+  for (const node of tree) {
+    result.push({
+      ...node,
+      displayName: prefix + node.name,
+      depth,
+    });
+    if (node.children && node.children.length > 0) {
+      result = result.concat(flattenCategoryTree(node.children, depth + 1));
+    }
+  }
+  return result;
+}
 
 export const fetchCategoryByPath = async (path) =>
   requestJson(

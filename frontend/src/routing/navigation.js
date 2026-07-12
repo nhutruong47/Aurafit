@@ -84,7 +84,7 @@ export function useLegacyNavigate() {
         return;
       }
 
-      if (['shopDetail', 'becomeLessor', 'sellerDashboard'].includes(page)) {
+      if (['shopDetail', 'becomeLessor'].includes(page)) {
         navigate(pagePathMap.catalog, options);
         return;
       }

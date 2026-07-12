@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface AdminService {
 
-    List<AdminCostumeDTO> getAllCostumes(String authenticatedEmail);
+    com.aurafit.dto.response.PaginatedResponse<AdminCostumeDTO> getAllCostumes(String authenticatedEmail, int pageNo, int pageSize, String sortBy, String sortDir, String keyword, String status, Long categoryId);
 
     AdminCostumeDTO createCostume(CostumeCreateRequest request, String authenticatedEmail);
 

@@ -29,21 +29,21 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * @return A Page of Costume entities with their Category eagerly loaded.
      */
     @Query(value = """
-            SELECT DISTINCT c
+            SELECT c
             FROM Costume c
             JOIN FETCH c.category category
             LEFT JOIN FETCH c.metadata
             WHERE c.status = :status
               AND category.isActive = true
-              AND (:categoryPath IS NULL OR category.path = :categoryPath OR category.path LIKE CONCAT(:categoryPath, '/%'))
-              AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+              AND (:categoryPath IS NULL OR category.path = :categoryPath OR category.path LIKE CONCAT(CAST(:categoryPath AS string), '/%'))
+              AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))
             """,
             countQuery = """
             SELECT COUNT(c) FROM Costume c
             WHERE c.status = :status
               AND c.category.isActive = true
-              AND (:categoryPath IS NULL OR c.category.path = :categoryPath OR c.category.path LIKE CONCAT(:categoryPath, '/%'))
-              AND LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+              AND (:categoryPath IS NULL OR c.category.path = :categoryPath OR c.category.path LIKE CONCAT(CAST(:categoryPath AS string), '/%'))
+              AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))
             """)
     Page<Costume> findAllWithFilters(
             @Param("status") CostumeStatus status,
@@ -108,6 +108,27 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
     List<Costume> findActiveWithItemsExcludingId(
             @Param("status") CostumeStatus status,
             @Param("excludeId") Long excludeId
+    );
+
+    @Query(value = """
+            SELECT c FROM Costume c
+            JOIN FETCH c.category category
+            LEFT JOIN FETCH c.metadata
+            WHERE (:status IS NULL OR c.status = :status)
+              AND (:categoryId IS NULL OR category.id = :categoryId)
+              AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))
+            """,
+            countQuery = """
+            SELECT COUNT(c) FROM Costume c
+            WHERE (:status IS NULL OR c.status = :status)
+              AND (:categoryId IS NULL OR c.category.id = :categoryId)
+              AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))
+            """)
+    Page<Costume> findAllForAdmin(
+            @Param("status") CostumeStatus status,
+            @Param("categoryId") Long categoryId,
+            @Param("keyword") String keyword,
+            Pageable pageable
     );
 
     @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items ORDER BY c.id DESC")

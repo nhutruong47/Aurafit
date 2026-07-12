@@ -208,7 +208,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                 {isRegister
                   ? stage === 'verify-otp'
                     ? `Mã xác thực đã gửi tới ${form.email}. Nhập mã OTP để kích hoạt tài khoản của bạn.`
-                    : 'Điền đầy đủ thông tin rồi nhấn Đăng ký. Hệ thống sẽ gửi mã OTP xác thực đến email Gmail của bạn trước khi hoàn tất đăng ký.'
+                    : 'Điền đầy đủ thông tin rồi nhấn Đăng ký. Hệ thống sẽ gửi mã OTP xác thực đến email của bạn trước khi hoàn tất.'
                   : 'Đăng nhập để theo dõi đơn thuê và quản lý tài khoản của bạn.'}
               </p>
             </div>

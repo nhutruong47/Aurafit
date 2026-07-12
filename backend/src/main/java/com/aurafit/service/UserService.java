@@ -20,7 +20,7 @@ public interface UserService {
 
     Long getUserIdByEmail(String email);
 
-    List<UserResponseDTO> getAllUsers();
+    com.aurafit.dto.response.PaginatedResponse<UserResponseDTO> getAllUsers(int pageNo, int pageSize, String sortBy, String sortDir, String keyword);
 
 
     StaffAccountResponseDTO createStaffAccount(StaffCreateRequest request);

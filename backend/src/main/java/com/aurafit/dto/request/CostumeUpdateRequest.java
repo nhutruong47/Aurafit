@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 
 public record CostumeUpdateRequest(
         String name,
+        String slug,
         String description,
         BigDecimal rentalPrice,
         BigDecimal depositPrice,

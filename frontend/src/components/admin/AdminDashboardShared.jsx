@@ -52,7 +52,11 @@ export function Panel({ title, action, children }) {
     <section className="border border-[#d7d2c8] bg-[#fdfdfb] p-6">
       <div className="mb-6 flex items-center justify-between gap-4">
         <h2 className="font-serif text-3xl italic">{title}</h2>
-        {action && <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#777777]">{action}</p>}
+        {action && (
+          typeof action === 'string'
+            ? <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#777777]">{action}</p>
+            : action
+        )}
       </div>
       {children}
     </section>

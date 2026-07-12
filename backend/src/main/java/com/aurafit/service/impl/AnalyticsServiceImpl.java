@@ -26,6 +26,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final RentalOrderRepository rentalOrderRepository;
     private final UserRepository userRepository;
     private final RentalOrderDetailRepository rentalOrderDetailRepository;
+    private final com.aurafit.repository.CostumeRepository costumeRepository;
+    private final com.aurafit.repository.CategoryRepository categoryRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -34,12 +36,16 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         long totalOrders = rentalOrderRepository.count();
         long totalUsers = userRepository.countByRole(Role.CUSTOMER);
         long pendingOrdersCount = rentalOrderRepository.countByStatus(OrderStatus.PENDING);
+        long totalCostumes = costumeRepository.count();
+        long totalCategories = categoryRepository.count();
 
         return new DashboardMetricsDTO(
                 totalRevenue != null ? totalRevenue : BigDecimal.ZERO,
                 totalOrders,
                 totalUsers,
-                pendingOrdersCount
+                pendingOrdersCount,
+                totalCostumes,
+                totalCategories
         );
     }
 

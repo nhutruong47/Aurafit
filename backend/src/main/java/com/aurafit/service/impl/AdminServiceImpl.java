@@ -41,13 +41,37 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public List<AdminCostumeDTO> getAllCostumes(String authenticatedEmail) {
+    public com.aurafit.dto.response.PaginatedResponse<AdminCostumeDTO> getAllCostumes(String authenticatedEmail, int pageNo, int pageSize, String sortBy, String sortDir, String keyword, String statusStr, Long categoryId) {
         requireProductManager(authenticatedEmail);
-        List<Costume> costumes = costumeRepository.findAllWithItems();
 
-        return costumes.stream()
+        org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase(org.springframework.data.domain.Sort.Direction.ASC.name())
+                ? org.springframework.data.domain.Sort.by(sortBy).ascending()
+                : org.springframework.data.domain.Sort.by(sortBy).descending();
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(pageNo, pageSize, sort);
+
+        CostumeStatus status = null;
+        if (statusStr != null && !statusStr.isBlank() && !statusStr.equalsIgnoreCase("all")) {
+            try {
+                status = CostumeStatus.valueOf(statusStr.toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+
+        String searchKeyword = (keyword != null && !keyword.isBlank()) ? keyword : null;
+
+        org.springframework.data.domain.Page<Costume> page = costumeRepository.findAllForAdmin(status, categoryId, searchKeyword, pageable);
+
+        List<AdminCostumeDTO> content = page.getContent().stream()
                 .map(AdminCostumeDTO::fromEntity)
                 .toList();
+
+        return new com.aurafit.dto.response.PaginatedResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isLast()
+        );
     }
 
     @Override
@@ -58,6 +82,9 @@ public class AdminServiceImpl implements AdminService {
 
         Costume costume = Costume.builder()
                 .name(request.name())
+                .slug(request.slug() != null && !request.slug().isBlank()
+                        ? request.slug()
+                        : generateSlug(request.name()))
                 .description(request.description())
                 .rentalPrice(request.rentalPrice())
                 .depositPrice(request.depositPrice())
@@ -82,6 +109,7 @@ public class AdminServiceImpl implements AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Costume", "id", id));
 
         if (request.name() != null) costume.setName(request.name());
+        if (request.slug() != null) costume.setSlug(request.slug());
         if (request.description() != null) costume.setDescription(request.description());
         if (request.rentalPrice() != null) costume.setRentalPrice(request.rentalPrice());
         if (request.depositPrice() != null) costume.setDepositPrice(request.depositPrice());
@@ -120,5 +148,17 @@ public class AdminServiceImpl implements AdminService {
         }
 
         return category;
+    }
+
+    private String generateSlug(String name) {
+        if (name == null || name.isBlank()) return "";
+        return java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .replaceAll("đ", "d").replaceAll("Đ", "D")
+                .toLowerCase()
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .trim()
+                .replaceAll("\\s+", "-")
+                .replaceAll("-+", "-");
     }
 }

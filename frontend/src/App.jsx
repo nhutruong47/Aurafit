@@ -1,5 +1,5 @@
-import { useCallback, useEffect } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import ScrollToTop from './components/common/ScrollToTop';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
@@ -29,7 +29,7 @@ import {
   mergeAiStylistCartAttribution,
   rememberAiStylistCartAttribution,
 } from './services/interactionsService';
-import { selectCurrentUser, setCurrentUser } from './store/authSlice';
+import { clearCurrentUser, selectCurrentUser, setCurrentUser } from './store/authSlice';
 import {
   addCartItem,
   removeCartItem,
@@ -44,10 +44,16 @@ import { useDirectOrderStore } from './store/useDirectOrderStore';
 import { useToastStore } from './store/useToastStore';
 import { hasUserRole } from './utils/roles';
 
-function DefaultLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
+function CustomerLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
   const location = useLocation();
   const currentPage = getCurrentPageFromPath(location.pathname);
-  const hidesFooter = currentPage === 'chat' || currentPage === 'adminDashboard' || currentPage === 'staffDashboard';
+  const hidesFooter = currentPage === 'chat' || currentPage === 'staffDashboard';
+
+  // Admins should not see the customer layout (except /account for login/logout)
+  const isAdmin = currentUser?.role === 'ADMIN';
+  if (isAdmin && currentPage !== 'account') {
+    return <Navigate to="/admin" replace />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f9f9f9]">
@@ -58,13 +64,85 @@ function DefaultLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
         onSearchOpen={onSearchOpen}
         cartCount={cartCount}
         currentUser={currentUser}
-        isAdmin={hasUserRole(currentUser, 'ADMIN')}
+        isAdmin={false}
         isStaff={hasUserRole(currentUser, 'STAFF')}
       />
       <main className="flex-1">
         <Outlet />
       </main>
       {!hidesFooter && <Footer onNavigate={onNavigate} />}
+      <ToastContainer />
+    </div>
+  );
+}
+
+function AdminLayout({ currentUser, onNavigate }) {
+  // Only ADMIN can access this layout
+  if (!currentUser || currentUser.role !== 'ADMIN') {
+    return <Navigate to="/" replace />;
+  }
+
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(clearCurrentUser());
+    localStorage.removeItem('aurafitCurrentUser');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    navigate('/account');
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col bg-[#f4f4f2]">
+      {/* Admin Top Bar */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#d7d2c8] bg-[#111111] px-5 md:px-8">
+        <div className="flex items-center gap-3">
+          <span className="font-serif text-lg italic text-white">AuraFit</span>
+          <span className="hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7f7041] md:inline">
+            Admin Console
+          </span>
+        </div>
+
+        <div className="relative">
+          <button
+            onClick={() => setProfileOpen((prev) => !prev)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-white/80 transition hover:text-white"
+          >
+            <span className="material-symbols-outlined text-[20px]">account_circle</span>
+            <span className="hidden md:inline">{currentUser.fullName || currentUser.email}</span>
+            <span className="material-symbols-outlined text-[16px]">expand_more</span>
+          </button>
+
+          {profileOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+              <div className="absolute right-0 top-full z-50 mt-1 w-56 border border-[#d7d2c8] bg-[#fdfdfb] py-1 shadow-lg">
+                <div className="border-b border-[#ebe7df] px-4 py-3">
+                  <p className="text-sm font-medium text-black">{currentUser.fullName || 'Admin'}</p>
+                  <p className="mt-0.5 text-xs text-[#5f5e5e]">{currentUser.email}</p>
+                  <span className="mt-2 inline-block border border-[#7f7041] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#7f7041]">
+                    {currentUser.role}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50"
+                >
+                  <span className="material-symbols-outlined text-[18px]">logout</span>
+                  Đăng xuất
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </header>
+
+      <ScrollToTop />
+      <main className="flex-1">
+        <Outlet />
+      </main>
       <ToastContainer />
     </div>
   );
@@ -238,9 +316,22 @@ function App() {
 
   return (
     <Routes>
+      {/* Admin-only layout: no Navbar, no cart, no customer UI */}
       <Route
         element={
-          <DefaultLayout
+          <AdminLayout
+            currentUser={currentUser}
+            onNavigate={handleNavigate}
+          />
+        }
+      >
+        <Route path="/admin" element={<AdminDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
+      </Route>
+
+      {/* Customer layout: full Navbar, cart, footer */}
+      <Route
+        element={
+          <CustomerLayout
             currentUser={currentUser}
             cartCount={cartCount}
             onNavigate={handleNavigate}
@@ -266,7 +357,6 @@ function App() {
 
         <Route path="/chat" element={<ChatPage currentUser={currentUser} onNavigate={handleNavigate} cartItems={cartItems} />} />
         <Route path="/orders" element={<RentalOrdersPage currentUser={currentUser} onNavigate={handleNavigate} />} />
-        <Route path="/admin" element={<AdminDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/staff" element={<StaffDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/yearbook" element={<YearbookPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/cosplay" element={<CosplayPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />

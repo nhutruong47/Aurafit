@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import AdminCategoriesSection from '../components/admin/AdminCategoriesSection';
 import AdminOverviewSection from '../components/admin/AdminOverviewSection';
 import AdminProductsSection from '../components/admin/AdminProductsSection';
@@ -18,9 +19,17 @@ const supportTickets = [
 ];
 
 export default function AdminDashboardPage({ currentUser, onNavigate }) {
-  const [activeTab, setActiveTab] = useState('overview');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Step 2: Read active tab from URL hash, default to 'overview'
+  const hashTab = location.hash.replace('#', '') || 'overview';
 
   const {
+    page: productPage,
+    totalPages: productTotalPages,
+    totalElements: productTotalElements,
+    setPage: setProductPage,
     isAdmin,
     canManageProducts,
     products,
@@ -45,6 +54,13 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
   } = useAdminCostumes(currentUser);
 
   const {
+    page: categoryPage,
+    totalPages: categoryTotalPages,
+    totalElements: categoryTotalElements,
+    setPage: setCategoryPage,
+    categorySearch,
+    setCategorySearch,
+    publicCategories,
     categories: managedCategories,
     categoryForm,
     editingCategoryId,
@@ -60,6 +76,10 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
   } = useAdminCategories(currentUser);
 
   const {
+    page: userPage,
+    totalPages: userTotalPages,
+    totalElements: userTotalElements,
+    setPage: setUserPage,
     users,
     filteredUsers,
     userSearch,
@@ -86,7 +106,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
       [
         isAdmin ? ['overview', 'Tổng quan', 'dashboard'] : null,
         ['products', 'Sản phẩm', 'inventory_2'],
-        isAdmin ? ['users', 'Tài khoản bán', 'manage_accounts'] : null,
+        isAdmin ? ['users', 'Tài khoản', 'manage_accounts'] : null,
         isAdmin ? ['categories', 'Danh mục', 'category'] : null,
         isAdmin ? ['support', 'Hỗ trợ', 'support_agent'] : null,
         isAdmin ? ['reports', 'Báo cáo', 'monitoring'] : null,
@@ -94,13 +114,24 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     [isAdmin]
   );
 
+  // Resolve active tab from hash
+  const activeTab = useMemo(() => {
+    if (tabs.some(([id]) => id === hashTab)) return hashTab;
+    return tabs[0]?.[0] || 'products';
+  }, [hashTab, tabs]);
+
+  const setActiveTab = useCallback(
+    (tabId) => navigate(`/admin#${tabId}`, { replace: true }),
+    [navigate]
+  );
+
+  // Redirect to valid tab if hash is invalid
   useEffect(() => {
     if (!canManageProducts) return;
-    if (!tabs.some(([id]) => id === activeTab)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTab(tabs[0]?.[0] || 'products');
+    if (hashTab && !tabs.some(([id]) => id === hashTab)) {
+      navigate(`/admin#${tabs[0]?.[0] || 'products'}`, { replace: true });
     }
-  }, [activeTab, canManageProducts, tabs]);
+  }, [canManageProducts, hashTab, navigate, tabs]);
 
   const metricCards = useMemo(() => {
     if (!analytics?.overview || !analytics?.aiStylist) {
@@ -142,49 +173,49 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#f4f4f2] text-[#171717]">
+    <div className="min-h-[calc(100dvh-56px)] bg-[#f4f4f2] text-[#171717]">
+      {/* Sub-header with stats */}
       <div className="border-b border-[#d7d2c8] bg-[#fdfdfb]">
-        <div className="mx-auto flex max-w-[1500px] flex-col gap-5 px-5 py-6 md:flex-row md:items-center md:justify-between md:px-10">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:justify-between md:px-8">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7f7041]">
               {isAdmin ? 'AuraFit Admin' : 'AuraFit Staff'}
             </p>
-            <h1 className="mt-2 font-serif text-4xl font-normal italic leading-[1.15] md:text-5xl">
-              {isAdmin ? 'Trung tâm quản lý sản phẩm và vận hành' : 'Khu vực nhân viên'}
+            <h1 className="mt-1.5 font-serif text-3xl font-normal italic leading-[1.15] md:text-4xl">
+              {isAdmin ? 'Trung tâm quản lý' : 'Khu vực nhân viên'}
             </h1>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-sm md:flex md:items-center">
-            {isAdmin && <StatusBadge label={`${ticketCount} yêu cầu`} tone="warning" />}
-            <StatusBadge label={`${products.length} sản phẩm`} tone="good" />
-            {isAdmin && <StatusBadge label={`${users.length} tài khoản`} tone="default" />}
-            {isAdmin && <StatusBadge label={`${managedCategories.length} danh mục`} tone="default" />}
           </div>
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-8 px-5 py-8 md:px-10 xl:grid-cols-[240px_1fr]">
-        <aside className="h-fit border border-[#d7d2c8] bg-[#111111] p-3 text-white">
+      <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-0 md:grid-cols-[220px_1fr]">
+        {/* Sidebar navigation with hash links */}
+        <aside className="sticky top-14 h-fit border-r border-[#d7d2c8] bg-[#111111] p-2 text-white md:min-h-[calc(100dvh-56px-77px)]">
           {tabs.map(([id, label, icon]) => (
-            <button
+            <a
               key={id}
-              onClick={() => setActiveTab(id)}
-              className={`mb-1 flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+              href={`#${id}`}
+              onClick={(event) => {
+                event.preventDefault();
+                setActiveTab(id);
+              }}
+              className={`mb-0.5 flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
                 activeTab === id ? 'bg-[#7f7041] text-white' : 'text-white/68 hover:bg-white/10 hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">{icon}</span>
               <span>{label}</span>
-            </button>
+            </a>
           ))}
         </aside>
 
-        <main>
+        {/* Main content area — 100% width */}
+        <main className="min-w-0 p-5 md:p-8">
           {activeTab === 'overview' && isAdmin && <AdminOverviewSection metricCards={metricCards} />}
           {activeTab === 'products' && (
             <AdminProductsSection
               products={products}
-              categories={categories}
-              sellerUsers={sellerUsers}
+              categories={publicCategories}
               isAdmin={isAdmin}
               filteredProducts={filteredProducts}
               productForm={productForm}
@@ -203,6 +234,10 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               onEditProduct={hydrateProductForm}
               onResetProductForm={resetProductForm}
               onSubmitProduct={handleSubmitProduct}
+              page={productPage}
+              totalPages={productTotalPages}
+              totalElements={productTotalElements}
+              setPage={setProductPage}
             />
           )}
           {activeTab === 'users' && isAdmin && (
@@ -215,12 +250,16 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               isCreatingStaff={isCreatingStaff}
               updatingUserId={updatingUserId}
               onUserSearchChange={setUserSearch}
-              onSellerPermissionChange={setSellerPermission}
               onCreateStaff={createStaff}
+              page={userPage}
+              totalPages={userTotalPages}
+              totalElements={userTotalElements}
+              setPage={setUserPage}
             />
           )}
           {activeTab === 'categories' && isAdmin && (
             <AdminCategoriesSection
+              publicCategories={publicCategories}
               categories={managedCategories}
               categoryForm={categoryForm}
               editingCategoryId={editingCategoryId}
@@ -233,6 +272,12 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               onReset={resetCategoryForm}
               onSubmit={submitCategory}
               onDelete={handleDeleteCategory}
+              categorySearch={categorySearch}
+              setCategorySearch={setCategorySearch}
+              page={categoryPage}
+              totalPages={categoryTotalPages}
+              totalElements={categoryTotalElements}
+              setPage={setCategoryPage}
             />
           )}
           {activeTab === 'support' && isAdmin && <AdminSupportSection supportTickets={supportTickets} />}

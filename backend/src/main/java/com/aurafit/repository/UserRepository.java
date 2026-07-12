@@ -11,6 +11,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     long countByRole(com.aurafit.enums.Role role);
 
+    org.springframework.data.domain.Page<User> findAll(org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE " +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "LOWER(u.phone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))")
+    org.springframework.data.domain.Page<User> searchUsers(@org.springframework.data.repository.query.Param("keyword") String keyword, org.springframework.data.domain.Pageable pageable);
+
     List<User> findAllByOrderByIdDesc();
 
     List<User> findByRoleOrderByIdAsc(Role role);

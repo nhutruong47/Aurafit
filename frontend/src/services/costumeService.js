@@ -130,16 +130,49 @@ export const fetchHomepageRecommendations = async (options = {}, legacyLimit) =>
   );
 };
 
-export const fetchAdminCostumes = async () => {
+export const fetchAdminCostumes = async (options = {}) => {
+  const {
+    pageNo = 0,
+    pageSize = 12,
+    sortBy = 'id',
+    sortDir = 'desc',
+    keyword,
+    status,
+    categoryId,
+  } = options;
+
   const payload = await requestJson(
     {
       url: '/costumes/admin',
       method: 'GET',
+      params: {
+        pageNo,
+        pageSize,
+        sortBy,
+        sortDir,
+        ...(keyword ? { keyword } : {}),
+        ...(status ? { status } : {}),
+        ...(categoryId ? { categoryId } : {}),
+      },
     },
     'Không thể tải danh sách sản phẩm.'
   );
 
-  return normalizeListResponse(payload);
+  if (payload && typeof payload === 'object' && Array.isArray(payload.content)) {
+    return {
+      data: payload.content,
+      totalPages: payload.totalPages || 1,
+      totalElements: payload.totalElements || 0,
+      currentPage: payload.pageNo ?? payload.number ?? pageNo,
+    };
+  }
+
+  return {
+    data: normalizeListResponse(payload),
+    totalPages: 1,
+    totalElements: normalizeListResponse(payload).length,
+    currentPage: 0,
+  };
 };
 
 export const createCostume = async (costumeData) =>

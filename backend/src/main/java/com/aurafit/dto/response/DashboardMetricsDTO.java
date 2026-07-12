@@ -6,5 +6,7 @@ public record DashboardMetricsDTO(
         BigDecimal totalRevenue,
         Long totalOrders,
         Long totalUsers,
-        Long pendingOrdersCount
+        Long pendingOrdersCount,
+        Long totalCostumes,
+        Long totalCategories
 ) {}

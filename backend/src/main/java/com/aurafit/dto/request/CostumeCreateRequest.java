@@ -11,6 +11,8 @@ public record CostumeCreateRequest(
         @NotBlank(message = "Name is required")
         String name,
 
+        String slug,
+
         String description,
 
         @NotNull(message = "Rental price is required")

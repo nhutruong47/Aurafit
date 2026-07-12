@@ -97,10 +97,31 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponseDTO> getAllUsers() {
-        return userRepository.findAllByOrderByIdDesc().stream()
+    public com.aurafit.dto.response.PaginatedResponse<UserResponseDTO> getAllUsers(int pageNo, int pageSize, String sortBy, String sortDir, String keyword) {
+        org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase(org.springframework.data.domain.Sort.Direction.ASC.name())
+                ? org.springframework.data.domain.Sort.by(sortBy).ascending()
+                : org.springframework.data.domain.Sort.by(sortBy).descending();
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(pageNo, pageSize, sort);
+
+        org.springframework.data.domain.Page<User> page;
+        if (keyword != null && !keyword.isBlank()) {
+            page = userRepository.searchUsers(keyword, pageable);
+        } else {
+            page = userRepository.findAll(pageable);
+        }
+
+        List<UserResponseDTO> content = page.getContent().stream()
                 .map(this::toUserResponse)
                 .toList();
+
+        return new com.aurafit.dto.response.PaginatedResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isLast()
+        );
     }
 
 

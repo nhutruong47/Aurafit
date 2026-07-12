@@ -41,8 +41,14 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<UserResponseDTO>>> getAllUsers() {
-        return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully.", userService.getAllUsers()));
+    public ResponseEntity<ApiResponse<com.aurafit.dto.response.PaginatedResponse<UserResponseDTO>>> getAllUsers(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int pageNo,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int pageSize,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "id") String sortBy,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "desc") String sortDir,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String keyword
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully.", userService.getAllUsers(pageNo, pageSize, sortBy, sortDir, keyword)));
     }
 
 

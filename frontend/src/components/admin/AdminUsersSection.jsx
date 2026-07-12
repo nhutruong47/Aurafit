@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Panel } from './AdminDashboardShared';
+import AdminDrawer from './AdminDrawer';
+import { AdminField, Panel } from './AdminDashboardShared';
+
+import Pagination from './Pagination';
 
 const emptyStaffForm = {
   fullName: '',
@@ -18,12 +21,27 @@ export default function AdminUsersSection({
   isCreatingStaff,
   onUserSearchChange,
   onCreateStaff,
+  page,
+  totalPages,
+  totalElements,
+  setPage,
 }) {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [staffForm, setStaffForm] = useState(emptyStaffForm);
 
-  const handleFieldChange = (field) => (event) => {
-    setStaffForm((current) => ({ ...current, [field]: event.target.value }));
+  const handleOpenCreate = () => {
+    setStaffForm(emptyStaffForm);
+    setIsDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    setStaffForm(emptyStaffForm);
+  };
+
+  const handleFieldChange = (event) => {
+    const { name, value } = event.target;
+    setStaffForm((current) => ({ ...current, [name]: value }));
   };
 
   const handleCreateStaff = async (event) => {
@@ -41,153 +59,164 @@ export default function AdminUsersSection({
     });
 
     if (created) {
-      setStaffForm(emptyStaffForm);
-      setIsFormOpen(false);
+      setTimeout(() => setIsDrawerOpen(false), 200);
     }
   };
 
   return (
-    <Panel title="Quản lý nhân viên" action={`${filteredUsers.length} tài khoản`}>
-      <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <label className="relative block flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
-            search
-          </span>
-          <input
-            value={userSearch}
-            onChange={(event) => onUserSearchChange(event.target.value)}
-            placeholder="Tìm theo tên, email hoặc vai trò..."
-            className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() => setIsFormOpen((current) => !current)}
-          className="bg-black px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
-        >
-          {isFormOpen ? 'Đóng' : 'Tạo staff'}
-        </button>
-      </div>
-
-      {isFormOpen && (
-        <form onSubmit={handleCreateStaff} className="mb-5 border border-[#d7d2c8] bg-white p-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5f5e5e]">
-                Họ tên
-              </span>
-              <input
-                required
-                value={staffForm.fullName}
-                onChange={handleFieldChange('fullName')}
-                className="w-full border border-[#d7d2c8] px-3 py-2 text-sm outline-none focus:border-[#7f7041]"
-                placeholder="Nguyễn Văn A"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5f5e5e]">
-                Email
-              </span>
-              <input
-                required
-                type="email"
-                value={staffForm.email}
-                onChange={handleFieldChange('email')}
-                className="w-full border border-[#d7d2c8] px-3 py-2 text-sm outline-none focus:border-[#7f7041]"
-                placeholder="staff@aurafit.com"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5f5e5e]">
-                Số điện thoại
-              </span>
-              <input
-                value={staffForm.phone}
-                onChange={handleFieldChange('phone')}
-                className="w-full border border-[#d7d2c8] px-3 py-2 text-sm outline-none focus:border-[#7f7041]"
-                placeholder="0909 123 456"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5f5e5e]">
-                Trạng thái
-              </span>
-              <select
-                value={staffForm.status}
-                onChange={handleFieldChange('status')}
-                className="w-full border border-[#d7d2c8] bg-white px-3 py-2 text-sm outline-none focus:border-[#7f7041]"
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="BLOCKED">Inactive</option>
-              </select>
-            </label>
-          </div>
-
-          <label className="mt-4 block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5f5e5e]">
-              Mật khẩu tạm thời
+    <>
+      <Panel
+        title="Quản lý nhân viên"
+        action={
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Tạo staff
+          </button>
+        }
+      >
+        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
+          <label className="relative block flex-1 max-w-md">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
+              search
             </span>
             <input
-              value={staffForm.temporaryPassword}
-              onChange={handleFieldChange('temporaryPassword')}
-              className="w-full border border-[#d7d2c8] px-3 py-2 text-sm outline-none focus:border-[#7f7041]"
-              placeholder="Để trống để dùng mật khẩu mặc định"
+              value={userSearch}
+              onChange={(event) => onUserSearchChange(event.target.value)}
+              placeholder="Tìm theo tên, email hoặc vai trò..."
+              className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
             />
           </label>
+        </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <p className="text-xs text-[#5f5e5e]">Vai trò sẽ tự động là STAFF.</p>
-            <button
-              type="submit"
-              disabled={isCreatingStaff}
-              className="bg-[#111111] px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:opacity-60"
+        {message && <p className="mb-4 border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{message}</p>}
+        {error && <p className="mb-4 border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {isLoading && <p className="border border-[#ebe7df] bg-[#fafaf8] p-6 text-sm text-[#5f5e5e]">Đang tải tài khoản...</p>}
+
+        {!isLoading && filteredUsers.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <span className="material-symbols-outlined text-[48px] text-[#d7d2c8]">group</span>
+            <p className="text-sm text-[#5f5e5e]">Không có tài khoản nào khớp bộ lọc hiện tại.</p>
+          </div>
+        ) : (
+          !isLoading && (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <thead className="bg-[#111111] text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
+                    <tr>
+                      <th className="px-4 py-3">Tài khoản</th>
+                      <th className="px-4 py-3">Email</th>
+                      <th className="px-4 py-3">Vai trò</th>
+                      <th className="px-4 py-3">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
+                    {filteredUsers.map((user) => {
+                      return (
+                        <tr key={user.id} className="transition hover:bg-[#f5f2eb]">
+                          <td className="px-4 py-4 font-medium text-black">{user.fullName || 'Chưa cập nhật'}</td>
+                          <td className="px-4 py-4 text-[#5f5e5e]">{user.email}</td>
+                          <td className="px-4 py-4">
+                            <span className="border border-[#d7d2c8] bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5f5e5e]">
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-[#5f5e5e]">
+                            <span
+                              className={`inline-block border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] ${
+                                user.status === 'ACTIVE'
+                                  ? 'border-green-200 bg-green-50 text-green-700'
+                                  : 'border-red-200 bg-red-50 text-red-700'
+                              }`}
+                            >
+                              {user.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination page={page} totalPages={totalPages} totalElements={totalElements} onPageChange={setPage} />
+            </>
+          )
+        )}
+      </Panel>
+
+      {/* Slide-out Drawer for Create Staff form */}
+      <AdminDrawer
+        isOpen={isDrawerOpen}
+        onClose={handleCloseDrawer}
+        title="Tạo nhân viên mới (STAFF)"
+      >
+        <form className="space-y-4" onSubmit={handleCreateStaff}>
+          <AdminField
+            label="Họ tên"
+            name="fullName"
+            value={staffForm.fullName}
+            onChange={handleFieldChange}
+          />
+          <AdminField
+            label="Email"
+            name="email"
+            type="email"
+            value={staffForm.email}
+            onChange={handleFieldChange}
+          />
+          <AdminField
+            label="Số điện thoại"
+            name="phone"
+            value={staffForm.phone}
+            onChange={handleFieldChange}
+            required={false}
+          />
+
+          <label className="block">
+            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+              Trạng thái
+            </span>
+            <select
+              name="status"
+              value={staffForm.status}
+              onChange={handleFieldChange}
+              className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
             >
-              {isCreatingStaff ? 'Đang tạo...' : 'Lưu staff'}
+              <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+              <option value="BLOCKED">Khóa (BLOCKED)</option>
+            </select>
+          </label>
+
+          <AdminField
+            label="Mật khẩu tạm thời (tùy chọn)"
+            name="temporaryPassword"
+            value={staffForm.temporaryPassword}
+            onChange={handleFieldChange}
+            required={false}
+          />
+          <p className="text-xs text-[#5f5e5e] italic -mt-2">Nếu để trống, mật khẩu mặc định sẽ là AuraFit123</p>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              disabled={isCreatingStaff}
+              className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
+            >
+              {isCreatingStaff ? 'Đang tạo...' : 'Tạo tài khoản'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCloseDrawer}
+              className="border border-[#d7d2c8] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:border-black hover:text-black"
+            >
+              Hủy
             </button>
           </div>
         </form>
-      )}
-
-      {message && <p className="mb-4 border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{message}</p>}
-      {error && <p className="mb-4 border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {isLoading && <p className="border border-[#ebe7df] bg-[#fafaf8] p-6 text-sm text-[#5f5e5e]">Đang tải tài khoản...</p>}
-
-      {!isLoading && (
-        <div className="overflow-hidden border border-[#ebe7df]">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="bg-[#111111] text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
-              <tr>
-                <th className="px-4 py-3">Tài khoản</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Vai trò</th>
-                <th className="px-4 py-3">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
-              {filteredUsers.map((user) => {
-                return (
-                  <tr key={user.id}>
-                    <td className="px-4 py-4 font-medium text-black">{user.fullName || 'Chưa cập nhật'}</td>
-                    <td className="px-4 py-4 text-[#5f5e5e]">{user.email}</td>
-                    <td className="px-4 py-4">
-                      <span className="border border-[#d7d2c8] bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5f5e5e]">
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-[#5f5e5e]">{user.status}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {!isLoading && filteredUsers.length === 0 && (
-        <p className="mt-4 border border-[#ebe7df] bg-[#fafaf8] p-6 text-sm text-[#5f5e5e]">
-          Không có tài khoản nào khớp bộ lọc hiện tại.
-        </p>
-      )}
-    </Panel>
+      </AdminDrawer>
+    </>
   );
 }

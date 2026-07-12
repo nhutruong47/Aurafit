@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { formatCurrency } from '../../utils/formatCurrency';
+import AdminDrawer from './AdminDrawer';
 import ImageUploadField from '../ui/ImageUploadField';
 import { AdminField, Panel } from './AdminDashboardShared';
+import Pagination from './Pagination';
+import SearchableSelect from '../ui/SearchableSelect';
 
 export default function AdminProductsSection({
   products,
@@ -23,12 +27,180 @@ export default function AdminProductsSection({
   onEditProduct,
   onResetProductForm,
   onSubmitProduct,
+  page,
+  totalPages,
+  totalElements,
+  setPage,
 }) {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleOpenCreate = () => {
+    onResetProductForm();
+    setIsDrawerOpen(true);
+  };
+
+  const handleOpenEdit = (product) => {
+    onEditProduct(product);
+    setIsDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    onResetProductForm();
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await onSubmitProduct(event);
+    setTimeout(() => setIsDrawerOpen(false), 200);
+  };
+
   return (
-    <section className="grid grid-cols-1 gap-6 xl:grid-cols-[460px_1fr]">
-      <Panel title={editingProductId ? 'Sửa sản phẩm' : 'Đăng sản phẩm'}>
-        <form className="space-y-4" onSubmit={onSubmitProduct}>
+    <>
+      {/* Full-width data view */}
+      <Panel
+        title="Quản lý sản phẩm"
+        action={
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Đăng sản phẩm
+          </button>
+        }
+      >
+        {/* Filter bar */}
+        <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_200px_160px]">
+          <label className="relative block">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
+              search
+            </span>
+            <input
+              value={productSearch}
+              onChange={(event) => onProductSearchChange(event.target.value)}
+              placeholder="Tìm theo tên, mô tả, metadata..."
+              className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
+            />
+          </label>
+          <SearchableSelect
+            name="productCategoryFilter"
+            value={productCategoryFilter}
+            onChange={(event) => onProductCategoryFilterChange(event.target.value)}
+            options={[
+              { id: 'all', name: 'Tất cả danh mục' },
+              ...categories
+            ]}
+          />
+          <select
+            value={productStatusFilter}
+            onChange={(event) => onProductStatusFilterChange(event.target.value)}
+            className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="available">Đang hiển thị</option>
+            <option value="hidden">Tạm ẩn</option>
+          </select>
+        </div>
+
+        {/* Product table */}
+        {filteredProducts.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <span className="material-symbols-outlined text-[48px] text-[#d7d2c8]">inventory_2</span>
+            <p className="text-sm text-[#5f5e5e]">Không có sản phẩm nào khớp bộ lọc hiện tại.</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="bg-[#111111] text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
+                  <tr>
+                    <th className="px-4 py-3 w-[72px]">Ảnh</th>
+                    <th className="px-4 py-3">Tên sản phẩm</th>
+                    <th className="px-4 py-3">Danh mục</th>
+                    <th className="px-4 py-3">Giá thuê</th>
+                    <th className="px-4 py-3">Metadata</th>
+                    <th className="px-4 py-3 w-[100px]">Trạng thái</th>
+                    <th className="px-4 py-3 w-[80px] text-right">Sửa</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
+                  {filteredProducts.map((product) => (
+                    <tr key={product.id} className="transition hover:bg-[#f5f2eb]">
+                      <td className="px-4 py-3">
+                        <div className="h-12 w-12 overflow-hidden bg-[#eeeeee]">
+                          {product.imageUrl ? (
+                            <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-[#999999]">
+                              <span className="material-symbols-outlined text-[18px]">image</span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-black">{product.name}</p>
+                        {product.slug && (
+                          <code className="mt-0.5 inline-block bg-[#eeeeee] px-1 text-[10px] text-[#999999]">
+                            {product.slug}
+                          </code>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-[#5f5e5e]">
+                        {product.category?.name || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-medium">
+                        {formatCurrency(product.rentalPrice || 0)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-[#5f5e5e]">
+                        {product.metadata?.style && (
+                          <span>
+                            {[product.metadata.style, product.metadata.occasion, product.metadata.season]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-block border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] ${
+                            product.status === 'ACTIVE'
+                              ? 'border-green-200 bg-green-50 text-green-700'
+                              : 'border-[#d7d2c8] bg-[#f4f4f2] text-[#999999]'
+                          }`}
+                        >
+                          {product.status === 'ACTIVE' ? 'Hiển thị' : product.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => handleOpenEdit(product)}
+                          className="inline-flex items-center gap-1 border border-black px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition hover:bg-black hover:text-white"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">edit</span>
+                          Sửa
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination page={page} totalPages={totalPages} totalElements={totalElements} onPageChange={setPage} />
+          </>
+        )}
+      </Panel>
+
+      {/* Slide-out Drawer for Create/Edit form */}
+      <AdminDrawer
+        isOpen={isDrawerOpen}
+        onClose={handleCloseDrawer}
+        title={editingProductId ? 'Sửa sản phẩm' : 'Đăng sản phẩm mới'}
+        width="max-w-xl"
+      >
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <AdminField label="Tên sản phẩm" name="name" value={productForm.name} onChange={onProductFieldChange} />
+          <AdminField label="Slug (tự động tạo)" name="slug" value={productForm.slug} onChange={onProductFieldChange} required={false} />
           <AdminField
             label="Mô tả"
             name="description"
@@ -54,18 +226,13 @@ export default function AdminProductsSection({
               <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
                 Danh mục
               </span>
-              <select
+              <SearchableSelect
                 name="categoryId"
                 value={productForm.categoryId}
                 onChange={onProductFieldChange}
-                className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
-              >
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.path || category.name}
-                  </option>
-                ))}
-              </select>
+                options={categories}
+                placeholder="Chọn danh mục"
+              />
             </label>
 
             <label className="block">
@@ -85,12 +252,12 @@ export default function AdminProductsSection({
             </label>
           </div>
 
+          {/* Metadata section */}
           <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
             <div className="mb-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Metadata gợi ý</p>
-              <p className="mt-2 text-sm text-[#5f5e5e]">
-                Các trường `style`, `occasion`, `season`, `color`, `tags` là bắt buộc để làm nền tảng cho gợi ý sản phẩm tương tự
-                và gợi ý cá nhân hóa ở trang chủ.
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Metadata gợi ý AI</p>
+              <p className="mt-1 text-xs text-[#5f5e5e]">
+                Các trường style, occasion, season, color, tags là bắt buộc cho gợi ý sản phẩm.
               </p>
             </div>
 
@@ -122,104 +289,23 @@ export default function AdminProductsSection({
           {productMessage && <p className="border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{productMessage}</p>}
           {productError && <p className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{productError}</p>}
 
-          <button
-            disabled={isSavingProduct}
-            className="w-full bg-black py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
-          >
-            {isSavingProduct ? 'Đang lưu...' : editingProductId ? 'Cập nhật sản phẩm' : 'Đăng tải sản phẩm'}
-          </button>
-          {editingProductId && (
+          <div className="flex gap-3 pt-2">
+            <button
+              disabled={isSavingProduct}
+              className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
+            >
+              {isSavingProduct ? 'Đang lưu...' : editingProductId ? 'Cập nhật sản phẩm' : 'Đăng tải sản phẩm'}
+            </button>
             <button
               type="button"
-              onClick={onResetProductForm}
-              className="w-full border border-[#d7d2c8] py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:border-black hover:text-black"
+              onClick={handleCloseDrawer}
+              className="border border-[#d7d2c8] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:border-black hover:text-black"
             >
-              Hủy sửa
+              Hủy
             </button>
-          )}
+          </div>
         </form>
-      </Panel>
-
-      <Panel title="Kho sản phẩm" action={`${filteredProducts.length}/${products.length} sản phẩm`}>
-        <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_180px_160px]">
-          <label className="relative block">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
-              search
-            </span>
-            <input
-              value={productSearch}
-              onChange={(event) => onProductSearchChange(event.target.value)}
-              placeholder="Tìm theo tên, mô tả, metadata..."
-              className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
-            />
-          </label>
-          <select
-            value={productCategoryFilter}
-            onChange={(event) => onProductCategoryFilterChange(event.target.value)}
-            className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
-          >
-            <option value="all">Tất cả danh mục</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.path}>
-                {category.path || category.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={productStatusFilter}
-            onChange={(event) => onProductStatusFilterChange(event.target.value)}
-            className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="available">Đang hiển thị</option>
-            <option value="hidden">Tạm ẩn</option>
-          </select>
-        </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {filteredProducts.slice(0, 24).map((product) => (
-            <article key={product.id} className="grid grid-cols-[88px_1fr] gap-4 border border-[#ebe7df] bg-[#fafaf8] p-3">
-              <div className="aspect-[3/4] overflow-hidden bg-[#eeeeee]">
-                {product.imageUrl ? (
-                  <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-[#999999]">
-                    <span className="material-symbols-outlined">image</span>
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">
-                  {product.category?.name || 'Trang phục'}
-                </p>
-                <h3 className="mt-1 line-clamp-2 font-serif text-xl italic">{product.name}</h3>
-                <p className="mt-2 text-xs text-[#5f5e5e]">
-                  Giá thuê: <strong>{formatCurrency(product.rentalPrice || 0)}</strong>
-                </p>
-                <p className="mt-1 text-xs text-[#5f5e5e]">
-                  Trạng thái: <strong>{product.status === 'ACTIVE' ? 'Đang hiển thị' : product.status}</strong>
-                </p>
-
-                {product.metadata?.style && (
-                  <p className="mt-1 text-xs text-[#5f5e5e]">
-                    Metadata: <strong>{[product.metadata.style, product.metadata.occasion, product.metadata.season].filter(Boolean).join(' • ')}</strong>
-                  </p>
-                )}
-                <button
-                  onClick={() => onEditProduct(product)}
-                  className="mt-3 border border-black px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition hover:bg-black hover:text-white"
-                >
-                  Sửa sản phẩm
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-        {filteredProducts.length === 0 && (
-          <p className="border border-[#ebe7df] bg-[#fafaf8] p-6 text-sm text-[#5f5e5e]">
-            Không có sản phẩm nào khớp bộ lọc hiện tại.
-          </p>
-        )}
-      </Panel>
-    </section>
+      </AdminDrawer>
+    </>
   );
 }

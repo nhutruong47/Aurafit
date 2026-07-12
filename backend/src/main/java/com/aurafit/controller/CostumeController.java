@@ -95,9 +95,18 @@ public class CostumeController {
     @GetMapping("/admin")
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    @Operation(summary = "Get manageable costumes", description = "Admin/Staff sees all costumes")
-    public ResponseEntity<ApiResponse<List<AdminCostumeDTO>>> getAllCostumesForAdmin(Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.success("Manageable costumes retrieved successfully.", adminService.getAllCostumes(authentication.getName())));
+    @Operation(summary = "Get manageable costumes", description = "Admin/Staff sees all costumes with pagination")
+    public ResponseEntity<ApiResponse<PaginatedResponse<AdminCostumeDTO>>> getAllCostumesForAdmin(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "12") int pageSize,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long categoryId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Manageable costumes retrieved successfully.", adminService.getAllCostumes(authentication.getName(), pageNo, pageSize, sortBy, sortDir, keyword, status, categoryId)));
     }
 
     // --- Admin Endpoints ---
