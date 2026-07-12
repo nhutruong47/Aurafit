@@ -1,15 +1,24 @@
 package com.aurafit.service;
 
+import com.aurafit.dto.ai.RecommendationReasoningInput;
+
 import java.util.List;
 
 public interface AiProviderClient {
 
     String understandIntent(IntentUnderstandingPrompt prompt);
 
+    String reasonRecommendations(RecommendationReasoningPrompt prompt);
+
     List<String> generateRecommendationExplanations(RecommendationExplanationPrompt prompt);
 
     record IntentUnderstandingPrompt(
             AiChatContext chatContext
+    ) {
+    }
+
+    record RecommendationReasoningPrompt(
+            RecommendationReasoningInput input
     ) {
     }
 

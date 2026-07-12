@@ -435,6 +435,69 @@ class RecommendationServiceImplTest {
     }
 
     @Test
+    void getHomepageRecommendations_ShouldParseLegacyAndNewMetadataKeys() {
+        Category events = category(5L, "Events");
+
+        Costume tagMatch = costume(
+                41L,
+                "Formal Event Match",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Black", "formal"),
+                ItemStatus.AVAILABLE
+        );
+        Costume weakerCandidate = costume(
+                42L,
+                "Portrait Event Candidate",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Black", "portrait"),
+                ItemStatus.AVAILABLE
+        );
+
+        UserInteractionEvent legacyEvent = interactionEvent(
+                201L,
+                null,
+                "guest-metadata",
+                InteractionEventType.SEARCH,
+                InteractionTargetType.SEARCH,
+                null,
+                null,
+                "{\"category\":\"Events\",\"tags\":[\"formal\"]}",
+                LocalDateTime.now()
+        );
+        UserInteractionEvent newKeyEvent = interactionEvent(
+                202L,
+                null,
+                "guest-metadata",
+                InteractionEventType.SEARCH,
+                InteractionTargetType.SEARCH,
+                null,
+                null,
+                "{\"categoryName\":\"Events\",\"categoryPath\":\"su-kien/dam-da-hoi\",\"subcategory\":\"Dam da hoi\",\"tag\":\"formal\"}",
+                LocalDateTime.now()
+        );
+
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(weakerCandidate, tagMatch));
+        when(userInteractionEventRepository.findTop60BySessionIdOrderByCreatedAtDesc("guest-metadata"))
+                .thenReturn(List.of(legacyEvent))
+                .thenReturn(List.of(newKeyEvent));
+
+        List<SimilarCostumeRecommendationDTO> legacyResult = recommendationService.getHomepageRecommendations(
+                null,
+                "guest-metadata",
+                2
+        );
+        List<SimilarCostumeRecommendationDTO> newKeyResult = recommendationService.getHomepageRecommendations(
+                null,
+                "guest-metadata",
+                2
+        );
+
+        assertEquals(41L, legacyResult.get(0).costume().id());
+        assertEquals(41L, newKeyResult.get(0).costume().id());
+    }
+
+    @Test
     void getHomepageRecommendations_ShouldRespectLimit() {
         Category category = category(4L, "Yearbook");
         User user = user(20L, "limit-user@aurafit.com");

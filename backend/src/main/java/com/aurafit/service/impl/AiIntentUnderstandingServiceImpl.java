@@ -28,7 +28,11 @@ public class AiIntentUnderstandingServiceImpl implements AiIntentUnderstandingSe
     private static final Pattern NORMALIZE_TEXT_PATTERN = Pattern.compile("[^\\p{L}\\p{N}\\s-]");
     private static final Pattern VIETNAMESE_ACCENT_PATTERN = Pattern.compile("[àáảãạăắằẳẵặâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵ]", Pattern.CASE_INSENSITIVE);
     private static final Pattern SIZE_PATTERN = Pattern.compile("(?<![\\p{L}\\p{N}])(xxs|xs|s|m|l|xl|xxl|xxxl|2xl|3xl|4xl)(?![\\p{L}\\p{N}])", Pattern.CASE_INSENSITIVE);
-    private static final Pattern BUDGET_PATTERN = Pattern.compile("(\\d+[\\d.,]*)\\s*(tr|trieu|k|nghin|ngan|vnd|d)?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern BUDGET_WITH_UNIT_PATTERN =
+            Pattern.compile("(?<![\\p{L}\\p{N}])(\\d{1,3}(?:[.,]\\d{3})+|\\d+(?:[.,]\\d+)?)\\s*(tr|trieu|k|nghin|ngan|vnd|dong|d)(?![\\p{L}\\p{N}])",
+                    Pattern.CASE_INSENSITIVE);
+    private static final Pattern GROUPED_BUDGET_PATTERN =
+            Pattern.compile("(?<![\\p{L}\\p{N}])(\\d{1,3}(?:[.,]\\d{3})+)(?![\\p{L}\\p{N}])");
     private static final Pattern ISO_DATE_PATTERN = Pattern.compile("\\b\\d{4}-\\d{2}-\\d{2}\\b");
 
     private static final Set<String> VI_LANGUAGE_HINTS = Set.of(
@@ -220,7 +224,7 @@ public class AiIntentUnderstandingServiceImpl implements AiIntentUnderstandingSe
         String color = detectAliasValue(asciiMessage, COLOR_ALIASES);
         String gender = detectAliasValue(asciiMessage, GENDER_ALIASES);
         String size = extractSize(asciiMessage);
-        BigDecimal budget = extractBudget(normalizedMessage);
+        BigDecimal budget = extractBudget(latestUserMessage);
         String rentalDate = extractRentalDate(asciiMessage);
         String productMentioned = extractProductMention(asciiMessage);
         double confidence = estimateFallbackConfidence(intent, asciiMessage, occasion, style, color, size, budget, rentalDate, followUp);
@@ -397,11 +401,12 @@ public class AiIntentUnderstandingServiceImpl implements AiIntentUnderstandingSe
         return matcher.find() ? matcher.group(1).toUpperCase(Locale.ROOT) : null;
     }
 
-    private BigDecimal extractBudget(String normalizedMessage) {
-        if (normalizedMessage == null || normalizedMessage.isBlank()) {
+    private BigDecimal extractBudget(String message) {
+        if (message == null || message.isBlank()) {
             return null;
         }
 
+        String normalizedMessage = normalizeText(message);
         boolean hasBudgetHint = normalizedMessage.contains("ngan sach")
                 || normalizedMessage.contains("toi da")
                 || normalizedMessage.contains("duoi")
@@ -410,34 +415,70 @@ public class AiIntentUnderstandingServiceImpl implements AiIntentUnderstandingSe
                 || normalizedMessage.contains("gia")
                 || normalizedMessage.contains("price");
 
-        Matcher matcher = BUDGET_PATTERN.matcher(normalizedMessage);
+        String budgetSource = normalizeBudgetSource(message);
+        Matcher matcher = BUDGET_WITH_UNIT_PATTERN.matcher(budgetSource);
         while (matcher.find()) {
-            String rawNumber = matcher.group(1);
-            String rawUnit = matcher.group(2);
-            if (rawNumber == null) {
-                continue;
+            BigDecimal parsedBudget = parseBudgetValue(matcher.group(1), matcher.group(2));
+            if (parsedBudget != null) {
+                return parsedBudget;
             }
-            if (rawUnit == null && !hasBudgetHint) {
-                continue;
-            }
+        }
 
-            String sanitizedNumber = rawNumber.replace(".", "").replace(",", ".");
-            try {
-                BigDecimal numericValue = new BigDecimal(sanitizedNumber);
-                String normalizedUnit = rawUnit != null ? rawUnit.toLowerCase(Locale.ROOT) : "";
-                if (normalizedUnit.startsWith("tr")) {
-                    return numericValue.multiply(BigDecimal.valueOf(1_000_000L));
-                }
-                if (normalizedUnit.startsWith("k") || normalizedUnit.startsWith("ng")) {
-                    return numericValue.multiply(BigDecimal.valueOf(1_000L));
-                }
-                return numericValue;
-            } catch (NumberFormatException ignored) {
-                // Keep scanning for the next valid budget expression.
+        if (!hasBudgetHint) {
+            return null;
+        }
+
+        Matcher groupedMatcher = GROUPED_BUDGET_PATTERN.matcher(budgetSource);
+        while (groupedMatcher.find()) {
+            BigDecimal parsedBudget = parseBudgetValue(groupedMatcher.group(1), null);
+            if (parsedBudget != null) {
+                return parsedBudget;
             }
         }
 
         return null;
+    }
+
+    private BigDecimal parseBudgetValue(String rawNumber, String rawUnit) {
+        if (rawNumber == null || rawNumber.isBlank()) {
+            return null;
+        }
+
+        String normalizedUnit = rawUnit != null ? normalizeBudgetSource(rawUnit) : "";
+
+        try {
+            BigDecimal numericValue = parseBudgetNumber(rawNumber, normalizedUnit.startsWith("tr")
+                    || normalizedUnit.startsWith("k")
+                    || normalizedUnit.startsWith("ng"));
+            if (normalizedUnit.startsWith("tr")) {
+                return numericValue.multiply(BigDecimal.valueOf(1_000_000L));
+            }
+            if (normalizedUnit.startsWith("k") || normalizedUnit.startsWith("ng")) {
+                return numericValue.multiply(BigDecimal.valueOf(1_000L));
+            }
+            return numericValue;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private BigDecimal parseBudgetNumber(String rawNumber, boolean allowDecimalUnit) {
+        String compactNumber = rawNumber.replaceAll("\\s+", "");
+        if (allowDecimalUnit && compactNumber.matches("\\d+[.,]\\d{1,2}")) {
+            return new BigDecimal(compactNumber.replace(',', '.'));
+        }
+
+        return new BigDecimal(compactNumber.replace(".", "").replace(",", ""));
+    }
+
+    private String normalizeBudgetSource(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String asciiValue = Normalizer.normalize(value.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        return asciiValue.replace('đ', 'd');
     }
 
     private String extractRentalDate(String asciiMessage) {

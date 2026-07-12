@@ -18,6 +18,7 @@ public class AiPromptTemplateService {
     private static final String TEMPLATE_PATH = "ai/prompt-template.md";
     private static final String INTENT_UNDERSTANDING_PATH = "ai/system/intent-understanding.md";
     private static final String STYLIST_SYSTEM_PATH = "ai/system/stylist-system.md";
+    private static final String RECOMMENDATION_REASONING_PATH = "ai/system/recommendation-reasoning.md";
     private static final String LANGUAGE_POLICY_PATH = "ai/system/language-policy.md";
     private static final String INTENT_POLICY_PATH = "ai/system/intent-policy.md";
     private static final String RECOMMENDATION_POLICY_PATH = "ai/system/recommendation-policy.md";
@@ -90,6 +91,13 @@ Do not add markdown or extra explanation outside the JSON array.
 
     public String composeIntentUnderstandingSystemPrompt() {
         return promptResourceService.loadPromptContent(INTENT_UNDERSTANDING_PATH, fallbackIntentUnderstandingPrompt());
+    }
+
+    public String composeRecommendationReasoningSystemPrompt() {
+        return promptResourceService.loadPromptContent(
+                RECOMMENDATION_REASONING_PATH,
+                fallbackRecommendationReasoningPrompt()
+        );
     }
 
     private String section(String path, String fallbackContent) {
@@ -373,6 +381,17 @@ Rules:
 - Use null for missing fields.
 - confidence must be between 0 and 1.
 - language must be "vi" or "en".
+""";
+    }
+
+    private String fallbackRecommendationReasoningPrompt() {
+        return """
+Bạn là AuraFit AI Stylist cho lớp reasoning recommendation nội bộ.
+Chỉ được chọn costume trong candidatePool.
+Không được bịa costume ngoài candidatePool.
+Nếu yêu cầu mơ hồ, trả clarificationNeeded thay vì đoán bừa.
+Nếu không có candidate nào thực sự phù hợp, trả noMatchReason thay vì ép chọn 3 item.
+Output chỉ được là JSON hợp lệ theo schema đã cung cấp.
 """;
     }
 }

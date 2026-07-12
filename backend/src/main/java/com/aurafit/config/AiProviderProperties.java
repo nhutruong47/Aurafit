@@ -8,13 +8,20 @@ public class AiProviderProperties {
     private boolean enabled;
     private String providerBaseUrl = "";
     private String providerApiKey = "";
+    // TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
     private String embeddingModel = "";
     private String chatModel = "";
+    // TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
     private int fallbackEmbeddingDimension = 64;
+    // TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
     private int defaultRecommendationLimit = 6;
+    // TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
     private int candidatePoolSize = 24;
+    // TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
     private int profileTopTagLimit = 5;
+    // TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
     private int profileStaleMinutes = 60;
+    private boolean reasoningRankingEnabled;
     private boolean llmExplanationEnabled;
     private int providerConnectTimeoutMillis = 2000;
     private int providerReadTimeoutMillis = 6000;
@@ -100,6 +107,14 @@ public class AiProviderProperties {
         this.profileStaleMinutes = profileStaleMinutes;
     }
 
+    public boolean isReasoningRankingEnabled() {
+        return reasoningRankingEnabled;
+    }
+
+    public void setReasoningRankingEnabled(boolean reasoningRankingEnabled) {
+        this.reasoningRankingEnabled = reasoningRankingEnabled;
+    }
+
     public boolean isLlmExplanationEnabled() {
         return llmExplanationEnabled;
     }
@@ -138,6 +153,10 @@ public class AiProviderProperties {
 
     public boolean isExplanationAvailable() {
         return enabled && llmExplanationEnabled && isProviderConfigured();
+    }
+
+    public boolean isReasoningRankingAvailable() {
+        return enabled && reasoningRankingEnabled && isProviderConfigured();
     }
 
     private boolean hasText(String value) {

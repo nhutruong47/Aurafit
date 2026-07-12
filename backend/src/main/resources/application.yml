@@ -49,13 +49,20 @@ ai:
   enabled: ${AI_ENABLED:false}
   provider-base-url: ${AI_PROVIDER_BASE_URL:}
   provider-api-key: ${AI_PROVIDER_API_KEY:}
+  # TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
   embedding-model: ${AI_EMBEDDING_MODEL:}
   chat-model: ${AI_CHAT_MODEL:}
+  # TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
   fallback-embedding-dimension: ${AI_FALLBACK_EMBEDDING_DIMENSION:64}
+  # TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
   default-recommendation-limit: ${AI_DEFAULT_RECOMMENDATION_LIMIT:6}
+  # TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
   candidate-pool-size: ${AI_CANDIDATE_POOL_SIZE:24}
+  # TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
   profile-top-tag-limit: ${AI_PROFILE_TOP_TAG_LIMIT:5}
+  # TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
   profile-stale-minutes: ${AI_PROFILE_STALE_MINUTES:60}
+  reasoning-ranking-enabled: ${AI_REASONING_RANKING_ENABLED:false}
   llm-explanation-enabled: ${AI_LLM_EXPLANATION_ENABLED:false}
   provider-connect-timeout-millis: ${AI_PROVIDER_CONNECT_TIMEOUT_MS:2000}
   provider-read-timeout-millis: ${AI_PROVIDER_READ_TIMEOUT_MS:6000}

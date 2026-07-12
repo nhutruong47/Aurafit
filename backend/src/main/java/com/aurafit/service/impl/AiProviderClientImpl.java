@@ -3,6 +3,7 @@ package com.aurafit.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.aurafit.config.AiProviderProperties;
+import com.aurafit.dto.ai.RecommendationReasoningInput;
 import com.aurafit.service.AiChatContext;
 import com.aurafit.service.AiProviderClient;
 import org.slf4j.Logger;
@@ -53,6 +54,19 @@ public class AiProviderClientImpl implements AiProviderClient {
         String responseContent = requestChatCompletion(
                 "intent_understanding",
                 writeIntentRequestBody(prompt)
+        );
+        return extractJson(responseContent);
+    }
+
+    @Override
+    public String reasonRecommendations(RecommendationReasoningPrompt prompt) {
+        if (prompt == null || prompt.input() == null || prompt.input().candidatePool() == null) {
+            throw new IllegalArgumentException("Recommendation reasoning input is required.");
+        }
+
+        String responseContent = requestChatCompletion(
+                "recommendation_reasoning",
+                writeRecommendationReasoningRequestBody(prompt)
         );
         return extractJson(responseContent);
     }
@@ -144,6 +158,28 @@ public class AiProviderClientImpl implements AiProviderClient {
         }
     }
 
+    private String writeRecommendationReasoningRequestBody(RecommendationReasoningPrompt prompt) {
+        try {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("model", properties.getChatModel());
+            payload.put("temperature", 0.1);
+            payload.put("max_tokens", 900);
+            payload.put("messages", List.of(
+                    Map.of(
+                            "role", "system",
+                            "content", aiPromptTemplateService.composeRecommendationReasoningSystemPrompt()
+                    ),
+                    Map.of(
+                            "role", "user",
+                            "content", objectMapper.writeValueAsString(buildRecommendationReasoningPayload(prompt))
+                    )
+            ));
+            return objectMapper.writeValueAsString(payload);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Cannot serialize AI recommendation reasoning request.", exception);
+        }
+    }
+
     private Map<String, Object> buildIntentPromptPayload(IntentUnderstandingPrompt prompt) {
         AiChatContext chatContext = prompt.chatContext();
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -178,6 +214,11 @@ public class AiProviderClientImpl implements AiProviderClient {
         payload.put("hasPreviousRecommendation", chatContext.hasPreviousRecommendation());
         payload.put("likelyFollowUp", chatContext.likelyFollowUp());
         return payload;
+    }
+
+    private Map<String, Object> buildRecommendationReasoningPayload(RecommendationReasoningPrompt prompt) {
+        RecommendationReasoningInput input = prompt.input();
+        return objectMapper.convertValue(input, objectMapper.getTypeFactory().constructMapType(LinkedHashMap.class, String.class, Object.class));
     }
 
     private String writeRecommendationRequestBody(RecommendationExplanationPrompt prompt) {

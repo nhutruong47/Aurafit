@@ -9,8 +9,9 @@ import HomeStyleSlider from '../components/home/HomeStyleSlider';
 import HomeTrendingSection from '../components/home/HomeTrendingSection';
 import HomeTrustSection from '../components/home/HomeTrustSection';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
-import { fetchRecommendedCostumes, fetchSeasonalCostumes } from '../services/costumeService';
-import { logUserInteraction } from '../services/interactionsService';
+import { useHomepageRecommendations } from '../hooks/useHomepageRecommendations';
+import { fetchSeasonalCostumes } from '../services/costumeService';
+import { getInteractionSessionId, logUserInteraction } from '../services/interactionsService';
 import { getCostumeRootCategory } from '../utils/costumeUtils';
 
 function uniqueProducts(products) {
@@ -32,10 +33,15 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
   const sliderRef = useRef(null);
   const homepageImpressionKeyRef = useRef('');
   const { costumes, isLoading } = useCatalogCostumes();
-  const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [trendingProducts, setTrendingProducts] = useState([]);
-  const [isShopHighlightsLoading, setIsShopHighlightsLoading] = useState(false);
-  const [shopHighlightsError, setShopHighlightsError] = useState('');
+  const [isTrendingLoading, setIsTrendingLoading] = useState(false);
+  const [trendingError, setTrendingError] = useState('');
+  const interactionSessionId = useMemo(() => getInteractionSessionId(), []);
+  const {
+    recommendations: rawHomepageRecommendations,
+    isLoading: isHomepageRecommendationsLoading,
+    error: homepageRecommendationsError,
+  } = useHomepageRecommendations(interactionSessionId, currentUser?.id);
 
   const products = useMemo(
     () => ({
@@ -50,47 +56,49 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
   useEffect(() => {
     let isMounted = true;
 
-    setIsShopHighlightsLoading(true);
-    setShopHighlightsError('');
+    setIsTrendingLoading(true);
+    setTrendingError('');
 
-    Promise.all([fetchRecommendedCostumes(currentUser?.id), fetchSeasonalCostumes()])
-      .then(([recommendedData, seasonalData]) => {
+    fetchSeasonalCostumes()
+      .then((seasonalData) => {
         if (!isMounted) {
           return;
         }
 
-        setRecommendedProducts(uniqueProducts(recommendedData || []));
         setTrendingProducts(uniqueProducts(seasonalData || []));
-        setShopHighlightsError('');
+        setTrendingError('');
       })
       .catch((requestError) => {
         if (!isMounted) {
           return;
         }
 
-        setRecommendedProducts([]);
         setTrendingProducts([]);
-        setShopHighlightsError(requestError.message || 'Không thể tải đề xuất và xu hướng từ shop.');
+        setTrendingError(requestError.message || 'KhÃ´ng thá»ƒ táº£i xu hÆ°á»›ng tá»« shop.');
       })
       .finally(() => {
         if (isMounted) {
-          setIsShopHighlightsLoading(false);
+          setIsTrendingLoading(false);
         }
       });
 
     return () => {
       isMounted = false;
     };
-  }, [currentUser?.id]);
+  }, []);
 
-  const homepageRecommendations = useMemo(
-    () =>
-      recommendedProducts.map((costume, index) => ({
-        costume,
-        reason: index === 0 ? 'Đề xuất từ shop' : 'Dành cho bạn',
-      })),
-    [recommendedProducts]
-  );
+  const homepageRecommendations = useMemo(() => {
+    const seen = new Set();
+    return (rawHomepageRecommendations || []).filter((recommendation) => {
+      const costumeId = recommendation?.costume?.id;
+      if (costumeId === undefined || costumeId === null || seen.has(costumeId)) {
+        return false;
+      }
+
+      seen.add(costumeId);
+      return true;
+    });
+  }, [rawHomepageRecommendations]);
 
   useEffect(() => {
     if (!homepageRecommendations.length) return;
@@ -137,7 +145,7 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
     navigator.clipboard.writeText('AURA20WELCOME');
     const button = event.currentTarget;
     const originalText = button.innerHTML;
-    button.innerHTML = '<span class="material-symbols-outlined text-[14px]">check</span>Đã sao chép';
+    button.innerHTML = '<span class="material-symbols-outlined text-[14px]">check</span>ÄÃ£ sao chÃ©p';
     window.setTimeout(() => {
       button.innerHTML = originalText;
     }, 2000);
@@ -168,8 +176,8 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
       <HomeServicesSection />
       <HomePersonalizedSection
         recommendations={homepageRecommendations}
-        isLoading={isShopHighlightsLoading}
-        error={shopHighlightsError}
+        isLoading={isHomepageRecommendationsLoading}
+        error={homepageRecommendationsError}
         onNavigate={onNavigate}
         onRecommendationClick={handleHomepageRecommendationClick}
       />
@@ -186,8 +194,8 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
       <HomeTrustSection />
       <HomeTrendingSection
         trending={trendingProducts}
-        isLoading={isShopHighlightsLoading}
-        error={shopHighlightsError}
+        isLoading={isTrendingLoading}
+        error={trendingError}
         onNavigate={onNavigate}
       />
       <HomeInsiderSection

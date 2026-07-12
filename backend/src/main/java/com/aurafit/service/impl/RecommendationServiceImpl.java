@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -321,10 +322,101 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
 
         try {
-            return objectMapper.readValue(metadataJson.trim(), METADATA_TYPE);
+            return normalizeInteractionMetadata(objectMapper.readValue(metadataJson.trim(), METADATA_TYPE));
         } catch (Exception ignored) {
             return Map.of();
         }
+    }
+
+    private Map<String, Object> normalizeInteractionMetadata(Map<String, Object> metadataMap) {
+        if (metadataMap == null || metadataMap.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, Object> normalizedMetadata = new LinkedHashMap<>(metadataMap);
+        String category = firstNonBlank(
+                readMetadataString(metadataMap.get("category")),
+                readMetadataString(metadataMap.get("categoryName")),
+                readMetadataString(metadataMap.get("subcategory")),
+                categoryLabelFromPath(readMetadataString(metadataMap.get("categoryPath")))
+        );
+        if (category != null) {
+            normalizedMetadata.put("category", category);
+        }
+
+        List<String> tags = new ArrayList<>();
+        appendStringValues(tags, metadataMap.get("tags"));
+        appendStringValue(tags, readMetadataString(metadataMap.get("tag")));
+        appendStringValue(tags, readMetadataString(metadataMap.get("subcategory")));
+        if (!tags.isEmpty()) {
+            normalizedMetadata.put("tags", tags);
+        }
+
+        return normalizedMetadata;
+    }
+
+    private void appendStringValues(List<String> target, Object rawValue) {
+        if (target == null || rawValue == null) {
+            return;
+        }
+
+        if (rawValue instanceof Collection<?> values) {
+            for (Object value : values) {
+                appendStringValue(target, readMetadataString(value));
+            }
+            return;
+        }
+
+        appendStringValue(target, readMetadataString(rawValue));
+    }
+
+    private void appendStringValue(List<String> target, String rawValue) {
+        if (target == null) {
+            return;
+        }
+
+        String normalizedValue = readMetadataString(rawValue);
+        if (normalizedValue == null || target.contains(normalizedValue)) {
+            return;
+        }
+
+        target.add(normalizedValue);
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+
+        for (String value : values) {
+            String normalizedValue = readMetadataString(value);
+            if (normalizedValue != null) {
+                return normalizedValue;
+            }
+        }
+
+        return null;
+    }
+
+    private String categoryLabelFromPath(String categoryPath) {
+        String normalizedPath = readMetadataString(categoryPath);
+        if (normalizedPath == null) {
+            return null;
+        }
+
+        int lastSeparator = normalizedPath.lastIndexOf('/');
+        String lastSegment = lastSeparator >= 0 ? normalizedPath.substring(lastSeparator + 1) : normalizedPath;
+        String label = lastSegment.replace('-', ' ').trim();
+        return label.isEmpty() ? null : label;
+    }
+
+    private String readMetadataString(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : text;
     }
 
     private String buildHomepageReason(

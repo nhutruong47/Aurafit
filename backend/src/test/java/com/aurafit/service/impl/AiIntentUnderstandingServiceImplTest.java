@@ -195,6 +195,16 @@ class AiIntentUnderstandingServiceImplTest {
     }
 
     @Test
+    void understandIntent_ShouldIgnoreIsoDateWhenParsingBudget() {
+        AiIntentUnderstandingService.IntentUnderstandingResult result =
+                service.understandIntent("toi can thue ngay 2025-06-15 va ngan sach duoi 300k");
+
+        assertTrue(result.fallbackUsed());
+        assertEquals(new BigDecimal("300000"), result.budget());
+        assertEquals("2025-06-15", result.rentalDate());
+    }
+
+    @Test
     void understandIntent_ShouldUseProviderWhenFollowUpJsonIsValid() {
         properties.setEnabled(true);
         when(aiProviderClient.understandIntent(any())).thenReturn("""
