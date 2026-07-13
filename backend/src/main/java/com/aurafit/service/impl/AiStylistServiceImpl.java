@@ -198,6 +198,13 @@ public class AiStylistServiceImpl implements AiStylistService {
         this.userPreferenceSummaryService = userPreferenceSummaryService;
         this.aiChatContextBuilder = aiChatContextBuilder;
 
+        logger.info(
+                "AI Stylist reasoning config loaded: aiEnabled={}, reasoningFlag={}, providerConfigured={}, reasoningRankingAvailable={}",
+                aiProviderProperties != null && aiProviderProperties.isEnabled(),
+                aiProviderProperties != null && aiProviderProperties.isReasoningRankingEnabled(),
+                aiProviderProperties != null && aiProviderProperties.isProviderConfigured(),
+                shouldUseReasoningRanking()
+        );
         if (aiProviderProperties.isReasoningRankingEnabled() && !aiProviderProperties.isEnabled()) {
             logger.warn("AI reasoning ranking is enabled but AI_ENABLED is false. AI Stylist will keep using rule-based ranking.");
         }
@@ -239,6 +246,13 @@ public class AiStylistServiceImpl implements AiStylistService {
     @Override
     @Transactional
     public AiStylistSessionDTO sendMessage(SendAiStylistMessageRequest request, String authenticatedEmail) {
+        logger.info(
+                "Received AI Stylist message request: sessionId={}, guestSessionId={}, selectedCostumeId={}, message={}",
+                request.sessionId(),
+                request.guestSessionId(),
+                request.selectedCostumeId(),
+                limitText(request.message(), 240)
+        );
         AiStylistSession session = loadAccessibleSession(request.sessionId(), request.guestSessionId(), authenticatedEmail);
         String normalizedMessage = request.message().trim();
         Map<Long, Costume> activeCostumesById = buildActiveCostumeMap();
@@ -299,8 +313,17 @@ public class AiStylistServiceImpl implements AiStylistService {
         List<SimilarCostumeRecommendationDTO> recommendations;
         String assistantContent = null;
         Map<String, Object> metadataExtras = new LinkedHashMap<>();
+        boolean useReasoningRanking = shouldUseReasoningRanking();
 
-        if (shouldUseReasoningRanking()) {
+        logger.info(
+                "reasoning flag={}, aiEnabled={}, providerConfigured={}, routing to={}",
+                aiProviderProperties != null && aiProviderProperties.isReasoningRankingEnabled(),
+                aiProviderProperties != null && aiProviderProperties.isEnabled(),
+                aiProviderProperties != null && aiProviderProperties.isProviderConfigured(),
+                useReasoningRanking ? "LLM" : "rule-based"
+        );
+
+        if (useReasoningRanking) {
             try {
                 ReasoningCandidatePool reasoningCandidatePool = buildReasoningCandidatePool(
                         activeCostumesById.values(),
@@ -315,10 +338,14 @@ public class AiStylistServiceImpl implements AiStylistService {
                                 session,
                                 request.guestSessionId(),
                                 availabilityWindow
-                        )
+                        ),
+                        RecommendationReasoningService.RecommendationReasoningMode.AI_STYLIST_CHAT,
+                        buildReasoningActorKey(session, request.guestSessionId())
                 );
+                logger.info("AI Stylist reasoning call succeeded and returned output for sessionId={}", session.getId());
                 metadataExtras.put("reasoningRankingMode", "llm");
                 metadataExtras.put("llmReasoningUsed", true);
+                metadataExtras.put("fallback", false);
                 metadataExtras.put("llmReasoningOutput", objectMapper.convertValue(reasoningOutput, METADATA_TYPE));
 
                 if (reasoningOutput.clarificationNeeded() != null) {
@@ -342,11 +369,19 @@ public class AiStylistServiceImpl implements AiStylistService {
                 }
             } catch (Exception exception) {
                 String correlationId = UUID.randomUUID().toString();
+                String fallbackReason = resolveReasoningFallbackReason(exception);
+                logger.warn(
+                        "FALLBACK TRIGGERED: reason={}, correlationId={}, details={}",
+                        fallbackReason,
+                        correlationId,
+                        summarize(exception)
+                );
                 logger.warn("Falling back to rule-based AI Stylist ranking for correlationId {} because LLM reasoning failed: {}",
                         correlationId, summarize(exception));
                 metadataExtras.put("fallback", true);
                 metadataExtras.put("reasoningRankingMode", "rule_based_fallback");
                 metadataExtras.put("reasoningCorrelationId", correlationId);
+                metadataExtras.put("reasoningFallbackReason", fallbackReason);
                 metadataExtras.put("reasoningError", summarize(exception));
                 recommendations = buildRuleBasedRecommendations(
                         normalizedMessage,
@@ -392,6 +427,13 @@ public class AiStylistServiceImpl implements AiStylistService {
         );
 
         AiStylistSession savedSession = aiStylistSessionRepository.save(session);
+        logger.info(
+                "Completed AI Stylist message request: sessionId={}, fallback={}, recommendationCount={}, assistantContentPreview={}",
+                savedSession.getId(),
+                metadataExtras.get("fallback"),
+                recommendations != null ? recommendations.size() : 0,
+                limitText(assistantContent, 160)
+        );
         return toSessionDTO(savedSession, activeCostumesById);
     }
 
@@ -680,6 +722,18 @@ public class AiStylistServiceImpl implements AiStylistService {
 
         String summary = userPreferenceSummaryService.summarize(userId, guestSessionId);
         return summary == null || summary.isBlank() ? null : summary;
+    }
+
+    private String buildReasoningActorKey(AiStylistSession session, String fallbackGuestSessionId) {
+        if (session != null && session.getUser() != null && session.getUser().getId() != null) {
+            return "user:" + session.getUser().getId();
+        }
+
+        String guestSessionId = normalize(session != null ? session.getGuestSessionId() : null);
+        if (guestSessionId == null) {
+            guestSessionId = normalize(fallbackGuestSessionId);
+        }
+        return guestSessionId == null ? "guest:anonymous" : "guest:" + guestSessionId;
     }
 
     private StylistCandidate buildStylistCandidate(Costume candidate,
@@ -1415,7 +1469,8 @@ public class AiStylistServiceImpl implements AiStylistService {
                 session.getMessages().stream()
                         .map(message -> AiStylistMessageDTO.fromEntity(
                                 message,
-                                aiChatContextBuilder.readStoredRecommendations(message.getMetadataJson(), activeCostumesById)
+                                aiChatContextBuilder.readStoredRecommendations(message.getMetadataJson(), activeCostumesById),
+                                readFallbackFlag(message.getMetadataJson())
                         ))
                         .toList(),
                 session.getCreatedAt() != null ? session.getCreatedAt().toString() : null,
@@ -2307,6 +2362,43 @@ public class AiStylistServiceImpl implements AiStylistService {
         }
 
         return exception.getClass().getSimpleName() + ": " + message;
+    }
+
+    private Boolean readFallbackFlag(String metadataJson) {
+        if (metadataJson == null || metadataJson.isBlank()) {
+            return null;
+        }
+
+        try {
+            Map<String, Object> metadata = objectMapper.readValue(metadataJson.trim(), METADATA_TYPE);
+            Object fallbackValue = metadata.get("fallback");
+            if (fallbackValue == null) {
+                return null;
+            }
+            if (fallbackValue instanceof Boolean booleanValue) {
+                return booleanValue;
+            }
+            return Boolean.parseBoolean(fallbackValue.toString());
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String resolveReasoningFallbackReason(Exception exception) {
+        if (exception instanceof com.aurafit.exception.AiReasoningGuardrailException guardrailException
+                && guardrailException.getFallbackReason() != null) {
+            return guardrailException.getFallbackReason().name();
+        }
+        if (exception instanceof AiReasoningParseException) {
+            return "PARSE_ERROR";
+        }
+        String message = exception != null && exception.getMessage() != null
+                ? exception.getMessage().toLowerCase(Locale.ROOT)
+                : "";
+        if (message.contains("timed out")) {
+            return "TIMEOUT";
+        }
+        return "OTHER";
     }
 
     private String limitText(String value, int maxLength) {

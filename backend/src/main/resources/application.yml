@@ -69,3 +69,10 @@ ai:
   provider-connect-timeout-millis: ${AI_PROVIDER_CONNECT_TIMEOUT_MS:2000}
   provider-read-timeout-millis: ${AI_PROVIDER_READ_TIMEOUT_MS:6000}
   provider-max-retries: ${AI_PROVIDER_MAX_RETRIES:1}
+  reasoning-connect-timeout-millis: ${AI_REASONING_CONNECT_TIMEOUT_MS:2000}
+  reasoning-read-timeout-millis: ${AI_REASONING_READ_TIMEOUT_MS:9000}
+  reasoning-rate-limit-per-minute: ${AI_REASONING_RATE_LIMIT_PER_MINUTE:12}
+  reasoning-circuit-failure-threshold-percent: ${AI_REASONING_CIRCUIT_FAILURE_THRESHOLD_PERCENT:30}
+  reasoning-circuit-window-minutes: ${AI_REASONING_CIRCUIT_WINDOW_MINUTES:5}
+  reasoning-circuit-cooldown-minutes: ${AI_REASONING_CIRCUIT_COOLDOWN_MINUTES:10}
+  reasoning-circuit-minimum-calls: ${AI_REASONING_CIRCUIT_MINIMUM_CALLS:10}

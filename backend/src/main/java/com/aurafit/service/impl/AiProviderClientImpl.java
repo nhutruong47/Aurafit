@@ -31,6 +31,7 @@ public class AiProviderClientImpl implements AiProviderClient {
     private final AiProviderProperties properties;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final HttpClient reasoningHttpClient;
     private final AiPromptTemplateService aiPromptTemplateService;
 
     public AiProviderClientImpl(AiProviderProperties properties,
@@ -42,6 +43,15 @@ public class AiProviderClientImpl implements AiProviderClient {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(Math.max(500, properties.getProviderConnectTimeoutMillis())))
                 .build();
+        this.reasoningHttpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofMillis(Math.max(500, properties.getReasoningConnectTimeoutMillis())))
+                .build();
+        logger.info(
+                "AI provider runtime config: baseUrl={}, chatModel={}, apiKey={}",
+                normalizeBaseUrl(properties.getProviderBaseUrl()),
+                safe(properties.getChatModel()),
+                maskApiKey(properties.getProviderApiKey())
+        );
     }
 
     @Override
@@ -54,7 +64,9 @@ public class AiProviderClientImpl implements AiProviderClient {
 
         String responseContent = requestChatCompletion(
                 "intent_understanding",
-                writeIntentRequestBody(prompt)
+                writeIntentRequestBody(prompt),
+                httpClient,
+                properties.getProviderReadTimeoutMillis()
         );
         return extractJson(responseContent);
     }
@@ -67,7 +79,9 @@ public class AiProviderClientImpl implements AiProviderClient {
 
         String responseContent = requestChatCompletion(
                 "recommendation_reasoning",
-                writeRecommendationReasoningRequestBody(prompt)
+                writeRecommendationReasoningRequestBody(prompt),
+                reasoningHttpClient,
+                properties.getReasoningReadTimeoutMillis()
         );
         return extractJson(responseContent);
     }
@@ -80,7 +94,9 @@ public class AiProviderClientImpl implements AiProviderClient {
 
         String responseContent = requestChatCompletion(
                 prompt.surface(),
-                writeRecommendationRequestBody(prompt)
+                writeRecommendationRequestBody(prompt),
+                httpClient,
+                properties.getProviderReadTimeoutMillis()
         );
 
         try {
@@ -90,20 +106,23 @@ public class AiProviderClientImpl implements AiProviderClient {
         }
     }
 
-    private String requestChatCompletion(String surface, String requestBody) {
+    private String requestChatCompletion(String surface,
+                                         String requestBody,
+                                         HttpClient client,
+                                         int readTimeoutMillis) {
         int attempts = Math.max(1, properties.getProviderMaxRetries() + 1);
         URI uri = URI.create(normalizeBaseUrl(properties.getProviderBaseUrl()) + "/chat/completions");
 
         for (int attempt = 1; attempt <= attempts; attempt++) {
             try {
                 HttpRequest request = HttpRequest.newBuilder(uri)
-                        .timeout(Duration.ofMillis(Math.max(1000, properties.getProviderReadTimeoutMillis())))
+                        .timeout(Duration.ofMillis(Math.max(1000, readTimeoutMillis)))
                         .header("Content-Type", "application/json")
                         .header("Authorization", "Bearer " + properties.getProviderApiKey().trim())
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                         .build();
 
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 int statusCode = response.statusCode();
                 if (statusCode >= 200 && statusCode < 300) {
                     return readResponseContent(response.body());
@@ -118,15 +137,45 @@ public class AiProviderClientImpl implements AiProviderClient {
                 backoff(attempt);
             } catch (HttpTimeoutException exception) {
                 if (attempt == attempts) {
+                    logger.warn(
+                            "AI provider timeout on final attempt {} for surface {}. Root exception type={}, message={}",
+                            attempt,
+                            surface,
+                            exception.getClass().getName(),
+                            exception.getMessage(),
+                            exception
+                    );
                     throw new IllegalStateException("AI provider request timed out.", exception);
                 }
-                logger.warn("AI provider timed out on attempt {} for surface {}.", attempt, surface);
+                logger.warn(
+                        "AI provider timed out on attempt {} for surface {}. Root exception type={}, message={}",
+                        attempt,
+                        surface,
+                        exception.getClass().getName(),
+                        exception.getMessage(),
+                        exception
+                );
                 backoff(attempt);
             } catch (IOException exception) {
                 if (attempt == attempts) {
+                    logger.warn(
+                            "AI provider I/O failure on final attempt {} for surface {}. Root exception type={}, message={}",
+                            attempt,
+                            surface,
+                            exception.getClass().getName(),
+                            exception.getMessage(),
+                            exception
+                    );
                     throw new IllegalStateException("AI provider request failed due to I/O error.", exception);
                 }
-                logger.warn("AI provider I/O failure on attempt {} for surface {}.", attempt, surface);
+                logger.warn(
+                        "AI provider I/O failure on attempt {} for surface {}. Root exception type={}, message={}",
+                        attempt,
+                        surface,
+                        exception.getClass().getName(),
+                        exception.getMessage(),
+                        exception
+                );
                 backoff(attempt);
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
@@ -393,5 +442,21 @@ public class AiProviderClientImpl implements AiProviderClient {
 
     private String safe(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String maskApiKey(String apiKey) {
+        if (apiKey == null) {
+            return "null";
+        }
+
+        String trimmed = apiKey.trim();
+        if (trimmed.isEmpty()) {
+            return "blank(length=0)";
+        }
+
+        int length = trimmed.length();
+        String prefix = trimmed.substring(0, Math.min(4, length));
+        String suffix = trimmed.substring(Math.max(0, length - 4));
+        return "length=" + length + ", startsWith=" + prefix + ", endsWith=" + suffix;
     }
 }

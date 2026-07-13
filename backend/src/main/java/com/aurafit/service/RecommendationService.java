@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface RecommendationService {
 
-    List<SimilarCostumeRecommendationDTO> getSimilarCostumes(Long costumeId, int limit);
+    List<SimilarCostumeRecommendationDTO> getSimilarCostumes(Long costumeId, int limit, String authenticatedEmail, String sessionId);
 
     List<SimilarCostumeRecommendationDTO> getHomepageRecommendations(String authenticatedEmail, String sessionId, int limit);
 }

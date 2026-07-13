@@ -96,9 +96,13 @@ public class RecommendationServiceImpl implements RecommendationService {
     }
 
     @Override
-    public List<SimilarCostumeRecommendationDTO> getSimilarCostumes(Long costumeId, int limit) {
+    public List<SimilarCostumeRecommendationDTO> getSimilarCostumes(Long costumeId,
+                                                                    int limit,
+                                                                    String authenticatedEmail,
+                                                                    String sessionId) {
         Costume sourceCostume = costumeRepository.findByIdWithItems(costumeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Costume", "id", costumeId));
+        User authenticatedUser = resolveAuthenticatedUser(authenticatedEmail);
 
         int normalizedLimit = Math.max(1, Math.min(limit, 12));
         List<Costume> candidateCostumes = costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, costumeId);
@@ -113,7 +117,8 @@ public class RecommendationServiceImpl implements RecommendationService {
                 List<SimilarCostumeRecommendationDTO> reasoningRecommendations = buildSimilarReasoningRecommendations(
                         sourceCostume,
                         candidateCostumes,
-                        normalizedLimit
+                        normalizedLimit,
+                        buildReasoningActorKey(authenticatedUser, sessionId, "similar_products")
                 );
                 writeSimilarReasoningCache(costumeId, normalizedLimit, reasoningRecommendations);
                 return reasoningRecommendations;
@@ -124,6 +129,10 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
 
         return buildRuleBasedSimilarRecommendations(sourceCostume, candidateCostumes, normalizedLimit);
+    }
+
+    public List<SimilarCostumeRecommendationDTO> getSimilarCostumes(Long costumeId, int limit) {
+        return getSimilarCostumes(costumeId, limit, null, null);
     }
 
     private List<SimilarCostumeRecommendationDTO> buildRuleBasedSimilarRecommendations(Costume sourceCostume,
@@ -344,7 +353,8 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     private List<SimilarCostumeRecommendationDTO> buildSimilarReasoningRecommendations(Costume sourceCostume,
                                                                                        List<Costume> candidateCostumes,
-                                                                                       int normalizedLimit) {
+                                                                                       int normalizedLimit,
+                                                                                       String actorKey) {
         CandidatePool candidatePool = buildCandidatePool(candidateCostumes, true);
         if (candidatePool.candidates().isEmpty()) {
             return List.of();
@@ -359,7 +369,8 @@ public class RecommendationServiceImpl implements RecommendationService {
         );
         RecommendationReasoningOutput output = recommendationReasoningService.reason(
                 input,
-                RecommendationReasoningService.RecommendationReasoningMode.SIMILAR_PRODUCTS
+                RecommendationReasoningService.RecommendationReasoningMode.SIMILAR_PRODUCTS,
+                actorKey
         );
         if (output.clarificationNeeded() != null || output.noMatchReason() != null) {
             throw new AiReasoningParseException("Similar-products reasoning did not return usable recommendations.");
@@ -397,7 +408,8 @@ public class RecommendationServiceImpl implements RecommendationService {
         );
         RecommendationReasoningOutput output = recommendationReasoningService.reason(
                 input,
-                RecommendationReasoningService.RecommendationReasoningMode.HOMEPAGE_PERSONALIZED
+                RecommendationReasoningService.RecommendationReasoningMode.HOMEPAGE_PERSONALIZED,
+                buildReasoningActorKey(authenticatedUser, sessionId, "homepage")
         );
         if (output.clarificationNeeded() != null || output.noMatchReason() != null) {
             throw new AiReasoningParseException("Homepage reasoning requested fallback.");
@@ -849,6 +861,19 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         return userRepository.findByEmail(normalizedEmail)
                 .orElse(null);
+    }
+
+    private String buildReasoningActorKey(User authenticatedUser, String sessionId, String fallbackScope) {
+        if (authenticatedUser != null && authenticatedUser.getId() != null) {
+            return "user:" + authenticatedUser.getId();
+        }
+
+        String normalizedSessionId = normalize(sessionId);
+        if (normalizedSessionId != null) {
+            return "guest:" + normalizedSessionId;
+        }
+
+        return "surface:" + fallbackScope;
     }
 
     private Long parseLong(String value) {

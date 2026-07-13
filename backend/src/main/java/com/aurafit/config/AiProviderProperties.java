@@ -28,6 +28,13 @@ public class AiProviderProperties {
     private int providerConnectTimeoutMillis = 2000;
     private int providerReadTimeoutMillis = 6000;
     private int providerMaxRetries = 1;
+    private int reasoningConnectTimeoutMillis = 2000;
+    private int reasoningReadTimeoutMillis = 9000;
+    private int reasoningRateLimitPerMinute = 12;
+    private int reasoningCircuitFailureThresholdPercent = 30;
+    private int reasoningCircuitWindowMinutes = 5;
+    private int reasoningCircuitCooldownMinutes = 10;
+    private int reasoningCircuitMinimumCalls = 10;
 
     public boolean isEnabled() {
         return enabled;
@@ -163,6 +170,62 @@ public class AiProviderProperties {
 
     public void setProviderMaxRetries(int providerMaxRetries) {
         this.providerMaxRetries = providerMaxRetries;
+    }
+
+    public int getReasoningConnectTimeoutMillis() {
+        return reasoningConnectTimeoutMillis;
+    }
+
+    public void setReasoningConnectTimeoutMillis(int reasoningConnectTimeoutMillis) {
+        this.reasoningConnectTimeoutMillis = reasoningConnectTimeoutMillis;
+    }
+
+    public int getReasoningReadTimeoutMillis() {
+        return reasoningReadTimeoutMillis;
+    }
+
+    public void setReasoningReadTimeoutMillis(int reasoningReadTimeoutMillis) {
+        this.reasoningReadTimeoutMillis = reasoningReadTimeoutMillis;
+    }
+
+    public int getReasoningRateLimitPerMinute() {
+        return reasoningRateLimitPerMinute;
+    }
+
+    public void setReasoningRateLimitPerMinute(int reasoningRateLimitPerMinute) {
+        this.reasoningRateLimitPerMinute = reasoningRateLimitPerMinute;
+    }
+
+    public int getReasoningCircuitFailureThresholdPercent() {
+        return reasoningCircuitFailureThresholdPercent;
+    }
+
+    public void setReasoningCircuitFailureThresholdPercent(int reasoningCircuitFailureThresholdPercent) {
+        this.reasoningCircuitFailureThresholdPercent = reasoningCircuitFailureThresholdPercent;
+    }
+
+    public int getReasoningCircuitWindowMinutes() {
+        return reasoningCircuitWindowMinutes;
+    }
+
+    public void setReasoningCircuitWindowMinutes(int reasoningCircuitWindowMinutes) {
+        this.reasoningCircuitWindowMinutes = reasoningCircuitWindowMinutes;
+    }
+
+    public int getReasoningCircuitCooldownMinutes() {
+        return reasoningCircuitCooldownMinutes;
+    }
+
+    public void setReasoningCircuitCooldownMinutes(int reasoningCircuitCooldownMinutes) {
+        this.reasoningCircuitCooldownMinutes = reasoningCircuitCooldownMinutes;
+    }
+
+    public int getReasoningCircuitMinimumCalls() {
+        return reasoningCircuitMinimumCalls;
+    }
+
+    public void setReasoningCircuitMinimumCalls(int reasoningCircuitMinimumCalls) {
+        this.reasoningCircuitMinimumCalls = reasoningCircuitMinimumCalls;
     }
 
     public boolean isProviderConfigured() {

@@ -9,6 +9,7 @@ public record RecommendationAnalyticsDTO(
         Overview overview,
         List<SlotPerformance> slotPerformance,
         AiStylistPerformance aiStylist,
+        RuntimeReasoningPerformance runtimeReasoning,
         List<TopCostume> topClickedCostumes,
         List<DailyPerformance> dailyPerformance,
         String generatedAt
@@ -42,6 +43,24 @@ public record RecommendationAnalyticsDTO(
             double recommendationCtr,
             int attributedAddToCarts,
             int attributedRents
+    ) {
+    }
+
+    public record RuntimeReasoningPerformance(
+            long totalRequests,
+            long totalFallbacks,
+            long timeoutFallbacks,
+            long parseErrorFallbacks,
+            long rateLimitFallbacks,
+            long circuitOpenFallbacks,
+            long otherFallbacks,
+            long clarificationResponses,
+            long noMatchResponses,
+            boolean circuitOpen,
+            String circuitOpenUntil,
+            int recentAttemptCount,
+            int recentFailureCount,
+            double recentFailureRatePercent
     ) {
     }
 

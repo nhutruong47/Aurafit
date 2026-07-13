@@ -114,7 +114,12 @@ class AiStylistServiceImplTest {
                 aiProviderProperties,
                 aiExplanationService,
                 aiIntentUnderstandingService,
-                new RecommendationReasoningServiceImpl(aiProviderProperties, aiProviderClient, objectMapper),
+                new RecommendationReasoningServiceImpl(
+                        aiProviderProperties,
+                        aiProviderClient,
+                        objectMapper,
+                        new RecommendationReasoningGuardrailService(aiProviderProperties)
+                ),
                 userPreferenceSummaryService,
                 new AiChatContextBuilderImpl(objectMapper)
         );
@@ -577,6 +582,71 @@ class AiStylistServiceImplTest {
         assertEquals(Boolean.TRUE, metadata.get("fallback"));
         assertEquals("rule_based_fallback", metadata.get("reasoningRankingMode"));
         assertNotNull(metadata.get("reasoningCorrelationId"));
+    }
+
+    @Test
+    void sendMessage_ShouldFallbackGracefullyWhenReasoningRateLimitIsExceeded() throws Exception {
+        aiProviderProperties.setEnabled(true);
+        aiProviderProperties.setReasoningRankingEnabled(true);
+        aiProviderProperties.setReasoningRateLimitPerMinute(1);
+
+        Category events = category(64L, "Events");
+        Costume selectedCostume = costume(
+                64L,
+                "Blue Gala Dress",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Blue", "formal"),
+                ItemStatus.AVAILABLE
+        );
+        Costume candidate = costume(
+                65L,
+                "Royal Evening Dress",
+                events,
+                metadata("Elegant", "Gala", "Winter", "Blue", "formal"),
+                ItemStatus.AVAILABLE
+        );
+
+        AiStylistSession session = AiStylistSession.builder()
+                .id(64L)
+                .guestSessionId("guest-rate-limit")
+                .messages(new ArrayList<>(List.of(
+                        AiStylistMessage.builder().id(1L).role(AiStylistMessageRole.ASSISTANT).content("AI Stylist da san sang.").build()
+                )))
+                .build();
+
+        when(aiStylistSessionRepository.findByIdWithMessages(64L)).thenReturn(Optional.of(session));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE)).thenReturn(List.of(candidate, selectedCostume));
+        when(aiProviderClient.reasonRecommendations(any())).thenReturn("""
+                {
+                  "recommendations": [
+                    {
+                      "costumeId": "65",
+                      "reasoning": "Mau nay cung phong cach gala thanh lich va de mac.",
+                      "confidenceScore": 0.9,
+                      "matchedAttributes": ["style: elegant", "occasion: gala"]
+                    }
+                  ],
+                  "clarificationNeeded": null,
+                  "noMatchReason": null
+                }
+                """);
+        when(aiStylistSessionRepository.save(any(AiStylistSession.class))).thenAnswer(invocation -> persistSession(invocation.getArgument(0), 121L));
+
+        AiStylistSessionDTO firstResult = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(64L, "guest-rate-limit", 64L, null, null, "Goi y do di gala"),
+                null
+        );
+        AiStylistSessionDTO secondResult = aiStylistService.sendMessage(
+                new SendAiStylistMessageRequest(64L, "guest-rate-limit", 64L, null, null, "Goi y them lua chon"),
+                null
+        );
+
+        assertFalse(firstResult.messages().get(2).recommendations().isEmpty());
+        assertFalse(secondResult.messages().get(4).recommendations().isEmpty());
+        Map<String, Object> metadata = readAssistantMetadata(session);
+        assertEquals(Boolean.TRUE, metadata.get("fallback"));
+        assertEquals("rule_based_fallback", metadata.get("reasoningRankingMode"));
+        assertTrue(String.valueOf(metadata.get("reasoningError")).toLowerCase().contains("rate limit"));
     }
 
     @Test
