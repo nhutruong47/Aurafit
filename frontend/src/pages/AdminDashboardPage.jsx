@@ -169,7 +169,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
 
   const handleSubmitProduct = async (event) => {
     event.preventDefault();
-    await submitProduct();
+    return await submitProduct();
   };
 
   return (

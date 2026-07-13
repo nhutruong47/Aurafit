@@ -6,7 +6,8 @@ export default function SearchableSelect({
   onChange,
   name,
   placeholder = "Chọn...",
-  className = ""
+  className = "",
+  disableNonLeafOptions = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,6 +83,23 @@ export default function SearchableSelect({
               filteredOptions.map((option, idx) => {
                 const optValue = getOptionValue(option);
                 const isSelected = optValue === String(value || '');
+                const isDisabled = disableNonLeafOptions && option.isLeaf === false;
+
+                if (isDisabled) {
+                  return (
+                    <li
+                      key={optValue + '-' + idx}
+                      className="px-4 py-2 text-sm text-gray-400 cursor-not-allowed font-semibold bg-gray-50 truncate"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Do nothing, don't close
+                      }}
+                    >
+                      {getOptionLabel(option)}
+                    </li>
+                  );
+                }
+
                 return (
                   <li
                     key={optValue + '-' + idx}

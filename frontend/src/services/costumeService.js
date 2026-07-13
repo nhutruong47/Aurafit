@@ -194,3 +194,43 @@ export const updateCostume = async (id, costumeData) =>
     },
     'Không thể cập nhật sản phẩm.'
   );
+
+// --- CostumeItem Admin API ---
+
+export const fetchAdminCostumeItems = async (costumeId) =>
+  requestJson(
+    {
+      url: `/costumes/admin/${encodeURIComponent(costumeId)}/items`,
+      method: 'GET',
+    },
+    'Không thể tải danh sách phân loại kho.'
+  );
+
+export const createCostumeItem = async (costumeId, itemData) =>
+  requestJson(
+    {
+      url: `/costumes/admin/${encodeURIComponent(costumeId)}/items`,
+      method: 'POST',
+      data: itemData,
+    },
+    'Không thể tạo phân loại mới.'
+  );
+
+export const updateCostumeItem = async (costumeId, itemId, itemData) =>
+  requestJson(
+    {
+      url: `/costumes/admin/${encodeURIComponent(costumeId)}/items/${encodeURIComponent(itemId)}`,
+      method: 'PUT',
+      data: itemData,
+    },
+    'Không thể cập nhật phân loại.'
+  );
+
+export const deleteCostumeItem = async (costumeId, itemId) =>
+  requestJson(
+    {
+      url: `/costumes/admin/${encodeURIComponent(costumeId)}/items/${encodeURIComponent(itemId)}`,
+      method: 'DELETE',
+    },
+    'Không thể xóa phân loại.'
+  );

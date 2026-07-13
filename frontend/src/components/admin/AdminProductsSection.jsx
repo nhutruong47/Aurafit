@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { formatCurrency } from '../../utils/formatCurrency';
-import AdminDrawer from './AdminDrawer';
-import ImageUploadField from '../ui/ImageUploadField';
-import { AdminField, Panel } from './AdminDashboardShared';
-import Pagination from './Pagination';
+import AdminCostumeModal from './AdminCostumeModal';
 import SearchableSelect from '../ui/SearchableSelect';
+import { Panel } from './AdminDashboardShared';
+import Pagination from './Pagination';
 
 export default function AdminProductsSection({
   products,
@@ -32,27 +31,29 @@ export default function AdminProductsSection({
   totalElements,
   setPage,
 }) {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenCreate = () => {
     onResetProductForm();
-    setIsDrawerOpen(true);
+    setIsModalOpen(true);
   };
 
   const handleOpenEdit = (product) => {
     onEditProduct(product);
-    setIsDrawerOpen(true);
+    setIsModalOpen(true);
   };
 
-  const handleCloseDrawer = () => {
-    setIsDrawerOpen(false);
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
     onResetProductForm();
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await onSubmitProduct(event);
-    setTimeout(() => setIsDrawerOpen(false), 200);
+    const success = await onSubmitProduct(event);
+    if (success) {
+      setTimeout(() => setIsModalOpen(false), 300);
+    }
   };
 
   return (
@@ -119,6 +120,7 @@ export default function AdminProductsSection({
                     <th className="px-4 py-3">Tên sản phẩm</th>
                     <th className="px-4 py-3">Danh mục</th>
                     <th className="px-4 py-3">Giá thuê</th>
+                    <th className="px-4 py-3 w-[80px] text-center">Kho</th>
                     <th className="px-4 py-3">Metadata</th>
                     <th className="px-4 py-3 w-[100px]">Trạng thái</th>
                     <th className="px-4 py-3 w-[80px] text-right">Sửa</th>
@@ -126,7 +128,7 @@ export default function AdminProductsSection({
                 </thead>
                 <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
                   {filteredProducts.map((product) => (
-                    <tr key={product.id} className="transition hover:bg-[#f5f2eb]">
+                    <tr key={product.id} className="transition hover:bg-[#f5f2eb] cursor-pointer" onClick={() => handleOpenEdit(product)}>
                       <td className="px-4 py-3">
                         <div className="h-12 w-12 overflow-hidden bg-[#eeeeee]">
                           {product.imageUrl ? (
@@ -152,6 +154,15 @@ export default function AdminProductsSection({
                       <td className="px-4 py-3 text-xs font-medium">
                         {formatCurrency(product.rentalPrice || 0)}
                       </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex h-6 min-w-[24px] items-center justify-center px-1 text-[11px] font-bold ${
+                          product.availableItemCount > 0
+                            ? 'bg-green-50 text-green-700'
+                            : 'bg-[#f4f4f2] text-[#999999]'
+                        }`}>
+                          {product.availableItemCount ?? 0}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-xs text-[#5f5e5e]">
                         {product.metadata?.style && (
                           <span>
@@ -174,7 +185,7 @@ export default function AdminProductsSection({
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
-                          onClick={() => handleOpenEdit(product)}
+                          onClick={(e) => { e.stopPropagation(); handleOpenEdit(product); }}
                           className="inline-flex items-center gap-1 border border-black px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition hover:bg-black hover:text-white"
                         >
                           <span className="material-symbols-outlined text-[14px]">edit</span>
@@ -191,121 +202,21 @@ export default function AdminProductsSection({
         )}
       </Panel>
 
-      {/* Slide-out Drawer for Create/Edit form */}
-      <AdminDrawer
-        isOpen={isDrawerOpen}
-        onClose={handleCloseDrawer}
+      {/* Centered Modal for Create/Edit */}
+      <AdminCostumeModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
         title={editingProductId ? 'Sửa sản phẩm' : 'Đăng sản phẩm mới'}
-        width="max-w-xl"
-      >
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <AdminField label="Tên sản phẩm" name="name" value={productForm.name} onChange={onProductFieldChange} />
-          <AdminField label="Slug (tự động tạo)" name="slug" value={productForm.slug} onChange={onProductFieldChange} required={false} />
-          <AdminField
-            label="Mô tả"
-            name="description"
-            value={productForm.description}
-            onChange={onProductFieldChange}
-            multiline
-            required={false}
-          />
-          <ImageUploadField
-            key={editingProductId || 'new-product'}
-            label="Ảnh sản phẩm"
-            value={productForm.imageUrl}
-            onUploaded={onProductImageUploaded}
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <AdminField label="Giá thuê" name="rentalPrice" type="number" value={productForm.rentalPrice} onChange={onProductFieldChange} />
-            <AdminField label="Tiền cọc" name="depositPrice" type="number" value={productForm.depositPrice} onChange={onProductFieldChange} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
-                Danh mục
-              </span>
-              <SearchableSelect
-                name="categoryId"
-                value={productForm.categoryId}
-                onChange={onProductFieldChange}
-                options={categories}
-                placeholder="Chọn danh mục"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
-                Trạng thái hiển thị
-              </span>
-              <select
-                name="status"
-                value={productForm.status}
-                onChange={onProductFieldChange}
-                className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
-              >
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-                <option value="DISCONTINUED">DISCONTINUED</option>
-              </select>
-            </label>
-          </div>
-
-          {/* Metadata section */}
-          <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
-            <div className="mb-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Metadata gợi ý AI</p>
-              <p className="mt-1 text-xs text-[#5f5e5e]">
-                Các trường style, occasion, season, color, tags là bắt buộc cho gợi ý sản phẩm.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <AdminField label="Phong cách *" name="style" value={productForm.style} onChange={onProductFieldChange} required />
-              <AdminField label="Dịp sử dụng *" name="occasion" value={productForm.occasion} onChange={onProductFieldChange} required />
-              <AdminField label="Mùa *" name="season" value={productForm.season} onChange={onProductFieldChange} required />
-              <AdminField label="Màu sắc *" name="color" value={productForm.color} onChange={onProductFieldChange} required />
-              <AdminField label="Từ khóa *" name="tags" value={productForm.tags} onChange={onProductFieldChange} required />
-              <AdminField label="Tông da" name="skinTone" value={productForm.skinTone} onChange={onProductFieldChange} required={false} />
-              <AdminField label="Dáng người" name="bodyType" value={productForm.bodyType} onChange={onProductFieldChange} required={false} />
-              <AdminField label="Giới tính" name="gender" value={productForm.gender} onChange={onProductFieldChange} required={false} />
-              <AdminField label="Size gợi ý" name="size" value={productForm.size} onChange={onProductFieldChange} required={false} />
-              <AdminField label="Chất liệu" name="material" value={productForm.material} onChange={onProductFieldChange} required={false} />
-            </div>
-
-            <div className="mt-3">
-              <AdminField
-                label="Ghi chú form dáng"
-                name="fitNote"
-                value={productForm.fitNote}
-                onChange={onProductFieldChange}
-                multiline
-                required={false}
-              />
-            </div>
-          </div>
-
-          {productMessage && <p className="border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{productMessage}</p>}
-          {productError && <p className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{productError}</p>}
-
-          <div className="flex gap-3 pt-2">
-            <button
-              disabled={isSavingProduct}
-              className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
-            >
-              {isSavingProduct ? 'Đang lưu...' : editingProductId ? 'Cập nhật sản phẩm' : 'Đăng tải sản phẩm'}
-            </button>
-            <button
-              type="button"
-              onClick={handleCloseDrawer}
-              className="border border-[#d7d2c8] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:border-black hover:text-black"
-            >
-              Hủy
-            </button>
-          </div>
-        </form>
-      </AdminDrawer>
+        editingProductId={editingProductId}
+        productForm={productForm}
+        onProductFieldChange={onProductFieldChange}
+        onProductImageUploaded={onProductImageUploaded}
+        onSubmitProduct={handleSubmit}
+        isSavingProduct={isSavingProduct}
+        productMessage={productMessage}
+        productError={productError}
+        categories={categories}
+      />
     </>
   );
 }
