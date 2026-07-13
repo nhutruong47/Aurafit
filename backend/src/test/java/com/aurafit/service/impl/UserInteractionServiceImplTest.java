@@ -6,10 +6,11 @@ import com.aurafit.enums.InteractionEventType;
 import com.aurafit.enums.InteractionTargetType;
 import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.cache.CacheManager;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -26,8 +27,19 @@ class UserInteractionServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
-    @InjectMocks
+    @Mock
+    private CacheManager cacheManager;
+
     private UserInteractionServiceImpl userInteractionService;
+
+    @BeforeEach
+    void setUp() {
+        userInteractionService = new UserInteractionServiceImpl(
+                userInteractionEventRepository,
+                userRepository,
+                cacheManager
+        );
+    }
 
     @Test
     void track_ShouldPersistAiStylistAssistantMessageEventMetadata() {

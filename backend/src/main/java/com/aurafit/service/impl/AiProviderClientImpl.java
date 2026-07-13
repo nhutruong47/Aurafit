@@ -6,6 +6,7 @@ import com.aurafit.config.AiProviderProperties;
 import com.aurafit.dto.ai.RecommendationReasoningInput;
 import com.aurafit.service.AiChatContext;
 import com.aurafit.service.AiProviderClient;
+import com.aurafit.service.RecommendationReasoningService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -167,7 +168,11 @@ public class AiProviderClientImpl implements AiProviderClient {
             payload.put("messages", List.of(
                     Map.of(
                             "role", "system",
-                            "content", aiPromptTemplateService.composeRecommendationReasoningSystemPrompt()
+                            "content", aiPromptTemplateService.composeRecommendationReasoningSystemPrompt(
+                                    prompt.mode() == null
+                                            ? RecommendationReasoningService.RecommendationReasoningMode.AI_STYLIST_CHAT
+                                            : prompt.mode()
+                            )
                     ),
                     Map.of(
                             "role", "user",

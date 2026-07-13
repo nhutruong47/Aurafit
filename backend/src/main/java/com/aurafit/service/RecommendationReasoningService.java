@@ -5,5 +5,15 @@ import com.aurafit.dto.ai.RecommendationReasoningOutput;
 
 public interface RecommendationReasoningService {
 
-    RecommendationReasoningOutput reason(RecommendationReasoningInput input);
+    default RecommendationReasoningOutput reason(RecommendationReasoningInput input) {
+        return reason(input, RecommendationReasoningMode.AI_STYLIST_CHAT);
+    }
+
+    RecommendationReasoningOutput reason(RecommendationReasoningInput input, RecommendationReasoningMode mode);
+
+    enum RecommendationReasoningMode {
+        AI_STYLIST_CHAT,
+        SIMILAR_PRODUCTS,
+        HOMEPAGE_PERSONALIZED
+    }
 }

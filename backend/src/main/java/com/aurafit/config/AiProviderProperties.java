@@ -22,6 +22,8 @@ public class AiProviderProperties {
     // TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
     private int profileStaleMinutes = 60;
     private boolean reasoningRankingEnabled;
+    private boolean similarProductsReasoningEnabled;
+    private boolean homepageReasoningEnabled;
     private boolean llmExplanationEnabled;
     private int providerConnectTimeoutMillis = 2000;
     private int providerReadTimeoutMillis = 6000;
@@ -123,6 +125,22 @@ public class AiProviderProperties {
         this.llmExplanationEnabled = llmExplanationEnabled;
     }
 
+    public boolean isSimilarProductsReasoningEnabled() {
+        return similarProductsReasoningEnabled;
+    }
+
+    public void setSimilarProductsReasoningEnabled(boolean similarProductsReasoningEnabled) {
+        this.similarProductsReasoningEnabled = similarProductsReasoningEnabled;
+    }
+
+    public boolean isHomepageReasoningEnabled() {
+        return homepageReasoningEnabled;
+    }
+
+    public void setHomepageReasoningEnabled(boolean homepageReasoningEnabled) {
+        this.homepageReasoningEnabled = homepageReasoningEnabled;
+    }
+
     public int getProviderConnectTimeoutMillis() {
         return providerConnectTimeoutMillis;
     }
@@ -157,6 +175,14 @@ public class AiProviderProperties {
 
     public boolean isReasoningRankingAvailable() {
         return enabled && reasoningRankingEnabled && isProviderConfigured();
+    }
+
+    public boolean isSimilarProductsReasoningAvailable() {
+        return enabled && similarProductsReasoningEnabled && isProviderConfigured();
+    }
+
+    public boolean isHomepageReasoningAvailable() {
+        return enabled && homepageReasoningEnabled && isProviderConfigured();
     }
 
     private boolean hasText(String value) {

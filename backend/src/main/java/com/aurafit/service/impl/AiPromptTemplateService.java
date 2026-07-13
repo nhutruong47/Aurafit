@@ -1,6 +1,7 @@
 package com.aurafit.service.impl;
 
 import com.aurafit.service.AiProviderClient;
+import com.aurafit.service.RecommendationReasoningService;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
@@ -19,6 +20,8 @@ public class AiPromptTemplateService {
     private static final String INTENT_UNDERSTANDING_PATH = "ai/system/intent-understanding.md";
     private static final String STYLIST_SYSTEM_PATH = "ai/system/stylist-system.md";
     private static final String RECOMMENDATION_REASONING_PATH = "ai/system/recommendation-reasoning.md";
+    private static final String SIMILAR_PRODUCTS_REASONING_PATH = "ai/system/recommendation-reasoning-similar.md";
+    private static final String HOMEPAGE_REASONING_PATH = "ai/system/recommendation-reasoning-homepage.md";
     private static final String LANGUAGE_POLICY_PATH = "ai/system/language-policy.md";
     private static final String INTENT_POLICY_PATH = "ai/system/intent-policy.md";
     private static final String RECOMMENDATION_POLICY_PATH = "ai/system/recommendation-policy.md";
@@ -93,11 +96,24 @@ Do not add markdown or extra explanation outside the JSON array.
         return promptResourceService.loadPromptContent(INTENT_UNDERSTANDING_PATH, fallbackIntentUnderstandingPrompt());
     }
 
-    public String composeRecommendationReasoningSystemPrompt() {
-        return promptResourceService.loadPromptContent(
-                RECOMMENDATION_REASONING_PATH,
-                fallbackRecommendationReasoningPrompt()
-        );
+    public String composeRecommendationReasoningSystemPrompt(RecommendationReasoningService.RecommendationReasoningMode mode) {
+        RecommendationReasoningService.RecommendationReasoningMode resolvedMode =
+                mode == null ? RecommendationReasoningService.RecommendationReasoningMode.AI_STYLIST_CHAT : mode;
+
+        return switch (resolvedMode) {
+            case SIMILAR_PRODUCTS -> promptResourceService.loadPromptContent(
+                    SIMILAR_PRODUCTS_REASONING_PATH,
+                    fallbackSimilarProductsReasoningPrompt()
+            );
+            case HOMEPAGE_PERSONALIZED -> promptResourceService.loadPromptContent(
+                    HOMEPAGE_REASONING_PATH,
+                    fallbackHomepageReasoningPrompt()
+            );
+            case AI_STYLIST_CHAT -> promptResourceService.loadPromptContent(
+                    RECOMMENDATION_REASONING_PATH,
+                    fallbackRecommendationReasoningPrompt()
+            );
+        };
     }
 
     private String section(String path, String fallbackContent) {
@@ -392,6 +408,27 @@ Không được bịa costume ngoài candidatePool.
 Nếu yêu cầu mơ hồ, trả clarificationNeeded thay vì đoán bừa.
 Nếu không có candidate nào thực sự phù hợp, trả noMatchReason thay vì ép chọn 3 item.
 Output chỉ được là JSON hợp lệ theo schema đã cung cấp.
+""";
+    }
+    private String fallbackSimilarProductsReasoningPrompt() {
+        return """
+Ban la AuraFit reasoning layer cho goi y san pham tuong tu.
+Nhiem vu la chon cac costume trong candidatePool giong nhat voi costume nguon duoc mo ta trong userMessage.
+Chi duoc chon costume co trong candidatePool, khong duoc bia them san pham.
+Uu tien muc do tuong dong ve style, occasion, season, color, category, tags, material, fitNote va overall vibe.
+Khong can hoi lai nguoi dung. Neu candidatePool qua yeu hoac khong co mau thuc su tuong tu, hay dung noMatchReason thay vi doan bua.
+Output chi la JSON hop le theo schema da dinh.
+""";
+    }
+
+    private String fallbackHomepageReasoningPrompt() {
+        return """
+Ban la AuraFit reasoning layer cho homepage personalized recommendations.
+Nhiem vu la chon cac costume phu hop nhat tu candidatePool dua tren userPreferenceSummary va tin hieu trong userMessage.
+Chi duoc chon costume co trong candidatePool, khong duoc bia them san pham.
+Khong co hoi thoai de hoi lai nen khong dung clarificationNeeded. Neu tin hieu qua yeu hoac khong du tu tin de ca nhan hoa tot, hay dung noMatchReason de backend fallback ve rule-based ranking.
+Uu tien style, occasion, color, category, tags, material, fitNote, bodyType, skinTone khi userPreferenceSummary co nhac den.
+Output chi la JSON hop le theo schema da dinh.
 """;
     }
 }

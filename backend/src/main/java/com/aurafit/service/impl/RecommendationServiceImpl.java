@@ -2,6 +2,9 @@ package com.aurafit.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.aurafit.config.AiProviderProperties;
+import com.aurafit.dto.ai.RecommendationReasoningInput;
+import com.aurafit.dto.ai.RecommendationReasoningOutput;
 import com.aurafit.dto.response.CostumeMetadataDTO;
 import com.aurafit.dto.response.SimilarCostumeRecommendationDTO;
 import com.aurafit.entity.Costume;
@@ -11,12 +14,20 @@ import com.aurafit.entity.UserInteractionEvent;
 import com.aurafit.enums.CostumeStatus;
 import com.aurafit.enums.InteractionEventType;
 import com.aurafit.enums.ItemStatus;
+import com.aurafit.exception.AiReasoningParseException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.service.AiExplanationService;
+import com.aurafit.service.AiIntentUnderstandingService;
+import com.aurafit.service.RecommendationReasoningService;
 import com.aurafit.service.RecommendationService;
+import com.aurafit.service.UserPreferenceSummaryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,8 +49,10 @@ import org.springframework.cache.annotation.Cacheable;
 @Transactional(readOnly = true)
 public class RecommendationServiceImpl implements RecommendationService {
 
+    private static final Logger logger = LoggerFactory.getLogger(RecommendationServiceImpl.class);
     private static final SimilarityWeights WEIGHTS = new SimilarityWeights();
     private static final HomepageWeights HOMEPAGE_WEIGHTS = new HomepageWeights();
+    private static final String SIMILAR_REASONING_CACHE = "similar_recommendations_reasoning";
     private static final TypeReference<Map<String, Object>> METADATA_TYPE = new TypeReference<>() {
     };
 
@@ -47,18 +60,39 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final UserRepository userRepository;
     private final UserInteractionEventRepository userInteractionEventRepository;
     private final ObjectMapper objectMapper;
+    private final AiProviderProperties aiProviderProperties;
     private final AiExplanationService aiExplanationService;
+    private final RecommendationReasoningService recommendationReasoningService;
+    private final UserPreferenceSummaryService userPreferenceSummaryService;
+    private final CacheManager cacheManager;
 
     public RecommendationServiceImpl(CostumeRepository costumeRepository,
             UserRepository userRepository,
             UserInteractionEventRepository userInteractionEventRepository,
             ObjectMapper objectMapper,
-            AiExplanationService aiExplanationService) {
+            AiProviderProperties aiProviderProperties,
+            AiExplanationService aiExplanationService,
+            RecommendationReasoningService recommendationReasoningService,
+            UserPreferenceSummaryService userPreferenceSummaryService,
+            CacheManager cacheManager) {
         this.costumeRepository = costumeRepository;
         this.userRepository = userRepository;
         this.userInteractionEventRepository = userInteractionEventRepository;
         this.objectMapper = objectMapper;
+        this.aiProviderProperties = aiProviderProperties;
         this.aiExplanationService = aiExplanationService;
+        this.recommendationReasoningService = recommendationReasoningService;
+        this.userPreferenceSummaryService = userPreferenceSummaryService;
+        this.cacheManager = cacheManager;
+
+        if (aiProviderProperties != null && !aiProviderProperties.isEnabled()) {
+            if (aiProviderProperties.isSimilarProductsReasoningEnabled()) {
+                logger.warn("AI similar-products reasoning is enabled but AI_ENABLED is false. Similar recommendations will keep using rule-based ranking.");
+            }
+            if (aiProviderProperties.isHomepageReasoningEnabled()) {
+                logger.warn("AI homepage reasoning is enabled but AI_ENABLED is false. Homepage recommendations will keep using rule-based ranking.");
+            }
+        }
     }
 
     @Override
@@ -67,9 +101,35 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Costume", "id", costumeId));
 
         int normalizedLimit = Math.max(1, Math.min(limit, 12));
+        List<Costume> candidateCostumes = costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, costumeId);
 
-        List<SimilarCostumeRecommendationDTO> recommendations = costumeRepository
-                .findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, costumeId).stream()
+        if (shouldUseSimilarProductsReasoning()) {
+            List<SimilarCostumeRecommendationDTO> cachedRecommendations = readSimilarReasoningCache(costumeId, normalizedLimit);
+            if (cachedRecommendations != null) {
+                return cachedRecommendations;
+            }
+
+            try {
+                List<SimilarCostumeRecommendationDTO> reasoningRecommendations = buildSimilarReasoningRecommendations(
+                        sourceCostume,
+                        candidateCostumes,
+                        normalizedLimit
+                );
+                writeSimilarReasoningCache(costumeId, normalizedLimit, reasoningRecommendations);
+                return reasoningRecommendations;
+            } catch (Exception exception) {
+                logger.warn("Falling back to rule-based similar recommendations for costumeId {} because LLM reasoning failed: {}",
+                        costumeId, summarize(exception));
+            }
+        }
+
+        return buildRuleBasedSimilarRecommendations(sourceCostume, candidateCostumes, normalizedLimit);
+    }
+
+    private List<SimilarCostumeRecommendationDTO> buildRuleBasedSimilarRecommendations(Costume sourceCostume,
+                                                                                       List<Costume> candidateCostumes,
+                                                                                       int normalizedLimit) {
+        List<SimilarCostumeRecommendationDTO> recommendations = candidateCostumes.stream()
                 .filter(candidate -> !sourceCostume.getId().equals(candidate.getId()))
                 .map(candidate -> buildCandidate(sourceCostume, candidate))
                 .filter(candidate -> candidate.availableItemCount() > 0)
@@ -122,6 +182,30 @@ public class RecommendationServiceImpl implements RecommendationService {
                     buildHomepageFallbackRecommendations(candidates, normalizedLimit));
         }
 
+        if (shouldUseHomepageReasoning()) {
+            try {
+                List<SimilarCostumeRecommendationDTO> reasoningRecommendations = buildHomepageReasoningRecommendations(
+                        authenticatedUser,
+                        sessionId,
+                        candidates,
+                        profile,
+                        normalizedLimit
+                );
+                if (!reasoningRecommendations.isEmpty()) {
+                    return reasoningRecommendations;
+                }
+            } catch (Exception exception) {
+                logger.warn("Falling back to rule-based homepage recommendations for session {} because LLM reasoning failed: {}",
+                        sessionId, summarize(exception));
+            }
+        }
+
+        return buildRuleBasedHomepageRecommendations(candidates, profile, normalizedLimit);
+    }
+
+    private List<SimilarCostumeRecommendationDTO> buildRuleBasedHomepageRecommendations(List<Costume> candidates,
+                                                                                        PreferenceProfile profile,
+                                                                                        int normalizedLimit) {
         List<SimilarCostumeRecommendationDTO> recommendations = candidates.stream()
                 .map(candidate -> buildHomepageCandidate(candidate, profile))
                 .filter(candidate -> candidate.availableItemCount() > 0)
@@ -256,6 +340,208 @@ public class RecommendationServiceImpl implements RecommendationService {
                         candidate.score(),
                         candidate.availableItemCount()))
                 .toList();
+    }
+
+    private List<SimilarCostumeRecommendationDTO> buildSimilarReasoningRecommendations(Costume sourceCostume,
+                                                                                       List<Costume> candidateCostumes,
+                                                                                       int normalizedLimit) {
+        CandidatePool candidatePool = buildCandidatePool(candidateCostumes, true);
+        if (candidatePool.candidates().isEmpty()) {
+            return List.of();
+        }
+
+        RecommendationReasoningInput input = new RecommendationReasoningInput(
+                buildSimilarReasoningMessage(sourceCostume),
+                null,
+                candidatePool.candidates(),
+                null,
+                null
+        );
+        RecommendationReasoningOutput output = recommendationReasoningService.reason(
+                input,
+                RecommendationReasoningService.RecommendationReasoningMode.SIMILAR_PRODUCTS
+        );
+        if (output.clarificationNeeded() != null || output.noMatchReason() != null) {
+            throw new AiReasoningParseException("Similar-products reasoning did not return usable recommendations.");
+        }
+
+        return mapReasoningRecommendations(output, candidatePool, normalizedLimit);
+    }
+
+    private List<SimilarCostumeRecommendationDTO> buildHomepageReasoningRecommendations(User authenticatedUser,
+                                                                                         String sessionId,
+                                                                                         List<Costume> candidates,
+                                                                                         PreferenceProfile profile,
+                                                                                         int normalizedLimit) {
+        CandidatePool candidatePool = buildCandidatePool(candidates, true);
+        if (candidatePool.candidates().isEmpty()) {
+            return List.of();
+        }
+
+        String preferenceSummary = userPreferenceSummaryService == null
+                ? null
+                : userPreferenceSummaryService.summarize(
+                authenticatedUser != null && authenticatedUser.getId() != null ? String.valueOf(authenticatedUser.getId()) : null,
+                sessionId
+        );
+        if (preferenceSummary == null || preferenceSummary.isBlank()) {
+            throw new AiReasoningParseException("Homepage reasoning requires a non-empty preference summary.");
+        }
+
+        RecommendationReasoningInput input = new RecommendationReasoningInput(
+                buildHomepageReasoningMessage(preferenceSummary, profile),
+                null,
+                candidatePool.candidates(),
+                preferenceSummary,
+                null
+        );
+        RecommendationReasoningOutput output = recommendationReasoningService.reason(
+                input,
+                RecommendationReasoningService.RecommendationReasoningMode.HOMEPAGE_PERSONALIZED
+        );
+        if (output.clarificationNeeded() != null || output.noMatchReason() != null) {
+            throw new AiReasoningParseException("Homepage reasoning requested fallback.");
+        }
+
+        return mapReasoningRecommendations(output, candidatePool, normalizedLimit);
+    }
+
+    private CandidatePool buildCandidatePool(List<Costume> candidates, boolean availableOnly) {
+        List<RecommendationReasoningInput.CandidateCostume> rows = new ArrayList<>();
+        Map<String, Costume> costumesById = new LinkedHashMap<>();
+        Map<String, Integer> availableCountsById = new LinkedHashMap<>();
+
+        for (Costume candidate : candidates) {
+            if (candidate == null || candidate.getId() == null) {
+                continue;
+            }
+
+            int availableItemCount = countAvailableItems(candidate);
+            if (availableOnly && availableItemCount <= 0) {
+                continue;
+            }
+
+            CostumeMetadataDTO metadata = CostumeMetadataDTO.fromEntity(candidate.getMetadata());
+            String candidateId = String.valueOf(candidate.getId());
+            rows.add(new RecommendationReasoningInput.CandidateCostume(
+                    candidateId,
+                    candidate.getName(),
+                    limitText(candidate.getDescription(), 320),
+                    candidate.getRentalPrice(),
+                    candidate.getDepositPrice(),
+                    metadata != null ? metadata.style() : null,
+                    metadata != null ? metadata.occasion() : null,
+                    metadata != null ? metadata.season() : null,
+                    metadata != null ? metadata.color() : null,
+                    candidate.getCategory() != null ? candidate.getCategory().getName() : null,
+                    metadata != null && metadata.tags() != null ? List.copyOf(metadata.tags()) : List.of(),
+                    metadata != null ? metadata.skinTone() : null,
+                    metadata != null ? metadata.bodyType() : null,
+                    metadata != null ? metadata.material() : null,
+                    metadata != null ? metadata.fitNote() : null,
+                    metadata != null ? metadata.size() : null,
+                    availableItemCount
+            ));
+            costumesById.put(candidateId, candidate);
+            availableCountsById.put(candidateId, availableItemCount);
+        }
+
+        return new CandidatePool(List.copyOf(rows), costumesById, availableCountsById);
+    }
+
+    private List<SimilarCostumeRecommendationDTO> mapReasoningRecommendations(RecommendationReasoningOutput output,
+                                                                              CandidatePool candidatePool,
+                                                                              int normalizedLimit) {
+        if (output == null || output.recommendations() == null || output.recommendations().isEmpty()) {
+            throw new AiReasoningParseException("Reasoning output does not contain recommendations.");
+        }
+
+        List<SimilarCostumeRecommendationDTO> mapped = new ArrayList<>();
+        Set<String> seenIds = new LinkedHashSet<>();
+        for (RecommendationReasoningOutput.RecommendationItem item : output.recommendations()) {
+            if (item == null || item.costumeId() == null || !seenIds.add(item.costumeId())) {
+                continue;
+            }
+
+            Costume costume = candidatePool.costumesById().get(item.costumeId());
+            if (costume == null) {
+                throw new AiReasoningParseException("Reasoning output referenced costume outside candidate pool.");
+            }
+
+            mapped.add(SimilarCostumeRecommendationDTO.fromEntity(
+                    costume,
+                    item.reasoning(),
+                    (int) Math.round(item.confidenceScore() * 100.0d),
+                    candidatePool.availableCountsById().getOrDefault(item.costumeId(), 0)
+            ));
+        }
+
+        if (mapped.isEmpty()) {
+            throw new AiReasoningParseException("Reasoning output did not contain usable recommendations.");
+        }
+
+        return mapped.stream()
+                .limit(normalizedLimit)
+                .toList();
+    }
+
+    private String buildSimilarReasoningMessage(Costume sourceCostume) {
+        CostumeMetadataDTO metadata = CostumeMetadataDTO.fromEntity(sourceCostume.getMetadata());
+        return "Chọn các costume tương tự nhất với costume nguồn: "
+                + "name=" + safe(sourceCostume.getName())
+                + ", description=" + safe(limitText(sourceCostume.getDescription(), 220))
+                + ", category=" + safe(sourceCostume.getCategory() != null ? sourceCostume.getCategory().getName() : null)
+                + ", style=" + safe(metadata != null ? metadata.style() : null)
+                + ", occasion=" + safe(metadata != null ? metadata.occasion() : null)
+                + ", season=" + safe(metadata != null ? metadata.season() : null)
+                + ", color=" + safe(metadata != null ? metadata.color() : null)
+                + ", material=" + safe(metadata != null ? metadata.material() : null)
+                + ", fitNote=" + safe(metadata != null ? metadata.fitNote() : null)
+                + ", tags=" + (metadata != null && metadata.tags() != null ? String.join(", ", metadata.tags()) : "khong ro");
+    }
+
+    private String buildHomepageReasoningMessage(String preferenceSummary, PreferenceProfile profile) {
+        return "Chọn danh sách costume phù hợp cho homepage personalized. "
+                + "Ưu tiên tín hiệu trong userPreferenceSummary. "
+                + "Tóm tắt: " + safe(preferenceSummary)
+                + " | profileHasDirectSignals=" + !profile.isEmpty();
+    }
+
+    private boolean shouldUseSimilarProductsReasoning() {
+        return aiProviderProperties != null && aiProviderProperties.isSimilarProductsReasoningAvailable();
+    }
+
+    private boolean shouldUseHomepageReasoning() {
+        return aiProviderProperties != null && aiProviderProperties.isHomepageReasoningAvailable();
+    }
+
+    private List<SimilarCostumeRecommendationDTO> readSimilarReasoningCache(Long costumeId, int limit) {
+        Cache cache = cacheManager != null ? cacheManager.getCache(SIMILAR_REASONING_CACHE) : null;
+        if (cache == null) {
+            return null;
+        }
+
+        Cache.ValueWrapper wrapper = cache.get(buildSimilarReasoningCacheKey(costumeId, limit));
+        if (wrapper == null || wrapper.get() == null) {
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        List<SimilarCostumeRecommendationDTO> cached = (List<SimilarCostumeRecommendationDTO>) wrapper.get();
+        return cached;
+    }
+
+    private void writeSimilarReasoningCache(Long costumeId, int limit, List<SimilarCostumeRecommendationDTO> recommendations) {
+        Cache cache = cacheManager != null ? cacheManager.getCache(SIMILAR_REASONING_CACHE) : null;
+        if (cache == null || recommendations == null || recommendations.isEmpty()) {
+            return;
+        }
+
+        cache.put(buildSimilarReasoningCacheKey(costumeId, limit), List.copyOf(recommendations));
+    }
+
+    private String buildSimilarReasoningCacheKey(Long costumeId, int limit) {
+        return costumeId + "::" + limit;
     }
 
     private List<UserInteractionEvent> loadRecentEvents(User authenticatedUser, String sessionId) {
@@ -585,6 +871,38 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed.toLowerCase(Locale.ROOT);
+    }
+
+
+    private String limitText(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.length() <= maxLength ? trimmed : trimmed.substring(0, maxLength);
+    }
+
+    private String summarize(Exception exception) {
+        if (exception == null) {
+            return "unknown";
+        }
+
+        String message = exception.getMessage();
+        if (message == null || message.isBlank()) {
+            return exception.getClass().getSimpleName();
+        }
+        return exception.getClass().getSimpleName() + ": " + message;
+    }
+
+    private record CandidatePool(
+            List<RecommendationReasoningInput.CandidateCostume> candidates,
+            Map<String, Costume> costumesById,
+            Map<String, Integer> availableCountsById
+    ) {
     }
 
     private String safe(String value) {

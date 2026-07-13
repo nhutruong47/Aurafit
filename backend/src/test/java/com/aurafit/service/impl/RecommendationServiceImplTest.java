@@ -1,6 +1,8 @@
 package com.aurafit.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.aurafit.config.AiProviderProperties;
+import com.aurafit.dto.ai.RecommendationReasoningOutput;
 import com.aurafit.dto.response.SimilarCostumeRecommendationDTO;
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
@@ -16,11 +18,14 @@ import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.service.AiExplanationService;
+import com.aurafit.service.RecommendationReasoningService;
+import com.aurafit.service.UserPreferenceSummaryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -34,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,19 +59,36 @@ class RecommendationServiceImplTest {
     @Mock
     private AiExplanationService aiExplanationService;
 
+    @Mock
+    private RecommendationReasoningService recommendationReasoningService;
+
+    @Mock
+    private UserPreferenceSummaryService userPreferenceSummaryService;
+
+    private AiProviderProperties aiProviderProperties;
     private RecommendationServiceImpl recommendationService;
 
     @BeforeEach
     void setUp() {
+        aiProviderProperties = new AiProviderProperties();
+        aiProviderProperties.setEnabled(false);
+        aiProviderProperties.setChatModel("gemini-test");
+        aiProviderProperties.setProviderBaseUrl("https://provider.example");
+        aiProviderProperties.setProviderApiKey("secret");
         recommendationService = new RecommendationServiceImpl(
                 costumeRepository,
                 userRepository,
                 userInteractionEventRepository,
                 new ObjectMapper(),
-                aiExplanationService
+                aiProviderProperties,
+                aiExplanationService,
+                recommendationReasoningService,
+                userPreferenceSummaryService,
+                new ConcurrentMapCacheManager("similar_recommendations_reasoning")
         );
-        when(aiExplanationService.enhanceRecommendationReasons(anyString(), anyString(), anyString(), any(), any(), anyList()))
+        lenient().when(aiExplanationService.enhanceRecommendationReasons(anyString(), anyString(), anyString(), any(), any(), anyList()))
                 .thenAnswer(invocation -> invocation.getArgument(5));
+        lenient().when(userPreferenceSummaryService.summarize(any(), anyString())).thenReturn(null);
     }
 
     @Test
@@ -275,6 +300,124 @@ class RecommendationServiceImplTest {
 
         assertEquals(2, result.size());
         assertIterableEquals(List.of(2L, 3L), result.stream().map(item -> item.costume().id()).toList());
+    }
+
+    @Test
+    void getSimilarCostumes_ShouldKeepRuleBasedBehaviorWhenReasoningFlagDisabled() {
+        Category category = category(1L, "Anime");
+        Costume source = costume(
+                1L,
+                "Source",
+                category,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime"),
+                ItemStatus.AVAILABLE
+        );
+        Costume stronger = costume(
+                2L,
+                "Stronger",
+                category,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime"),
+                ItemStatus.AVAILABLE
+        );
+        Costume weaker = costume(
+                3L,
+                "Weaker",
+                category,
+                metadata("Modern", "Event", "Winter", "Blue", "minimal"),
+                ItemStatus.AVAILABLE
+        );
+
+        when(costumeRepository.findByIdWithItems(1L)).thenReturn(Optional.of(source));
+        when(costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, 1L))
+                .thenReturn(List.of(weaker, stronger));
+
+        List<SimilarCostumeRecommendationDTO> result = recommendationService.getSimilarCostumes(1L, 2);
+
+        assertIterableEquals(List.of(2L, 3L), result.stream().map(item -> item.costume().id()).toList());
+        verify(recommendationReasoningService, never()).reason(any(), any());
+    }
+
+    @Test
+    void getSimilarCostumes_ShouldFallbackToRuleBasedWhenReasoningFails() {
+        aiProviderProperties.setEnabled(true);
+        aiProviderProperties.setSimilarProductsReasoningEnabled(true);
+
+        Category category = category(1L, "Anime");
+        Costume source = costume(
+                1L,
+                "Source",
+                category,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime"),
+                ItemStatus.AVAILABLE
+        );
+        Costume stronger = costume(
+                2L,
+                "Stronger",
+                category,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime"),
+                ItemStatus.AVAILABLE
+        );
+        Costume weaker = costume(
+                3L,
+                "Weaker",
+                category,
+                metadata("Modern", "Event", "Winter", "Blue", "minimal"),
+                ItemStatus.AVAILABLE
+        );
+
+        when(costumeRepository.findByIdWithItems(1L)).thenReturn(Optional.of(source));
+        when(costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, 1L))
+                .thenReturn(List.of(weaker, stronger));
+        when(recommendationReasoningService.reason(any(), any()))
+                .thenThrow(new IllegalStateException("AI provider request timed out."));
+
+        List<SimilarCostumeRecommendationDTO> result = recommendationService.getSimilarCostumes(1L, 2);
+
+        assertIterableEquals(List.of(2L, 3L), result.stream().map(item -> item.costume().id()).toList());
+    }
+
+    @Test
+    void getSimilarCostumes_ShouldCacheReasoningResultWhenFlagEnabled() {
+        aiProviderProperties.setEnabled(true);
+        aiProviderProperties.setSimilarProductsReasoningEnabled(true);
+
+        Category category = category(1L, "Anime");
+        Costume source = costume(
+                1L,
+                "Source",
+                category,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime"),
+                ItemStatus.AVAILABLE
+        );
+        Costume candidate = costume(
+                2L,
+                "Candidate",
+                category,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime"),
+                ItemStatus.AVAILABLE
+        );
+
+        when(costumeRepository.findByIdWithItems(1L)).thenReturn(Optional.of(source));
+        when(costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, 1L))
+                .thenReturn(List.of(candidate));
+        when(recommendationReasoningService.reason(any(), any()))
+                .thenReturn(new RecommendationReasoningOutput(
+                        List.of(new RecommendationReasoningOutput.RecommendationItem(
+                                "2",
+                                "Cùng phong cách và cùng bối cảnh sử dụng.",
+                                0.91,
+                                List.of("style: heroic", "occasion: convention")
+                        )),
+                        null,
+                        null
+                ));
+
+        List<SimilarCostumeRecommendationDTO> first = recommendationService.getSimilarCostumes(1L, 2);
+        List<SimilarCostumeRecommendationDTO> second = recommendationService.getSimilarCostumes(1L, 2);
+
+        assertEquals(2L, first.get(0).costume().id());
+        assertEquals(2L, second.get(0).costume().id());
+        verify(recommendationReasoningService).reason(any(), any());
     }
 
     @Test
@@ -539,6 +682,186 @@ class RecommendationServiceImplTest {
 
         assertEquals(2, result.size());
         assertIterableEquals(List.of(31L, 32L), result.stream().map(item -> item.costume().id()).toList());
+    }
+
+    @Test
+    void getHomepageRecommendations_ShouldKeepRuleBasedBehaviorWhenReasoningFlagDisabled() {
+        Category anime = category(1L, "Anime");
+        User user = user(10L, "customer@aurafit.com");
+
+        Costume viewedCostume = costume(
+                1L,
+                "Viewed Costume",
+                anime,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime", "hero"),
+                ItemStatus.AVAILABLE
+        );
+        Costume strongMetadataMatch = costume(
+                2L,
+                "Strong Match",
+                anime,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime", "hero"),
+                ItemStatus.AVAILABLE
+        );
+        Costume weakerMatch = costume(
+                3L,
+                "Weaker Match",
+                anime,
+                metadata("Heroic", "Photoshoot", "Winter", "Blue", "anime"),
+                ItemStatus.AVAILABLE
+        );
+
+        UserInteractionEvent recentViewEvent = interactionEvent(
+                100L,
+                user,
+                "session-auth",
+                InteractionEventType.VIEW_PRODUCT,
+                InteractionTargetType.COSTUME,
+                "1",
+                null,
+                "{\"style\":\"Heroic\",\"occasion\":\"Convention\",\"season\":\"Summer\",\"category\":\"Anime\",\"color\":\"Red\",\"tags\":[\"anime\",\"hero\"]}",
+                LocalDateTime.now()
+        );
+
+        when(userRepository.findByEmail("customer@aurafit.com")).thenReturn(Optional.of(user));
+        when(userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(10L))
+                .thenReturn(List.of(recentViewEvent));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(weakerMatch, strongMetadataMatch, viewedCostume));
+
+        List<SimilarCostumeRecommendationDTO> result = recommendationService.getHomepageRecommendations(
+                "customer@aurafit.com",
+                null,
+                3
+        );
+
+        assertIterableEquals(List.of(1L, 2L, 3L), result.stream().map(item -> item.costume().id()).toList());
+        verify(recommendationReasoningService, never()).reason(any(), any());
+    }
+
+    @Test
+    void getHomepageRecommendations_ShouldFallbackToRuleBasedWhenReasoningFails() {
+        aiProviderProperties.setEnabled(true);
+        aiProviderProperties.setHomepageReasoningEnabled(true);
+
+        Category anime = category(1L, "Anime");
+        User user = user(10L, "customer@aurafit.com");
+
+        Costume viewedCostume = costume(
+                1L,
+                "Viewed Costume",
+                anime,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime", "hero"),
+                ItemStatus.AVAILABLE
+        );
+        Costume strongMetadataMatch = costume(
+                2L,
+                "Strong Match",
+                anime,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime", "hero"),
+                ItemStatus.AVAILABLE
+        );
+        Costume weakerMatch = costume(
+                3L,
+                "Weaker Match",
+                anime,
+                metadata("Heroic", "Photoshoot", "Winter", "Blue", "anime"),
+                ItemStatus.AVAILABLE
+        );
+
+        UserInteractionEvent recentViewEvent = interactionEvent(
+                100L,
+                user,
+                "session-auth",
+                InteractionEventType.VIEW_PRODUCT,
+                InteractionTargetType.COSTUME,
+                "1",
+                null,
+                "{\"style\":\"Heroic\",\"occasion\":\"Convention\",\"season\":\"Summer\",\"category\":\"Anime\",\"color\":\"Red\",\"tags\":[\"anime\",\"hero\"]}",
+                LocalDateTime.now()
+        );
+
+        when(userRepository.findByEmail("customer@aurafit.com")).thenReturn(Optional.of(user));
+        when(userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(10L))
+                .thenReturn(List.of(recentViewEvent));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(weakerMatch, strongMetadataMatch, viewedCostume));
+        when(userPreferenceSummaryService.summarize("10", null))
+                .thenReturn("User thường quan tâm đồ phong cách Heroic, dịp Convention, màu Red.");
+        when(recommendationReasoningService.reason(any(), any()))
+                .thenThrow(new IllegalStateException("AI provider request timed out."));
+
+        List<SimilarCostumeRecommendationDTO> result = recommendationService.getHomepageRecommendations(
+                "customer@aurafit.com",
+                null,
+                3
+        );
+
+        assertIterableEquals(List.of(1L, 2L, 3L), result.stream().map(item -> item.costume().id()).toList());
+    }
+
+    @Test
+    void getHomepageRecommendations_ShouldUseReasoningWhenFlagEnabled() {
+        aiProviderProperties.setEnabled(true);
+        aiProviderProperties.setHomepageReasoningEnabled(true);
+
+        Category anime = category(1L, "Anime");
+        User user = user(10L, "customer@aurafit.com");
+
+        Costume viewedCostume = costume(
+                1L,
+                "Viewed Costume",
+                anime,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime", "hero"),
+                ItemStatus.AVAILABLE
+        );
+        Costume strongMetadataMatch = costume(
+                2L,
+                "Strong Match",
+                anime,
+                metadata("Heroic", "Convention", "Summer", "Red", "anime", "hero"),
+                ItemStatus.AVAILABLE
+        );
+
+        UserInteractionEvent recentViewEvent = interactionEvent(
+                100L,
+                user,
+                "session-auth",
+                InteractionEventType.VIEW_PRODUCT,
+                InteractionTargetType.COSTUME,
+                "1",
+                null,
+                "{\"style\":\"Heroic\",\"occasion\":\"Convention\",\"season\":\"Summer\",\"category\":\"Anime\",\"color\":\"Red\",\"tags\":[\"anime\",\"hero\"]}",
+                LocalDateTime.now()
+        );
+
+        when(userRepository.findByEmail("customer@aurafit.com")).thenReturn(Optional.of(user));
+        when(userInteractionEventRepository.findTop60ByUser_IdOrderByCreatedAtDesc(10L))
+                .thenReturn(List.of(recentViewEvent));
+        when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(strongMetadataMatch, viewedCostume));
+        when(userPreferenceSummaryService.summarize("10", null))
+                .thenReturn("User thường quan tâm đồ phong cách Heroic, dịp Convention, màu Red.");
+        when(recommendationReasoningService.reason(any(), any()))
+                .thenReturn(new RecommendationReasoningOutput(
+                        List.of(new RecommendationReasoningOutput.RecommendationItem(
+                                "2",
+                                "Phù hợp vì cùng vibe heroic convention và tông màu nổi bật.",
+                                0.88,
+                                List.of("style: heroic", "occasion: convention")
+                        )),
+                        null,
+                        null
+                ));
+
+        List<SimilarCostumeRecommendationDTO> result = recommendationService.getHomepageRecommendations(
+                "customer@aurafit.com",
+                null,
+                2
+        );
+
+        assertEquals(2L, result.get(0).costume().id());
+        assertEquals("Phù hợp vì cùng vibe heroic convention và tông màu nổi bật.", result.get(0).reason());
     }
 
     private Category category(Long id, String name) {

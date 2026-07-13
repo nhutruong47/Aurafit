@@ -30,6 +30,7 @@ import com.aurafit.service.AiChatContext;
 import com.aurafit.service.AiExplanationService;
 import com.aurafit.service.AiIntentUnderstandingService;
 import com.aurafit.service.AiProviderClient;
+import com.aurafit.service.UserPreferenceSummaryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,6 +88,9 @@ class AiStylistServiceImplTest {
     @Mock
     private AiProviderClient aiProviderClient;
 
+    @Mock
+    private UserPreferenceSummaryService userPreferenceSummaryService;
+
     private ObjectMapper objectMapper;
     private AiProviderProperties aiProviderProperties;
     private AiStylistServiceImpl aiStylistService;
@@ -111,6 +115,7 @@ class AiStylistServiceImplTest {
                 aiExplanationService,
                 aiIntentUnderstandingService,
                 new RecommendationReasoningServiceImpl(aiProviderProperties, aiProviderClient, objectMapper),
+                userPreferenceSummaryService,
                 new AiChatContextBuilderImpl(objectMapper)
         );
         lenient().when(userInteractionEventRepository.findTop60BySessionIdOrderByCreatedAtDesc(anyString()))
@@ -125,6 +130,7 @@ class AiStylistServiceImplTest {
                 .thenAnswer(invocation -> detectIntentFromContext(invocation.getArgument(0)));
         lenient().when(aiIntentUnderstandingService.understandIntent(anyString()))
                 .thenAnswer(invocation -> detectIntent(invocation.getArgument(0)));
+        lenient().when(userPreferenceSummaryService.summarize(any(), any())).thenReturn(null);
     }
 
     @Test
@@ -365,6 +371,8 @@ class AiStylistServiceImplTest {
         when(aiStylistSessionRepository.findByIdWithMessages(31L)).thenReturn(Optional.of(session));
         when(costumeRepository.findActiveWithItems(CostumeStatus.ACTIVE))
                 .thenReturn(List.of(secondPick, llmTopPick, selectedCostume));
+        when(userPreferenceSummaryService.summarize(null, "guest-llm"))
+                .thenReturn("User thường quan tâm đồ phong cách Elegant, dịp Gala, màu Black. Gần đây đã quan tâm: Black Gala Dress.");
         when(aiProviderClient.reasonRecommendations(any())).thenReturn("""
                 {
                   "recommendations": [
@@ -410,6 +418,7 @@ class AiStylistServiceImplTest {
         assertEquals("hourglass", capturedCandidate.bodyType());
         assertEquals("satin", capturedCandidate.material());
         assertEquals("tôn eo và vai", capturedCandidate.fitNote());
+        assertTrue(sentInput.userPreferenceSummary().contains("Black Gala Dress"));
 
         Map<String, Object> metadata = readAssistantMetadata(session);
         assertEquals("llm", metadata.get("reasoningRankingMode"));
@@ -456,7 +465,6 @@ class AiStylistServiceImplTest {
 
         assertEquals("Bạn muốn mặc cho dịp nào và ưu tiên màu gì để mình lọc chính xác hơn?", result.messages().get(2).content());
         assertTrue(result.messages().get(2).recommendations().isEmpty());
-
         Map<String, Object> metadata = readAssistantMetadata(session);
         assertEquals(Boolean.TRUE, metadata.get("awaitingClarification"));
         assertEquals("Bạn muốn mặc cho dịp nào và ưu tiên màu gì để mình lọc chính xác hơn?", metadata.get("clarificationNeeded"));
@@ -501,7 +509,6 @@ class AiStylistServiceImplTest {
 
         assertEquals("Hiện pool còn lại chưa có mẫu nào đúng phong cách vest công sở mà bạn đang cần.", result.messages().get(2).content());
         assertTrue(result.messages().get(2).recommendations().isEmpty());
-
         Map<String, Object> metadata = readAssistantMetadata(session);
         assertEquals("Hiện pool còn lại chưa có mẫu nào đúng phong cách vest công sở mà bạn đang cần.", metadata.get("noMatchReason"));
         assertEquals("llm", metadata.get("reasoningRankingMode"));
@@ -566,7 +573,6 @@ class AiStylistServiceImplTest {
         assertTrue(result.messages().get(2).content().contains("2026-07-10"));
         assertTrue(result.messages().get(2).recommendations().stream().noneMatch(item -> item.costume().id().equals(63L)));
         assertTrue(result.messages().get(2).recommendations().stream().anyMatch(item -> item.costume().id().equals(62L)));
-
         Map<String, Object> metadata = readAssistantMetadata(session);
         assertEquals(Boolean.TRUE, metadata.get("fallback"));
         assertEquals("rule_based_fallback", metadata.get("reasoningRankingMode"));
@@ -632,7 +638,6 @@ class AiStylistServiceImplTest {
         assertTrue(result.messages().get(2).recommendations().stream().noneMatch(item -> item.costume().id().equals(73L)));
         assertTrue(result.messages().get(2).recommendations().stream().anyMatch(item -> item.costume().id().equals(72L)));
         verify(aiProviderClient, never()).reasonRecommendations(any());
-
         Map<String, Object> metadata = readAssistantMetadata(session);
         assertFalse(metadata.containsKey("fallback"));
     }
@@ -1695,3 +1700,8 @@ class AiStylistServiceImplTest {
         );
     }
 }
+
+
+
+
+

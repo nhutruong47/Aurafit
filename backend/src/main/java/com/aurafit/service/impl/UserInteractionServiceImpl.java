@@ -6,9 +6,14 @@ import com.aurafit.entity.UserInteractionEvent;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.UserInteractionEventRepository;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.UserPreferenceSummaryService;
 import com.aurafit.service.UserInteractionService;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @Transactional
@@ -16,11 +21,14 @@ public class UserInteractionServiceImpl implements UserInteractionService {
 
     private final UserInteractionEventRepository userInteractionEventRepository;
     private final UserRepository userRepository;
+    private final CacheManager cacheManager;
 
     public UserInteractionServiceImpl(UserInteractionEventRepository userInteractionEventRepository,
-                                      UserRepository userRepository) {
+                                      UserRepository userRepository,
+                                      CacheManager cacheManager) {
         this.userInteractionEventRepository = userInteractionEventRepository;
         this.userRepository = userRepository;
+        this.cacheManager = cacheManager;
     }
 
     @Override
@@ -38,6 +46,12 @@ public class UserInteractionServiceImpl implements UserInteractionService {
                 .build();
 
         userInteractionEventRepository.save(event);
+        if (shouldInvalidatePreferenceSummary(event.getEventType())) {
+            schedulePreferenceSummaryEviction(
+                    event.getUser() != null && event.getUser().getId() != null ? String.valueOf(event.getUser().getId()) : null,
+                    event.getSessionId()
+            );
+        }
     }
 
     @Override
@@ -47,7 +61,47 @@ public class UserInteractionServiceImpl implements UserInteractionService {
             throw new ResourceNotFoundException("Authenticated user not found.");
         }
 
-        return userInteractionEventRepository.attachSessionToUser(sessionId.trim(), user);
+        String normalizedSessionId = sessionId.trim();
+        int updatedCount = userInteractionEventRepository.attachSessionToUser(normalizedSessionId, user);
+        schedulePreferenceSummaryEviction(null, normalizedSessionId);
+        schedulePreferenceSummaryEviction(user.getId() != null ? String.valueOf(user.getId()) : null, normalizedSessionId);
+        return updatedCount;
+    }
+
+    private boolean shouldInvalidatePreferenceSummary(com.aurafit.enums.InteractionEventType eventType) {
+        return switch (eventType) {
+            case VIEW_PRODUCT, SEARCH, ADD_TO_CART, RENT, CHAT_QUERY, RECOMMENDATION_CLICK, WISHLIST_ADD -> true;
+            default -> false;
+        };
+    }
+
+    private void schedulePreferenceSummaryEviction(String userId, String sessionId) {
+        String normalizedUserId = normalizeNullable(userId);
+        String normalizedSessionId = normalizeNullable(sessionId);
+        if (normalizedUserId == null && normalizedSessionId == null) {
+            return;
+        }
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    evictPreferenceSummary(normalizedUserId, normalizedSessionId);
+                }
+            });
+            return;
+        }
+
+        evictPreferenceSummary(normalizedUserId, normalizedSessionId);
+    }
+
+    private void evictPreferenceSummary(String userId, String sessionId) {
+        Cache cache = cacheManager != null ? cacheManager.getCache(UserPreferenceSummaryService.CACHE_NAME) : null;
+        if (cache == null) {
+            return;
+        }
+
+        cache.evictIfPresent(buildCacheKey(userId, sessionId));
     }
 
     private User resolveAuthenticatedUser(String authenticatedEmail) {
@@ -66,5 +120,9 @@ public class UserInteractionServiceImpl implements UserInteractionService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String buildCacheKey(String userId, String sessionId) {
+        return (userId == null ? "" : userId) + "::" + (sessionId == null ? "" : sessionId);
     }
 }

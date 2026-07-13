@@ -18,7 +18,8 @@ public interface AiProviderClient {
     }
 
     record RecommendationReasoningPrompt(
-            RecommendationReasoningInput input
+            RecommendationReasoningInput input,
+            RecommendationReasoningService.RecommendationReasoningMode mode
     ) {
     }
 

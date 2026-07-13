@@ -63,6 +63,8 @@ ai:
   # TODO: reserved for LLM reasoning phase - not yet wired to runtime logic.
   profile-stale-minutes: ${AI_PROFILE_STALE_MINUTES:60}
   reasoning-ranking-enabled: ${AI_REASONING_RANKING_ENABLED:false}
+  similar-products-reasoning-enabled: ${AI_SIMILAR_PRODUCTS_REASONING_ENABLED:false}
+  homepage-reasoning-enabled: ${AI_HOMEPAGE_REASONING_ENABLED:false}
   llm-explanation-enabled: ${AI_LLM_EXPLANATION_ENABLED:false}
   provider-connect-timeout-millis: ${AI_PROVIDER_CONNECT_TIMEOUT_MS:2000}
   provider-read-timeout-millis: ${AI_PROVIDER_READ_TIMEOUT_MS:6000}

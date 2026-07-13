@@ -36,8 +36,9 @@ import com.aurafit.service.AiChatContext;
 import com.aurafit.service.AiChatContextBuilder;
 import com.aurafit.service.AiExplanationService;
 import com.aurafit.service.AiIntentUnderstandingService;
-import com.aurafit.service.RecommendationReasoningService;
 import com.aurafit.service.AiStylistService;
+import com.aurafit.service.RecommendationReasoningService;
+import com.aurafit.service.UserPreferenceSummaryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -169,6 +170,7 @@ public class AiStylistServiceImpl implements AiStylistService {
     private final AiExplanationService aiExplanationService;
     private final AiIntentUnderstandingService aiIntentUnderstandingService;
     private final RecommendationReasoningService recommendationReasoningService;
+    private final UserPreferenceSummaryService userPreferenceSummaryService;
     private final AiChatContextBuilder aiChatContextBuilder;
 
     public AiStylistServiceImpl(AiStylistSessionRepository aiStylistSessionRepository,
@@ -181,6 +183,7 @@ public class AiStylistServiceImpl implements AiStylistService {
                                 AiExplanationService aiExplanationService,
                                 AiIntentUnderstandingService aiIntentUnderstandingService,
                                 RecommendationReasoningService recommendationReasoningService,
+                                UserPreferenceSummaryService userPreferenceSummaryService,
                                 AiChatContextBuilder aiChatContextBuilder) {
         this.aiStylistSessionRepository = aiStylistSessionRepository;
         this.costumeRepository = costumeRepository;
@@ -192,6 +195,7 @@ public class AiStylistServiceImpl implements AiStylistService {
         this.aiExplanationService = aiExplanationService;
         this.aiIntentUnderstandingService = aiIntentUnderstandingService;
         this.recommendationReasoningService = recommendationReasoningService;
+        this.userPreferenceSummaryService = userPreferenceSummaryService;
         this.aiChatContextBuilder = aiChatContextBuilder;
 
         if (aiProviderProperties.isReasoningRankingEnabled() && !aiProviderProperties.isEnabled()) {
@@ -308,7 +312,8 @@ public class AiStylistServiceImpl implements AiStylistService {
                                 normalizedMessage,
                                 understoodIntent,
                                 reasoningCandidatePool,
-                                preferenceProfile,
+                                session,
+                                request.guestSessionId(),
                                 availabilityWindow
                         )
                 );
@@ -568,13 +573,14 @@ public class AiStylistServiceImpl implements AiStylistService {
     private RecommendationReasoningInput buildRecommendationReasoningInput(String userMessage,
                                                                            AiIntentUnderstandingService.IntentUnderstandingResult understoodIntent,
                                                                            ReasoningCandidatePool reasoningCandidatePool,
-                                                                           StylistPreferenceProfile preferenceProfile,
+                                                                           AiStylistSession session,
+                                                                           String fallbackGuestSessionId,
                                                                            AvailabilityWindow availabilityWindow) {
         return new RecommendationReasoningInput(
                 userMessage,
                 understoodIntent,
                 reasoningCandidatePool.candidates(),
-                buildUserPreferenceSummary(preferenceProfile),
+                buildUserPreferenceSummary(session, fallbackGuestSessionId),
                 availabilityWindow == null
                         ? null
                         : new RecommendationReasoningInput.RentalDateRange(
@@ -659,57 +665,21 @@ public class AiStylistServiceImpl implements AiStylistService {
         return recommendations;
     }
 
-    private String buildUserPreferenceSummary(StylistPreferenceProfile preferenceProfile) {
-        if (preferenceProfile == null || preferenceProfile.isEmpty()) {
+    private String buildUserPreferenceSummary(AiStylistSession session, String fallbackGuestSessionId) {
+        if (userPreferenceSummaryService == null) {
             return null;
         }
 
-        List<String> parts = new ArrayList<>();
-        String topStyle = topPreference(preferenceProfile.styles());
-        String topOccasion = topPreference(preferenceProfile.occasions());
-        String topColor = topPreference(preferenceProfile.colors());
-        List<String> topTags = topPreferences(preferenceProfile.tags(), 3);
-
-        if (topStyle != null) {
-            parts.add("thường quan tâm phong cách " + topStyle);
-        }
-        if (topOccasion != null) {
-            parts.add("hay xem đồ cho dịp " + topOccasion);
-        }
-        if (topColor != null) {
-            parts.add("ưu tiên màu " + topColor);
-        }
-        if (!topTags.isEmpty()) {
-            parts.add("hay tương tác với tag " + String.join(", ", topTags));
+        String userId = session != null && session.getUser() != null && session.getUser().getId() != null
+                ? String.valueOf(session.getUser().getId())
+                : null;
+        String guestSessionId = normalize(session != null ? session.getGuestSessionId() : null);
+        if (guestSessionId == null) {
+            guestSessionId = normalize(fallbackGuestSessionId);
         }
 
-        return parts.isEmpty() ? null : "Tín hiệu hành vi gần đây: user " + String.join("; ", parts) + ".";
-    }
-
-    private String topPreference(Map<String, Integer> values) {
-        if (values == null || values.isEmpty()) {
-            return null;
-        }
-
-        return values.entrySet().stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()
-                        .thenComparing(Map.Entry.comparingByKey()))
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private List<String> topPreferences(Map<String, Integer> values, int limit) {
-        if (values == null || values.isEmpty() || limit <= 0) {
-            return List.of();
-        }
-
-        return values.entrySet().stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()
-                        .thenComparing(Map.Entry.comparingByKey()))
-                .limit(limit)
-                .map(Map.Entry::getKey)
-                .toList();
+        String summary = userPreferenceSummaryService.summarize(userId, guestSessionId);
+        return summary == null || summary.isBlank() ? null : summary;
     }
 
     private StylistCandidate buildStylistCandidate(Costume candidate,
@@ -2740,3 +2710,4 @@ public class AiStylistServiceImpl implements AiStylistService {
         }
     }
 }
+

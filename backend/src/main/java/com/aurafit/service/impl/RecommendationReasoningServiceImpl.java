@@ -37,7 +37,8 @@ public class RecommendationReasoningServiceImpl implements RecommendationReasoni
     }
 
     @Override
-    public RecommendationReasoningOutput reason(RecommendationReasoningInput input) {
+    public RecommendationReasoningOutput reason(RecommendationReasoningInput input,
+                                                RecommendationReasoningMode mode) {
         if (input == null || input.userMessage() == null || input.userMessage().isBlank()) {
             throw new IllegalArgumentException("userMessage is required for recommendation reasoning.");
         }
@@ -46,7 +47,10 @@ public class RecommendationReasoningServiceImpl implements RecommendationReasoni
         }
 
         String rawJson = aiProviderClient.reasonRecommendations(
-                new AiProviderClient.RecommendationReasoningPrompt(input)
+                new AiProviderClient.RecommendationReasoningPrompt(
+                        input,
+                        mode == null ? RecommendationReasoningMode.AI_STYLIST_CHAT : mode
+                )
         );
         return parseOutput(rawJson);
     }
