@@ -173,7 +173,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-56px)] bg-[#f4f4f2] text-[#171717]">
+    <div className="flex min-h-[calc(100dvh-56px)] flex-col bg-[#f4f4f2] text-[#171717]">
       {/* Sub-header with stats */}
       <div className="border-b border-[#d7d2c8] bg-[#fdfdfb]">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:justify-between md:px-8">
@@ -188,9 +188,9 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-0 md:grid-cols-[220px_1fr]">
+      <div className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 items-start gap-0 md:grid-cols-[220px_1fr]">
         {/* Sidebar navigation with hash links */}
-        <aside className="sticky top-14 h-fit border-r border-[#d7d2c8] bg-[#111111] p-2 text-white md:min-h-[calc(100dvh-56px-77px)]">
+        <aside className="sticky top-14 z-20 h-auto w-full border-r border-[#d7d2c8] bg-[#111111] p-2 text-white md:h-[calc(100vh-56px)] md:overflow-y-auto">
           {tabs.map(([id, label, icon]) => (
             <a
               key={id}
@@ -210,7 +210,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
         </aside>
 
         {/* Main content area — 100% width */}
-        <main className="min-w-0 p-5 md:p-8">
+        <main className="min-w-0 flex-1 p-5 md:p-8">
           {activeTab === 'overview' && isAdmin && <AdminOverviewSection metricCards={metricCards} />}
           {activeTab === 'products' && (
             <AdminProductsSection
