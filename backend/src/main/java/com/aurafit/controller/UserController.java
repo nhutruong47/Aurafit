@@ -83,7 +83,7 @@ public class UserController {
     ) {
         Long userId = extractUserId(principal);
         userService.changePassword(userId, request);
-        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công.", null));
+        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công.", org.springframework.http.HttpStatus.OK));
     }
 
     // -------------------------------------------------------------------------
