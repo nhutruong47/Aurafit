@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.aurafit.config.AiProviderProperties;
 import com.aurafit.dto.ai.RecommendationReasoningInput;
 import com.aurafit.dto.ai.RecommendationReasoningOutput;
+import com.aurafit.exception.AiReasoningGuardrailException;
 import com.aurafit.exception.AiReasoningParseException;
 import com.aurafit.service.AiProviderClient;
 import com.aurafit.service.RecommendationReasoningService;
@@ -23,13 +24,16 @@ public class RecommendationReasoningServiceImpl implements RecommendationReasoni
     private final AiProviderProperties properties;
     private final AiProviderClient aiProviderClient;
     private final ObjectMapper objectMapper;
+    private final RecommendationReasoningGuardrailService guardrailService;
 
     public RecommendationReasoningServiceImpl(AiProviderProperties properties,
                                               AiProviderClient aiProviderClient,
-                                              ObjectMapper objectMapper) {
+                                              ObjectMapper objectMapper,
+                                              RecommendationReasoningGuardrailService guardrailService) {
         this.properties = properties;
         this.aiProviderClient = aiProviderClient;
         this.objectMapper = objectMapper;
+        this.guardrailService = guardrailService;
 
         if (!properties.isEnabled() && properties.isReasoningRankingEnabled()) {
             logger.warn("AI reasoning ranking is enabled but AI_ENABLED is false. Recommendation reasoning will stay disabled.");
@@ -38,7 +42,8 @@ public class RecommendationReasoningServiceImpl implements RecommendationReasoni
 
     @Override
     public RecommendationReasoningOutput reason(RecommendationReasoningInput input,
-                                                RecommendationReasoningMode mode) {
+                                                RecommendationReasoningMode mode,
+                                                String actorKey) {
         if (input == null || input.userMessage() == null || input.userMessage().isBlank()) {
             throw new IllegalArgumentException("userMessage is required for recommendation reasoning.");
         }
@@ -46,13 +51,46 @@ public class RecommendationReasoningServiceImpl implements RecommendationReasoni
             throw new IllegalArgumentException("candidatePool is required for recommendation reasoning.");
         }
 
-        String rawJson = aiProviderClient.reasonRecommendations(
-                new AiProviderClient.RecommendationReasoningPrompt(
-                        input,
-                        mode == null ? RecommendationReasoningMode.AI_STYLIST_CHAT : mode
-                )
-        );
-        return parseOutput(rawJson);
+        RecommendationReasoningGuardrailService.GuardrailDecision decision = guardrailService.beforeRequest(actorKey);
+        if (!decision.allowed()) {
+            throw new AiReasoningGuardrailException(decision.fallbackReason(), decision.message());
+        }
+
+        try {
+            String rawJson = aiProviderClient.reasonRecommendations(
+                    new AiProviderClient.RecommendationReasoningPrompt(
+                            input,
+                            mode == null ? RecommendationReasoningMode.AI_STYLIST_CHAT : mode
+                    )
+            );
+            RecommendationReasoningOutput output = parseOutput(rawJson);
+            if (output.clarificationNeeded() != null) {
+                guardrailService.recordClarification();
+            } else if (output.noMatchReason() != null) {
+                guardrailService.recordNoMatch();
+            } else {
+                guardrailService.recordSuccess();
+            }
+            return output;
+        } catch (AiReasoningGuardrailException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            guardrailService.recordFailure(classifyFallbackReason(exception));
+            throw exception;
+        }
+    }
+
+    private RecommendationReasoningGuardrailService.FallbackReason classifyFallbackReason(Exception exception) {
+        if (exception instanceof AiReasoningParseException) {
+            return RecommendationReasoningGuardrailService.FallbackReason.PARSE_ERROR;
+        }
+
+        String message = exception.getMessage();
+        if (message != null && message.toLowerCase().contains("timed out")) {
+            return RecommendationReasoningGuardrailService.FallbackReason.TIMEOUT;
+        }
+
+        return RecommendationReasoningGuardrailService.FallbackReason.OTHER;
     }
 
     private RecommendationReasoningOutput parseOutput(String rawJson) {

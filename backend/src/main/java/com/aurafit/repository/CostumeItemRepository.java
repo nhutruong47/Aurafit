@@ -19,6 +19,12 @@ public interface CostumeItemRepository extends JpaRepository<CostumeItem, Long> 
     List<CostumeItem> findByCostumeIdAndStatus(Long costumeId, ItemStatus status);
 
     /**
+     * Finds all physical items for a costume regardless of status.
+     * Used by admin to manage inventory.
+     */
+    List<CostumeItem> findByCostumeId(Long costumeId);
+
+    /**
      * Fetches a CostumeItem with its parent Costume eagerly loaded.
      * Avoids an extra query when we need the rental price from the Costume.
      */

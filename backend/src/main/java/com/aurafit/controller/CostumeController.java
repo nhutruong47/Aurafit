@@ -1,6 +1,8 @@
 package com.aurafit.controller;
 
 import com.aurafit.dto.request.CostumeCreateRequest;
+import com.aurafit.dto.request.CostumeItemCreateRequest;
+import com.aurafit.dto.request.CostumeItemUpdateRequest;
 import com.aurafit.dto.request.CostumeUpdateRequest;
 import com.aurafit.dto.response.AdminCostumeDTO;
 import com.aurafit.dto.response.ApiResponse;
@@ -133,6 +135,68 @@ public class CostumeController {
             @Valid @RequestBody CostumeUpdateRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success("Costume updated successfully.", adminService.updateCostume(id, request, authentication.getName())));
+    }
+
+    // --- CostumeItem Admin Endpoints ---
+
+    @GetMapping("/admin/{costumeId}/items")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @Operation(summary = "Get all items (variants) for a costume (Admin/Staff)")
+    public ResponseEntity<ApiResponse<List<CostumeItemDTO>>> getAdminCostumeItems(
+            Authentication authentication,
+            @PathVariable Long costumeId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Costume items retrieved successfully.",
+                adminService.getItemsByCostumeId(costumeId, authentication.getName())
+        ));
+    }
+
+    @PostMapping("/admin/{costumeId}/items")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @Operation(summary = "Create a new item (variant) for a costume (Admin/Staff)")
+    public ResponseEntity<ApiResponse<CostumeItemDTO>> createCostumeItem(
+            Authentication authentication,
+            @PathVariable Long costumeId,
+            @Valid @RequestBody CostumeItemCreateRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(
+                        "Costume item created successfully.",
+                        adminService.createCostumeItem(costumeId, request, authentication.getName()),
+                        HttpStatus.CREATED
+                ));
+    }
+
+    @PutMapping("/admin/{costumeId}/items/{itemId}")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @Operation(summary = "Update an existing item (variant) for a costume (Admin/Staff)")
+    public ResponseEntity<ApiResponse<CostumeItemDTO>> updateCostumeItem(
+            Authentication authentication,
+            @PathVariable Long costumeId,
+            @PathVariable Long itemId,
+            @Valid @RequestBody CostumeItemUpdateRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Costume item updated successfully.",
+                adminService.updateCostumeItem(costumeId, itemId, request, authentication.getName())
+        ));
+    }
+
+    @DeleteMapping("/admin/{costumeId}/items/{itemId}")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @Operation(summary = "Delete an item (variant) from a costume (Admin/Staff)")
+    public ResponseEntity<ApiResponse<Void>> deleteCostumeItem(
+            Authentication authentication,
+            @PathVariable Long costumeId,
+            @PathVariable Long itemId
+    ) {
+        adminService.deleteCostumeItem(costumeId, itemId, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Costume item deleted successfully.", null));
     }
 
     // ── Private helpers ──────────────────────────────────────────────────

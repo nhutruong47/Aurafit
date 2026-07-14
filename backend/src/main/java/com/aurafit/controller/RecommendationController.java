@@ -46,12 +46,19 @@ public class RecommendationController {
     @Operation(summary = "Get similar costumes by costume ID")
     public ResponseEntity<ApiResponse<List<SimilarCostumeRecommendationDTO>>> getSimilarCostumes(
             @PathVariable Long costumeId,
-            @RequestParam(defaultValue = "4") int limit
+            @RequestParam(required = false) String sessionId,
+            @RequestParam(defaultValue = "4") int limit,
+            Authentication authentication
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Similar costumes retrieved successfully.",
-                        recommendationService.getSimilarCostumes(costumeId, limit)
+                        recommendationService.getSimilarCostumes(
+                                costumeId,
+                                limit,
+                                resolveAuthenticatedEmail(authentication),
+                                sessionId
+                        )
                 )
         );
     }

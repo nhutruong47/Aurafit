@@ -1,16 +1,22 @@
 package com.aurafit.service.impl;
 
 import com.aurafit.dto.request.CostumeCreateRequest;
+import com.aurafit.dto.request.CostumeItemCreateRequest;
+import com.aurafit.dto.request.CostumeItemUpdateRequest;
 import com.aurafit.dto.request.CostumeUpdateRequest;
 import com.aurafit.dto.response.AdminCostumeDTO;
+import com.aurafit.dto.response.CostumeItemDTO;
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
+import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.User;
 import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.ItemStatus;
 import com.aurafit.enums.Role;
 import com.aurafit.exception.BadRequestException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CategoryRepository;
+import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.service.AdminService;
@@ -29,15 +35,18 @@ public class AdminServiceImpl implements AdminService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final CostumeMetadataService costumeMetadataService;
+    private final CostumeItemRepository costumeItemRepository;
 
     public AdminServiceImpl(CostumeRepository costumeRepository,
                             CategoryRepository categoryRepository,
                             UserRepository userRepository,
-                            CostumeMetadataService costumeMetadataService) {
+                            CostumeMetadataService costumeMetadataService,
+                            CostumeItemRepository costumeItemRepository) {
         this.costumeRepository = costumeRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.costumeMetadataService = costumeMetadataService;
+        this.costumeItemRepository = costumeItemRepository;
     }
 
     @Override
@@ -126,6 +135,104 @@ public class AdminServiceImpl implements AdminService {
         }
 
         return AdminCostumeDTO.fromEntity(costumeRepository.save(costume));
+    }
+
+    // ── CostumeItem CRUD ─────────────────────────────────────────────────
+
+    @Override
+    public List<CostumeItemDTO> getItemsByCostumeId(Long costumeId, String authenticatedEmail) {
+        requireProductManager(authenticatedEmail);
+        // Verify costume exists
+        costumeRepository.findById(costumeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Costume", "id", costumeId));
+
+        return costumeItemRepository.findByCostumeId(costumeId)
+                .stream()
+                .map(CostumeItemDTO::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public CostumeItemDTO createCostumeItem(Long costumeId, CostumeItemCreateRequest request, String authenticatedEmail) {
+        requireProductManager(authenticatedEmail);
+        Costume costume = costumeRepository.findById(costumeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Costume", "id", costumeId));
+
+        // Validate SKU uniqueness
+        if (costumeItemRepository.findBySku(request.sku()).isPresent()) {
+            throw new BadRequestException("SKU '" + request.sku() + "' đã tồn tại trong hệ thống.");
+        }
+
+        ItemStatus status = ItemStatus.AVAILABLE;
+        if (request.status() != null && !request.status().isBlank()) {
+            try {
+                status = ItemStatus.valueOf(request.status().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Trạng thái không hợp lệ: " + request.status());
+            }
+        }
+
+        CostumeItem item = CostumeItem.builder()
+                .sku(request.sku())
+                .size(request.size())
+                .color(request.color())
+                .status(status)
+                .costume(costume)
+                .build();
+
+        return CostumeItemDTO.fromEntity(costumeItemRepository.save(item));
+    }
+
+    @Override
+    @Transactional
+    public CostumeItemDTO updateCostumeItem(Long costumeId, Long itemId, CostumeItemUpdateRequest request, String authenticatedEmail) {
+        requireProductManager(authenticatedEmail);
+        CostumeItem item = costumeItemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("CostumeItem", "id", itemId));
+
+        if (!item.getCostume().getId().equals(costumeId)) {
+            throw new BadRequestException("Item #" + itemId + " không thuộc costume #" + costumeId);
+        }
+
+        if (request.sku() != null && !request.sku().isBlank()) {
+            // Check uniqueness if SKU changed
+            if (!request.sku().equals(item.getSku())) {
+                costumeItemRepository.findBySku(request.sku()).ifPresent(existing -> {
+                    throw new BadRequestException("SKU '" + request.sku() + "' đã tồn tại trong hệ thống.");
+                });
+            }
+            item.setSku(request.sku());
+        }
+        if (request.size() != null) item.setSize(request.size());
+        if (request.color() != null) item.setColor(request.color());
+        if (request.status() != null && !request.status().isBlank()) {
+            try {
+                item.setStatus(ItemStatus.valueOf(request.status().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Trạng thái không hợp lệ: " + request.status());
+            }
+        }
+
+        return CostumeItemDTO.fromEntity(costumeItemRepository.save(item));
+    }
+
+    @Override
+    @Transactional
+    public void deleteCostumeItem(Long costumeId, Long itemId, String authenticatedEmail) {
+        requireProductManager(authenticatedEmail);
+        CostumeItem item = costumeItemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("CostumeItem", "id", itemId));
+
+        if (!item.getCostume().getId().equals(costumeId)) {
+            throw new BadRequestException("Item #" + itemId + " không thuộc costume #" + costumeId);
+        }
+
+        if (item.getStatus() == ItemStatus.RENTED) {
+            throw new BadRequestException("Không thể xóa item đang trong trạng thái RENTED.");
+        }
+
+        costumeItemRepository.delete(item);
     }
 
     private User requireProductManager(String authenticatedEmail) {

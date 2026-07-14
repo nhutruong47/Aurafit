@@ -40,13 +40,16 @@ public class RecommendationAnalyticsServiceImpl implements RecommendationAnalyti
     private final UserInteractionEventRepository userInteractionEventRepository;
     private final CostumeRepository costumeRepository;
     private final ObjectMapper objectMapper;
+    private final RecommendationReasoningGuardrailService reasoningGuardrailService;
 
     public RecommendationAnalyticsServiceImpl(UserInteractionEventRepository userInteractionEventRepository,
                                               CostumeRepository costumeRepository,
-                                              ObjectMapper objectMapper) {
+                                              ObjectMapper objectMapper,
+                                              RecommendationReasoningGuardrailService reasoningGuardrailService) {
         this.userInteractionEventRepository = userInteractionEventRepository;
         this.costumeRepository = costumeRepository;
         this.objectMapper = objectMapper;
+        this.reasoningGuardrailService = reasoningGuardrailService;
     }
 
     @Override
@@ -66,6 +69,7 @@ public class RecommendationAnalyticsServiceImpl implements RecommendationAnalyti
         return analytics.toResponse(
                 normalizedDays,
                 resolveCostumeNames(analytics.topClickedCostumeCounts()),
+                reasoningGuardrailService.snapshot(),
                 LocalDateTime.now()
         );
     }
@@ -241,6 +245,7 @@ public class RecommendationAnalyticsServiceImpl implements RecommendationAnalyti
 
         RecommendationAnalyticsDTO toResponse(int periodDays,
                                               Map<Long, String> costumeNamesById,
+                                              RecommendationReasoningGuardrailService.RuntimeSnapshot runtimeSnapshot,
                                               LocalDateTime generatedAt) {
             RecommendationAnalyticsDTO.Overview overview = new RecommendationAnalyticsDTO.Overview(
                     totalInteractions,
@@ -275,6 +280,24 @@ public class RecommendationAnalyticsServiceImpl implements RecommendationAnalyti
                     aiAttributedRents
             );
 
+            RecommendationAnalyticsDTO.RuntimeReasoningPerformance runtimeReasoning =
+                    new RecommendationAnalyticsDTO.RuntimeReasoningPerformance(
+                            runtimeSnapshot.totalRequests(),
+                            runtimeSnapshot.totalFallbacks(),
+                            runtimeSnapshot.timeoutFallbacks(),
+                            runtimeSnapshot.parseErrorFallbacks(),
+                            runtimeSnapshot.rateLimitFallbacks(),
+                            runtimeSnapshot.circuitOpenFallbacks(),
+                            runtimeSnapshot.otherFallbacks(),
+                            runtimeSnapshot.clarificationResponses(),
+                            runtimeSnapshot.noMatchResponses(),
+                            runtimeSnapshot.circuitOpen(),
+                            runtimeSnapshot.circuitOpenUntil() != null ? runtimeSnapshot.circuitOpenUntil().toString() : null,
+                            runtimeSnapshot.recentAttemptCount(),
+                            runtimeSnapshot.recentFailureCount(),
+                            Math.round(runtimeSnapshot.recentFailureRatePercent() * 100.0D) / 100.0D
+                    );
+
             List<RecommendationAnalyticsDTO.TopCostume> topClickedCostumes = topClickedCostumeCounts.entrySet().stream()
                     .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed()
                             .thenComparing(Map.Entry.comparingByKey(Comparator.reverseOrder())))
@@ -303,6 +326,7 @@ public class RecommendationAnalyticsServiceImpl implements RecommendationAnalyti
                     overview,
                     slotPerformance,
                     aiStylist,
+                    runtimeReasoning,
                     topClickedCostumes,
                     dailyPerformance,
                     generatedAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)

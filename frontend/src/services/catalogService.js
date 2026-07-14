@@ -14,10 +14,12 @@ export function flattenCategoryTree(tree, depth = 0) {
   let result = [];
   const prefix = depth > 0 ? '--'.repeat(depth) + ' ' : '';
   for (const node of tree) {
+    const isLeaf = !node.children || node.children.length === 0;
     result.push({
       ...node,
       displayName: prefix + node.name,
       depth,
+      isLeaf,
     });
     if (node.children && node.children.length > 0) {
       result = result.concat(flattenCategoryTree(node.children, depth + 1));

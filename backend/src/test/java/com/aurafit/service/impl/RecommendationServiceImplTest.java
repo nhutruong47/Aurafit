@@ -334,7 +334,7 @@ class RecommendationServiceImplTest {
         List<SimilarCostumeRecommendationDTO> result = recommendationService.getSimilarCostumes(1L, 2);
 
         assertIterableEquals(List.of(2L, 3L), result.stream().map(item -> item.costume().id()).toList());
-        verify(recommendationReasoningService, never()).reason(any(), any());
+        verify(recommendationReasoningService, never()).reason(any(), any(), anyString());
     }
 
     @Test
@@ -368,7 +368,7 @@ class RecommendationServiceImplTest {
         when(costumeRepository.findByIdWithItems(1L)).thenReturn(Optional.of(source));
         when(costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, 1L))
                 .thenReturn(List.of(weaker, stronger));
-        when(recommendationReasoningService.reason(any(), any()))
+        when(recommendationReasoningService.reason(any(), any(), anyString()))
                 .thenThrow(new IllegalStateException("AI provider request timed out."));
 
         List<SimilarCostumeRecommendationDTO> result = recommendationService.getSimilarCostumes(1L, 2);
@@ -400,7 +400,7 @@ class RecommendationServiceImplTest {
         when(costumeRepository.findByIdWithItems(1L)).thenReturn(Optional.of(source));
         when(costumeRepository.findActiveWithItemsExcludingId(CostumeStatus.ACTIVE, 1L))
                 .thenReturn(List.of(candidate));
-        when(recommendationReasoningService.reason(any(), any()))
+        when(recommendationReasoningService.reason(any(), any(), anyString()))
                 .thenReturn(new RecommendationReasoningOutput(
                         List.of(new RecommendationReasoningOutput.RecommendationItem(
                                 "2",
@@ -417,7 +417,7 @@ class RecommendationServiceImplTest {
 
         assertEquals(2L, first.get(0).costume().id());
         assertEquals(2L, second.get(0).costume().id());
-        verify(recommendationReasoningService).reason(any(), any());
+        verify(recommendationReasoningService).reason(any(), any(), anyString());
     }
 
     @Test
@@ -736,7 +736,7 @@ class RecommendationServiceImplTest {
         );
 
         assertIterableEquals(List.of(1L, 2L, 3L), result.stream().map(item -> item.costume().id()).toList());
-        verify(recommendationReasoningService, never()).reason(any(), any());
+        verify(recommendationReasoningService, never()).reason(any(), any(), anyString());
     }
 
     @Test
@@ -788,7 +788,7 @@ class RecommendationServiceImplTest {
                 .thenReturn(List.of(weakerMatch, strongMetadataMatch, viewedCostume));
         when(userPreferenceSummaryService.summarize("10", null))
                 .thenReturn("User thường quan tâm đồ phong cách Heroic, dịp Convention, màu Red.");
-        when(recommendationReasoningService.reason(any(), any()))
+        when(recommendationReasoningService.reason(any(), any(), anyString()))
                 .thenThrow(new IllegalStateException("AI provider request timed out."));
 
         List<SimilarCostumeRecommendationDTO> result = recommendationService.getHomepageRecommendations(
@@ -842,7 +842,7 @@ class RecommendationServiceImplTest {
                 .thenReturn(List.of(strongMetadataMatch, viewedCostume));
         when(userPreferenceSummaryService.summarize("10", null))
                 .thenReturn("User thường quan tâm đồ phong cách Heroic, dịp Convention, màu Red.");
-        when(recommendationReasoningService.reason(any(), any()))
+        when(recommendationReasoningService.reason(any(), any(), anyString()))
                 .thenReturn(new RecommendationReasoningOutput(
                         List.of(new RecommendationReasoningOutput.RecommendationItem(
                                 "2",
