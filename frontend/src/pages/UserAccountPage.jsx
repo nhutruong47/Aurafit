@@ -3,6 +3,8 @@ import AccountAuthForm from '../components/account/AccountAuthForm';
 import AccountProfileView from '../components/account/AccountProfileView';
 import { loginUser, verifyOtpAndRegister } from '../services/authService';
 import { getUserRoles } from '../utils/roles';
+import authNotify from '../utils/authNotify';
+import { parseAuthApiError, validateLoginForm, buildRegisterSuccessMessage } from '../utils/authMessages';
 
 const ROLE_REDIRECTS = {
   ADMIN: 'adminDashboard',
@@ -38,19 +40,28 @@ export default function UserAccountPage({ onNavigate, currentUser, onAuthChange 
   const handleLogin = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const email = String(formData.get('email') || '').trim();
+    const password = String(formData.get('password') || '');
+
+    const validation = validateLoginForm({ email, password });
+    if (!validation.valid) {
+      setFormError(validation.message);
+      return;
+    }
+
     setIsSubmitting(true);
     setFormError('');
 
     try {
-      const payload = await loginUser({
-        email: formData.get('email'),
-        password: formData.get('password'),
-      });
+      const { data: payload, message } = await loginUser({ email, password });
       const user = normalizeAuthUser(payload);
+      authNotify.loginSuccess(user, message);
       onAuthChange?.(user);
       onNavigate?.(resolveRolePage(user));
     } catch (error) {
-      setFormError(error.message || 'Đăng nhập không thành công. Quý khách vui lòng thử lại.');
+      const errorMessage = parseAuthApiError(error, 'login');
+      setFormError(errorMessage);
+      authNotify.loginError(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -61,17 +72,22 @@ export default function UserAccountPage({ onNavigate, currentUser, onAuthChange 
     setFormError('');
 
     try {
-      const payload = await verifyOtpAndRegister(registrationData);
+      const { data: payload, message } = await verifyOtpAndRegister(registrationData);
       const user = normalizeAuthUser(payload);
       if (user?.accessToken) {
+        authNotify.registerSuccess(user, message);
         onAuthChange?.(user);
         onNavigate?.(resolveRolePage(user));
       } else {
-        setFormError('Đăng ký thành công. Quý khách vui lòng đăng nhập lại để tiếp tục.');
+        const successMessage = buildRegisterSuccessMessage(user, message);
+        authNotify.registerSuccess(user, successMessage);
+        setFormError('');
         setMode('login');
       }
     } catch (error) {
-      setFormError(error.message || 'Đăng ký không thành công. Quý khách vui lòng thử lại.');
+      const errorMessage = parseAuthApiError(error, 'register');
+      setFormError(errorMessage);
+      authNotify.registerError(error, 'otp');
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { requestRegistrationOtp } from '../../services/authService';
-import { useToastStore } from '../../store/useToastStore';
+import AlertMessage from '../ui/AlertMessage';
+import authNotify from '../../utils/authNotify';
+import {
+  parseAuthApiError,
+  validateOtpInput,
+  validateRegisterDetails,
+  buildRegisterOtpSentMessage,
+  buildRegisterOtpResentMessage,
+} from '../../utils/authMessages';
 
 function TextField({ label, name, placeholder, type = 'text', value, onChange, required = true, autoComplete }) {
   return (
@@ -40,7 +48,6 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
   const [otpCountdown, setOtpCountdown] = useState(0);
 
   const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const addToast = useToastStore((state) => state.addToast);
 
   useEffect(() => {
     if (otpCountdown <= 0) return undefined;
@@ -75,31 +82,29 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
     setLocalError('');
     setInfoMessage('');
 
-    if (form.password !== form.confirmPassword) {
-      setLocalError('Mật khẩu xác nhận chưa khớp. Vui lòng kiểm tra lại.');
-      return;
-    }
-
-    if (!form.email || !form.fullName || !form.phone || !form.password) {
-      setLocalError('Vui lòng điền đầy đủ họ tên, số điện thoại, email và mật khẩu.');
+    const validation = validateRegisterDetails(form);
+    if (!validation.valid) {
+      setLocalError(validation.message);
       return;
     }
 
     setIsSendingOtp(true);
     try {
-      const response = await requestRegistrationOtp({
-        email: form.email,
-        fullName: form.fullName,
+      const { message } = await requestRegistrationOtp({
+        email: form.email.trim(),
+        fullName: form.fullName.trim(),
         phone: form.phone,
         password: form.password,
       });
-      addToast('Mã xác thực OTP đã được gửi đến email của Quý khách');
+      const infoText = buildRegisterOtpSentMessage(form.email, message);
+      authNotify.registerOtpSent(form.email, message);
       setStage('verify-otp');
       setOtpCountdown(OTP_TTL_SECONDS);
-      const fallbackMsg = `Yêu cầu đăng ký đã được ghi nhận. Mã OTP đã được gửi tới ${form.email}. Vui lòng kiểm tra hộp thư và nhập mã để kích hoạt tài khoản.`;
-      setInfoMessage(response?.message || fallbackMsg);
+      setInfoMessage(infoText);
     } catch (err) {
-      setLocalError(err.message || 'Hệ thống gặp sự cố khi xử lý đăng ký. Quý khách vui lòng thử lại.');
+      const errorMessage = parseAuthApiError(err, 'register');
+      setLocalError(errorMessage);
+      authNotify.registerError(err);
     } finally {
       setIsSendingOtp(false);
     }
@@ -111,16 +116,20 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
     setInfoMessage('');
 
     try {
-      await requestRegistrationOtp({
-        email: form.email,
-        fullName: form.fullName,
+      const { message } = await requestRegistrationOtp({
+        email: form.email.trim(),
+        fullName: form.fullName.trim(),
         phone: form.phone,
         password: form.password,
       });
       setOtpCountdown(OTP_TTL_SECONDS);
-      setInfoMessage('Mã xác thực OTP đã được gửi lại. Quý khách vui lòng kiểm tra hộp thư.');
+      const resendMessage = buildRegisterOtpResentMessage(form.email);
+      setInfoMessage(message ? `${resendMessage} (${message})` : resendMessage);
+      authNotify.registerOtpResent(form.email);
     } catch (err) {
-      setLocalError(err.message || 'Hệ thống không thể gửi lại mã xác thực OTP.');
+      const errorMessage = parseAuthApiError(err, 'register');
+      setLocalError(errorMessage);
+      authNotify.registerError(err);
     }
   };
 
@@ -128,8 +137,9 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
     event.preventDefault();
     setLocalError('');
 
-    if (!form.otpCode || form.otpCode.length !== 6) {
-      setLocalError('Quý khách vui lòng nhập đầy đủ 6 chữ số của mã xác thực OTP.');
+    const otpValidation = validateOtpInput(form.otpCode);
+    if (!otpValidation.valid) {
+      setLocalError(otpValidation.message);
       return;
     }
 
@@ -218,11 +228,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                 <TextField label="Email" name="email" type="email" placeholder="you@aurafit.vn" autoComplete="email" />
                 <TextField label="Mật khẩu" name="password" type="password" placeholder="********" autoComplete="current-password" />
 
-                {displayError && (
-                  <div className="border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
-                    {displayError}
-                  </div>
-                )}
+                {displayError && <AlertMessage text={displayError} />}
 
                 <button
                   type="submit"
@@ -279,11 +285,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   autoComplete="new-password"
                 />
 
-                {displayError && (
-                  <div className="border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
-                    {displayError}
-                  </div>
-                )}
+                {displayError && <AlertMessage text={displayError} />}
 
                 <button
                   type="submit"
@@ -339,17 +341,9 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   </div>
                 </div>
 
-                {infoMessage && (
-                  <div className="border border-[#99854e]/30 bg-[#99854e]/10 px-4 py-3 text-sm text-[#99854e]">
-                    {infoMessage}
-                  </div>
-                )}
+                {infoMessage && <AlertMessage tone="info" text={infoMessage} />}
 
-                {displayError && (
-                  <div className="border border-[#ba1a1a]/30 bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
-                    {displayError}
-                  </div>
-                )}
+                {displayError && <AlertMessage text={displayError} />}
 
                 <button
                   type="submit"

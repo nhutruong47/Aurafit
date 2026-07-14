@@ -67,6 +67,10 @@ public class UserServiceImpl implements UserService {
             throw new BadCredentialsException("Tài khoản hoặc mật khẩu không chính xác.");
         }
 
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new UnauthorizedException("Tài khoản của bạn hiện đang bị khóa.");
+        }
+
         return buildAuthResponse(user);
     }
 

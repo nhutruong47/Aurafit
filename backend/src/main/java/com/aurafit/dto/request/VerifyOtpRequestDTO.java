@@ -14,7 +14,7 @@ public record VerifyOtpRequestDTO(
         @Email(message = "Địa chỉ email không đúng định dạng.")
         String email,
 
-        @NotBlank(message = "Ma OTP khong duoc de trong.")
-        @Pattern(regexp = "\\d{6}", message = "Ma OTP phai gom dung 6 chu so.")
+        @NotBlank(message = "Mã OTP không được để trống.")
+        @Pattern(regexp = "\\d{6}", message = "Mã OTP phải gồm đúng 6 chữ số.")
         String otpCode
 ) {}

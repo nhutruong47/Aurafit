@@ -60,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public OtpSentResponse requestOtp(OtpRequestDTO request) {
         if (!isGmail(request.email())) {
-            throw new ConflictException("Chi email Gmail can xac thuc OTP.");
+            throw new ConflictException("Chỉ email Gmail cần xác thực OTP.");
         }
         if (userRepository.existsByEmailAndEmailVerifiedTrue(request.email())) {
             throw new ConflictException("Email này đã tồn tại trong hệ thống. Vui lòng sử dụng email khác.");
@@ -71,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
         OtpVerification entry = otpService.getValidEntry(request.email());
         emailService.sendOtpEmail(request.email(), entry.getOtpCode());
 
-        return new OtpSentResponse(LocalDateTime.now(), "Ma xac thuc da duoc gui den email cua ban.");
+        return new OtpSentResponse(LocalDateTime.now(), "Mã xác thực đã được gửi đến email của bạn.");
     }
 
     // -------------------------------------------------------------------------

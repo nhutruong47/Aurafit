@@ -1,11 +1,11 @@
-import { requestJson } from './http/request';
+import { requestApi } from './http/request';
 
-const requestAuthJson = async (config, fallbackMessage) => {
-  return requestJson(config, fallbackMessage);
+const requestAuthApi = async (config, fallbackMessage) => {
+  return requestApi(config, fallbackMessage);
 };
 
 export const requestRegistrationOtp = async ({ email, fullName, phone, password }) =>
-  requestAuthJson(
+  requestAuthApi(
     {
       url: '/auth/register/request-otp',
       method: 'POST',
@@ -15,7 +15,7 @@ export const requestRegistrationOtp = async ({ email, fullName, phone, password 
   );
 
 export const verifyOtpAndRegister = async ({ email, otpCode }) =>
-  requestAuthJson(
+  requestAuthApi(
     {
       url: '/auth/register/verify-otp',
       method: 'POST',
@@ -25,7 +25,7 @@ export const verifyOtpAndRegister = async ({ email, otpCode }) =>
   );
 
 export const registerUser = async (userData) =>
-  requestAuthJson(
+  requestAuthApi(
     {
       url: '/auth/register',
       method: 'POST',
@@ -35,7 +35,7 @@ export const registerUser = async (userData) =>
   );
 
 export const loginUser = async (credentials) =>
-  requestAuthJson(
+  requestAuthApi(
     {
       url: '/auth/login',
       method: 'POST',
@@ -45,7 +45,7 @@ export const loginUser = async (credentials) =>
   );
 
 export const refreshAccessToken = async () =>
-  requestAuthJson(
+  requestAuthApi(
     {
       url: '/auth/refresh',
       method: 'POST',

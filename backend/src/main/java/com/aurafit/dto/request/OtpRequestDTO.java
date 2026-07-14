@@ -19,7 +19,7 @@ public record OtpRequestDTO(
         String fullName,
 
         @NotBlank(message = "Vui lòng cung cấp số điện thoại.")
-        @Pattern(regexp = "0\\d{9}", message = "So dien thoai phai gom 10 chu so va bat dau bang 0.")
+        @Pattern(regexp = "0\\d{9}", message = "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.")
         String phone,
 
         @NotBlank(message = "Vui lòng nhập mật khẩu.")
