@@ -125,3 +125,13 @@ export const createReturnHandover = async (orderId, handoverData) =>
     },
     'Không thể lưu biên bản trả đồ.'
   );
+
+export const updateHandoverImage = async (orderId, handoverType, imageUrl) =>
+  requestJson(
+    {
+      url: `/orders/${encodeURIComponent(orderId)}/handovers/${encodeURIComponent(handoverType)}/image`,
+      method: 'PATCH',
+      data: { imageUrl },
+    },
+    'Không thể cập nhật ảnh minh chứng.'
+  );

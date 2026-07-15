@@ -1,6 +1,7 @@
 # Java / Maven
 target/
 backend/data/
+backend/uploads/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

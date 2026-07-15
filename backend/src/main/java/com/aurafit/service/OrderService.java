@@ -32,4 +32,11 @@ public interface OrderService {
      * Process order return handover.
      */
     List<com.aurafit.dto.response.HandoverRecordDTO> processReturnHandover(Long orderId, Long staffId, com.aurafit.dto.request.ReturnRequestDTO request);
+
+    List<com.aurafit.dto.response.HandoverRecordDTO> updateHandoverImage(
+            Long orderId,
+            Long staffId,
+            com.aurafit.enums.HandoverType handoverType,
+            com.aurafit.dto.request.HandoverImageUpdateRequest request
+    );
 }

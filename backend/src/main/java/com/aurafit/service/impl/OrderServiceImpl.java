@@ -669,6 +669,36 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<com.aurafit.dto.response.HandoverRecordDTO> updateHandoverImage(
+            Long orderId,
+            Long staffId,
+            com.aurafit.enums.HandoverType handoverType,
+            com.aurafit.dto.request.HandoverImageUpdateRequest request
+    ) {
+        User staff = userRepository.findById(staffId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", staffId));
+        if (staff.getRole() != com.aurafit.enums.Role.STAFF && staff.getRole() != com.aurafit.enums.Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Chi nhan vien hoac admin moi co quyen thuc hien thao tac nay.");
+        }
+
+        String imageUrl = request.imageUrl() == null ? "" : request.imageUrl().trim();
+        if (imageUrl.isBlank()) {
+            throw new BadRequestException("Vui long tai anh minh chung truoc khi cap nhat.");
+        }
+
+        List<HandoverRecord> records = handoverRecordRepository.findByOrderIdAndHandoverType(orderId, handoverType);
+        if (records.isEmpty()) {
+            throw new ResourceNotFoundException("HandoverRecord", "orderId/type", orderId + "/" + handoverType);
+        }
+
+        records.forEach(record -> record.setImageUrl(imageUrl));
+        return handoverRecordRepository.saveAll(records).stream()
+                .map(com.aurafit.dto.response.HandoverRecordDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
     private void calculateAndProcessRefund(RentalOrder order) {
         BigDecimal totalLateFee = BigDecimal.ZERO;
         BigDecimal totalDamageFee = BigDecimal.ZERO;

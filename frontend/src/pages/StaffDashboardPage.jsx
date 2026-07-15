@@ -18,7 +18,77 @@ const formatDate = (dateString) => {
   });
 };
 
-const StatusBadge = ({ status }) => {
+const formatDateTime = (dateString) => {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleString('vi-VN');
+};
+
+const detailStatusLabels = {
+  PICKED_UP: 'Đã nhận hàng',
+  CONFIRMED: 'Chờ nhận',
+  RETURNED: 'Đã trả',
+  CANCELLED: 'Đã hủy',
+};
+
+const getDetailStatusLabel = (status) => detailStatusLabels[status] || status;
+
+const canShowPickupInfo = (status) => ['PICKED_UP', 'RETURNED', 'COMPLETED', 'DAMAGED', 'LOST'].includes(status);
+
+const getEvidenceImageUrl = (handover) => (
+  handover?.imageUrl || handover?.image_url || handover?.handoverImageUrl || handover?.secureUrl || handover?.secure_url || handover?.url || ''
+).trim();
+
+const getStaffPickupInfo = (order) => {
+  const pickupHandovers = (Array.isArray(order?.handovers) ? order.handovers : []).filter((handover) => {
+    const handoverType = String(handover?.handoverType || '').toUpperCase();
+    return handoverType === 'PICKUP';
+  });
+  const pickupHandover = pickupHandovers[0];
+  const pickupImages = pickupHandovers
+    .map(getEvidenceImageUrl)
+    .filter(Boolean)
+    .map((imageUrl) => String(imageUrl).trim())
+    .filter(Boolean)
+    .filter((imageUrl, index, images) => images.indexOf(imageUrl) === index);
+  const pickupNote = pickupHandovers
+    .map((handover) => handover?.note)
+    .find((note) => note && String(note).trim()) ?? '';
+
+  return {
+    pickedUpAt: pickupHandover?.createdAt || '',
+    pickedUpBy: pickupHandover?.staffUserName || '',
+    pickupNote,
+    pickupImages,
+    canUpdateImage: pickupHandovers.length > 0,
+  };
+};
+
+const getStaffReturnInfo = (order) => {
+  const returnHandovers = (Array.isArray(order?.handovers) ? order.handovers : []).filter((handover) => {
+    const handoverType = String(handover?.handoverType || '').toUpperCase();
+    return handoverType === 'RETURN';
+  });
+  const returnHandover = returnHandovers[0];
+  const returnImages = returnHandovers
+    .map(getEvidenceImageUrl)
+    .filter(Boolean)
+    .map((imageUrl) => String(imageUrl).trim())
+    .filter(Boolean)
+    .filter((imageUrl, index, images) => images.indexOf(imageUrl) === index);
+  const returnNote = returnHandovers
+    .map((handover) => handover?.note)
+    .find((note) => note && String(note).trim()) ?? '';
+
+  return {
+    returnedAt: returnHandover?.createdAt || '',
+    returnedBy: returnHandover?.staffUserName || '',
+    returnNote,
+    returnImages,
+    canUpdateImage: returnHandovers.length > 0,
+  };
+};
+
+const StatusBadge = ({ status, label }) => {
   const statusColors = {
     PENDING: 'bg-yellow-100 text-yellow-800',
     CONFIRMED: 'bg-blue-100 text-blue-800',
@@ -31,7 +101,7 @@ const StatusBadge = ({ status }) => {
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-      {status}
+      {label || status}
     </span>
   );
 };
@@ -53,6 +123,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     previewImage,
     isLoading,
     isSubmitting,
+    updatingHandoverImageType,
     message,
     error,
     activeTotals,
@@ -65,6 +136,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     setNote,
     setPreviewImage,
     handleHandoverImageUploaded,
+    updateHandoverEvidenceImage,
     submitHandover,
     lateFee,
     setLateFee,
@@ -97,22 +169,13 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     setCurrentPage(1);
   }, [currentTab]);
 
-  if (!currentUser || !canUseStaffTools) {
-    return (
-      <div className="flex h-full items-center justify-center p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Truy cập bị từ chối</h2>
-          <p className="mt-2 text-gray-600">Bạn cần quyền Staff để truy cập khu vực này.</p>
-          <button
-            onClick={() => onNavigate?.('account')}
-            className="mt-4 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            Về trang đăng nhập
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (currentTab === 'pickup') {
+      setMode('PICKUP');
+    } else if (currentTab === 'return') {
+      setMode('RETURN');
+    }
+  }, [currentTab, setMode]);
 
   const filteredOrders = useMemo(() => {
     let filtered = orders;
@@ -158,6 +221,23 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
   }, [filteredOrders, currentPage]);
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  if (!currentUser || !canUseStaffTools) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900">Truy cập bị từ chối</h2>
+          <p className="mt-2 text-gray-600">Bạn cần quyền Staff để truy cập khu vực này.</p>
+          <button
+            onClick={() => onNavigate?.('account')}
+            className="mt-4 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            Về trang đăng nhập
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -520,6 +600,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
                           value={handoverImageUrl}
                           disabled={isSubmitting}
                           readyLabel="Ảnh đã được tải lên Cloudinary."
+                          autoUpload={actionMode === 'PICKUP' || actionMode === 'RETURN'}
                           onUploaded={handleHandoverImageUploaded}
                         />
                         {handoverImageUrl && (
@@ -546,7 +627,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
 
                       <button
                         type="submit"
-                        disabled={isSubmitting || (actionMode === 'RETURN' && !isPenaltyValid)}
+                        disabled={isSubmitting || ((actionMode === 'PICKUP' || actionMode === 'RETURN') && !handoverImageUrl.trim()) || (actionMode === 'RETURN' && !isPenaltyValid)}
                         className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
                       >
                         {isSubmitting ? 'Đang xử lý...' : `Xác nhận ${actionMode}`}
@@ -624,6 +705,11 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     </div>
   );
 
+  const modalPickupInfo = getStaffPickupInfo(activeOrder);
+  const showModalPickupInfo = canShowPickupInfo(activeOrder?.status);
+  const modalReturnInfo = getStaffReturnInfo(activeOrder);
+  const showModalReturnInfo = modalReturnInfo.returnedAt || modalReturnInfo.returnedBy || modalReturnInfo.returnNote || modalReturnInfo.returnImages.length > 0;
+
   return (
     <div className="h-full relative">
       {isLoading ? (
@@ -655,9 +741,125 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               <div className="grid grid-cols-2 gap-4 text-sm mb-6 bg-gray-50 p-4 rounded-lg">
                 <div><span className="text-gray-500">Khách hàng:</span> <span className="font-medium">{activeOrder.customerName}</span></div>
                 <div><span className="text-gray-500">Điện thoại:</span> <span className="font-medium">{activeOrder.customerPhone}</span></div>
-                <div><span className="text-gray-500">Trạng thái:</span> <StatusBadge status={activeOrder.status} /></div>
+                <div><span className="text-gray-500">Trạng thái:</span> <StatusBadge status={activeOrder.status} label={getDetailStatusLabel(activeOrder.status)} /></div>
                 <div><span className="text-gray-500">Tổng tiền:</span> <span className="font-medium text-blue-600">{formatCurrency(activeOrder.totalAmount)}</span></div>
               </div>
+              {showModalPickupInfo && (
+                <section className="mb-6 rounded-lg border border-gray-200 p-4">
+                  <h4 className="font-medium text-gray-900 mb-3">Thông tin Pickup</h4>
+                  <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+                    {modalPickupInfo.pickedUpAt && (
+                      <div>
+                        <span className="text-gray-500">Thời gian Pickup:</span>
+                        <p className="mt-1 font-medium">{formatDateTime(modalPickupInfo.pickedUpAt)}</p>
+                      </div>
+                    )}
+                    {modalPickupInfo.pickedUpBy && (
+                      <div>
+                        <span className="text-gray-500">Nhân viên Pickup:</span>
+                        <p className="mt-1 font-medium">{modalPickupInfo.pickedUpBy}</p>
+                      </div>
+                    )}
+                    <div className="sm:col-span-2">
+                      <span className="text-gray-500">Ghi chú Pickup:</span>
+                      <p className="mt-1 font-medium whitespace-pre-line">{modalPickupInfo.pickupNote || 'Chưa có ghi chú'}</p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="text-gray-500">Ảnh minh chứng Pickup:</span>
+                      {modalPickupInfo.pickupImages.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {modalPickupInfo.pickupImages.map((imageUrl, index) => (
+                            <button
+                              key={imageUrl}
+                              type="button"
+                              onClick={() => setPreviewImage(imageUrl)}
+                              className="block h-24 w-24 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
+                            >
+                              <img src={imageUrl} alt={`Ảnh minh chứng Pickup ${index + 1}`} className="h-full w-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-1 font-medium">Không có ảnh minh chứng</p>
+                      )}
+                      {modalPickupInfo.canUpdateImage && (
+                        <div className="mt-4 rounded-md border border-dashed border-gray-300 p-3">
+                          <ImageUploadField
+                            label={modalPickupInfo.pickupImages.length > 0 ? 'Cập nhật ảnh Pickup' : 'Bổ sung ảnh Pickup'}
+                            value={modalPickupInfo.pickupImages[0] || ''}
+                            disabled={Boolean(updatingHandoverImageType)}
+                            readyLabel="Ảnh Pickup hiện tại."
+                            autoUpload
+                            showPreview={false}
+                            onUploaded={(asset) => updateHandoverEvidenceImage('PICKUP', asset)}
+                          />
+                          {updatingHandoverImageType === 'PICKUP' && (
+                            <p className="mt-2 text-sm text-blue-700">Đang cập nhật ảnh Pickup...</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
+              {showModalReturnInfo && (
+                <section className="mb-6 rounded-lg border border-gray-200 p-4">
+                  <h4 className="font-medium text-gray-900 mb-3">Thông tin Return</h4>
+                  <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+                    {modalReturnInfo.returnedAt && (
+                      <div>
+                        <span className="text-gray-500">Thời gian Return:</span>
+                        <p className="mt-1 font-medium">{formatDateTime(modalReturnInfo.returnedAt)}</p>
+                      </div>
+                    )}
+                    {modalReturnInfo.returnedBy && (
+                      <div>
+                        <span className="text-gray-500">Nhân viên Return:</span>
+                        <p className="mt-1 font-medium">{modalReturnInfo.returnedBy}</p>
+                      </div>
+                    )}
+                    <div className="sm:col-span-2">
+                      <span className="text-gray-500">Ghi chú Return:</span>
+                      <p className="mt-1 font-medium whitespace-pre-line">{modalReturnInfo.returnNote || 'Chưa có ghi chú'}</p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="text-gray-500">Ảnh minh chứng Return:</span>
+                      {modalReturnInfo.returnImages.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {modalReturnInfo.returnImages.map((imageUrl, index) => (
+                            <button
+                              key={imageUrl}
+                              type="button"
+                              onClick={() => setPreviewImage(imageUrl)}
+                              className="block h-24 w-24 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
+                            >
+                              <img src={imageUrl} alt={`Ảnh minh chứng Return ${index + 1}`} className="h-full w-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-1 font-medium">Không có ảnh minh chứng</p>
+                      )}
+                      {modalReturnInfo.canUpdateImage && (
+                        <div className="mt-4 rounded-md border border-dashed border-gray-300 p-3">
+                          <ImageUploadField
+                            label={modalReturnInfo.returnImages.length > 0 ? 'Cập nhật ảnh Return' : 'Bổ sung ảnh Return'}
+                            value={modalReturnInfo.returnImages[0] || ''}
+                            disabled={Boolean(updatingHandoverImageType)}
+                            readyLabel="Ảnh Return hiện tại."
+                            autoUpload
+                            showPreview={false}
+                            onUploaded={(asset) => updateHandoverEvidenceImage('RETURN', asset)}
+                          />
+                          {updatingHandoverImageType === 'RETURN' && (
+                            <p className="mt-2 text-sm text-blue-700">Đang cập nhật ảnh Return...</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
               <h4 className="font-medium text-gray-900 mb-3">Danh sách sản phẩm</h4>
               <div className="space-y-3">
                 {activeOrder.details?.map(detail => (
@@ -666,7 +868,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
                       <p className="font-medium text-gray-900">{detail.costumeName}</p>
                       <p className="text-sm text-gray-500 mt-1">Giá thuê: {formatCurrency(detail.rentalPrice)} | Cọc: {formatCurrency(detail.depositPrice)}</p>
                     </div>
-                    <StatusBadge status={detail.returnStatus || 'PENDING'} />
+                    <StatusBadge status={detail.returnStatus || 'PENDING'} label={getDetailStatusLabel(detail.returnStatus || 'PENDING')} />
                   </div>
                 ))}
               </div>

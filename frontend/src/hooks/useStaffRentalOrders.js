@@ -1,11 +1,54 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createPickupHandover,
   createReturnHandover,
   fetchStaffOrder,
   fetchStaffOrders,
+  updateHandoverImage,
 } from '../services/rentalOrderService';
 import { getUserRoles } from '../utils/roles';
+
+const getHandoverImageUrl = (handover) => (
+  handover?.imageUrl || handover?.image_url || handover?.handoverImageUrl || handover?.secureUrl || handover?.secure_url || handover?.url || ''
+).trim();
+
+const hasHandoverImage = (handover) => Boolean(getHandoverImageUrl(handover));
+
+const getHandoverMergeKey = (handover) => {
+  if (handover?.id) return `id:${handover.id}`;
+  return [
+    handover?.handoverType || handover?.type || '',
+    handover?.rentalOrderDetailId || '',
+    handover?.createdAt || '',
+    handover?.note || '',
+  ].join(':');
+};
+
+const mergeHandoversWithFallback = (order, fallbackHandovers = []) => {
+  if (!order || fallbackHandovers.length === 0) return order;
+
+  const currentHandovers = Array.isArray(order.handovers) ? order.handovers : [];
+  const mergedByKey = new Map(currentHandovers.map((handover) => [getHandoverMergeKey(handover), handover]));
+
+  fallbackHandovers.forEach((fallbackHandover) => {
+    if (!hasHandoverImage(fallbackHandover)) return;
+
+    const key = getHandoverMergeKey(fallbackHandover);
+    const currentHandover = mergedByKey.get(key);
+    if (!currentHandover || !hasHandoverImage(currentHandover)) {
+      mergedByKey.set(key, {
+        ...currentHandover,
+        ...fallbackHandover,
+        imageUrl: getHandoverImageUrl(fallbackHandover),
+      });
+    }
+  });
+
+  return {
+    ...order,
+    handovers: Array.from(mergedByKey.values()),
+  };
+};
 
 export function useStaffRentalOrders(currentUser) {
   const [orders, setOrders] = useState([]);
@@ -21,9 +64,12 @@ export function useStaffRentalOrders(currentUser) {
   const [previewImage, setPreviewImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [updatingHandoverImageType, setUpdatingHandoverImageType] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loadedUserKey, setLoadedUserKey] = useState(null);
+  const pickupImageDraftRef = useRef({ orderId: null, imageUrl: '' });
+  const confirmedHandoverFallbackRef = useRef(new Map());
 
   const roles = getUserRoles(currentUser);
   const canUseStaffTools = roles.includes('STAFF') || roles.includes('ADMIN');
@@ -36,6 +82,39 @@ export function useStaffRentalOrders(currentUser) {
 
   const maxDeposit = selectedDetail?.depositPrice || 0;
   const isPenaltyValid = (Number(lateFee) + Number(damageFee)) <= Number(maxDeposit);
+
+  const applyConfirmedHandoverFallback = (order) => {
+    const fallbackHandovers = confirmedHandoverFallbackRef.current.get(String(order?.id || '')) || [];
+    return mergeHandoversWithFallback(order, fallbackHandovers);
+  };
+
+  const rememberConfirmedHandovers = (orderId, savedHandovers, payload, fallbackType) => {
+    const savedList = Array.isArray(savedHandovers) ? savedHandovers : [];
+    const fallbackImageUrl = (payload?.imageUrl || '').trim();
+    const normalizedHandovers = savedList.length > 0
+      ? savedList.map((handover) => ({
+          ...handover,
+          handoverType: handover?.handoverType || handover?.type || fallbackType,
+          imageUrl: getHandoverImageUrl(handover) || fallbackImageUrl,
+        }))
+      : [{
+          rentalOrderDetailId: Number(selectedDetailId),
+          staffUserName: currentUser?.fullName || currentUser?.name || 'Nhân viên',
+          handoverType: fallbackType,
+          imageUrl: fallbackImageUrl,
+          note: payload?.note || '',
+          createdAt: new Date().toISOString(),
+        }];
+
+    if (normalizedHandovers.length === 0) return;
+
+    const existing = confirmedHandoverFallbackRef.current.get(String(orderId)) || [];
+    const mergedOrder = mergeHandoversWithFallback(
+      { id: orderId, handovers: existing },
+      normalizedHandovers
+    );
+    confirmedHandoverFallbackRef.current.set(String(orderId), mergedOrder.handovers);
+  };
 
   const activeTotals = useMemo(() => {
     const totalOrders = orders.length;
@@ -76,14 +155,14 @@ export function useStaffRentalOrders(currentUser) {
     setIsLoading(true);
 
     try {
-      const orderList = await fetchStaffOrders();
+      const orderList = (await fetchStaffOrders()).map(applyConfirmedHandoverFallback);
       setOrders(orderList);
 
       const nextOrderId = preferredOrderId || activeOrderId || orderList[0]?.id || null;
       setActiveOrderId(nextOrderId);
 
       if (nextOrderId) {
-        const order = await fetchStaffOrder(nextOrderId);
+        const order = applyConfirmedHandoverFallback(await fetchStaffOrder(nextOrderId));
         setActiveOrder(order);
         setSelectedDetailId(order.details?.[0]?.id || '');
       } else {
@@ -110,7 +189,7 @@ export function useStaffRentalOrders(currentUser) {
       setIsLoading(true);
 
       try {
-        const orderList = await fetchStaffOrders();
+        const orderList = (await fetchStaffOrders()).map(applyConfirmedHandoverFallback);
         if (!mounted) return;
 
         setOrders(orderList);
@@ -118,7 +197,7 @@ export function useStaffRentalOrders(currentUser) {
         setActiveOrderId(firstOrderId);
 
         if (firstOrderId) {
-          const order = await fetchStaffOrder(firstOrderId);
+          const order = applyConfirmedHandoverFallback(await fetchStaffOrder(firstOrderId));
           if (!mounted) return;
 
           setActiveOrder(order);
@@ -148,14 +227,21 @@ export function useStaffRentalOrders(currentUser) {
   }, [canUseStaffTools, requestKey]);
 
   const openOrder = async (orderId) => {
+    const isSameOrder = String(orderId || '') === String(activeOrderId || '');
+    const shouldResetHandoverDraft = !isSameOrder;
+
     setActiveOrderId(orderId);
     setError('');
     setMessage('');
-    setHandoverImageUrl('');
-    setNote('');
-    setLateFee(0);
-    setDamageFee(0);
-    setReturnStatus('RETURNED');
+
+    if (shouldResetHandoverDraft) {
+      pickupImageDraftRef.current = { orderId: null, imageUrl: '' };
+      setHandoverImageUrl('');
+      setNote('');
+      setLateFee(0);
+      setDamageFee(0);
+      setReturnStatus('RETURNED');
+    }
 
     if (!orderId) {
       setActiveOrder(null);
@@ -164,21 +250,64 @@ export function useStaffRentalOrders(currentUser) {
     }
 
     try {
-      const order = await fetchStaffOrder(orderId);
+      const order = applyConfirmedHandoverFallback(await fetchStaffOrder(orderId));
       setActiveOrder(order);
       setSelectedDetailId(order.details?.[0]?.id || '');
+      if (!shouldResetHandoverDraft && pickupImageDraftRef.current.orderId === order.id) {
+        setHandoverImageUrl(pickupImageDraftRef.current.imageUrl);
+      }
     } catch (loadError) {
       setError(loadError.message || 'Hệ thống không thể truy xuất chi tiết đơn hàng.');
     }
   };
 
   const handleHandoverImageUploaded = (asset) => {
-    setHandoverImageUrl(asset?.secureUrl || '');
+    const uploadedImageUrl = (asset?.secureUrl || asset?.secure_url || asset?.imageUrl || asset?.image_url || asset?.url || '').trim();
+
+    if (!uploadedImageUrl) {
+      setError('Không nhận được URL ảnh sau khi tải lên. Vui lòng tải ảnh lại.');
+      return;
+    }
+
+    setError('');
+    pickupImageDraftRef.current = {
+      orderId: activeOrder?.id || activeOrderId,
+      imageUrl: uploadedImageUrl,
+    };
+    console.info('[Staff Pickup] Uploaded image URL', {
+      orderId: pickupImageDraftRef.current.orderId,
+      handoverImageUrl: uploadedImageUrl,
+    });
+    setHandoverImageUrl(uploadedImageUrl);
   };
 
   const submitHandover = async () => {
     if (!activeOrder || !selectedDetailId) return;
     if (isSubmitting) return;
+
+    const draftedHandoverImageUrl =
+      pickupImageDraftRef.current.orderId === activeOrder.id
+        ? pickupImageDraftRef.current.imageUrl
+        : '';
+    const submittedImageUrl = (handoverImageUrl || draftedHandoverImageUrl).trim();
+    if (mode === 'PICKUP') {
+      if (submittedImageUrl && handoverImageUrl !== submittedImageUrl) {
+        setHandoverImageUrl(submittedImageUrl);
+      }
+      console.info('[Staff Pickup] Confirm Pickup image URL', {
+        handoverImageUrl,
+        draftedHandoverImageUrl,
+        payloadImageUrl: submittedImageUrl,
+      });
+    }
+    if (mode === 'PICKUP' && !submittedImageUrl) {
+      setError('Vui lòng tải ảnh minh chứng trước khi xác nhận Pickup.');
+      return;
+    }
+    if (mode === 'RETURN' && !submittedImageUrl) {
+      setError('Vui lòng tải ảnh minh chứng trước khi xác nhận Return.');
+      return;
+    }
 
     setIsSubmitting(true);
     setError('');
@@ -186,11 +315,11 @@ export function useStaffRentalOrders(currentUser) {
 
     const payload = mode === 'PICKUP'
       ? {
-          imageUrl: handoverImageUrl,
+          imageUrl: submittedImageUrl,
           note,
         }
       : {
-          imageUrl: handoverImageUrl,
+          imageUrl: submittedImageUrl,
           note,
           assessments: [
             {
@@ -202,16 +331,25 @@ export function useStaffRentalOrders(currentUser) {
           ]
         };
 
-    try {
-      if (mode === 'PICKUP') {
-        await createPickupHandover(activeOrder.id, payload);
-      } else {
-        await createReturnHandover(activeOrder.id, payload);
-      }
+    if (mode === 'PICKUP') {
+      console.info('[Staff Pickup] Confirm Pickup payload', {
+        handoverImageUrl,
+        payloadImageUrl: payload.imageUrl,
+        payload,
+      });
+    }
 
-      const refreshedOrder = await fetchStaffOrder(activeOrder.id);
+    try {
+      const savedHandovers = mode === 'PICKUP'
+        ? await createPickupHandover(activeOrder.id, payload)
+        : await createReturnHandover(activeOrder.id, payload);
+
+      rememberConfirmedHandovers(activeOrder.id, savedHandovers, payload, mode);
+
+      const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
       setActiveOrder(refreshedOrder);
       setSelectedDetailId(refreshedOrder.details?.[0]?.id || '');
+      pickupImageDraftRef.current = { orderId: null, imageUrl: '' };
       setHandoverImageUrl('');
       setNote('');
       setLateFee(0);
@@ -223,6 +361,41 @@ export function useStaffRentalOrders(currentUser) {
       setError(submitError.message || 'Hệ thống gặp sự cố khi lưu biên bản.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const updateHandoverEvidenceImage = async (handoverType, asset) => {
+    if (!activeOrder?.id || updatingHandoverImageType) return;
+
+    const imageUrl = getHandoverImageUrl(asset);
+    if (!imageUrl) {
+      setError('Không nhận được URL ảnh sau khi tải lên. Vui lòng tải ảnh lại.');
+      return;
+    }
+
+    setUpdatingHandoverImageType(handoverType);
+    setError('');
+    setMessage('');
+
+    try {
+      const savedHandovers = await updateHandoverImage(activeOrder.id, handoverType, imageUrl);
+      rememberConfirmedHandovers(activeOrder.id, savedHandovers, { imageUrl }, handoverType);
+
+      const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
+      setActiveOrder(refreshedOrder);
+      setSelectedDetailId(refreshedOrder.details?.[0]?.id || '');
+      setOrders((currentOrders) => currentOrders.map((order) => (
+        String(order.id) === String(refreshedOrder.id)
+          ? applyConfirmedHandoverFallback({ ...order, handovers: refreshedOrder.handovers })
+          : order
+      )));
+      setMessage(handoverType === 'PICKUP'
+        ? 'Đã cập nhật ảnh minh chứng Pickup.'
+        : 'Đã cập nhật ảnh minh chứng Return.');
+    } catch (updateError) {
+      setError(updateError.message || 'Không thể cập nhật ảnh minh chứng.');
+    } finally {
+      setUpdatingHandoverImageType('');
     }
   };
 
@@ -281,6 +454,7 @@ export function useStaffRentalOrders(currentUser) {
     previewImage,
     isLoading: canUseStaffTools ? !loadedUserKey || loadedUserKey !== requestKey || isLoading : false,
     isSubmitting,
+    updatingHandoverImageType,
     message,
     error,
     activeTotals,
@@ -293,6 +467,7 @@ export function useStaffRentalOrders(currentUser) {
     setNote,
     setPreviewImage,
     handleHandoverImageUploaded,
+    updateHandoverEvidenceImage,
     submitHandover,
     lateFee,
     setLateFee,

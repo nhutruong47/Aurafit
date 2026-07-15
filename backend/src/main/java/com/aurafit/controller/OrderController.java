@@ -1,6 +1,7 @@
 package com.aurafit.controller;
 
 import com.aurafit.dto.request.CheckoutRequest;
+import com.aurafit.dto.request.HandoverImageUpdateRequest;
 import com.aurafit.dto.request.PickupRequestDTO;
 import com.aurafit.dto.request.ReturnRequestDTO;
 import com.aurafit.dto.response.ApiResponse;
@@ -8,6 +9,7 @@ import com.aurafit.dto.response.HandoverRecordDTO;
 import com.aurafit.dto.response.OrderResponse;
 import com.aurafit.dto.response.OrderSummaryResponse;
 import com.aurafit.dto.response.StaffOrderDetailResponse;
+import com.aurafit.enums.HandoverType;
 import com.aurafit.service.OrderService;
 import com.aurafit.service.StaffService;
 import com.aurafit.service.UserService;
@@ -112,6 +114,22 @@ public class OrderController {
         Long staffUserId = extractUserId(authentication);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Return handover recorded.", orderService.processReturnHandover(orderId, staffUserId, request), HttpStatus.CREATED));
+    }
+
+    @PatchMapping("/{orderId}/handovers/{handoverType}/image")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @Operation(summary = "Update pickup/return handover evidence image")
+    public ResponseEntity<ApiResponse<List<HandoverRecordDTO>>> updateHandoverImage(
+            Authentication authentication,
+            @PathVariable Long orderId,
+            @PathVariable HandoverType handoverType,
+            @Valid @RequestBody HandoverImageUpdateRequest request
+    ) {
+        Long staffUserId = extractUserId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Handover image updated.",
+                orderService.updateHandoverImage(orderId, staffUserId, handoverType, request)
+        ));
     }
 
     @PutMapping("/{orderId}/cancel")

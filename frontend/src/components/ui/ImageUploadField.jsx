@@ -1,8 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { uploadImage } from '../../services/uploadService';
 
 const ACCEPTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
+const getUploadAssetUrl = (asset) => (
+  asset?.secureUrl || asset?.secure_url || asset?.imageUrl || asset?.image_url || asset?.url || ''
+).trim();
 
 const formatFileSize = (sizeInBytes) => {
   if (!Number.isFinite(sizeInBytes) || sizeInBytes <= 0) {
@@ -17,6 +21,8 @@ export default function ImageUploadField({
   value,
   disabled = false,
   readyLabel = 'Ảnh đã sẵn sàng để sử dụng.',
+  autoUpload = false,
+  showPreview = true,
   onUploaded,
 }) {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -24,6 +30,7 @@ export default function ImageUploadField({
   const [uploadedAsset, setUploadedAsset] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
+  const autoUploadFileKeyRef = useRef('');
 
   useEffect(() => {
     if (!selectedFile) {
@@ -47,7 +54,7 @@ export default function ImageUploadField({
       return;
     }
 
-    if (uploadedAsset?.secureUrl === value) {
+    if (getUploadAssetUrl(uploadedAsset) === value) {
       return;
     }
 
@@ -55,7 +62,7 @@ export default function ImageUploadField({
   }, [uploadedAsset, value]);
 
   const previewUrl = useMemo(
-    () => localPreviewUrl || uploadedAsset?.secureUrl || value || '',
+    () => localPreviewUrl || getUploadAssetUrl(uploadedAsset) || value || '',
     [localPreviewUrl, uploadedAsset, value]
   );
 
@@ -78,6 +85,7 @@ export default function ImageUploadField({
     const nextFile = event.target.files?.[0] || null;
     setError('');
     setUploadedAsset(null);
+    autoUploadFileKeyRef.current = '';
 
     if (!nextFile) {
       setSelectedFile(null);
@@ -113,6 +121,14 @@ export default function ImageUploadField({
     }
   };
 
+  useEffect(() => {
+    if (!autoUpload || !selectedFile || isUploading || uploadedAsset) return;
+    const fileKey = `${selectedFile.name}:${selectedFile.size}:${selectedFile.lastModified}`;
+    if (autoUploadFileKeyRef.current === fileKey) return;
+    autoUploadFileKeyRef.current = fileKey;
+    handleUpload();
+  }, [autoUpload, selectedFile, isUploading, uploadedAsset]);
+
   return (
     <div className="space-y-3">
       <div>
@@ -133,12 +149,13 @@ export default function ImageUploadField({
         </div>
       )}
 
-      {previewUrl && (
+      {showPreview && previewUrl && (
         <div className="overflow-hidden border border-[#ebe7df] bg-[#fafaf8]">
           <img src={previewUrl} alt="Xem trước ảnh tải lên" className="aspect-[3/4] w-full object-cover" />
         </div>
       )}
 
+      {!autoUpload && (
       <button
         type="button"
         onClick={handleUpload}
@@ -147,11 +164,27 @@ export default function ImageUploadField({
       >
         {isUploading ? 'Đang tải ảnh...' : 'Tải ảnh lên'}
       </button>
+      )}
 
-      {(uploadedAsset?.secureUrl || value) && (
+      {autoUpload && selectedFile && isUploading && (
+        <p className="border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">Đang tải ảnh lên Cloudinary...</p>
+      )}
+
+      {autoUpload && selectedFile && error && !isUploading && (
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={disabled}
+          className="bg-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777]"
+        >
+          Tải ảnh lên lại
+        </button>
+      )}
+
+      {(getUploadAssetUrl(uploadedAsset) || value) && (
         <div className="border border-[#ebe7df] bg-[#fafaf8] p-3 text-xs text-[#5f5e5e]">
           <p className="font-medium text-black">{readyLabel}</p>
-          <p className="mt-1 break-all">{uploadedAsset?.secureUrl || value}</p>
+          <p className="mt-1 break-all">{getUploadAssetUrl(uploadedAsset) || value}</p>
         </div>
       )}
 
