@@ -25,4 +25,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     );
 
     Optional<Payment> findFirstByTransactionId(String transactionId);
+
+    @Query("""
+            SELECT p FROM Payment p
+            WHERE p.rentalOrder.id = :orderId
+              AND p.type = :type
+            """)
+    Optional<Payment> findByRentalOrderIdAndType(
+            @Param("orderId") Long orderId,
+            @Param("type") com.aurafit.enums.PaymentType type
+    );
 }

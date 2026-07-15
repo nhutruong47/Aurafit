@@ -11,5 +11,7 @@ public interface PaymentService {
 
     void processSePayWebhook(SePayWebhookRequest webhookBody, String authToken);
 
+    void processTestWebhook(SePayWebhookRequest webhookBody);
+
     PaymentStatusResponse getPaymentStatus(Long orderId, String currentUserEmail);
 }

@@ -142,16 +142,44 @@ public class PaymentServiceImpl implements PaymentService {
                 }
                 Long orderId = Long.valueOf(matcher.group(1));
 
-                Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(
-                                orderId, PaymentStatus.PENDING, com.aurafit.enums.PaymentType.PAYMENT)
+                Payment payment = paymentRepository.findByRentalOrderIdAndType(
+                                orderId, com.aurafit.enums.PaymentType.PAYMENT)
                                 .orElseThrow(() -> new BadRequestException(
-                                                "No pending payment found for orderId: " + orderId));
+                                                "No payment found for orderId: " + orderId));
 
                 if (webhookBody.transferAmount().compareTo(payment.getAmount()) < 0) {
                         throw new BadRequestException(
                                         "Transfer amount mismatch. Expected >= " + payment.getAmount()
                                                         + ", got " + webhookBody.transferAmount());
                 }
+
+                payment.setStatus(PaymentStatus.PAID);
+                payment.setTransactionId(webhookBody.code());
+                paymentRepository.save(payment);
+
+                RentalOrder order = payment.getRentalOrder();
+                order.setStatus(OrderStatus.CONFIRMED);
+                rentalOrderRepository.save(order);
+        }
+
+        @Override
+        @Transactional(rollbackFor = Exception.class)
+        public void processTestWebhook(SePayWebhookRequest webhookBody) {
+                if (paymentRepository.findFirstByTransactionId(webhookBody.code()).isPresent()) {
+                        return;
+                }
+
+                Matcher matcher = ORDER_ID_PATTERN.matcher(webhookBody.content());
+                if (!matcher.find()) {
+                        throw new BadRequestException(
+                                        "No valid order reference found in transfer content: " + webhookBody.content());
+                }
+                Long orderId = Long.valueOf(matcher.group(1));
+
+                Payment payment = paymentRepository.findByRentalOrderIdAndType(
+                                orderId, com.aurafit.enums.PaymentType.PAYMENT)
+                                .orElseThrow(() -> new BadRequestException(
+                                                "No payment found for orderId: " + orderId));
 
                 payment.setStatus(PaymentStatus.PAID);
                 payment.setTransactionId(webhookBody.code());
@@ -188,8 +216,7 @@ public class PaymentServiceImpl implements PaymentService {
                 String paymentContent = "ARF" + orderId;
 
                 return paymentRepository
-                                .findByRentalOrderIdAndStatusAndType(orderId, PaymentStatus.PENDING,
-                                                com.aurafit.enums.PaymentType.PAYMENT)
+                                .findByRentalOrderIdAndType(orderId, com.aurafit.enums.PaymentType.PAYMENT)
                                 .map(p -> new PaymentStatusResponse(p.getStatus(), paymentContent, p.getAmount(),
                                                 p.getTransactionId()))
                                 .orElseGet(() -> new PaymentStatusResponse(null, paymentContent, null, null));
