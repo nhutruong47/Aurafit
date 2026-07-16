@@ -4,6 +4,7 @@ import com.aurafit.entity.Costume;
 import com.aurafit.enums.CostumeStatus;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record AdminCostumeDTO(
         Long id,
@@ -13,6 +14,7 @@ public record AdminCostumeDTO(
         BigDecimal rentalPrice,
         BigDecimal depositPrice,
         String imageUrl,
+        List<String> imageUrls,
         CostumeStatus status,
         CategoryDTO category,
 
@@ -33,7 +35,8 @@ public record AdminCostumeDTO(
                 costume.getDescription(),
                 costume.getRentalPrice(),
                 costume.getDepositPrice(),
-                costume.getImageUrl(),
+                costume.getPrimaryImageUrl(),
+                costume.getAllImageUrls(),
                 costume.getStatus(),
                 CategoryDTO.fromEntity(costume.getCategory()),
 

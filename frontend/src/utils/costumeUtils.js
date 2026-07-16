@@ -12,7 +12,20 @@ export const extractCategoryName = (value) => {
 };
 
 export const getCostumeImage = (costume) =>
-  costume?.imageUrl || costume?.image_url || costume?.image || fallbackCostumeImage;
+  costume?.imageUrls?.[0] || costume?.imageUrl || costume?.image_url || costume?.image || fallbackCostumeImage;
+
+export const getCostumeImages = (costume) => {
+  const imageUrls = Array.isArray(costume?.imageUrls)
+    ? costume.imageUrls.filter((imageUrl) => typeof imageUrl === 'string' && imageUrl.trim())
+    : [];
+
+  if (imageUrls.length > 0) {
+    return imageUrls;
+  }
+
+  const legacyImageUrl = costume?.imageUrl || costume?.image_url || costume?.image;
+  return legacyImageUrl ? [legacyImageUrl] : [fallbackCostumeImage];
+};
 
 export const getCostumeRentalPriceValue = (costume) =>
   Number(costume?.rentalPrice ?? costume?.rental_price ?? costume?.priceValue ?? costume?.price ?? 0);

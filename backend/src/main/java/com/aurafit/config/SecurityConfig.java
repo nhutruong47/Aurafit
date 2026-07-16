@@ -56,8 +56,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/recommendations/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/clubs/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-
                 // Swagger UI & OpenAPI docs
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 

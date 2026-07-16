@@ -5,6 +5,7 @@ import com.aurafit.dto.response.UploadAssetResponse;
 import com.aurafit.entity.UploadAsset;
 import com.aurafit.entity.User;
 import com.aurafit.exception.BadRequestException;
+import com.aurafit.exception.CloudinaryUploadException;
 import com.aurafit.exception.FileUploadException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.UploadAssetRepository;
@@ -21,14 +22,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.StandardOpenOption;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -45,7 +41,6 @@ public class UploadServiceImpl implements UploadService {
     private final UploadAssetRepository uploadAssetRepository;
     private final UserRepository userRepository;
     private final String imageFolder;
-    private final String publicBaseUrl;
     private final long maxImageSizeBytes;
 
     public UploadServiceImpl(
@@ -54,14 +49,12 @@ public class UploadServiceImpl implements UploadService {
             UploadAssetRepository uploadAssetRepository,
             UserRepository userRepository,
             @Value("${app.upload.image-folder:aurafit}") String imageFolder,
-            @Value("${app.public-base-url:http://localhost:8080}") String publicBaseUrl,
             @Value("${app.upload.max-image-size-bytes:5242880}") long maxImageSizeBytes
     ) {
         this.cloudinary = cloudinary;
         this.uploadAssetRepository = uploadAssetRepository;
         this.userRepository = userRepository;
         this.imageFolder = imageFolder;
-        this.publicBaseUrl = publicBaseUrl;
         this.maxImageSizeBytes = maxImageSizeBytes;
 
         // Force validated Cloudinary properties to be resolved when the upload service is wired.
@@ -85,7 +78,7 @@ public class UploadServiceImpl implements UploadService {
         String detectedFormat = detectImageFormat(content);
         validateExtensionMatchesFormat(extension, detectedFormat);
 
-        Map<?, ?> uploadResult = uploadToCloudinary(content, originalFileName, extension);
+        Map<?, ?> uploadResult = uploadToCloudinary(userId, content, originalFileName);
         String publicId = getRequiredString(uploadResult, "public_id");
 
         try {
@@ -175,7 +168,7 @@ public class UploadServiceImpl implements UploadService {
         }
     }
 
-    private Map<?, ?> uploadToCloudinary(byte[] content, String originalFileName, String extension) {
+    private Map<?, ?> uploadToCloudinary(Long userId, byte[] content, String originalFileName) {
         try {
             return cloudinary.uploader().upload(content, ObjectUtils.asMap(
                     "folder", imageFolder,
@@ -188,55 +181,9 @@ public class UploadServiceImpl implements UploadService {
         } catch (IOException ex) {
             throw new FileUploadException("Tải ảnh lên máy chủ lưu trữ thất bại.", ex);
         } catch (RuntimeException ex) {
-            log.warn("Cloudinary upload failed, storing image locally instead: {}", ex.getMessage());
-            return storeLocalImage(content, originalFileName, extension);
+            log.error("Cloudinary upload failed for user {}: {}", userId, ex.getMessage(), ex);
+            throw new CloudinaryUploadException("Không thể tải ảnh lên. Vui lòng thử lại sau.", ex);
         }
-    }
-
-    private Map<String, Object> storeLocalImage(byte[] content, String originalFileName, String extension) {
-        try {
-            String folderName = sanitizePathPart(imageFolder);
-            String fileName = UUID.randomUUID() + "." + extension;
-            Path uploadDir = Path.of("uploads", folderName).toAbsolutePath().normalize();
-            Files.createDirectories(uploadDir);
-            Path targetFile = uploadDir.resolve(fileName).normalize();
-
-            if (!targetFile.startsWith(uploadDir)) {
-                throw new FileUploadException("Duong dan luu anh khong hop le.");
-            }
-
-            Files.write(targetFile, content, StandardOpenOption.CREATE_NEW);
-
-            String publicId = folderName + "/" + fileName;
-            String publicUrl = trimTrailingSlash(publicBaseUrl) + "/uploads/" + publicId;
-
-            Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("public_id", "local/" + publicId);
-            payload.put("url", publicUrl);
-            payload.put("secure_url", publicUrl);
-            payload.put("resource_type", "image");
-            payload.put("format", extension);
-            payload.put("bytes", content.length);
-            payload.put("original_filename", originalFileName);
-            return payload;
-        } catch (IOException ex) {
-            throw new FileUploadException("Khong the luu anh vao thu muc local.", ex);
-        }
-    }
-
-    private String sanitizePathPart(String value) {
-        if (!StringUtils.hasText(value)) {
-            return "aurafit";
-        }
-        String sanitized = value.replaceAll("[^a-zA-Z0-9._-]", "-");
-        return StringUtils.hasText(sanitized) ? sanitized : "aurafit";
-    }
-
-    private String trimTrailingSlash(String value) {
-        if (!StringUtils.hasText(value)) {
-            return "http://localhost:8080";
-        }
-        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
     private void deleteCloudinaryAssetQuietly(String publicId) {

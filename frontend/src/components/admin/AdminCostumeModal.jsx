@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { AdminField } from './AdminDashboardShared';
-import ImageUploadField from '../ui/ImageUploadField';
+import ImageGalleryUploadField from '../ui/ImageGalleryUploadField';
 import SearchableSelect from '../ui/SearchableSelect';
 import {
   fetchAdminCostumeItems,
@@ -90,7 +90,7 @@ export default function AdminCostumeModal({
   editingProductId,
   productForm,
   onProductFieldChange,
-  onProductImageUploaded,
+  onProductImagesChange,
   onSubmitProduct,
   isSavingProduct,
   productMessage,
@@ -100,6 +100,7 @@ export default function AdminCostumeModal({
   const backdropRef = useRef(null);
   const contentRef = useRef(null);
   const [activeTab, setActiveTab] = useState('general');
+  const [imageUploadState, setImageUploadState] = useState({ isUploading: false, error: '' });
 
   // --- Inventory state ---
   const [items, setItems] = useState([]);
@@ -117,6 +118,7 @@ export default function AdminCostumeModal({
       setItemForm(emptyItemForm);
       setEditingItemId(null);
       setSkuManuallyEdited(false);
+      setImageUploadState({ isUploading: false, error: '' });
     }
   }, [isOpen, editingProductId]);
 
@@ -234,6 +236,20 @@ export default function AdminCostumeModal({
 
   const handleSubmitGeneral = async (e) => {
     e.preventDefault();
+
+    if (imageUploadState.isUploading) {
+      useToastStore.getState().addToast('Vui lòng chờ ảnh tải lên hoàn tất trước khi lưu sản phẩm.', 'error');
+      return;
+    }
+
+    if (imageUploadState.error) {
+      useToastStore.getState().addToast(
+        `Không thể lưu sản phẩm vì có ảnh tải lên thất bại: ${imageUploadState.error}`,
+        'error'
+      );
+      return;
+    }
+
     await onSubmitProduct(e);
   };
 
@@ -303,11 +319,13 @@ export default function AdminCostumeModal({
               <AdminField label="Tên sản phẩm" name="name" value={productForm.name} onChange={onProductFieldChange} />
               <AdminField label="Slug (tự động tạo)" name="slug" value={productForm.slug} onChange={onProductFieldChange} required={false} />
               <AdminField label="Mô tả" name="description" value={productForm.description} onChange={onProductFieldChange} multiline required={false} />
-              <ImageUploadField
+              <ImageGalleryUploadField
                 key={editingProductId || 'new-product'}
                 label="Ảnh sản phẩm"
-                value={productForm.imageUrl}
-                onUploaded={onProductImageUploaded}
+                value={productForm.imageUrls}
+                onChange={onProductImagesChange}
+                onUploadStateChange={setImageUploadState}
+                disabled={isSavingProduct}
               />
 
               <div className="grid grid-cols-2 gap-3">
@@ -376,10 +394,16 @@ export default function AdminCostumeModal({
 
               <div className="flex gap-3 pt-2">
                 <button
-                  disabled={isSavingProduct}
+                  disabled={isSavingProduct || imageUploadState.isUploading || Boolean(imageUploadState.error)}
                   className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
                 >
-                  {isSavingProduct ? 'Đang lưu...' : editingProductId ? 'Cập nhật sản phẩm' : 'Đăng tải sản phẩm'}
+                  {imageUploadState.isUploading
+                    ? 'Đang tải ảnh...'
+                    : isSavingProduct
+                      ? 'Đang lưu...'
+                      : editingProductId
+                        ? 'Cập nhật sản phẩm'
+                        : 'Đăng tải sản phẩm'}
                 </button>
                 <button
                   type="button"

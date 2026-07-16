@@ -47,7 +47,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     setProductCategoryFilter,
     setProductStatusFilter,
     handleProductFieldChange,
-    handleProductImageUploaded,
+    handleProductImagesChange,
     hydrateProductForm,
     resetProductForm,
     submitProduct,
@@ -230,7 +230,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               onProductCategoryFilterChange={setProductCategoryFilter}
               onProductStatusFilterChange={setProductStatusFilter}
               onProductFieldChange={handleProductFieldChange}
-              onProductImageUploaded={handleProductImageUploaded}
+              onProductImagesChange={handleProductImagesChange}
               onEditProduct={hydrateProductForm}
               onResetProductForm={resetProductForm}
               onSubmitProduct={handleSubmitProduct}

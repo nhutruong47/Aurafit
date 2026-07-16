@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { uploadImage } from '../../services/uploadService';
+import { notify } from '../../utils/notify';
 
 const ACCEPTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -62,8 +63,12 @@ export default function ImageUploadField({
   }, [uploadedAsset, value]);
 
   const previewUrl = useMemo(
-    () => localPreviewUrl || getUploadAssetUrl(uploadedAsset) || value || '',
-    [localPreviewUrl, uploadedAsset, value]
+    () => (
+      error
+        ? getUploadAssetUrl(uploadedAsset) || value || ''
+        : localPreviewUrl || getUploadAssetUrl(uploadedAsset) || value || ''
+    ),
+    [error, localPreviewUrl, uploadedAsset, value]
   );
 
   const validateSelectedFile = (file) => {
@@ -96,8 +101,10 @@ export default function ImageUploadField({
       validateSelectedFile(nextFile);
       setSelectedFile(nextFile);
     } catch (validationError) {
+      const message = validationError.message || 'Tệp hình ảnh không hợp lệ.';
       setSelectedFile(null);
-      setError(validationError.message || 'Tệp hình ảnh không hợp lệ.');
+      setError(message);
+      notify.error(message);
     }
   };
 
@@ -115,7 +122,10 @@ export default function ImageUploadField({
       setUploadedAsset(asset);
       onUploaded?.(asset);
     } catch (uploadError) {
-      setError(uploadError.message || 'Hệ thống không thể tải hình ảnh lên máy chủ.');
+      const detail = uploadError.message || 'Hệ thống không thể tải hình ảnh lên máy chủ.';
+      const message = `Ảnh "${selectedFile.name}" tải lên thất bại: ${detail}`;
+      setError(message);
+      notify.error(message);
     } finally {
       setIsUploading(false);
     }

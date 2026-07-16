@@ -5,7 +5,7 @@ import {
   fallbackCostumeImage,
   getCostumeDepositPriceValue,
   getCostumeDisplayCategory,
-  getCostumeImage,
+  getCostumeImages,
   getCostumeInventorySummary,
   getCostumeItems,
   getCostumeRentalPriceValue,
@@ -39,8 +39,13 @@ export default function ProductHero({
   const today = getLocalDateString();
   const [dateError, setDateError] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [selectedImageUrl, setSelectedImageUrl] = useState('');
   const cartItems = useSelector((state) => state.cart.items);
   const availableItems = useMemo(() => getCostumeItems(product), [product]);
+  const costumeImages = useMemo(() => getCostumeImages(product), [product]);
+  const activeImageUrl = costumeImages.includes(selectedImageUrl)
+    ? selectedImageUrl
+    : costumeImages[0];
   const categoryLabel = getCostumeDisplayCategory(product);
   const tag = getCostumeTag(product);
   const rentalPriceValue = getCostumeRentalPriceValue(product);
@@ -196,13 +201,45 @@ export default function ProductHero({
       <div className="flex w-full justify-center overflow-hidden border-b border-[#cfc4c5]/30 bg-[#f5f4f3] md:w-[42%] md:border-b-0 md:border-r">
         <div className="w-full">
           <img
-            src={getCostumeImage(product)}
+            src={activeImageUrl}
             alt={product.name}
             onError={(event) => {
               event.currentTarget.src = fallbackCostumeImage;
             }}
             className="max-h-[60vh] w-full object-cover md:max-h-[550px]"
           />
+
+          {costumeImages.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto border-t border-[#cfc4c5]/30 p-3">
+              {costumeImages.map((imageUrl, index) => {
+                const isSelected = imageUrl === activeImageUrl;
+
+                return (
+                  <button
+                    key={`${imageUrl}-${index}`}
+                    type="button"
+                    onClick={() => setSelectedImageUrl(imageUrl)}
+                    className={`h-20 w-16 flex-none overflow-hidden border-2 bg-white transition ${
+                      isSelected
+                        ? 'border-black'
+                        : 'border-transparent opacity-70 hover:border-[#99854e] hover:opacity-100'
+                    }`}
+                    aria-label={`Xem ảnh sản phẩm ${index + 1}`}
+                    aria-pressed={isSelected}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`${product.name} - ảnh ${index + 1}`}
+                      onError={(event) => {
+                        event.currentTarget.src = fallbackCostumeImage;
+                      }}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

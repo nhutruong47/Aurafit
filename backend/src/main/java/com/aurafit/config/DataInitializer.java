@@ -2,6 +2,7 @@ package com.aurafit.config;
 
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
+import com.aurafit.entity.CostumeImage;
 import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.CostumeMetadata;
 import com.aurafit.entity.User;
@@ -72,6 +73,33 @@ public class DataInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         seedCatalog();
+        backfillLegacyCostumeImages();
+    }
+
+    private void backfillLegacyCostumeImages() {
+        int backfilledCostumeCount = 0;
+
+        for (Costume costume : costumeRepository.findAll()) {
+            if (costume.getImages() != null && !costume.getImages().isEmpty()) {
+                continue;
+            }
+
+            String legacyImageUrl = costume.getPrimaryImageUrl();
+            if (legacyImageUrl == null || legacyImageUrl.isBlank()) {
+                continue;
+            }
+
+            costume.getImages().add(CostumeImage.builder()
+                    .costume(costume)
+                    .imageUrl(legacyImageUrl)
+                    .displayOrder(0)
+                    .primary(true)
+                    .build());
+            costumeRepository.save(costume);
+            backfilledCostumeCount++;
+        }
+
+        log.info("Legacy costume image backfill completed: {} costumes updated.", backfilledCostumeCount);
     }
 
     private void seedCatalog() {
@@ -294,13 +322,30 @@ public class DataInitializer implements CommandLineRunner {
         costume.setDescription(buildDescription(categorySeed, costumeSeed, categoryCostumeIndex, globalCostumeIndex));
         costume.setRentalPrice(money(costumeSeed.rentalPrice()));
         costume.setDepositPrice(money(costumeSeed.depositPrice()));
-        costume.setImageUrl(buildImageUrl(categorySeed, costumeSeed));
         costume.setStatus(CostumeStatus.ACTIVE);
         costume.setCategory(category);
 
         Costume savedCostume = costumeRepository.save(costume);
+        applySeedCostumeImages(savedCostume);
+        savedCostume = costumeRepository.save(savedCostume);
         costumesByKey.put(key, savedCostume);
         return savedCostume;
+    }
+
+    private void applySeedCostumeImages(Costume costume) {
+        if (costume.getImages() != null && !costume.getImages().isEmpty()) {
+            return;
+        }
+
+        List<String> imageUrls = buildImageUrls(costume.getId());
+        for (int index = 0; index < imageUrls.size(); index++) {
+            costume.getImages().add(CostumeImage.builder()
+                    .costume(costume)
+                    .imageUrl(imageUrls.get(index))
+                    .displayOrder(index)
+                    .primary(index == 0)
+                    .build());
+        }
     }
 
     private int ensureLeafCategoryCoverage(Map<String, Category> categoriesByPath,
@@ -980,10 +1025,16 @@ public class DataInitializer implements CommandLineRunner {
         };
     }
 
-    private String buildImageUrl(CategorySeed categorySeed, CostumeSeed costumeSeed) {
-        return String.format("https://picsum.photos/seed/aurafit-%s-%s/900/1200",
-                slugify(categorySeed.code()),
-                slugify(costumeSeed.name()));
+    private List<String> buildImageUrls(Long costumeId) {
+        List<String> imageUrls = new ArrayList<>();
+        for (int index = 0; index < 3; index++) {
+            imageUrls.add(String.format(
+                    "https://picsum.photos/seed/aurafit-%d-%d/800/1000",
+                    costumeId,
+                    index
+            ));
+        }
+        return imageUrls;
     }
 
     private String buildSku(String categoryCode, int costumeNumber, int itemNumber) {

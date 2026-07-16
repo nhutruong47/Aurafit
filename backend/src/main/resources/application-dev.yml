@@ -26,12 +26,6 @@ spring:
         format_sql: false
         generate_statistics: false
 
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:db/init/categories-backfill.sql
-      separator: "@@"
-
   # -- Gmail SMTP (App Password) -----------------------------------------------
   mail:
     host: smtp.gmail.com

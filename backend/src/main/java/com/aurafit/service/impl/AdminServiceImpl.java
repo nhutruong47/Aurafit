@@ -8,6 +8,7 @@ import com.aurafit.dto.response.AdminCostumeDTO;
 import com.aurafit.dto.response.CostumeItemDTO;
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
+import com.aurafit.entity.CostumeImage;
 import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.User;
 import com.aurafit.enums.CostumeStatus;
@@ -97,11 +98,11 @@ public class AdminServiceImpl implements AdminService {
                 .description(request.description())
                 .rentalPrice(request.rentalPrice())
                 .depositPrice(request.depositPrice())
-                .imageUrl(request.imageUrl())
                 .status(CostumeStatus.ACTIVE)
                 .category(category)
                 .build();
 
+        applyCostumeImages(costume, resolveImageUrls(request.imageUrl(), request.imageUrls()));
         Costume savedCostume = costumeRepository.save(costume);
         if (request.metadata() != null) {
             costumeMetadataService.upsertMetadata(savedCostume, request.metadata());
@@ -122,7 +123,7 @@ public class AdminServiceImpl implements AdminService {
         if (request.description() != null) costume.setDescription(request.description());
         if (request.rentalPrice() != null) costume.setRentalPrice(request.rentalPrice());
         if (request.depositPrice() != null) costume.setDepositPrice(request.depositPrice());
-        if (request.imageUrl() != null) costume.setImageUrl(request.imageUrl());
+        applyCostumeImages(costume, resolveImageUrls(request.imageUrl(), request.imageUrls()));
         if (request.categoryId() != null) {
             Category category = requireLeafActiveCategory(request.categoryId());
             costume.setCategory(category);
@@ -244,6 +245,24 @@ public class AdminServiceImpl implements AdminService {
         }
 
         return actor;
+    }
+
+    private List<String> resolveImageUrls(String imageUrl, List<String> imageUrls) {
+        if (imageUrls != null && !imageUrls.isEmpty()) return imageUrls;
+        if (imageUrl != null && !imageUrl.isBlank()) return List.of(imageUrl);
+        return List.of();
+    }
+
+    private void applyCostumeImages(Costume costume, List<String> imageUrls) {
+        costume.getImages().clear();
+        for (int i = 0; i < imageUrls.size(); i++) {
+            costume.getImages().add(CostumeImage.builder()
+                    .costume(costume)
+                    .imageUrl(imageUrls.get(i))
+                    .displayOrder(i)
+                    .primary(i == 0)
+                    .build());
+        }
     }
 
     private Category requireLeafActiveCategory(Long categoryId) {

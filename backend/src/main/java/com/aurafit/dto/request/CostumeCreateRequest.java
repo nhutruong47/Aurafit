@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record CostumeCreateRequest(
         @NotBlank(message = "Name is required")
@@ -23,7 +24,10 @@ public record CostumeCreateRequest(
         @Positive(message = "Deposit price must be positive")
         BigDecimal depositPrice,
 
+        // deprecated, dùng imageUrls
         String imageUrl,
+
+        List<String> imageUrls,
 
         @NotNull(message = "Category ID is required")
         Long categoryId,
