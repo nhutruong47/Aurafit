@@ -4,14 +4,18 @@ import com.aurafit.dto.request.PaymentCreateRequest;
 import com.aurafit.dto.request.SePayWebhookRequest;
 import com.aurafit.dto.response.PaymentInitResponse;
 import com.aurafit.dto.response.PaymentStatusResponse;
+import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.Payment;
 import com.aurafit.entity.RentalOrder;
+import com.aurafit.entity.RentalOrderDetail;
 import com.aurafit.entity.User;
+import com.aurafit.enums.ItemStatus;
 import com.aurafit.enums.OrderStatus;
 import com.aurafit.enums.PaymentMethod;
 import com.aurafit.enums.PaymentStatus;
 import com.aurafit.exception.BadRequestException;
 import com.aurafit.exception.ResourceNotFoundException;
+import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.PaymentRepository;
 import com.aurafit.repository.RentalOrderRepository;
 import com.aurafit.repository.UserRepository;
@@ -34,6 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
         private final PaymentRepository paymentRepository;
         private final RentalOrderRepository rentalOrderRepository;
         private final UserRepository userRepository;
+        private final CostumeItemRepository costumeItemRepository;
 
         @Value("${sepay.api-key}")
         private String sepayApiKey;
@@ -49,10 +54,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         public PaymentServiceImpl(PaymentRepository paymentRepository,
                         RentalOrderRepository rentalOrderRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        CostumeItemRepository costumeItemRepository) {
                 this.paymentRepository = paymentRepository;
                 this.rentalOrderRepository = rentalOrderRepository;
                 this.userRepository = userRepository;
+                this.costumeItemRepository = costumeItemRepository;
         }
 
         @Override
@@ -160,6 +167,15 @@ public class PaymentServiceImpl implements PaymentService {
                 RentalOrder order = payment.getRentalOrder();
                 order.setStatus(OrderStatus.CONFIRMED);
                 rentalOrderRepository.save(order);
+
+                // Promote inventory hold to active rental now that payment has cleared.
+                for (RentalOrderDetail detail : order.getDetails()) {
+                        CostumeItem item = detail.getCostumeItem();
+                        if (item != null && item.getStatus() == ItemStatus.RESERVED) {
+                                item.setStatus(ItemStatus.RENTED);
+                                costumeItemRepository.save(item);
+                        }
+                }
         }
 
         @Override
@@ -188,6 +204,15 @@ public class PaymentServiceImpl implements PaymentService {
                 RentalOrder order = payment.getRentalOrder();
                 order.setStatus(OrderStatus.CONFIRMED);
                 rentalOrderRepository.save(order);
+
+                // Mirror the real webhook: flip the held inventory to RENTED on test path too.
+                for (RentalOrderDetail detail : order.getDetails()) {
+                        CostumeItem item = detail.getCostumeItem();
+                        if (item != null && item.getStatus() == ItemStatus.RESERVED) {
+                                item.setStatus(ItemStatus.RENTED);
+                                costumeItemRepository.save(item);
+                        }
+                }
         }
 
         private String buildSepayVietQrUrl(String paymentContent, BigDecimal amount) {

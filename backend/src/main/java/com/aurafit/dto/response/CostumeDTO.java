@@ -29,12 +29,13 @@ public record CostumeDTO(
         List<InventorySummaryDTO> inventorySummary
 ) {
     public static CostumeDTO fromSummaryEntity(Costume costume) {
-        long availableCount = costume.getItems() == null ? 0 :
+        long pooledCount = costume.getItems() == null ? 0 :
                 costume.getItems().stream()
-                        .filter(item -> item.getStatus() == com.aurafit.enums.ItemStatus.AVAILABLE)
+                        .filter(item -> item.getStatus() == com.aurafit.enums.ItemStatus.AVAILABLE
+                                || item.getStatus() == com.aurafit.enums.ItemStatus.RESERVED)
                         .count();
 
-        return fromSummaryEntity(costume, (int) availableCount);
+        return fromSummaryEntity(costume, (int) pooledCount);
     }
 
     public static CostumeDTO fromSummaryEntity(Costume costume, int availableCount) {
@@ -57,9 +58,12 @@ public record CostumeDTO(
     }
 
     public static CostumeDTO fromEntity(Costume costume, List<InventorySummaryDTO> inventorySummary) {
-        long availableCount = costume.getItems() == null ? 0 :
+        // Pooled count (AVAILABLE + RESERVED) so the storefront shows items that are
+        // physically on-hand even when some units are temporarily held by a pending order.
+        long pooledCount = costume.getItems() == null ? 0 :
                 costume.getItems().stream()
-                        .filter(item -> item.getStatus() == com.aurafit.enums.ItemStatus.AVAILABLE)
+                        .filter(item -> item.getStatus() == com.aurafit.enums.ItemStatus.AVAILABLE
+                                || item.getStatus() == com.aurafit.enums.ItemStatus.RESERVED)
                         .count();
         return new CostumeDTO(
                 costume.getId(),
@@ -71,7 +75,7 @@ public record CostumeDTO(
                 costume.getPrimaryImageUrl(),
                 costume.getAllImageUrls(),
                 costume.getStatus(),
-                (int) availableCount,
+                (int) pooledCount,
                 CategoryDTO.fromEntity(costume.getCategory()),
                 CostumeMetadataDTO.fromEntity(costume.getMetadata()),
                 costume.getItems() == null ? List.of() :

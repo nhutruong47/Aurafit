@@ -8,6 +8,7 @@ import {
   getCostumeImage,
   getCostumeItems,
   getCostumeRentalPriceValue,
+  getCostumeReservedCount,
   getCostumeSubcategory,
   getCostumeTag,
   isCostumeAvailable,
@@ -33,6 +34,7 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
 
   const hasInlineRentalActions = Boolean(onAddToCart || onRentNow);
   const available = isCostumeAvailable(product);
+  const reservedCount = getCostumeReservedCount(product);
   const discountPercentage = product.discountPercentage || 0;
   const rentalPriceValue = getCostumeRentalPriceValue(product);
   const depositPriceValue = getCostumeDepositPriceValue(product);
@@ -143,6 +145,14 @@ export default function ShopProductCard({ product, onNavigate, onAddToCart, onRe
         >
           {available ? 'Còn hàng' : 'Tạm hết'}
         </span>
+        {reservedCount > 0 && available && (
+          <span
+            className="absolute bottom-3 left-3 z-10 bg-amber-100 px-2 py-1 text-[9px] font-medium uppercase tracking-wider text-amber-800"
+            title={`Có ${reservedCount} sản phẩm đang được giữ bởi đơn chưa thanh toán`}
+          >
+            🔒 {reservedCount} đang giữ chỗ
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-4">

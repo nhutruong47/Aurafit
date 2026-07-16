@@ -9,6 +9,7 @@ import {
   getCostumeInventorySummary,
   getCostumeItems,
   getCostumeRentalPriceValue,
+  getCostumeReservedCount,
   getCostumeSubcategory,
   getCostumeTag,
   isCostumeAvailable,
@@ -181,6 +182,20 @@ export default function ProductHero({
   const inCartQty = getInCartQty(selectedSize, selectedColor);
   const effectiveStock = Math.max(0, totalStock - inCartQty);
   const isVariantAvailable = effectiveStock > 0;
+
+  // Count of RESERVED units for the currently selected size+color — used to
+  // tell shoppers why stock may feel limited while a pending order exists.
+  const reservedCountForVariant = useMemo(() => {
+    if (!selectedSize && !selectedColor) {
+      return getCostumeReservedCount(product);
+    }
+    return getCostumeItems(product).filter(
+      (item) =>
+        item?.status === 'RESERVED' &&
+        (item.size || '') === selectedSize &&
+        (item.color || '') === selectedColor
+    ).length;
+  }, [product, selectedSize, selectedColor]);
 
   const handleRentNow = () => {
     if (!canRentNow || !isVariantAvailable) {
@@ -376,8 +391,16 @@ export default function ProductHero({
                     : 'border-red-200 bg-red-50 text-red-700'
                 }`}
               >
-                {isVariantAvailable ? `Còn ${effectiveStock} sản phẩm` : 'Hết hàng'}
+                {isVariantAvailable ? `Có thể đặt ${effectiveStock} sp` : 'Hết hàng'}
               </span>
+              <span className="text-[9px] font-medium text-[#777777]">
+                Tổng tồn kho: {totalStock} sp
+              </span>
+              {reservedCountForVariant > 0 && (
+                <span className="text-[9px] font-medium italic text-amber-600">
+                  {reservedCountForVariant} đang được giữ (chưa thanh toán)
+                </span>
+              )}
               {inCartQty > 0 && (
                 <span className="text-[9px] font-medium italic text-amber-600">
                   Đã có {inCartQty} trong giỏ hàng

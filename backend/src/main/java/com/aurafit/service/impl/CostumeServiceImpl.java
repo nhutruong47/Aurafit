@@ -192,7 +192,7 @@ public class CostumeServiceImpl implements CostumeService {
         Costume costume = costumeRepository.findByIdWithItems(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Costume", "id", id));
                 
-        List<InventorySummaryDTO> inventorySummary = inventoryRepository.getInventorySummaryByCostumeId(id, ItemStatus.AVAILABLE);
+        List<InventorySummaryDTO> inventorySummary = inventoryRepository.getPooledInventorySummaryByCostumeId(id);
 
         if (userId != null) {
             Cart cart = cartRepository.findByUserIdAndStatus(userId, CartStatus.ACTIVE).orElse(null);
@@ -316,7 +316,7 @@ public class CostumeServiceImpl implements CostumeService {
                 .toList();
 
         Map<Long, Integer> counts = new HashMap<>();
-        inventoryRepository.getAvailableItemCountsByCostumeIds(costumeIds, ItemStatus.AVAILABLE)
+        inventoryRepository.getPooledItemCountsByCostumeIds(costumeIds)
                 .forEach(row -> {
                     Long costumeId = row[0] instanceof Number number ? number.longValue() : null;
                     Integer availableCount = row[1] instanceof Number number ? number.intValue() : 0;

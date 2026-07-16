@@ -29,10 +29,11 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * @return A Page of Costume entities with their Category eagerly loaded.
      */
     @Query(value = """
-            SELECT c
+            SELECT DISTINCT c
             FROM Costume c
             JOIN FETCH c.category category
             LEFT JOIN FETCH c.metadata
+            LEFT JOIN FETCH c.items
             WHERE c.status = :status
               AND category.isActive = true
               AND (:categoryPath IS NULL OR category.path = :categoryPath OR category.path LIKE CONCAT(CAST(:categoryPath AS string), '/%'))
@@ -64,9 +65,10 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Seasonal/featured costumes for the homepage.
      */
     @Query(value = """
-            SELECT c FROM Costume c
+            SELECT DISTINCT c FROM Costume c
             JOIN FETCH c.category
             LEFT JOIN FETCH c.metadata
+            LEFT JOIN FETCH c.items
             WHERE c.status = :status
               AND c.category.isActive = true
             ORDER BY c.availableItemCount DESC
@@ -78,7 +80,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Currently returns random active costumes as a simple baseline.
      * TODO: Replace with ML-based collaborative filtering using user interaction history.
      */
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata WHERE c.status = :status AND c.category.isActive = true")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.status = :status AND c.category.isActive = true")
     List<Costume> findActiveCostumesForRecommendations(@Param("status") CostumeStatus status);
 
     @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id AND c.category.isActive = true")
@@ -110,9 +112,10 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
     );
 
     @Query(value = """
-            SELECT c FROM Costume c
+            SELECT DISTINCT c FROM Costume c
             JOIN FETCH c.category category
             LEFT JOIN FETCH c.metadata
+            LEFT JOIN FETCH c.items
             WHERE (:status IS NULL OR c.status = :status)
               AND (:categoryId IS NULL OR category.id = :categoryId)
               AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))

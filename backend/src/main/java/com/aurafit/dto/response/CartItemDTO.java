@@ -38,8 +38,8 @@ public record CartItemDTO(
 
         int availableStock = 1;
         if (costumeItemRepository != null) {
-            availableStock = costumeItemRepository.countByCostumeIdAndSizeAndColorAndStatus(
-                    costume.getId(), costumeItem.getSize(), costumeItem.getColor(), ItemStatus.AVAILABLE
+            availableStock = costumeItemRepository.countPooledByCostumeIdAndSizeAndColor(
+                    costume.getId(), costumeItem.getSize(), costumeItem.getColor()
             );
         }
 

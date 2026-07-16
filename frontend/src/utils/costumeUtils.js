@@ -115,6 +115,16 @@ export const getCostumeItems = (costume) =>
 export const getCostumeInventorySummary = (costume) =>
   Array.isArray(costume?.inventorySummary) ? costume.inventorySummary : [];
 
+/**
+ * Counts items currently being held by pending (unpaid) orders.
+ * The frontend uses this to show a "X đang được giữ" hint so shoppers
+ * understand why stock may differ from what they can actually book right now.
+ */
+export const getCostumeReservedCount = (costume) =>
+  Array.isArray(costume?.items)
+    ? costume.items.filter((item) => item?.status === 'RESERVED').length
+    : 0;
+
 export const getCostumePrice = (costume) => formatCurrency(getCostumeRentalPriceValue(costume));
 
 export const getCostumeDeposit = (costume) => formatCurrency(getCostumeDepositPriceValue(costume));
