@@ -61,4 +61,7 @@ public class Costume extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "costume", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CostumeItem> items = new ArrayList<>();
+
+    @org.hibernate.annotations.Formula("(SELECT COUNT(i.id) FROM costume_items i WHERE i.costume_id = id AND i.status = 'AVAILABLE')")
+    private int availableItemCount;
 }

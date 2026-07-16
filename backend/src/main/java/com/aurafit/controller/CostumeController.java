@@ -6,6 +6,7 @@ import com.aurafit.dto.request.CostumeItemUpdateRequest;
 import com.aurafit.dto.request.CostumeUpdateRequest;
 import com.aurafit.dto.response.AdminCostumeDTO;
 import com.aurafit.dto.response.ApiResponse;
+import com.aurafit.dto.response.CatalogCostumeDTO;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.CostumeItemDTO;
 import com.aurafit.dto.response.PaginatedResponse;
@@ -47,7 +48,7 @@ public class CostumeController {
 
     @GetMapping
     @Operation(summary = "Browse costumes", description = "Returns paginated list of ACTIVE costumes")
-    public ResponseEntity<ApiResponse<PaginatedResponse<CostumeDTO>>> getAllCostumes(
+    public ResponseEntity<ApiResponse<PaginatedResponse<CatalogCostumeDTO>>> getAllCostumes(
             Authentication authentication,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String categoryPath,
@@ -58,7 +59,7 @@ public class CostumeController {
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
         Long userId = extractUserIdSafely(authentication);
-        PaginatedResponse<CostumeDTO> response = costumeService.getAllActiveCostumes(
+        PaginatedResponse<CatalogCostumeDTO> response = costumeService.getAllActiveCostumes(
                 categoryId, categoryPath, keyword, pageNo, pageSize, sortBy, sortDir, userId
         );
         return ResponseEntity.ok(ApiResponse.success("Costumes retrieved successfully.", response));
@@ -82,13 +83,13 @@ public class CostumeController {
 
     @GetMapping("/seasonal")
     @Operation(summary = "Get seasonal costumes")
-    public ResponseEntity<ApiResponse<List<CostumeDTO>>> getSeasonalCostumes() {
+    public ResponseEntity<ApiResponse<List<CatalogCostumeDTO>>> getSeasonalCostumes() {
         return ResponseEntity.ok(ApiResponse.success("Seasonal costumes retrieved.", costumeService.getSeasonalCostumes(8)));
     }
 
     @GetMapping("/recommendations")
     @Operation(summary = "Get recommended costumes")
-    public ResponseEntity<ApiResponse<List<CostumeDTO>>> getRecommendedCostumes(
+    public ResponseEntity<ApiResponse<List<CatalogCostumeDTO>>> getRecommendedCostumes(
             @RequestParam(required = false) Long userId
     ) {
         return ResponseEntity.ok(ApiResponse.success("Recommended costumes retrieved.", costumeService.getRecommendedCostumes(userId, 6)));

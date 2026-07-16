@@ -1,5 +1,6 @@
 package com.aurafit.service.impl;
 
+import com.aurafit.dto.response.CatalogCostumeDTO;
 import com.aurafit.dto.response.CategoryDTO;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.PaginatedResponse;
@@ -54,7 +55,7 @@ public class CostumeServiceImpl implements CostumeService {
     }
 
     @Override
-    public PaginatedResponse<CostumeDTO> getAllActiveCostumes(Long categoryId, String categoryPath, String keyword,
+    public PaginatedResponse<CatalogCostumeDTO> getAllActiveCostumes(Long categoryId, String categoryPath, String keyword,
                                                               int pageNo, int pageSize,
                                                               String sortBy, String sortDir, Long userId) {
         // Build Sort object from parameters
@@ -75,14 +76,9 @@ public class CostumeServiceImpl implements CostumeService {
                 pageable
         );
 
-        Map<Long, Integer> availableCountsByCostumeId = getAvailableCountsByCostumeId(page.getContent());
-
         return PaginatedResponse.from(
                 page,
-                costume -> CostumeDTO.fromSummaryEntity(
-                        costume,
-                        availableCountsByCostumeId.getOrDefault(costume.getId(), 0)
-                )
+                CatalogCostumeDTO::fromEntity
         );
     }
 
@@ -115,22 +111,22 @@ public class CostumeServiceImpl implements CostumeService {
     }
 
     @Override
-    public List<CostumeDTO> getSeasonalCostumes(int limit) {
+    public List<CatalogCostumeDTO> getSeasonalCostumes(int limit) {
         return costumeRepository.findSeasonalCostumes(CostumeStatus.ACTIVE,
                         org.springframework.data.domain.PageRequest.of(0, limit))
                 .stream()
-                .map(CostumeDTO::fromEntity)
+                .map(CatalogCostumeDTO::fromEntity)
                 .toList();
     }
 
     @Override
-    public List<CostumeDTO> getRecommendedCostumes(Long userId, int limit) {
+    public List<CatalogCostumeDTO> getRecommendedCostumes(Long userId, int limit) {
         List<Costume> costumes = costumeRepository
                 .findActiveCostumesForRecommendations(CostumeStatus.ACTIVE);
         Collections.shuffle(costumes);
         return costumes.stream()
                 .limit(limit)
-                .map(CostumeDTO::fromEntity)
+                .map(CatalogCostumeDTO::fromEntity)
                 .toList();
     }
 

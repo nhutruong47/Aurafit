@@ -67,10 +67,9 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
             SELECT c FROM Costume c
             JOIN FETCH c.category
             LEFT JOIN FETCH c.metadata
-            LEFT JOIN FETCH c.items
             WHERE c.status = :status
               AND c.category.isActive = true
-            ORDER BY SIZE(c.items) DESC
+            ORDER BY c.availableItemCount DESC
             """)
     List<Costume> findSeasonalCostumes(@Param("status") CostumeStatus status, Pageable pageable);
 
@@ -79,7 +78,7 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Currently returns random active costumes as a simple baseline.
      * TODO: Replace with ML-based collaborative filtering using user interaction history.
      */
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.status = :status AND c.category.isActive = true")
+    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata WHERE c.status = :status AND c.category.isActive = true")
     List<Costume> findActiveCostumesForRecommendations(@Param("status") CostumeStatus status);
 
     @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id AND c.category.isActive = true")
