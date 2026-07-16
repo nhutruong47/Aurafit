@@ -1,6 +1,7 @@
 package com.aurafit.config;
 
 import com.aurafit.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -69,14 +70,17 @@ public class SecurityConfig {
         return http.build();
     }
 
+    @Value("${app.cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
     // -------------------------------------------------------------------------
-    // CORS — allow both localhost and 127.0.0.1 on the Vite dev port
+    // CORS — configured via application.yml
     // -------------------------------------------------------------------------
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOriginPatterns(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
+        config.setAllowedOriginPatterns(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         config.setExposedHeaders(List.of("Set-Cookie", "Authorization"));
