@@ -185,8 +185,8 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal singleItemDeposit = pricingEngineService.calculateItemDeposit(retailValue, singleItemRentalFee, 1);
             
             for (CostumeItem allocatedItem : availableItems) {
-                // Lock inventory immediately
-                allocatedItem.setStatus(ItemStatus.RENTED);
+                // Hold the inventory for the pending order; only flip to RENTED after payment.
+                allocatedItem.setStatus(ItemStatus.RESERVED);
                 costumeItemRepository.save(allocatedItem);
 
                 RentalOrderDetail detail = RentalOrderDetail.builder()
