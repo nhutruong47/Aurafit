@@ -55,6 +55,7 @@ public class OrderServiceImpl implements OrderService {
     private final RentalOrderDetailRepository rentalOrderDetailRepository;
     private final PaymentRepository paymentRepository;
     private final PricingEngineService pricingEngineService;
+    private final com.aurafit.service.GhnIntegrationService ghnIntegrationService;
 
     public OrderServiceImpl(RentalOrderRepository rentalOrderRepository,
                             CartRepository cartRepository,
@@ -67,7 +68,8 @@ public class OrderServiceImpl implements OrderService {
                             HandoverRecordRepository handoverRecordRepository,
                             RentalOrderDetailRepository rentalOrderDetailRepository,
                             PaymentRepository paymentRepository,
-                            PricingEngineService pricingEngineService) {
+                            PricingEngineService pricingEngineService,
+                            com.aurafit.service.GhnIntegrationService ghnIntegrationService) {
         this.rentalOrderRepository = rentalOrderRepository;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
@@ -80,6 +82,7 @@ public class OrderServiceImpl implements OrderService {
         this.rentalOrderDetailRepository = rentalOrderDetailRepository;
         this.paymentRepository = paymentRepository;
         this.pricingEngineService = pricingEngineService;
+        this.ghnIntegrationService = ghnIntegrationService;
     }
 
     /**
@@ -267,6 +270,120 @@ public class OrderServiceImpl implements OrderService {
         RentalOrder order = rentalOrderRepository.findByIdAndUserIdWithDetails(orderId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         return OrderResponse.fromEntity(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<StaffOrderDetailResponse> getAllOrdersForAdmin(org.springframework.data.domain.Pageable pageable, com.aurafit.enums.OrderStatus status) {
+        if (status != null) {
+            return rentalOrderRepository.findByStatus(status, pageable)
+                    .map(order -> StaffOrderDetailResponse.fromEntity(order, handoverRecordRepository.findByOrderId(order.getId())));
+        }
+        return rentalOrderRepository.findAll(pageable)
+                .map(order -> StaffOrderDetailResponse.fromEntity(order, handoverRecordRepository.findByOrderId(order.getId())));
+    }
+
+    @Override
+    @Transactional
+    public void shipOrder(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.CONFIRMED) {
+            throw new BadRequestException("Order must be CONFIRMED to ship");
+        }
+
+        // Mock destination district/ward for sandbox as DB doesn't store them
+        int toDistrictId = 1444; 
+        String toWardCode = "20308";
+        int totalWeight = 1000 * order.getDetails().size();
+
+        String ghnCode = ghnIntegrationService.createForwardOrder(
+                order.getReceiverName(), 
+                order.getReceiverPhone(), 
+                order.getDeliveryAddress(), 
+                toDistrictId, 
+                toWardCode, 
+                totalWeight
+        );
+
+        if (ghnCode == null || ghnCode.isEmpty()) {
+            throw new BadRequestException("Failed to create GHN forward order");
+        }
+
+        order.setGhnOrderCode(ghnCode);
+        order.setStatus(com.aurafit.enums.OrderStatus.SHIPPING);
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void markOrderRented(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.SHIPPING) {
+            throw new BadRequestException("Order must be SHIPPING to mark as rented");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.RENTED);
+        order.getDetails().forEach(detail -> detail.setReturnStatus(com.aurafit.enums.ReturnStatus.NOT_RETURNED));
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void returnOrder(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.RENTED) {
+            throw new BadRequestException("Order must be RENTED to return");
+        }
+
+        int fromDistrictId = 1444; 
+        String fromWardCode = "20308";
+        int totalWeight = 1000 * order.getDetails().size();
+
+        String ghnCode = ghnIntegrationService.createReturnOrder(
+                order.getReceiverName(), 
+                order.getReceiverPhone(), 
+                order.getDeliveryAddress(), 
+                fromDistrictId, 
+                fromWardCode, 
+                totalWeight
+        );
+
+        if (ghnCode == null || ghnCode.isEmpty()) {
+            throw new BadRequestException("Failed to create GHN return order");
+        }
+
+        order.setGhnReturnOrderCode(ghnCode);
+        order.setStatus(com.aurafit.enums.OrderStatus.RETURNING);
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void completeOrder(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING && order.getStatus() != com.aurafit.enums.OrderStatus.RENTED) {
+            throw new BadRequestException("Order must be RETURNING or RENTED to complete");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.COMPLETED);
+        
+        // Update items to AVAILABLE
+        for (RentalOrderDetail detail : order.getDetails()) {
+            detail.setReturnStatus(com.aurafit.enums.ReturnStatus.RETURNED);
+            CostumeItem item = detail.getCostumeItem();
+            item.setStatus(ItemStatus.AVAILABLE);
+            costumeItemRepository.save(item);
+        }
+
+        rentalOrderRepository.save(order);
     }
 
     @Override

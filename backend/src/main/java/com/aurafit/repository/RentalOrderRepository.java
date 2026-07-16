@@ -12,6 +12,8 @@ import java.util.Optional;
 
 public interface RentalOrderRepository extends JpaRepository<RentalOrder, Long> {
 
+    org.springframework.data.domain.Page<RentalOrder> findByStatus(OrderStatus status, org.springframework.data.domain.Pageable pageable);
+
     List<RentalOrder> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime dateTime);
 
     @Query("SELECT ro FROM RentalOrder ro LEFT JOIN FETCH ro.details WHERE ro.user.id = :userId ORDER BY ro.createdAt DESC")

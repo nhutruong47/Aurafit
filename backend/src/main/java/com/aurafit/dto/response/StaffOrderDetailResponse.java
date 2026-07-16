@@ -26,7 +26,10 @@ public record StaffOrderDetailResponse(
         LocalDateTime rentalEndDate,
         LocalDateTime createdAt,
         List<StaffOrderItemResponse> details,
-        List<HandoverRecordDTO> handovers
+        List<HandoverRecordDTO> handovers,
+        String ghnOrderCode,
+        String ghnReturnOrderCode,
+        com.aurafit.enums.DeliveryMethod deliveryMethod
 ) {
     public record StaffOrderItemResponse(
             Long id,
@@ -90,7 +93,10 @@ public record StaffOrderDetailResponse(
                 order.getRentalEndDate(),
                 order.getCreatedAt(),
                 items,
-                handoverDTOs
+                handoverDTOs,
+                order.getGhnOrderCode(),
+                order.getGhnReturnOrderCode(),
+                order.getDeliveryMethod()
         );
     }
 }

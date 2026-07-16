@@ -61,12 +61,27 @@ export default function ProductHero({
     [availableItems]
   );
 
+  const selectedSize = selectedItem?.size || '';
+  const selectedColor = selectedItem?.color || '';
+
+  // Count of RESERVED units for the currently selected size+color — used to
+  // tell shoppers why stock may feel limited while a pending order exists.
+  const reservedCountForVariant = useMemo(() => {
+    if (!product) return 0;
+    if (!selectedSize && !selectedColor) {
+      return getCostumeReservedCount(product);
+    }
+    return getCostumeItems(product).filter(
+      (item) =>
+        item?.status === 'RESERVED' &&
+        (item.size || '') === selectedSize &&
+        (item.color || '') === selectedColor
+    ).length;
+  }, [product, selectedSize, selectedColor]);
+
   if (!product) {
     return null;
   }
-
-  const selectedSize = selectedItem?.size || '';
-  const selectedColor = selectedItem?.color || '';
 
   const getVariantStock = (size, color) => {
     const inventorySummary = getCostumeInventorySummary(product);
@@ -182,20 +197,6 @@ export default function ProductHero({
   const inCartQty = getInCartQty(selectedSize, selectedColor);
   const effectiveStock = Math.max(0, totalStock - inCartQty);
   const isVariantAvailable = effectiveStock > 0;
-
-  // Count of RESERVED units for the currently selected size+color — used to
-  // tell shoppers why stock may feel limited while a pending order exists.
-  const reservedCountForVariant = useMemo(() => {
-    if (!selectedSize && !selectedColor) {
-      return getCostumeReservedCount(product);
-    }
-    return getCostumeItems(product).filter(
-      (item) =>
-        item?.status === 'RESERVED' &&
-        (item.size || '') === selectedSize &&
-        (item.color || '') === selectedColor
-    ).length;
-  }, [product, selectedSize, selectedColor]);
 
   const handleRentNow = () => {
     if (!canRentNow || !isVariantAvailable) {
