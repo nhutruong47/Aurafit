@@ -7,6 +7,7 @@ import com.aurafit.dto.request.CheckoutItemRequest;
 import com.aurafit.dto.request.CheckoutRequest;
 import com.aurafit.dto.response.OrderResponse;
 import com.aurafit.dto.response.OrderSummaryResponse;
+import com.aurafit.dto.response.StaffOrderDetailResponse;
 import com.aurafit.entity.*;
 import com.aurafit.enums.CartStatus;
 import com.aurafit.enums.InteractionEventType;
@@ -261,6 +262,27 @@ public class OrderServiceImpl implements OrderService {
         RentalOrder order = rentalOrderRepository.findByIdAndUserIdWithDetails(orderId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         return OrderResponse.fromEntity(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StaffOrderDetailResponse> getAllOrdersForStaff() {
+        return rentalOrderRepository.findAllOrdersForStaff()
+                .stream()
+                .map(order -> {
+                    List<HandoverRecord> handovers = handoverRecordRepository.findByOrderId(order.getId());
+                    return StaffOrderDetailResponse.fromEntity(order, handovers);
+                })
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StaffOrderDetailResponse getOrderDetail(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        List<HandoverRecord> handovers = handoverRecordRepository.findByOrderId(orderId);
+        return StaffOrderDetailResponse.fromEntity(order, handovers);
     }
 
     private void recordRentEvent(User user,

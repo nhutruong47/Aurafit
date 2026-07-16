@@ -20,7 +20,11 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "rental_orders")
+@Table(name = "rental_orders", indexes = {
+        @Index(name = "idx_rental_orders_user_id_created_at", columnList = "user_id, created_at"),
+        @Index(name = "idx_rental_orders_status_created_at", columnList = "status, created_at"),
+        @Index(name = "idx_rental_orders_created_at", columnList = "created_at")
+})
 public class RentalOrder extends BaseEntity {
 
     @Id

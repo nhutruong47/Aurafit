@@ -33,7 +33,7 @@ public class AuraFitApplication {
     }
 
     @Bean
-    public CommandLineRunner initAdminAccount(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public CommandLineRunner initDefaultAccounts(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
             String adminEmail = "admin@aurafit.com";
             if (!userRepository.existsByEmail(adminEmail)) {
@@ -45,6 +45,18 @@ public class AuraFitApplication {
                 admin.setEmailVerified(true);
                 userRepository.save(admin);
                 System.out.println("Default admin account created: " + adminEmail);
+            }
+
+            String staffEmail = "staff@aurafit.com";
+            if (!userRepository.existsByEmail(staffEmail)) {
+                User staff = new User();
+                staff.setEmail(staffEmail);
+                staff.setPasswordHash(passwordEncoder.encode("12345678"));
+                staff.setRole(Role.STAFF);
+                staff.setFullName("Default Staff");
+                staff.setEmailVerified(true);
+                userRepository.save(staff);
+                System.out.println("Default staff account created: " + staffEmail);
             }
         };
     }

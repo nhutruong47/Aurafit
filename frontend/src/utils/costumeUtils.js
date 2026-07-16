@@ -88,6 +88,10 @@ export const isCostumeAvailable = (costume) => {
     return costume.available;
   }
 
+  if (typeof costume?.isAvailable === 'boolean') {
+    return costume.isAvailable;
+  }
+
   const isActive = String(costume?.status || '').toUpperCase() !== 'INACTIVE';
   return isActive && getCostumeAvailableItemCount(costume) > 0;
 };

@@ -21,7 +21,7 @@ public record CatalogCostumeDTO(
                 costume.getSlug(),
                 costume.getRentalPrice(),
                 costume.getDepositPrice(),
-                costume.getImageUrl(),
+                costume.getPrimaryImageUrl(),
                 costume.getCategory().getName(),
                 costume.getAvailableItemCount() > 0
         );

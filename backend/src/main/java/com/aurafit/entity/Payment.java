@@ -19,7 +19,10 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", indexes = {
+        @Index(name = "idx_payments_rental_order_id_type_status", columnList = "rental_order_id, type, status"),
+        @Index(name = "idx_payments_transaction_id", columnList = "transaction_id")
+})
 public class Payment extends BaseEntity {
 
     @Id

@@ -11,7 +11,6 @@ import com.aurafit.dto.response.OrderSummaryResponse;
 import com.aurafit.dto.response.StaffOrderDetailResponse;
 import com.aurafit.enums.HandoverType;
 import com.aurafit.service.OrderService;
-import com.aurafit.service.StaffService;
 import com.aurafit.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -32,14 +31,11 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
-    private final StaffService staffService;
     private final UserService userService;
 
     public OrderController(OrderService orderService,
-                           StaffService staffService,
                            UserService userService) {
         this.orderService = orderService;
-        this.staffService = staffService;
         this.userService = userService;
     }
 
@@ -80,14 +76,14 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     @Operation(summary = "List all orders for staff dashboard")
     public ResponseEntity<ApiResponse<List<StaffOrderDetailResponse>>> listStaffOrders() {
-        return ResponseEntity.ok(ApiResponse.success("Staff orders retrieved.", staffService.getAllOrdersForStaff()));
+        return ResponseEntity.ok(ApiResponse.success("Staff orders retrieved.", orderService.getAllOrdersForStaff()));
     }
 
     @GetMapping("/{orderId}/management")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     @Operation(summary = "Get full staff view of a specific order")
     public ResponseEntity<ApiResponse<StaffOrderDetailResponse>> getStaffOrderDetail(@PathVariable Long orderId) {
-        return ResponseEntity.ok(ApiResponse.success("Staff order detail retrieved.", staffService.getOrderDetail(orderId)));
+        return ResponseEntity.ok(ApiResponse.success("Staff order detail retrieved.", orderService.getOrderDetail(orderId)));
     }
 
     @PostMapping("/{orderId}/pickup-handovers")

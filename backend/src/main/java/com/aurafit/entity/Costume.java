@@ -19,7 +19,10 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "costumes")
+@Table(name = "costumes", indexes = {
+        @Index(name = "idx_costumes_category_id_status", columnList = "category_id, status"),
+        @Index(name = "idx_costumes_status_id", columnList = "status, id")
+})
 public class Costume extends BaseEntity {
 
     @Id

@@ -10,12 +10,7 @@ import java.util.List;
 
 public interface HandoverRecordRepository extends JpaRepository<HandoverRecord, Long> {
 
-    @Query("""
-            SELECT h FROM HandoverRecord h
-            WHERE h.rentalOrderDetail.id = :detailId
-            ORDER BY h.createdAt DESC
-            """)
-    List<HandoverRecord> findByRentalOrderDetailId(@Param("detailId") Long detailId);
+    List<HandoverRecord> findByRentalOrderDetail_IdOrderByCreatedAtDesc(Long detailId);
 
     @Query("""
             SELECT h FROM HandoverRecord h

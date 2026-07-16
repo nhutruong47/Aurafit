@@ -1,5 +1,8 @@
 package com.aurafit.service;
 
+import com.aurafit.dto.request.CostumeCreateRequest;
+import com.aurafit.dto.request.CostumeUpdateRequest;
+import com.aurafit.dto.response.AdminCostumeDTO;
 import com.aurafit.dto.response.CatalogCostumeDTO;
 import com.aurafit.dto.response.CategoryDTO;
 import com.aurafit.dto.response.CostumeDTO;
@@ -8,6 +11,14 @@ import com.aurafit.dto.response.PaginatedResponse;
 import java.util.List;
 
 public interface CostumeService {
+
+    PaginatedResponse<AdminCostumeDTO> getAllCostumes(String authenticatedEmail, int pageNo, int pageSize,
+                                                       String sortBy, String sortDir, String keyword,
+                                                       String status, Long categoryId);
+
+    AdminCostumeDTO createCostume(CostumeCreateRequest request, String authenticatedEmail);
+
+    AdminCostumeDTO updateCostume(Long id, CostumeUpdateRequest request, String authenticatedEmail);
 
     /**
      * Fetches a paginated, filtered list of ACTIVE costumes for the public catalog.

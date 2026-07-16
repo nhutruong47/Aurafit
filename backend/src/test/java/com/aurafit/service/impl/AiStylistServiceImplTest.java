@@ -1327,7 +1327,9 @@ class AiStylistServiceImplTest {
         )));
 
         when(userRepository.findByEmail("stylist@aurafit.vn")).thenReturn(Optional.of(user));
-        when(aiStylistSessionRepository.findGuestSessionsForAttach("guest-001")).thenReturn(List.of(guestSession));
+        when(aiStylistSessionRepository
+                .findByUserIsNullAndGuestSessionIdIgnoreCaseOrderByUpdatedAtDescCreatedAtDescIdDesc("guest-001"))
+                .thenReturn(List.of(guestSession));
         when(aiStylistSessionRepository.findTopByUser_IdOrderByUpdatedAtDescIdDesc(11L)).thenReturn(Optional.of(existingUserSession));
         when(aiStylistSessionRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -1349,7 +1351,9 @@ class AiStylistServiceImplTest {
         )));
 
         when(userRepository.findByEmail("stylist@aurafit.vn")).thenReturn(Optional.of(user));
-        when(aiStylistSessionRepository.findGuestSessionsForAttach("guest-001")).thenReturn(List.of());
+        when(aiStylistSessionRepository
+                .findByUserIsNullAndGuestSessionIdIgnoreCaseOrderByUpdatedAtDescCreatedAtDescIdDesc("guest-001"))
+                .thenReturn(List.of());
         when(aiStylistSessionRepository.findTopByUser_IdOrderByUpdatedAtDescIdDesc(11L)).thenReturn(Optional.of(attachedSession));
         when(aiStylistSessionRepository.findByIdAndUser_Id(70L, 11L)).thenReturn(Optional.of(attachedSession));
 

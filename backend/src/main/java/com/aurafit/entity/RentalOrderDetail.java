@@ -16,7 +16,10 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "rental_order_details")
+@Table(name = "rental_order_details", indexes = {
+        @Index(name = "idx_rental_order_details_rental_order_id", columnList = "rental_order_id"),
+        @Index(name = "idx_rental_order_details_costume_item_id_rental_order_id", columnList = "costume_item_id, rental_order_id")
+})
 public class RentalOrderDetail extends BaseEntity {
 
     @Id

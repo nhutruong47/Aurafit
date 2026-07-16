@@ -15,7 +15,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "carts")
+@Table(name = "carts", indexes = {
+        @Index(name = "idx_carts_user_id_status", columnList = "user_id, status")
+})
 public class Cart extends BaseEntity {
 
     @Id

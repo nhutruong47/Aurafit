@@ -21,13 +21,9 @@ public interface AiStylistSessionRepository extends JpaRepository<AiStylistSessi
             """)
     Optional<AiStylistSession> findByIdWithMessages(@Param("id") Long id);
 
-    @Query("""
-            SELECT s FROM AiStylistSession s
-            WHERE s.user IS NULL
-              AND LOWER(s.guestSessionId) = LOWER(:guestSessionId)
-            ORDER BY s.updatedAt DESC, s.createdAt DESC, s.id DESC
-            """)
-    List<AiStylistSession> findGuestSessionsForAttach(@Param("guestSessionId") String guestSessionId);
+    List<AiStylistSession> findByUserIsNullAndGuestSessionIdIgnoreCaseOrderByUpdatedAtDescCreatedAtDescIdDesc(
+            String guestSessionId
+    );
 
     Optional<AiStylistSession> findTopByUser_IdOrderByUpdatedAtDescIdDesc(Long userId);
 
