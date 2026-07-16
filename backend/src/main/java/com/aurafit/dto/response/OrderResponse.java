@@ -57,7 +57,9 @@ public record OrderResponse(
                 .toList();
 
         BigDecimal finalAmount = order.getTotalRentalPrice()
-                .subtract(order.getDiscountAmount());
+                .add(order.getTotalDeposit())
+                .add(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO)
+                .subtract(order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO);
 
         return new OrderResponse(
                 order.getId(),

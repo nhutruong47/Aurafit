@@ -21,6 +21,7 @@ public record StaffOrderDetailResponse(
         OrderStatus status,
         BigDecimal totalRentalFee,
         BigDecimal totalDeposit,
+        BigDecimal shippingFee,
         BigDecimal finalAmount,
         LocalDateTime rentalStartDate,
         LocalDateTime rentalEndDate,
@@ -75,7 +76,9 @@ public record StaffOrderDetailResponse(
                 .toList();
 
         BigDecimal finalAmount = order.getTotalRentalPrice()
-                .subtract(order.getDiscountAmount());
+                .add(order.getTotalDeposit())
+                .add(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO)
+                .subtract(order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO);
 
         return new StaffOrderDetailResponse(
                 order.getId(),
@@ -88,6 +91,7 @@ public record StaffOrderDetailResponse(
                 order.getStatus(),
                 order.getTotalRentalPrice(),
                 order.getTotalDeposit(),
+                order.getShippingFee(),
                 finalAmount,
                 order.getRentalStartDate(),
                 order.getRentalEndDate(),

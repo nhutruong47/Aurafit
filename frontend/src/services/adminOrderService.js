@@ -1,4 +1,4 @@
-import api from './http/api';
+import { apiClient as api } from './http/apiClient';
 
 export const adminOrderService = {
   getAllOrders: async (page = 0, size = 10, status = '') => {
