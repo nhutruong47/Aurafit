@@ -203,15 +203,20 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // ── Step 5: Create and persist RentalOrder ──────────────────────────────
+        BigDecimal shippingFee = request.shippingFee() != null ? request.shippingFee() : BigDecimal.ZERO;
+        BigDecimal finalTotalPrice = totalRentalPrice.add(totalDeposit).add(shippingFee);
+
         RentalOrder order = RentalOrder.builder()
                 .user(user)
                 .receiverName(request.receiverName())
                 .receiverPhone(request.receiverPhone())
                 .deliveryAddress(request.deliveryAddress())
+                .deliveryMethod(request.deliveryMethod())
+                .shippingFee(shippingFee)
                 .totalRentalPrice(totalRentalPrice)
                 .totalDeposit(totalDeposit)
                 .discountAmount(BigDecimal.ZERO)
-                .totalPrice(totalRentalPrice.add(totalDeposit))
+                .totalPrice(finalTotalPrice)
                 .rentalStartDate(orderStartDate)
                 .rentalEndDate(orderEndDate)
                 .details(orderDetails)

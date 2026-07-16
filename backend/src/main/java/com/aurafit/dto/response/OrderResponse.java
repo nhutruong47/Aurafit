@@ -2,6 +2,7 @@ package com.aurafit.dto.response;
 
 import com.aurafit.entity.RentalOrder;
 import com.aurafit.entity.RentalOrderDetail;
+import com.aurafit.enums.DeliveryMethod;
 import com.aurafit.enums.OrderStatus;
 
 import java.math.BigDecimal;
@@ -14,6 +15,8 @@ public record OrderResponse(
         String receiverName,
         String receiverPhone,
         String deliveryAddress,
+        DeliveryMethod deliveryMethod,
+        BigDecimal shippingFee,
         BigDecimal totalRentalPrice,
         BigDecimal totalDeposit,
         BigDecimal discountAmount,
@@ -62,6 +65,8 @@ public record OrderResponse(
                 order.getReceiverName(),
                 order.getReceiverPhone(),
                 order.getDeliveryAddress(),
+                order.getDeliveryMethod(),
+                order.getShippingFee(),
                 order.getTotalRentalPrice(),
                 order.getTotalDeposit(),
                 order.getDiscountAmount(),

@@ -77,7 +77,8 @@ public class PaymentServiceImpl implements PaymentService {
 
                 BigDecimal amountPayable = order.getTotalRentalPrice()
                                 .add(order.getTotalDeposit())
-                                .subtract(order.getDiscountAmount());
+                                .subtract(order.getDiscountAmount())
+                                .add(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO);
 
                 Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(
                                 Long.valueOf(request.orderId()), PaymentStatus.PENDING,

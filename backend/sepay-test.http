@@ -1,0 +1,28 @@
+### Test SePay Webhook - Success Case
+# This mocks a successful bank transfer webhook for Order ARF123
+POST http://localhost:8080/api/sepay/webhook
+Content-Type: application/json
+Authorization: Bearer ${SEPAY_WEBHOOK_SECRET}
+
+{
+  "gateway": "Sepay",
+  "transfer_amount": 650000.00,
+  "content": "ARF123",
+  "code": "FT123456789",
+  "accountNumber": "BIDV123456",
+  "id": 987654321
+}
+
+### Test SePay Webhook - Failure Case (Insufficient Amount - Missing Shipping Fee)
+POST http://localhost:8080/api/sepay/webhook
+Content-Type: application/json
+Authorization: Bearer ${SEPAY_WEBHOOK_SECRET}
+
+{
+  "gateway": "Sepay",
+  "transfer_amount": 600000.00,
+  "content": "ARF123",
+  "code": "FT123456790",
+  "accountNumber": "BIDV123456",
+  "id": 987654322
+}

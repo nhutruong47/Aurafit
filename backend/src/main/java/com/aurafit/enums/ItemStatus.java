@@ -4,5 +4,6 @@ public enum ItemStatus {
     AVAILABLE,
     RENTED,
     MAINTENANCE,
-    LOST
+    LOST,
+    RETURNING
 }

@@ -78,3 +78,10 @@ ai:
   reasoning-circuit-window-minutes: ${AI_REASONING_CIRCUIT_WINDOW_MINUTES:5}
   reasoning-circuit-cooldown-minutes: ${AI_REASONING_CIRCUIT_COOLDOWN_MINUTES:10}
   reasoning-circuit-minimum-calls: ${AI_REASONING_CIRCUIT_MINIMUM_CALLS:10}
+
+ghn:
+  api:
+    url: ${GHN_API_URL:https://dev-online-gateway.ghn.vn/shiip/public-api}
+    token: ${GHN_API_TOKEN:}
+  shop:
+    id: ${GHN_SHOP_ID:}

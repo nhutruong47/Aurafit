@@ -13,6 +13,7 @@ import { useToastStore } from '../store/useToastStore';
 
 import { useDispatch } from 'react-redux';
 import { setCartItems } from '../store/cartSlice';
+import { fetchProvinces, fetchDistricts, fetchWards, calculateShippingFee } from '../services/ghnService';
 
 export default function RentalOrderCheckoutPage({
   cartItems = [],
@@ -26,7 +27,21 @@ export default function RentalOrderCheckoutPage({
   const location = useLocation();
   const { setPendingOrderId } = useCheckoutStore();
   const addToast = useToastStore((state) => state.addToast);
-  const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
+  const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '' });
+  const [deliveryMethod, setDeliveryMethod] = useState('STORE_PICKUP');
+  
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+  
+  const [selectedProvinceId, setSelectedProvinceId] = useState('');
+  const [selectedDistrictId, setSelectedDistrictId] = useState('');
+  const [selectedWardCode, setSelectedWardCode] = useState('');
+  const [streetAddress, setStreetAddress] = useState('');
+  const [shippingFee, setShippingFee] = useState(0);
+  const [isCalculatingFee, setIsCalculatingFee] = useState(false);
+  const [storePickupAddress, setStorePickupAddress] = useState('');
+
   const [deliveryError, setDeliveryError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -49,6 +64,44 @@ export default function RentalOrderCheckoutPage({
     }
   }, [autoSelectId]);
 
+  useEffect(() => {
+    fetchProvinces().then(setProvinces).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProvinceId) {
+      setDistricts([]);
+      setWards([]);
+      setSelectedDistrictId('');
+      setSelectedWardCode('');
+      setShippingFee(0);
+      return;
+    }
+    fetchDistricts(selectedProvinceId).then(setDistricts).catch(console.error);
+  }, [selectedProvinceId]);
+
+  useEffect(() => {
+    if (!selectedDistrictId) {
+      setWards([]);
+      setSelectedWardCode('');
+      setShippingFee(0);
+      return;
+    }
+    fetchWards(selectedDistrictId).then(setWards).catch(console.error);
+  }, [selectedDistrictId]);
+
+  useEffect(() => {
+    if (!selectedWardCode || !selectedDistrictId) {
+      setShippingFee(0);
+      return;
+    }
+    setIsCalculatingFee(true);
+    calculateShippingFee(selectedDistrictId, selectedWardCode)
+      .then(setShippingFee)
+      .catch(console.error)
+      .finally(() => setIsCalculatingFee(false));
+  }, [selectedWardCode, selectedDistrictId]);
+
   const cartDisplayItems = cartItems.map((item, index) => toRentalItem(item, index + 1));
   const hasItems = cartDisplayItems.length > 0;
   const isSingleItem = cartDisplayItems.length === 1;
@@ -59,10 +112,12 @@ export default function RentalOrderCheckoutPage({
     setDeliveryError('');
   };
 
-  const isDeliveryValid = () =>
-    deliveryInfo.receiverName.trim().length > 0 &&
-    deliveryInfo.receiverPhone.trim().length > 0 &&
-    deliveryInfo.deliveryAddress.trim().length > 0;
+  const isDeliveryValid = () => {
+    if (deliveryInfo.receiverName.trim().length === 0 || deliveryInfo.receiverPhone.trim().length === 0) return false;
+    if (deliveryMethod === 'STORE_PICKUP') return storePickupAddress.trim().length > 0;
+    if (deliveryMethod === 'GHN_DELIVERY') return selectedProvinceId && selectedDistrictId && selectedWardCode && streetAddress.trim().length > 0;
+    return false;
+  };
 
   const itemsToOrder = useMemo(() => {
     const nextItems = [];
@@ -86,7 +141,8 @@ export default function RentalOrderCheckoutPage({
       let targetId = null;
       if (!deliveryInfo.receiverName.trim()) targetId = 'receiverName';
       else if (!deliveryInfo.receiverPhone.trim()) targetId = 'receiverPhone';
-      else if (!deliveryInfo.deliveryAddress.trim()) targetId = 'deliveryAddress';
+      else if (deliveryMethod === 'STORE_PICKUP' && !storePickupAddress.trim()) targetId = 'storePickupAddress';
+      else if (deliveryMethod === 'GHN_DELIVERY' && !streetAddress.trim()) targetId = 'streetAddress';
 
       if (targetId) {
         document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -110,10 +166,22 @@ export default function RentalOrderCheckoutPage({
     setProblematicSku(null);
 
     try {
+      let finalAddress = '';
+      if (deliveryMethod === 'STORE_PICKUP') {
+        finalAddress = storePickupAddress.trim();
+      } else {
+        const provinceName = provinces.find(p => p.ProvinceID === Number(selectedProvinceId))?.ProvinceName || '';
+        const districtName = districts.find(d => d.DistrictID === Number(selectedDistrictId))?.DistrictName || '';
+        const wardName = wards.find(w => w.WardCode === selectedWardCode)?.WardName || '';
+        finalAddress = `${streetAddress.trim()}, ${wardName}, ${districtName}, ${provinceName}`;
+      }
+
       const orderResponse = await createOrder({
         receiverName: deliveryInfo.receiverName,
         receiverPhone: deliveryInfo.receiverPhone,
-        deliveryAddress: deliveryInfo.deliveryAddress,
+        deliveryAddress: finalAddress,
+        deliveryMethod,
+        shippingFee: deliveryMethod === 'GHN_DELIVERY' ? shippingFee : 0,
         items: itemsToOrder.map((item) => ({
           sku: item.sku,
           quantity: item.quantity || 1,
@@ -192,11 +260,15 @@ export default function RentalOrderCheckoutPage({
     }
 
     return rows;
-  }, [itemsToOrder]);
+  }, [itemsToOrder, deliveryMethod, shippingFee]);
 
   const rawTotalDue = useMemo(() => {
-    return itemsToOrder.reduce((total, item) => total + (item.subtotal || 0), 0);
-  }, [itemsToOrder]);
+    let total = itemsToOrder.reduce((acc, item) => acc + (item.subtotal || 0), 0);
+    if (deliveryMethod === 'GHN_DELIVERY') {
+      total += shippingFee;
+    }
+    return total;
+  }, [itemsToOrder, deliveryMethod, shippingFee]);
 
   const formattedTotalDue = useMemo(() => {
     return formatCurrency(rawTotalDue);
@@ -329,10 +401,13 @@ export default function RentalOrderCheckoutPage({
                           setDeliveryInfo({
                             receiverName: currentUser.fullName || '',
                             receiverPhone: currentUser.phone || '',
-                            deliveryAddress: currentUser.address || '',
                           });
+                          setStorePickupAddress(currentUser.address || '');
+                          setStreetAddress(currentUser.address || '');
                         } else {
-                          setDeliveryInfo({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
+                          setDeliveryInfo({ receiverName: '', receiverPhone: '' });
+                          setStorePickupAddress('');
+                          setStreetAddress('');
                         }
                         setDeliveryError('');
                       }}
@@ -368,20 +443,75 @@ export default function RentalOrderCheckoutPage({
                         className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                       />
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
-                        Địa chỉ giao hàng *
-                      </label>
-                      <input
-                        type="text"
-                        id="deliveryAddress"
-                        name="deliveryAddress"
-                        value={deliveryInfo.deliveryAddress}
-                        onChange={handleDeliveryChange}
-                        placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                        className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
-                      />
+                    
+                    <div className="md:col-span-2 mt-4">
+                      <label className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em]">Hình thức nhận hàng</label>
+                      <div className="flex flex-col gap-3 md:flex-row md:gap-8 mb-4">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="radio" name="deliveryMethod" value="STORE_PICKUP" checked={deliveryMethod === 'STORE_PICKUP'} onChange={() => setDeliveryMethod('STORE_PICKUP')} className="h-4 w-4 accent-[#99854e]" />
+                          Nhận & Trả hàng tại cửa hàng
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="radio" name="deliveryMethod" value="GHN_DELIVERY" checked={deliveryMethod === 'GHN_DELIVERY'} onChange={() => setDeliveryMethod('GHN_DELIVERY')} className="h-4 w-4 accent-[#99854e]" />
+                          Giao hàng toàn quốc (GHN)
+                        </label>
+                      </div>
                     </div>
+
+                    {deliveryMethod === 'STORE_PICKUP' && (
+                      <div className="md:col-span-2">
+                        <div className="mb-6 border border-[#cfc4c5] bg-[#fdfaf5] p-5">
+                          <p className="text-[13px] font-medium text-black">
+                            📍 Địa chỉ nhận/trả đồ:
+                          </p>
+                          <p className="mt-1 text-[13px] leading-relaxed text-[#5f5e5e]">
+                            Cửa hàng AuraFit - Lô E2a-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức, TP. Hồ Chí Minh.
+                          </p>
+                        </div>
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
+                          Địa chỉ thường trú (Để đối chiếu) *
+                        </label>
+                        <input
+                          type="text"
+                          id="storePickupAddress"
+                          name="storePickupAddress"
+                          value={storePickupAddress}
+                          onChange={(e) => setStorePickupAddress(e.target.value)}
+                          placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                          className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {deliveryMethod === 'GHN_DELIVERY' && (
+                      <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Tỉnh/Thành phố *</label>
+                          <select value={selectedProvinceId} onChange={(e) => setSelectedProvinceId(e.target.value)} className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none">
+                            <option value="">Chọn Tỉnh/Thành</option>
+                            {provinces.map(p => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Quận/Huyện *</label>
+                          <select value={selectedDistrictId} onChange={(e) => setSelectedDistrictId(e.target.value)} disabled={!selectedProvinceId} className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
+                            <option value="">Chọn Quận/Huyện</option>
+                            {districts.map(d => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Phường/Xã *</label>
+                          <select value={selectedWardCode} onChange={(e) => setSelectedWardCode(e.target.value)} disabled={!selectedDistrictId} className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
+                            <option value="">Chọn Phường/Xã</option>
+                            {wards.map(w => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
+                          </select>
+                        </div>
+                        <div className="md:col-span-3">
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Địa chỉ chi tiết (Số nhà, tên đường) *</label>
+                          <input type="text" id="streetAddress" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="VD: Số 123, Đường Lê Lợi" className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {deliveryError && <p className="mt-3 text-sm text-red-600">{deliveryError}</p>}
                   {!currentUser?.id && (
@@ -410,6 +540,9 @@ export default function RentalOrderCheckoutPage({
                 submitError={submitError}
                 selectedCount={selectedDisplayCount}
                 hasMissingDates={hasMissingDates}
+                isCalculatingFee={isCalculatingFee}
+                deliveryMethod={deliveryMethod}
+                shippingFee={shippingFee}
               />
             )}
           </aside>

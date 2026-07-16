@@ -1,5 +1,6 @@
 package com.aurafit.entity;
 
+import com.aurafit.enums.DeliveryMethod;
 import com.aurafit.enums.OrderStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -62,6 +63,20 @@ public class RentalOrder extends BaseEntity {
 
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_method")
+    private DeliveryMethod deliveryMethod;
+
+    @Builder.Default
+    @Column(name = "shipping_fee", nullable = false)
+    private BigDecimal shippingFee = BigDecimal.ZERO;
+
+    @Column(name = "ghn_order_code")
+    private String ghnOrderCode;
+
+    @Column(name = "ghn_return_order_code")
+    private String ghnReturnOrderCode;
 
     @Column(name = "cancel_reason", columnDefinition = "TEXT")
     private String cancelReason;

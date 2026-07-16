@@ -26,7 +26,8 @@ export default function OrderSuccessSidebar({ order }) {
   const subtotal = order?.totalRentalPrice;
   const deposit = order?.totalDeposit;
   const discount = order?.discountAmount;
-  const total = order?.finalAmount;
+  const shippingFee = order?.shippingFee || 0;
+  const total = order?.totalPrice || ((order?.totalRentalPrice || 0) + (order?.totalDeposit || 0) + shippingFee - (order?.discountAmount || 0));
 
   return (
     <aside className="md:col-span-5">
@@ -58,7 +59,8 @@ export default function OrderSuccessSidebar({ order }) {
         <div className="px-10">
           {subtotal && <SmallSummary label="Tổng tiền thuê" value={formatCurrency(subtotal)} />}
           {deposit && <SmallSummary label="Tiền cọc (Hoàn trả)" value={formatCurrency(deposit)} />}
-          {discount && Number(discount) > 0 && <SmallSummary label="Giảm giá" value={`-${formatCurrency(discount)}`} />}
+          {order?.deliveryMethod === 'GHN_DELIVERY' && <SmallSummary label="Phí vận chuyển" value={`+ ${formatCurrency(shippingFee)}`} />}
+          {Number(discount) > 0 && <SmallSummary label="Giảm giá" value={`-${formatCurrency(discount)}`} />}
           <div className="mt-4 flex items-center justify-between border-t border-[#cfc4c5] pt-4">
             <span className="text-[12px] font-bold uppercase tracking-[0.15em]">Tổng thanh toán</span>
             <span className="font-serif text-3xl">{formatCurrency(total || subtotal || 0)}</span>

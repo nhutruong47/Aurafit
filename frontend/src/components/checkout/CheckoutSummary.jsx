@@ -8,8 +8,11 @@ export default function CheckoutSummary({
   submitError,
   selectedCount = 1,
   hasMissingDates = false,
+  isCalculatingFee = false,
+  deliveryMethod = 'STORE_PICKUP',
+  shippingFee = 0,
 }) {
-  const canSubmit = selectedCount > 0 && !isSubmitting && !hasMissingDates;
+  const canSubmit = selectedCount > 0 && !isSubmitting && !hasMissingDates && !isCalculatingFee;
   return (
     <div className="sticky top-32 border border-[#cfc4c5] bg-white p-8 shadow-sm">
       <h2 className="mb-8 font-serif text-[28px] font-normal uppercase tracking-tight">Tóm tắt đơn thuê</h2>
@@ -27,6 +30,17 @@ export default function CheckoutSummary({
           </div>
         ))}
 
+        {deliveryMethod === 'GHN_DELIVERY' && (
+          <div className="flex items-center justify-between gap-6">
+            <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-current opacity-80">
+              Phí vận chuyển
+            </span>
+            <span className="font-medium">
+              {isCalculatingFee ? 'Đang tính...' : `+ ${shippingFee.toLocaleString('vi-VN')} đ`}
+            </span>
+          </div>
+        )}
+
         <div className="border-t border-black pt-8">
           <div className="mb-8 flex items-baseline justify-between">
             <span className="font-serif text-xl uppercase">Tổng thanh toán</span>
@@ -39,7 +53,7 @@ export default function CheckoutSummary({
             disabled={!canSubmit}
             className="mb-3 w-full bg-black py-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition duration-500 hover:bg-[#99854e] hover:tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {isSubmitting ? 'Đang xử lý yêu cầu...' : `Thanh toán (${selectedCount})`}
+            {isSubmitting ? 'Đang xử lý yêu cầu...' : isCalculatingFee ? 'Đang tính phí vận chuyển...' : `Thanh toán (${selectedCount})`}
           </button>
           <button
             onClick={() => onNavigate?.('chat')}
