@@ -118,17 +118,17 @@ export default function ImageGalleryUploadField({
       </div>
 
       {imageUrls.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {imageUrls.map((imageUrl, index) => (
-            <div key={`${imageUrl}-${index}`} className="border border-[#d7d2c8] bg-[#fafaf8] p-2">
-              <div className="relative overflow-hidden bg-[#ebe7df]">
+            <div key={`${imageUrl}-${index}`} className="border border-[#d7d2c8] bg-[#fafaf8] p-1.5 flex flex-col">
+              <div className="relative overflow-hidden bg-[#ebe7df] aspect-square rounded-sm">
                 <img
                   src={imageUrl}
                   alt={`Ảnh sản phẩm ${index + 1}`}
-                  className="aspect-[3/4] w-full object-cover"
+                  className="h-full w-full object-cover"
                 />
                 {index === 0 && (
-                  <span className="absolute left-2 top-2 bg-black px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-white">
+                  <span className="absolute left-1.5 top-1.5 bg-black px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-white rounded-[2px] shadow-sm">
                     Ảnh chính
                   </span>
                 )}

@@ -1,5 +1,6 @@
 package com.aurafit.controller;
 
+import com.aurafit.dto.request.InspectionRequest;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.StaffOrderDetailResponse;
 import com.aurafit.enums.OrderStatus;
@@ -36,27 +37,41 @@ public class AdminOrderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ApiResponse<Void>> shipOrder(@PathVariable Long id) {
         orderService.shipOrder(id);
-        return ResponseEntity.ok(ApiResponse.success("Order marked as SHIPPING and GHN forward order created", null));
+        return ResponseEntity.ok(ApiResponse.success("Order marked as SHIPPING and GHN forward order created", (Void) null));
     }
 
     @PostMapping("/{id}/mark-rented")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ApiResponse<Void>> markOrderRented(@PathVariable Long id) {
         orderService.markOrderRented(id);
-        return ResponseEntity.ok(ApiResponse.success("Order items marked as RENTED", null));
+        return ResponseEntity.ok(ApiResponse.success("Order items marked as RENTED", (Void) null));
     }
 
     @PostMapping("/{id}/return")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ApiResponse<Void>> returnOrder(@PathVariable Long id) {
         orderService.returnOrder(id);
-        return ResponseEntity.ok(ApiResponse.success("Order marked as RETURNING and GHN return order created", null));
+        return ResponseEntity.ok(ApiResponse.success("Order marked as RETURNING and GHN return order created", (Void) null));
     }
 
     @PostMapping("/{id}/complete")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<ApiResponse<Void>> completeOrder(@PathVariable Long id) {
-        orderService.completeOrder(id);
-        return ResponseEntity.ok(ApiResponse.success("Order marked as COMPLETED and deposits refunded", null));
+    public ResponseEntity<ApiResponse<Void>> completeOrder(@PathVariable Long id, @RequestBody InspectionRequest request) {
+        orderService.completeOrder(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Order marked as COMPLETED and deposits refunded", (Void) null));
+    }
+
+    @PostMapping("/{id}/delivery-failed")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<ApiResponse<Void>> handleDeliveryFailed(@PathVariable Long id, @RequestParam String reason) {
+        orderService.handleDeliveryFailed(id, reason);
+        return ResponseEntity.ok(ApiResponse.success("Order marked as CANCELLED (Delivery Failed)", (Void) null));
+    }
+
+    @PostMapping("/{id}/lost-package")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<ApiResponse<Void>> handleLostPackage(@PathVariable Long id, @RequestParam String reason) {
+        orderService.handleLostPackage(id, reason);
+        return ResponseEntity.ok(ApiResponse.success("Order marked as CANCELLED (Lost Package)", (Void) null));
     }
 }

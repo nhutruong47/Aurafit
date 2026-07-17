@@ -25,9 +25,14 @@ const formatDateTime = (dateString) => {
 };
 
 const detailStatusLabels = {
-  PICKED_UP: 'Đã nhận hàng',
+  PENDING: 'Chờ chuẩn bị',
   CONFIRMED: 'Chờ nhận',
+  SHIPPING: 'Đang giao hàng',
+  RENTED: 'Đang thuê',
+  RETURNING: 'Đang hoàn trả',
+  PICKED_UP: 'Đã nhận hàng',
   RETURNED: 'Đã trả',
+  COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy',
 };
 
@@ -93,6 +98,9 @@ const StatusBadge = ({ status, label }) => {
   const statusColors = {
     PENDING: 'bg-yellow-100 text-yellow-800',
     CONFIRMED: 'bg-blue-100 text-blue-800',
+    SHIPPING: 'bg-indigo-100 text-indigo-800',
+    RENTED: 'bg-purple-100 text-purple-800',
+    RETURNING: 'bg-pink-100 text-pink-800',
     PICKED_UP: 'bg-indigo-100 text-indigo-800',
     RETURNED: 'bg-green-100 text-green-800',
     COMPLETED: 'bg-green-100 text-green-800',
@@ -116,9 +124,8 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     orders,
     activeOrder,
     mode,
-    selectedDetailId,
-    selectedDetail,
-    returnStatus,
+    assessments,
+    updateAssessment,
     handoverImageUrl,
     note,
     previewImage,
@@ -131,18 +138,12 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     loadOrders,
     openOrder,
     setMode,
-    setSelectedDetailId,
-    setReturnStatus,
     setHandoverImageUrl,
     setNote,
     setPreviewImage,
     handleHandoverImageUploaded,
     updateHandoverEvidenceImage,
     submitHandover,
-    lateFee,
-    setLateFee,
-    damageFee,
-    setDamageFee,
     maxDeposit,
     isPenaltyValid,
     priorityOrders,
@@ -186,8 +187,11 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
 
   const renderModalActionButtons = () => {
     if (!activeOrder) return null;
+    const isReadOnly = currentTab === 'orders' || currentTab === 'history';
+    if (isReadOnly) return null;
     switch (activeOrder.status) {
       case 'CONFIRMED':
+        if (activeOrder.deliveryMethod === 'STORE_PICKUP') return null;
         return (
           <button
             onClick={() => handleModalAction(adminOrderService.shipOrder, 'Đã giao hàng cho GHN')}
@@ -251,9 +255,9 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     let filtered = orders;
     
     if (currentTab === 'pickup') {
-      filtered = filtered.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED');
+      filtered = filtered.filter(o => (o.status === 'PENDING' || o.status === 'CONFIRMED') && o.deliveryMethod === 'STORE_PICKUP');
     } else if (currentTab === 'return') {
-      filtered = filtered.filter(o => o.status === 'PICKED_UP');
+      filtered = filtered.filter(o => (o.status === 'RENTED' || o.status === 'PICKED_UP' || o.status === 'RETURNING') && o.deliveryMethod === 'STORE_PICKUP');
     } else if (currentTab === 'history') {
       filtered = filtered.filter(o => ['RETURNED', 'CANCELLED', 'COMPLETED', 'DAMAGED', 'LOST'].includes(o.status));
     }
@@ -272,7 +276,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
       );
     }
 
-    if (currentTab === 'orders' || currentTab === 'history') {
+    if (currentTab === 'orders') {
       filtered = [...filtered].sort((a, b) => {
         if (sortOption === 'NEWEST') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
         if (sortOption === 'OLDEST') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
@@ -375,11 +379,17 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
                   <div className="flex items-center gap-3">
                     <StatusBadge status={order.status} />
                     <button onClick={() => { openOrder(order.id); setIsModalOpen(true); }} className="text-blue-600 hover:text-blue-900 font-medium text-xs">Xem chi tiết</button>
-                    {order.status === 'CONFIRMED' && (
-                      <button onClick={() => { navigate('/staff?tab=pickup'); setTimeout(() => openOrder(order.id), 100); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Đi tới Pickup</button>
-                    )}
-                    {order.status === 'PICKED_UP' && (
-                      <button onClick={() => { navigate('/staff?tab=return'); setTimeout(() => openOrder(order.id), 100); }} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">Đi tới Return</button>
+                    {order.deliveryMethod === 'STORE_PICKUP' ? (
+                      <>
+                        {order.status === 'CONFIRMED' && (
+                          <button onClick={() => { navigate('/staff?tab=pickup'); setTimeout(() => openOrder(order.id), 100); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Đi tới Pickup</button>
+                        )}
+                        {(order.status === 'RENTED' || order.status === 'PICKED_UP' || order.status === 'RETURNING') && (
+                          <button onClick={() => { navigate('/staff?tab=return'); setTimeout(() => openOrder(order.id), 100); }} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">Đi tới Return</button>
+                        )}
+                      </>
+                    ) : (
+                      <button onClick={() => { openOrder(order.id); setIsModalOpen(true); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Xử lý ngay</button>
                     )}
                   </div>
                </div>
@@ -392,6 +402,18 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
 
   const renderOrderList = () => (
     <div className="flex h-full flex-col space-y-4">
+      <div className="rounded-md bg-blue-50 p-4 border border-blue-200">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <span className="material-symbols-outlined text-blue-400">info</span>
+          </div>
+          <div className="ml-3 flex-1 md:flex md:justify-between">
+            <p className="text-sm text-blue-700">
+              💡 <strong>Chế độ xem tổng quan.</strong> Để thao tác xử lý đơn hàng (giao, nhận đồ), vui lòng sử dụng tab Pickup hoặc Return tương ứng.
+            </p>
+          </div>
+        </div>
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-white p-4 shadow-sm">
         <div className="flex flex-wrap flex-1 items-center gap-4">
           <div className="relative max-w-sm flex-1 min-w-[200px]">
@@ -412,10 +434,13 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
             <option value="ALL">Tất cả trạng thái</option>
             <option value="PENDING">Chờ chuẩn bị (Pending)</option>
             <option value="CONFIRMED">Chờ bàn giao (Confirmed)</option>
-            <option value="PICKED_UP">Đang thuê (Picked Up)</option>
-            <option value="RETURNED">Đã trả (Returned)</option>
-            <option value="CANCELLED">Đã hủy (Cancelled)</option>
+            <option value="SHIPPING">Đang giao hàng (Shipping)</option>
+            <option value="RENTED">Đang thuê (Rented)</option>
+            <option value="RETURNING">Đang hoàn trả (Returning)</option>
             <option value="COMPLETED">Hoàn thành (Completed)</option>
+            <option value="CANCELLED">Đã hủy (Cancelled)</option>
+            <option value="PICKED_UP">Đã nhận hàng (Cũ)</option>
+            <option value="RETURNED">Đã trả (Cũ)</option>
           </select>
           <select
             value={sortOption}
@@ -447,6 +472,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Khách hàng</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Ngày thuê</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Ngày trả</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Loại đơn</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tiền cọc</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Trạng thái</th>
                 <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Thao tác</th>
@@ -474,6 +500,13 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                       {formatDate(order.rentalEndDate)}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {order.deliveryMethod === 'STORE_PICKUP' ? (
+                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Tại cửa hàng</span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">GHN</span>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
                       {formatCurrency(order.totalDeposit)}
@@ -598,118 +631,103 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
 
             <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200 flex-1 flex flex-col">
               <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Biên bản xử lý {actionMode}</h3>
-              <div className="flex-1 flex gap-6">
-                <div className="w-1/2 flex flex-col gap-4 overflow-auto pr-2">
+              <form onSubmit={(e) => { e.preventDefault(); submitHandover(); }} className="flex-1 flex flex-col gap-6 overflow-hidden">
+                <div className="flex-1 overflow-auto space-y-4 pr-2">
                   <h4 className="font-medium text-sm text-gray-700">Danh sách sản phẩm</h4>
-                  {activeOrder.details?.map(detail => (
-                    <button
-                      key={detail.id}
-                      onClick={() => setSelectedDetailId(detail.id)}
-                      className={`p-3 border rounded-md text-left transition-colors ${String(selectedDetailId) === String(detail.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
-                    >
-                      <div className="font-medium text-gray-900 truncate">{detail.costumeName}</div>
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>Cọc: {formatCurrency(detail.depositPrice)}</span>
-                        <span>{detail.returnStatus || 'PENDING'}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <div className="w-1/2 flex flex-col gap-4 border-l pl-6">
-                  {selectedDetail ? (
-                    <form onSubmit={(e) => { e.preventDefault(); submitHandover(); }} className="space-y-4">
-                      {actionMode === 'RETURN' && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Tình trạng trả</label>
-                          <select
-                            value={returnStatus}
-                            onChange={(e) => setReturnStatus(e.target.value)}
-                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 border px-3"
-                          >
-                            <option value="RETURNED">Bình thường (Returned)</option>
-                            <option value="DAMAGED">Hư hỏng (Damaged)</option>
-                            <option value="LOST">Mất mát (Lost)</option>
-                          </select>
+                  {activeOrder.details?.map(detail => {
+                    const ass = assessments[detail.id] || { returnStatus: 'RETURNED', lateFee: 0, damageFee: 0, note: '' };
+                    return (
+                      <div key={detail.id} className="p-4 border border-gray-200 rounded-md bg-gray-50 flex flex-col gap-3">
+                        <div className="font-medium text-gray-900">{detail.costumeName}</div>
+                        <div className="flex justify-between text-sm text-gray-500">
+                           <span>Tiền cọc: <span className="font-medium text-gray-900">{formatCurrency(detail.depositPrice)}</span></span>
+                           {actionMode === 'PICKUP' && <span>Trạng thái: {detail.returnStatus || 'PENDING'}</span>}
                         </div>
-                      )}
-                      
-                      {actionMode === 'RETURN' && (returnStatus === 'DAMAGED' || returnStatus === 'LOST') && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Phí hư hỏng</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={damageFee}
-                              onChange={(e) => setDamageFee(e.target.value)}
-                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 border px-3"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Phí trả trễ</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={lateFee}
-                              onChange={(e) => setLateFee(e.target.value)}
-                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 border px-3"
-                            />
-                          </div>
-                          {!isPenaltyValid && (
-                            <div className="col-span-2 text-xs text-red-600">
-                              Tổng phí phạt ({formatCurrency(Number(damageFee) + Number(lateFee))}) không được vượt quá tiền cọc ({formatCurrency(maxDeposit)}).
+                        
+                        {actionMode === 'RETURN' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-3 border rounded shadow-sm">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Tình trạng trả</label>
+                              <select
+                                value={ass.returnStatus}
+                                onChange={(e) => updateAssessment(detail.id, 'returnStatus', e.target.value)}
+                                className="block w-full rounded-md border-gray-300 text-sm h-9 border px-2"
+                              >
+                                <option value="RETURNED">Bình thường (Returned)</option>
+                                <option value="DAMAGED">Hư hỏng (Damaged)</option>
+                                <option value="LOST">Mất mát (Lost)</option>
+                              </select>
                             </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh minh chứng</label>
-                        <ImageUploadField
-                          label=""
-                          value={handoverImageUrl}
-                          disabled={isSubmitting}
-                          readyLabel="Ảnh đã được tải lên Cloudinary."
-                          autoUpload={actionMode === 'PICKUP' || actionMode === 'RETURN'}
-                          onUploaded={handleHandoverImageUploaded}
-                        />
-                        {handoverImageUrl && (
-                           <button
-                             type="button"
-                             onClick={() => setPreviewImage(handoverImageUrl)}
-                             className="mt-2 aspect-video w-full rounded-md overflow-hidden bg-gray-100 border border-gray-200"
-                           >
-                             <img src={handoverImageUrl} className="w-full h-full object-cover" alt="Minh chứng" />
-                           </button>
+                            {(ass.returnStatus === 'DAMAGED' || ass.returnStatus === 'LOST') && (
+                              <>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Phí hư hỏng</label>
+                                  <input
+                                    type="number" min="0" value={ass.damageFee}
+                                    onChange={(e) => updateAssessment(detail.id, 'damageFee', e.target.value)}
+                                    className="block w-full rounded-md border-gray-300 text-sm h-9 border px-2 focus:ring-blue-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Phí trả trễ</label>
+                                  <input
+                                    type="number" min="0" value={ass.lateFee}
+                                    onChange={(e) => updateAssessment(detail.id, 'lateFee', e.target.value)}
+                                    className="block w-full rounded-md border-gray-300 text-sm h-9 border px-2 focus:ring-blue-500"
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
                         )}
                       </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                        <textarea
-                          value={note}
-                          onChange={(e) => setNote(e.target.value)}
-                          rows={3}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-3"
-                          placeholder="Ghi chú thêm..."
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={isSubmitting || ((actionMode === 'PICKUP' || actionMode === 'RETURN') && !handoverImageUrl.trim()) || (actionMode === 'RETURN' && !isPenaltyValid)}
-                        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
-                      >
-                        {isSubmitting ? 'Đang xử lý...' : `Xác nhận ${actionMode}`}
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center text-sm text-gray-500">
-                      Chọn một sản phẩm để thao tác
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-              </div>
+
+                <div className="border-t border-gray-200 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white shrink-0">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh minh chứng</label>
+                    <ImageUploadField
+                      label=""
+                      value={handoverImageUrl}
+                      disabled={isSubmitting}
+                      readyLabel="Ảnh đã được tải lên Cloudinary."
+                      autoUpload={true}
+                      onUploaded={handleHandoverImageUploaded}
+                    />
+                    {handoverImageUrl && (
+                       <button type="button" onClick={() => setPreviewImage(handoverImageUrl)} className="mt-2 aspect-[2/1] w-full max-w-[200px] rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                         <img src={handoverImageUrl} className="w-full h-full object-cover" alt="Minh chứng" />
+                       </button>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú chung</label>
+                      <textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        rows={2}
+                        className="block w-full rounded-md border-gray-300 text-sm border p-3 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Ghi chú thêm..."
+                      />
+                    </div>
+                    {!isPenaltyValid && actionMode === 'RETURN' && (
+                      <div className="text-xs text-red-600 p-2 bg-red-50 rounded border border-red-200">
+                        Tổng phí phạt của một số sản phẩm vượt quá tiền cọc. Vui lòng kiểm tra lại.
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || !handoverImageUrl.trim() || (actionMode === 'RETURN' && !isPenaltyValid)}
+                      className="w-full py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 mt-auto"
+                    >
+                      {isSubmitting ? 'Đang xử lý...' : `Xác nhận ${actionMode}`}
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
           </>
         )}
@@ -944,7 +962,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
                       ) : (
                         <p className="mt-1 font-medium">Không có ảnh minh chứng</p>
                       )}
-                      {modalPickupInfo.canUpdateImage && (
+                      {modalPickupInfo.canUpdateImage && (currentTab !== 'orders' && currentTab !== 'history') && (
                         <div className="mt-4 rounded-md border border-dashed border-gray-300 p-3">
                           <ImageUploadField
                             label={modalPickupInfo.pickupImages.length > 0 ? 'Cập nhật ảnh Pickup' : 'Bổ sung ảnh Pickup'}
@@ -1002,7 +1020,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
                       ) : (
                         <p className="mt-1 font-medium">Không có ảnh minh chứng</p>
                       )}
-                      {modalReturnInfo.canUpdateImage && (
+                      {modalReturnInfo.canUpdateImage && (currentTab !== 'orders' && currentTab !== 'history') && (
                         <div className="mt-4 rounded-md border border-dashed border-gray-300 p-3">
                           <ImageUploadField
                             label={modalReturnInfo.returnImages.length > 0 ? 'Cập nhật ảnh Return' : 'Bổ sung ảnh Return'}

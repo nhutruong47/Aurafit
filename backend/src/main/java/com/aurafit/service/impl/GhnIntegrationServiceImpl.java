@@ -1,6 +1,8 @@
 package com.aurafit.service.impl;
 
 import com.aurafit.service.GhnIntegrationService;
+import com.aurafit.entity.RentalOrder;
+import com.aurafit.entity.RentalOrderDetail;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -124,16 +126,16 @@ public class GhnIntegrationServiceImpl implements GhnIntegrationService {
     }
 
     @Override
-    public String createForwardOrder(String toName, String toPhone, String toAddress, int toDistrictId, String toWardCode, int weight) {
+    public String createForwardOrder(RentalOrder order, int toDistrictId, String toWardCode, int weight) {
         String url = ghnApiUrl + "/v2/shipping-order/create";
         
         Map<String, Object> body = new HashMap<>();
         body.put("payment_type_id", 1); // 1 = Seller pays shipping, 2 = Buyer pays shipping
         body.put("note", "Cho thử hàng");
         body.put("required_note", "CHOXEMHANGKHONGTHU");
-        body.put("to_name", toName);
-        body.put("to_phone", toPhone);
-        body.put("to_address", toAddress);
+        body.put("to_name", order.getReceiverName());
+        body.put("to_phone", order.getReceiverPhone());
+        body.put("to_address", order.getDeliveryAddress());
         body.put("to_ward_code", toWardCode);
         body.put("to_district_id", toDistrictId);
         body.put("from_district_id", 1452); // ID for Quận 9
@@ -141,12 +143,29 @@ public class GhnIntegrationServiceImpl implements GhnIntegrationService {
         body.put("weight", weight);
         body.put("service_type_id", 2);
         
-        // Mock items structure since GHN requires items
-        Map<String, Object> item = new HashMap<>();
-        item.put("name", "Trang phục cho thuê AuraFit");
-        item.put("quantity", 1);
-        item.put("weight", weight);
-        body.put("items", new Map[]{item});
+        // Map actual items from RentalOrder
+        List<Map<String, Object>> items = new java.util.ArrayList<>();
+        int perItemWeight = weight / (order.getDetails() != null && !order.getDetails().isEmpty() ? order.getDetails().size() : 1);
+        
+        if (order.getDetails() != null) {
+            for (RentalOrderDetail detail : order.getDetails()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", detail.getCostumeItem() != null && detail.getCostumeItem().getCostume() != null ? detail.getCostumeItem().getCostume().getName() : "Trang phục AuraFit");
+                item.put("quantity", 1);
+                item.put("weight", perItemWeight);
+                items.add(item);
+            }
+        }
+        
+        if (items.isEmpty()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("name", "Trang phục cho thuê AuraFit");
+            item.put("quantity", 1);
+            item.put("weight", weight);
+            items.add(item);
+        }
+        
+        body.put("items", items);
         
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, createHeaders());
         
@@ -168,7 +187,7 @@ public class GhnIntegrationServiceImpl implements GhnIntegrationService {
     }
 
     @Override
-    public String createReturnOrder(String fromName, String fromPhone, String fromAddress, int fromDistrictId, String fromWardCode, int weight) {
+    public String createReturnOrder(RentalOrder order, int fromDistrictId, String fromWardCode, int weight) {
         String url = ghnApiUrl + "/v2/shipping-order/create";
         
         // Reverse order: Customer is the sender, Store is the receiver.
@@ -178,9 +197,9 @@ public class GhnIntegrationServiceImpl implements GhnIntegrationService {
         body.put("required_note", "CHOXEMHANGKHONGTHU");
         
         // Return sender info
-        body.put("return_name", fromName);
-        body.put("return_phone", fromPhone);
-        body.put("return_address", fromAddress);
+        body.put("return_name", order.getReceiverName());
+        body.put("return_phone", order.getReceiverPhone());
+        body.put("return_address", order.getDeliveryAddress());
         body.put("return_district_id", fromDistrictId);
         body.put("return_ward_code", fromWardCode);
         
@@ -193,11 +212,29 @@ public class GhnIntegrationServiceImpl implements GhnIntegrationService {
         body.put("weight", weight);
         body.put("service_type_id", 2);
         
-        Map<String, Object> item = new HashMap<>();
-        item.put("name", "Trang phục cho thuê AuraFit (Trả hàng)");
-        item.put("quantity", 1);
-        item.put("weight", weight);
-        body.put("items", new Map[]{item});
+        // Map actual items from RentalOrder
+        List<Map<String, Object>> items = new java.util.ArrayList<>();
+        int perItemWeight = weight / (order.getDetails() != null && !order.getDetails().isEmpty() ? order.getDetails().size() : 1);
+        
+        if (order.getDetails() != null) {
+            for (RentalOrderDetail detail : order.getDetails()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", detail.getCostumeItem() != null && detail.getCostumeItem().getCostume() != null ? detail.getCostumeItem().getCostume().getName() : "Trang phục AuraFit");
+                item.put("quantity", 1);
+                item.put("weight", perItemWeight);
+                items.add(item);
+            }
+        }
+        
+        if (items.isEmpty()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("name", "Trang phục cho thuê AuraFit (Trả hàng)");
+            item.put("quantity", 1);
+            item.put("weight", weight);
+            items.add(item);
+        }
+        
+        body.put("items", items);
         
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, createHeaders());
         

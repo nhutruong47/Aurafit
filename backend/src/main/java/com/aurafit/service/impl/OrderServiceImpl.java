@@ -299,9 +299,7 @@ public class OrderServiceImpl implements OrderService {
         int totalWeight = 1000 * order.getDetails().size();
 
         String ghnCode = ghnIntegrationService.createForwardOrder(
-                order.getReceiverName(), 
-                order.getReceiverPhone(), 
-                order.getDeliveryAddress(), 
+                order, 
                 toDistrictId, 
                 toWardCode, 
                 totalWeight
@@ -346,9 +344,7 @@ public class OrderServiceImpl implements OrderService {
         int totalWeight = 1000 * order.getDetails().size();
 
         String ghnCode = ghnIntegrationService.createReturnOrder(
-                order.getReceiverName(), 
-                order.getReceiverPhone(), 
-                order.getDeliveryAddress(), 
+                order, 
                 fromDistrictId, 
                 fromWardCode, 
                 totalWeight
@@ -365,7 +361,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void completeOrder(Long orderId) {
+    public void completeOrder(Long orderId, com.aurafit.dto.request.InspectionRequest request) {
         RentalOrder order = rentalOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
@@ -374,14 +370,122 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setStatus(com.aurafit.enums.OrderStatus.COMPLETED);
+
+        java.time.LocalDate actualReturnDate = request.getActualReturnDate() != null ? request.getActualReturnDate() : java.time.LocalDate.now();
+        long lateDays = java.time.temporal.ChronoUnit.DAYS.between(order.getRentalEndDate().toLocalDate(), actualReturnDate);
         
-        // Update items to AVAILABLE
+        BigDecimal lateFee = BigDecimal.ZERO;
+        String inspectionNote = request.getInspectionNote() != null ? request.getInspectionNote() : "";
+
+        if (lateDays > 0) {
+            if (request.getLateFee() != null) {
+                lateFee = request.getLateFee(); // Manual override
+            } else {
+                long rentalDays = java.time.temporal.ChronoUnit.DAYS.between(order.getRentalStartDate().toLocalDate(), order.getRentalEndDate().toLocalDate());
+                if (rentalDays <= 0) rentalDays = 1;
+                
+                BigDecimal dailyRentalRate = order.getTotalRentalPrice().divide(BigDecimal.valueOf(rentalDays), 0, java.math.RoundingMode.HALF_UP);
+                lateFee = dailyRentalRate.multiply(new BigDecimal("1.5")).multiply(new BigDecimal(lateDays));
+                
+                if (lateFee.compareTo(order.getTotalDeposit()) > 0) {
+                    lateFee = order.getTotalDeposit();
+                }
+            }
+            inspectionNote += (inspectionNote.isEmpty() ? "" : " | ") + String.format("Trả trễ %d ngày, áp dụng hệ số 1.5x giá thuê ngày (phí %s VND)", lateDays, lateFee.toPlainString());
+        } else {
+            if (request.getLateFee() != null) {
+                lateFee = request.getLateFee();
+            }
+        }
+
+        BigDecimal damageFee = request.getDamageFee() != null ? request.getDamageFee() : BigDecimal.ZERO;
+        
+        BigDecimal refundAmount = order.getTotalDeposit().subtract(damageFee).subtract(lateFee);
+        if (refundAmount.compareTo(BigDecimal.ZERO) < 0) {
+            refundAmount = BigDecimal.ZERO;
+        }
+
+        order.setTotalDamageFee(damageFee);
+        order.setTotalLateFee(lateFee);
+        order.setInspectionNote(inspectionNote);
+        order.setTotalRefundedAmount(refundAmount);
+        
+        // Update items to AVAILABLE or MAINTENANCE
         for (RentalOrderDetail detail : order.getDetails()) {
             detail.setReturnStatus(com.aurafit.enums.ReturnStatus.RETURNED);
             CostumeItem item = detail.getCostumeItem();
-            item.setStatus(ItemStatus.AVAILABLE);
+            if (damageFee.compareTo(BigDecimal.ZERO) > 0) {
+                item.setStatus(ItemStatus.MAINTENANCE);
+            } else {
+                item.setStatus(ItemStatus.AVAILABLE);
+            }
             costumeItemRepository.save(item);
         }
+
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void handleDeliveryFailed(Long orderId, String reason) {
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.SHIPPING) {
+            throw new BadRequestException("Order must be SHIPPING to mark as delivery failed.");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.CANCELLED);
+        
+        order.getDetails().forEach(detail -> {
+            CostumeItem costumeItem = detail.getCostumeItem();
+            costumeItem.setStatus(com.aurafit.enums.ItemStatus.AVAILABLE);
+            costumeItemRepository.save(costumeItem);
+        });
+
+        BigDecimal refundAmount = order.getTotalDeposit()
+                .add(order.getTotalRentalPrice())
+                .subtract(order.getShippingFee());
+        
+        if (refundAmount.compareTo(BigDecimal.ZERO) < 0) {
+            refundAmount = BigDecimal.ZERO;
+        }
+        order.setTotalRefundedAmount(refundAmount);
+
+        String note = "Giao hàng thất bại (Boom hàng). Lý do: " + reason;
+        order.setInspectionNote(order.getInspectionNote() != null && !order.getInspectionNote().isEmpty()
+                ? order.getInspectionNote() + "\n" + note 
+                : note);
+
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void handleLostPackage(Long orderId, String reason) {
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.SHIPPING && 
+            order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING) {
+            throw new BadRequestException("Order must be SHIPPING or RETURNING to mark as lost package.");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.CANCELLED);
+        
+        order.getDetails().forEach(detail -> {
+            CostumeItem costumeItem = detail.getCostumeItem();
+            costumeItem.setStatus(com.aurafit.enums.ItemStatus.MAINTENANCE);
+            costumeItemRepository.save(costumeItem);
+        });
+
+        BigDecimal refundAmount = order.getTotalDeposit().add(order.getTotalRentalPrice());
+        order.setTotalRefundedAmount(refundAmount);
+
+        String note = "Thất lạc kiện hàng. Lý do: " + reason;
+        order.setInspectionNote(order.getInspectionNote() != null && !order.getInspectionNote().isEmpty()
+                ? order.getInspectionNote() + "\n" + note 
+                : note);
 
         rentalOrderRepository.save(order);
     }
@@ -714,7 +818,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Chi co the giao hang khi don hang da duoc xac nhan (CONFIRMED). Trang thai hien tai: " + order.getStatus());
         }
 
-        order.setStatus(com.aurafit.enums.OrderStatus.PICKED_UP);
+        order.setStatus(com.aurafit.enums.OrderStatus.RENTED);
         rentalOrderRepository.save(order);
 
         List<HandoverRecord> records = new ArrayList<>();

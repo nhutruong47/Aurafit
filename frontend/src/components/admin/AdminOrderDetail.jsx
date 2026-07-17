@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { adminOrderService } from '../../services/adminOrderService';
 import { formatCurrency } from '../../utils/formatCurrency';
+import InspectionModal from './InspectionModal';
 
-export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh }) {
+export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, isReadOnly = false }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isInspectionModalOpen, setIsInspectionModalOpen] = useState(false);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -49,9 +51,51 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh }) 
     window.alert(`Đã copy mã vận đơn ${type}`);
   };
 
+  const onDeliveryFailedClick = async () => {
+    const reason = window.prompt('Nhập lý do / Ghi chú sự cố giao hàng thất bại (Bắt buộc):');
+    if (!reason || !reason.trim()) {
+      window.alert('Vui lòng nhập lý do để xử lý.');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      await adminOrderService.handleDeliveryFailed(order.id, reason.trim());
+      window.alert('Đã đánh dấu đơn hàng: Giao hàng thất bại (Boom hàng).');
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      window.alert(error.response?.data?.message || 'Lỗi khi xử lý thao tác này');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onLostPackageClick = async () => {
+    const reason = window.prompt('Nhập lý do / Ghi chú sự cố thất lạc hàng hóa (Bắt buộc):');
+    if (!reason || !reason.trim()) {
+      window.alert('Vui lòng nhập lý do để xử lý.');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      await adminOrderService.handleLostPackage(order.id, reason.trim());
+      window.alert('Đã đánh dấu đơn hàng: Thất lạc kiện hàng.');
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      window.alert(error.response?.data?.message || 'Lỗi khi xử lý thao tác này');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderActionButtons = () => {
+    if (isReadOnly) return null;
     switch (order.status) {
       case 'CONFIRMED':
+        if (order.deliveryMethod === 'STORE_PICKUP') {
+          return null;
+        }
         return (
           <button
             onClick={() => handleAction(adminOrderService.shipOrder, 'Đã giao hàng cho GHN')}
@@ -63,15 +107,51 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh }) 
         );
       case 'SHIPPING':
         return (
-          <button
-            onClick={() => handleAction(adminOrderService.markOrderRented, 'Khách đã nhận đồ thành công')}
-            disabled={isLoading}
-            className="w-full sm:w-auto bg-[#2e7d32] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#1b5e20] disabled:opacity-50 transition-colors"
-          >
-            {isLoading ? 'Đang xử lý...' : 'Xác nhận Khách Đã Nhận'}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full justify-end">
+            <button
+              onClick={() => {
+                const confirmed = window.confirm(
+                  "Cảnh báo: Bạn đang sử dụng chức năng GHI ĐÈ THỦ CÔNG.\n" +
+                  "Hệ thống GHN có thể chưa ghi nhận giao hàng thành công. Hãy đảm bảo bạn đã liên hệ trực tiếp và khách hàng xác nhận ĐÃ CẦM ĐỒ TRÊN TAY trước khi tiếp tục.\n" +
+                  "Bạn có chắc chắn muốn chuyển đơn hàng sang trạng thái ĐANG THUÊ?"
+                );
+                if (confirmed) {
+                  handleAction(adminOrderService.markOrderRented, 'Khách đã nhận đồ thành công');
+                }
+              }}
+              disabled={isLoading}
+              className="w-full sm:w-auto bg-[#2e7d32] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#1b5e20] disabled:opacity-50 transition-colors"
+            >
+              {isLoading ? 'Đang xử lý...' : 'Xác nhận Khách Đã Nhận'}
+            </button>
+            <button
+              onClick={onDeliveryFailedClick}
+              disabled={isLoading}
+              className="w-full sm:w-auto bg-orange-600 px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-orange-700 disabled:opacity-50 transition-colors"
+            >
+              Giao hàng thất bại
+            </button>
+            <button
+              onClick={onLostPackageClick}
+              disabled={isLoading}
+              className="w-full sm:w-auto bg-red-600 px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              Thất lạc kiện hàng
+            </button>
+          </div>
         );
       case 'RENTED':
+        if (order.deliveryMethod === 'STORE_PICKUP') {
+          return (
+            <button
+              onClick={() => setIsInspectionModalOpen(true)}
+              disabled={isLoading}
+              className="w-full sm:w-auto bg-[#1976d2] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#115293] disabled:opacity-50 transition-colors"
+            >
+              {isLoading ? 'Đang xử lý...' : 'Nhận Lại Đồ Tại Quầy'}
+            </button>
+          );
+        }
         return (
           <button
             onClick={() => handleAction(adminOrderService.returnOrder, 'Đã tạo vận đơn thu hồi GHN')}
@@ -83,13 +163,22 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh }) 
         );
       case 'RETURNING':
         return (
-          <button
-            onClick={() => handleAction(adminOrderService.completeOrder, 'Nghiệm thu đồ và hoàn tất đơn hàng')}
-            disabled={isLoading}
-            className="w-full sm:w-auto bg-[#1976d2] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#115293] disabled:opacity-50 transition-colors"
-          >
-            {isLoading ? 'Đang xử lý...' : 'Nghiệm Thu & Hoàn Tất'}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full justify-end">
+            <button
+              onClick={() => setIsInspectionModalOpen(true)}
+              disabled={isLoading}
+              className="w-full sm:w-auto bg-[#1976d2] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#115293] disabled:opacity-50 transition-colors"
+            >
+              {isLoading ? 'Đang xử lý...' : 'Nghiệm Thu & Hoàn Tất'}
+            </button>
+            <button
+              onClick={onLostPackageClick}
+              disabled={isLoading}
+              className="w-full sm:w-auto bg-red-600 px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              Thất lạc kiện hàng
+            </button>
+          </div>
         );
       default:
         return null;
@@ -191,6 +280,7 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh }) 
                   <p><span className="text-[#5f5e5e] w-24 inline-block">Họ tên:</span> <span className="font-semibold">{order.customerName}</span></p>
                   <p><span className="text-[#5f5e5e] w-24 inline-block">SĐT:</span> <span className="font-semibold">{order.customerPhone}</span></p>
                   <p><span className="text-[#5f5e5e] w-24 inline-block">Email:</span> <span className="font-semibold">{order.customerEmail}</span></p>
+                  <p><span className="text-[#5f5e5e] w-24 inline-block">Loại đơn:</span> <span className="font-semibold">{order.deliveryMethod === 'STORE_PICKUP' ? 'Thuê tại cửa hàng' : 'Giao hàng GHN'}</span></p>
                 </div>
               </section>
 
@@ -274,6 +364,18 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh }) 
         </div>
 
       </div>
+
+      {/* Inspection Modal */}
+      <InspectionModal
+        order={order}
+        isOpen={isInspectionModalOpen}
+        onClose={() => setIsInspectionModalOpen(false)}
+        onSuccess={() => {
+          setIsInspectionModalOpen(false);
+          if (onRefresh) onRefresh();
+          onClose();
+        }}
+      />
     </div>
   );
 }

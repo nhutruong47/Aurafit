@@ -29,7 +29,9 @@ public interface OrderService {
     void shipOrder(Long orderId);
     void markOrderRented(Long orderId);
     void returnOrder(Long orderId);
-    void completeOrder(Long orderId);
+    void completeOrder(Long orderId, com.aurafit.dto.request.InspectionRequest request);
+    void handleDeliveryFailed(Long orderId, String reason);
+    void handleLostPackage(Long orderId, String reason);
 
     StaffOrderDetailResponse getOrderDetail(Long orderId);
 

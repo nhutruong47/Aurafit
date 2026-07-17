@@ -98,6 +98,9 @@ public class RentalOrder extends BaseEntity {
     @Builder.Default
     private BigDecimal totalRefundedAmount = BigDecimal.ZERO;
 
+    @Column(name = "inspection_note", columnDefinition = "TEXT")
+    private String inspectionNote;
+
     @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "rentalOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

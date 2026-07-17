@@ -55,12 +55,9 @@ export function useStaffRentalOrders(currentUser) {
   const [activeOrderId, setActiveOrderId] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
   const [mode, setMode] = useState('PICKUP');
-  const [selectedDetailId, setSelectedDetailId] = useState('');
-  const [returnStatus, setReturnStatus] = useState('RETURNED');
+  const [assessments, setAssessments] = useState({});
   const [handoverImageUrl, setHandoverImageUrl] = useState('');
   const [note, setNote] = useState('');
-  const [lateFee, setLateFee] = useState(0);
-  const [damageFee, setDamageFee] = useState(0);
   const [previewImage, setPreviewImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,13 +72,29 @@ export function useStaffRentalOrders(currentUser) {
   const canUseStaffTools = roles.includes('STAFF') || roles.includes('ADMIN');
   const requestKey = currentUser?.id || '__guest__';
 
-  const selectedDetail = useMemo(
-    () => activeOrder?.details?.find((detail) => String(detail.id) === String(selectedDetailId)),
-    [activeOrder, selectedDetailId]
-  );
+  const maxDeposit = (detailId) => {
+    const detail = activeOrder?.details?.find(d => String(d.id) === String(detailId));
+    return detail?.depositPrice || 0;
+  };
 
-  const maxDeposit = selectedDetail?.depositPrice || 0;
-  const isPenaltyValid = (Number(lateFee) + Number(damageFee)) <= Number(maxDeposit);
+  const isPenaltyValid = useMemo(() => {
+    if (!activeOrder?.details) return true;
+    return activeOrder.details.every(detail => {
+      const ass = assessments[detail.id] || {};
+      const maxD = detail.depositPrice || 0;
+      return (Number(ass.lateFee) || 0) + (Number(ass.damageFee) || 0) <= Number(maxD);
+    });
+  }, [activeOrder, assessments]);
+
+  const updateAssessment = (detailId, field, value) => {
+    setAssessments(prev => ({
+      ...prev,
+      [detailId]: {
+        ...(prev[detailId] || { returnStatus: 'RETURNED', lateFee: 0, damageFee: 0, note: '' }),
+        [field]: value
+      }
+    }));
+  };
 
   const applyConfirmedHandoverFallback = (order) => {
     const fallbackHandovers = confirmedHandoverFallbackRef.current.get(String(order?.id || '')) || [];
@@ -128,7 +141,7 @@ export function useStaffRentalOrders(currentUser) {
     now.setHours(0, 0, 0, 0);
 
     orders.forEach((order) => {
-      if (order.status === 'PICKED_UP') {
+      if (order.status === 'RENTED' || order.status === 'SHIPPING' || order.status === 'PICKED_UP') {
         let isOverdue = false;
         if (order.details && order.details.length > 0) {
           // Check if any detail is overdue
@@ -142,10 +155,12 @@ export function useStaffRentalOrders(currentUser) {
         } else {
           renting++;
         }
+      } else if (order.status === 'RETURNING') {
+        overdue++; // Treat returning as "Chờ trả" as well
       }
     });
 
-    const returned = orders.filter((order) => order.status === 'RETURNED').length;
+    const returned = orders.filter((order) => order.status === 'COMPLETED' || order.status === 'RETURNED').length;
 
     return { totalOrders, pending, confirmed, renting, overdue, returned };
   }, [orders]);
@@ -164,10 +179,14 @@ export function useStaffRentalOrders(currentUser) {
       if (nextOrderId) {
         const order = applyConfirmedHandoverFallback(await fetchStaffOrder(nextOrderId));
         setActiveOrder(order);
-        setSelectedDetailId(order.details?.[0]?.id || '');
+        const initialAssessments = {};
+        order.details?.forEach(d => {
+          initialAssessments[d.id] = { returnStatus: 'RETURNED', lateFee: 0, damageFee: 0, note: '' };
+        });
+        setAssessments(initialAssessments);
       } else {
         setActiveOrder(null);
-        setSelectedDetailId('');
+        setAssessments({});
       }
 
       setError('');
@@ -201,10 +220,14 @@ export function useStaffRentalOrders(currentUser) {
           if (!mounted) return;
 
           setActiveOrder(order);
-          setSelectedDetailId(order.details?.[0]?.id || '');
+          const initialAssessments = {};
+          order.details?.forEach(d => {
+            initialAssessments[d.id] = { returnStatus: 'RETURNED', lateFee: 0, damageFee: 0, note: '' };
+          });
+          setAssessments(initialAssessments);
         } else {
           setActiveOrder(null);
-          setSelectedDetailId('');
+          setAssessments({});
         }
 
         setError('');
@@ -226,33 +249,23 @@ export function useStaffRentalOrders(currentUser) {
     };
   }, [canUseStaffTools, requestKey]);
 
-  const openOrder = async (orderId) => {
-    const isSameOrder = String(orderId || '') === String(activeOrderId || '');
-    const shouldResetHandoverDraft = !isSameOrder;
 
+
+  const openOrder = async (orderId, shouldResetHandoverDraft = true) => {
     setActiveOrderId(orderId);
     setError('');
     setMessage('');
 
-    if (shouldResetHandoverDraft) {
-      pickupImageDraftRef.current = { orderId: null, imageUrl: '' };
-      setHandoverImageUrl('');
-      setNote('');
-      setLateFee(0);
-      setDamageFee(0);
-      setReturnStatus('RETURNED');
-    }
-
-    if (!orderId) {
-      setActiveOrder(null);
-      setSelectedDetailId('');
-      return;
-    }
-
     try {
       const order = applyConfirmedHandoverFallback(await fetchStaffOrder(orderId));
       setActiveOrder(order);
-      setSelectedDetailId(order.details?.[0]?.id || '');
+      if (shouldResetHandoverDraft) {
+        const initialAssessments = {};
+        order.details?.forEach(d => {
+          initialAssessments[d.id] = { returnStatus: 'RETURNED', lateFee: 0, damageFee: 0, note: '' };
+        });
+        setAssessments(initialAssessments);
+      }
       if (!shouldResetHandoverDraft && pickupImageDraftRef.current.orderId === order.id) {
         setHandoverImageUrl(pickupImageDraftRef.current.imageUrl);
       }
@@ -282,7 +295,7 @@ export function useStaffRentalOrders(currentUser) {
   };
 
   const submitHandover = async () => {
-    if (!activeOrder || !selectedDetailId) return;
+    if (!activeOrder) return;
     if (isSubmitting) return;
 
     const draftedHandoverImageUrl =
@@ -321,14 +334,16 @@ export function useStaffRentalOrders(currentUser) {
       : {
           imageUrl: submittedImageUrl,
           note,
-          assessments: [
-            {
-              rentalOrderDetailId: Number(selectedDetailId),
-              returnStatus,
-              lateFee: Math.max(0, Number(lateFee) || 0),
-              damageFee: Math.max(0, Number(damageFee) || 0),
-            }
-          ]
+          assessments: activeOrder.details.map(detail => {
+            const ass = assessments[detail.id] || { returnStatus: 'RETURNED', lateFee: 0, damageFee: 0, note: '' };
+            return {
+              rentalOrderDetailId: Number(detail.id),
+              returnStatus: ass.returnStatus,
+              lateFee: Math.max(0, Number(ass.lateFee) || 0),
+              damageFee: Math.max(0, Number(ass.damageFee) || 0),
+              note: ass.note || ''
+            };
+          })
         };
 
     if (mode === 'PICKUP') {
@@ -348,12 +363,9 @@ export function useStaffRentalOrders(currentUser) {
 
       const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
       setActiveOrder(refreshedOrder);
-      setSelectedDetailId(refreshedOrder.details?.[0]?.id || '');
       pickupImageDraftRef.current = { orderId: null, imageUrl: '' };
       setHandoverImageUrl('');
       setNote('');
-      setLateFee(0);
-      setDamageFee(0);
       setMessage(mode === 'PICKUP' ? 'Đã tạo biên bản bàn giao PICKUP.' : 'Đã ghi nhận khách trả đồ.');
 
       await loadOrders(activeOrder.id);
@@ -383,7 +395,6 @@ export function useStaffRentalOrders(currentUser) {
 
       const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
       setActiveOrder(refreshedOrder);
-      setSelectedDetailId(refreshedOrder.details?.[0]?.id || '');
       setOrders((currentOrders) => currentOrders.map((order) => (
         String(order.id) === String(refreshedOrder.id)
           ? applyConfirmedHandoverFallback({ ...order, handovers: refreshedOrder.handovers })
@@ -421,18 +432,24 @@ export function useStaffRentalOrders(currentUser) {
       if (['CANCELLED', 'COMPLETED', 'RETURNED'].includes(order.status)) return false;
       
       const pickupToday = order.status === 'CONFIRMED' && isToday(order.rentalStartDate);
-      const returnToday = order.status === 'PICKED_UP' && isToday(order.rentalEndDate);
-      const overdue = order.status === 'PICKED_UP' && isOverdue(order.rentalEndDate);
+      const isRented = order.status === 'RENTED' || order.status === 'SHIPPING' || order.status === 'PICKED_UP';
+      const isReturning = order.status === 'RETURNING';
+      
+      const returnToday = isRented && isToday(order.rentalEndDate);
+      const overdue = isRented && isOverdue(order.rentalEndDate);
 
-      return pickupToday || returnToday || overdue;
+      return pickupToday || returnToday || overdue || isReturning;
     }).sort((a, b) => {
-      const aOverdue = a.status === 'PICKED_UP' && isOverdue(a.rentalEndDate);
-      const bOverdue = b.status === 'PICKED_UP' && isOverdue(b.rentalEndDate);
+      const aIsRented = a.status === 'RENTED' || a.status === 'SHIPPING' || a.status === 'PICKED_UP';
+      const bIsRented = b.status === 'RENTED' || b.status === 'SHIPPING' || b.status === 'PICKED_UP';
+
+      const aOverdue = (aIsRented && isOverdue(a.rentalEndDate)) || a.status === 'RETURNING';
+      const bOverdue = (bIsRented && isOverdue(b.rentalEndDate)) || b.status === 'RETURNING';
       if (aOverdue && !bOverdue) return -1;
       if (!aOverdue && bOverdue) return 1;
 
-      const aReturn = a.status === 'PICKED_UP';
-      const bReturn = b.status === 'PICKED_UP';
+      const aReturn = aIsRented;
+      const bReturn = bIsRented;
       if (aReturn && !bReturn) return -1;
       if (!aReturn && bReturn) return 1;
 
@@ -440,15 +457,13 @@ export function useStaffRentalOrders(currentUser) {
     });
   }, [orders]);
 
+
   return {
     canUseStaffTools,
     orders,
     activeOrderId,
     activeOrder,
     mode,
-    selectedDetailId,
-    selectedDetail,
-    returnStatus,
     handoverImageUrl,
     note,
     previewImage,
@@ -461,18 +476,14 @@ export function useStaffRentalOrders(currentUser) {
     loadOrders,
     openOrder,
     setMode,
-    setSelectedDetailId,
-    setReturnStatus,
     setHandoverImageUrl,
     setNote,
     setPreviewImage,
     handleHandoverImageUploaded,
     updateHandoverEvidenceImage,
     submitHandover,
-    lateFee,
-    setLateFee,
-    damageFee,
-    setDamageFee,
+    assessments,
+    updateAssessment,
     maxDeposit,
     isPenaltyValid,
     priorityOrders,

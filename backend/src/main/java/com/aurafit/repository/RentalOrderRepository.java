@@ -12,6 +12,10 @@ import java.util.Optional;
 
 public interface RentalOrderRepository extends JpaRepository<RentalOrder, Long> {
 
+    Optional<RentalOrder> findByGhnOrderCode(String ghnOrderCode);
+
+    Optional<RentalOrder> findByGhnReturnOrderCode(String ghnReturnOrderCode);
+
     org.springframework.data.domain.Page<RentalOrder> findByStatus(OrderStatus status, org.springframework.data.domain.Pageable pageable);
 
     List<RentalOrder> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime dateTime);
