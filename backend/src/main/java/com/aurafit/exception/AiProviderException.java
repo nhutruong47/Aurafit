@@ -1,5 +1,7 @@
 package com.aurafit.exception;
 
+import com.aurafit.enums.AiErrorType;
+
 public class AiProviderException extends RuntimeException {
 
     private static final String DEFAULT_USER_FRIENDLY_MESSAGE = "Có lỗi xảy ra, vui lòng thử lại";

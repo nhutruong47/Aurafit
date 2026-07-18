@@ -1,15 +1,17 @@
-package com.aurafit.service.stylist;
+package com.aurafit.service.stylist.impl;
 
 import com.aurafit.dto.response.ChatMessageResponse;
 import com.aurafit.entity.ChatMessage;
 import com.aurafit.entity.ChatSession;
 import com.aurafit.enums.ChatMessageRole;
-import com.aurafit.exception.AiErrorType;
+import com.aurafit.enums.AiErrorType;
 import com.aurafit.exception.AiProviderException;
+import com.aurafit.integration.ai.GeminiClient;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.stylist.StylistIntentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

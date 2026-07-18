@@ -1,4 +1,4 @@
-package com.aurafit.service.stylist;
+package com.aurafit.service.stylist.impl;
 
 import com.aurafit.dto.request.StylistFilterCriteria;
 import com.aurafit.dto.response.CatalogCostumeDTO;
@@ -8,13 +8,17 @@ import com.aurafit.entity.ChatSession;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.CostumeMetadata;
 import com.aurafit.entity.User;
+import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.ChatMessageRole;
 import com.aurafit.exception.AiProviderException;
+import com.aurafit.integration.ai.GeminiClient;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.CostumeSpecification;
 import com.aurafit.repository.UserRepository;
+import com.aurafit.service.stylist.StylistIntentService;
+import com.aurafit.service.stylist.StylistRecommendationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.domain.PageRequest;

@@ -1,6 +1,6 @@
-package com.aurafit.service.stylist;
+package com.aurafit.integration.ai;
 
-import com.aurafit.exception.AiErrorType;
+import com.aurafit.enums.AiErrorType;
 import com.aurafit.exception.AiProviderException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;

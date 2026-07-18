@@ -1,5 +1,6 @@
-package com.aurafit.service.stylist;
+package com.aurafit.scheduler;
 
+import com.aurafit.service.stylist.AiAnalystService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

@@ -1,14 +1,17 @@
-package com.aurafit.service.stylist;
+package com.aurafit.service.stylist.impl;
 
 import com.aurafit.dto.request.StylistFilterCriteria;
 import com.aurafit.dto.response.AiInsightResponse;
 import com.aurafit.entity.AiInsight;
+import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.AiInsightType;
 import com.aurafit.enums.ChatMessageRole;
 import com.aurafit.enums.InteractionEventType;
+import com.aurafit.integration.ai.GeminiClient;
 import com.aurafit.repository.AiInsightRepository;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.UserInteractionEventRepository;
+import com.aurafit.service.stylist.AiAnalystService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

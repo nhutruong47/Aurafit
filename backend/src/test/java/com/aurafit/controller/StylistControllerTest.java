@@ -3,7 +3,7 @@ package com.aurafit.controller;
 import com.aurafit.dto.request.ChatMessageRequest;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.ChatMessageResponse;
-import com.aurafit.exception.AiErrorType;
+import com.aurafit.enums.AiErrorType;
 import com.aurafit.exception.AiProviderException;
 import com.aurafit.service.UserService;
 import com.aurafit.service.stylist.StylistRecommendationService;

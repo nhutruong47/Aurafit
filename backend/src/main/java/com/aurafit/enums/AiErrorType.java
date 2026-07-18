@@ -1,4 +1,4 @@
-package com.aurafit.exception;
+package com.aurafit.enums;
 
 public enum AiErrorType {
     RATE_LIMIT_EXCEEDED,

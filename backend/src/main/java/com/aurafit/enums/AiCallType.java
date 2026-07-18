@@ -1,4 +1,4 @@
-package com.aurafit.service.stylist;
+package com.aurafit.enums;
 
 public enum AiCallType {
     INTENT_EXTRACTION,

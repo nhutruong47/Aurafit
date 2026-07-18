@@ -1,6 +1,7 @@
-package com.aurafit.service.stylist;
+package com.aurafit.integration.ai;
 
-import com.aurafit.exception.AiErrorType;
+import com.aurafit.enums.AiCallType;
+import com.aurafit.enums.AiErrorType;
 import com.aurafit.exception.AiProviderException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;

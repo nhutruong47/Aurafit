@@ -1,7 +1,9 @@
-package com.aurafit.service.stylist;
+package com.aurafit.service.stylist.impl;
 
-import com.aurafit.exception.AiErrorType;
+import com.aurafit.enums.AiCallType;
+import com.aurafit.enums.AiErrorType;
 import com.aurafit.exception.AiProviderException;
+import com.aurafit.integration.ai.GeminiClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +26,7 @@ class StylistIntentServiceTest {
                 anyString(),
                 anyString()
         )).thenReturn("not-json");
-        StylistIntentService service = new StylistIntentService(geminiClient, new ObjectMapper());
+        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper());
 
         AiProviderException exception = assertThrows(
                 AiProviderException.class,
