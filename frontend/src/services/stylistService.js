@@ -2,7 +2,7 @@ import { requestJson } from './http/request';
 
 const STYLIST_SESSION_KEY = 'aurafitStylistSessionId';
 
-const createSessionId = () => {
+export const createStylistSessionId = () => {
   if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
     return window.crypto.randomUUID();
   }
@@ -12,7 +12,7 @@ const createSessionId = () => {
 
 export const getStylistSessionId = () => {
   if (typeof window === 'undefined') {
-    return createSessionId();
+    return createStylistSessionId();
   }
 
   const existing = window.localStorage.getItem(STYLIST_SESSION_KEY) || '';
@@ -20,7 +20,7 @@ export const getStylistSessionId = () => {
     return existing;
   }
 
-  const nextSessionId = createSessionId();
+  const nextSessionId = createStylistSessionId();
   window.localStorage.setItem(STYLIST_SESSION_KEY, nextSessionId);
   return nextSessionId;
 };
@@ -31,6 +31,33 @@ export const saveStylistSessionId = (sessionId) => {
   }
 
   window.localStorage.setItem(STYLIST_SESSION_KEY, sessionId);
+};
+
+export const fetchChatSessions = async () => {
+  const data = await requestJson(
+    {
+      url: '/stylist/sessions',
+      method: 'GET',
+    },
+    'Không thể tải lịch sử trò chuyện.'
+  );
+
+  return Array.isArray(data) ? data : [];
+};
+
+export const fetchSessionDetail = async (sessionId) => {
+  const data = await requestJson(
+    {
+      url: `/stylist/sessions/${encodeURIComponent(sessionId)}`,
+      method: 'GET',
+    },
+    'Không thể tải nội dung cuộc trò chuyện.'
+  );
+
+  return {
+    sessionId: data?.sessionId || sessionId,
+    messages: Array.isArray(data?.messages) ? data.messages : [],
+  };
 };
 
 export const sendChatMessage = async (sessionId, message) => {

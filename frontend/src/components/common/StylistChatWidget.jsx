@@ -5,8 +5,8 @@ import {
   saveStylistSessionId,
   sendChatMessage,
 } from '../../services/stylistService';
-import { fallbackCostumeImage, getCostumeImage } from '../../utils/costumeUtils';
-import { formatCurrency } from '../../utils/formatCurrency';
+import StylistAvatar from './StylistAvatar';
+import StylistProductCards from './StylistProductCards';
 
 const NETWORK_ERROR_MESSAGE = 'Không thể kết nối, vui lòng kiểm tra mạng và thử lại';
 
@@ -17,36 +17,6 @@ const createMessageId = () => {
 
   return `message-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 };
-
-function RecommendedCostumeCard({ costume, onSelect }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(costume)}
-      className="group w-36 shrink-0 overflow-hidden border border-[#d8d0c3] bg-white text-left transition hover:border-[#99854e] sm:w-40"
-      aria-label={`Xem chi tiết ${costume.name}`}
-    >
-      <div className="h-28 overflow-hidden bg-[#eeeeee] sm:h-32">
-        <img
-          src={getCostumeImage(costume)}
-          alt={costume.name}
-          onError={(event) => {
-            event.currentTarget.src = fallbackCostumeImage;
-          }}
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-        />
-      </div>
-      <div className="p-3">
-        <p className="line-clamp-2 min-h-10 text-xs font-semibold leading-5 text-black transition group-hover:text-[#99854e]">
-          {costume.name}
-        </p>
-        <p className="mt-2 font-serif text-sm text-[#7f7041]">
-          {formatCurrency(costume.rentalPrice)}
-        </p>
-      </div>
-    </button>
-  );
-}
 
 export default function StylistChatWidget() {
   const navigate = useNavigate();
@@ -143,13 +113,11 @@ export default function StylistChatWidget() {
         <section
           role="dialog"
           aria-label="Trợ lý thời trang AuraFit"
-          className="mb-3 flex h-[min(68dvh,32rem)] w-[calc(100vw-2rem)] max-w-[25rem] flex-col overflow-hidden border border-[#cfc4c5] bg-[#f9f9f9] shadow-2xl sm:mb-4 sm:h-[34rem]"
+          className="mb-3 flex h-[min(62dvh,29rem)] w-[calc(100vw-2rem)] max-w-[22rem] flex-col overflow-hidden border border-[#cfc4c5] bg-[#f9f9f9] shadow-2xl sm:mb-4 sm:h-[30rem]"
         >
           <header className="flex items-center justify-between bg-[#111111] px-4 py-3 text-white">
             <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#99854e]">
-                <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
-              </span>
+              <StylistAvatar className="h-9 w-9 border-2 border-[#99854e] bg-white" />
               <div>
                 <h2 className="font-serif text-base italic">AuraFit Stylist</h2>
                 <p className="text-[10px] uppercase tracking-[0.14em] text-white/60">
@@ -213,19 +181,10 @@ export default function StylistChatWidget() {
                     )}
                   </div>
 
-                  {message.recommendedCostumes.length > 0 && (
-                    <div className="mt-2 w-full overflow-x-auto pb-2">
-                      <div className="flex w-max gap-2">
-                        {message.recommendedCostumes.map((costume) => (
-                          <RecommendedCostumeCard
-                            key={costume.id}
-                            costume={costume}
-                            onSelect={handleCostumeSelect}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <StylistProductCards
+                    costumes={message.recommendedCostumes}
+                    onSelect={handleCostumeSelect}
+                  />
                 </div>
               );
             })}
@@ -272,9 +231,11 @@ export default function StylistChatWidget() {
         aria-label={isOpen ? 'Đóng trợ lý thời trang' : 'Mở trợ lý thời trang'}
         aria-expanded={isOpen}
       >
-        <span className="material-symbols-outlined text-[26px] sm:text-[30px]">
-          {isOpen ? 'close' : 'forum'}
-        </span>
+        {isOpen ? (
+          <span className="material-symbols-outlined text-[26px] sm:text-[30px]">close</span>
+        ) : (
+          <StylistAvatar className="h-12 w-12 border-2 border-white/70 bg-white sm:h-14 sm:w-14" />
+        )}
       </button>
     </div>
   );

@@ -11,6 +11,7 @@ import com.aurafit.entity.User;
 import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.ChatMessageRole;
 import com.aurafit.exception.AiProviderException;
+import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.integration.ai.GeminiClient;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
@@ -32,6 +33,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -229,10 +231,22 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     }
 
     private ChatSession attachUserIfNeeded(ChatSession chatSession, User user) {
-        if (chatSession.getUser() == null && user != null) {
-            chatSession.setUser(user);
-            return chatSessionRepository.save(chatSession);
+        if (chatSession.getUser() == null) {
+            if (user != null) {
+                chatSession.setUser(user);
+                return chatSessionRepository.save(chatSession);
+            }
+            return chatSession;
         }
+
+        if (user == null || !Objects.equals(chatSession.getUser().getId(), user.getId())) {
+            throw new ResourceNotFoundException(
+                    "ChatSession",
+                    "sessionId",
+                    chatSession.getSessionId()
+            );
+        }
+
         return chatSession;
     }
 

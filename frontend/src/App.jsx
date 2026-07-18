@@ -7,6 +7,7 @@ import Navbar from './components/layout/Navbar';
 import ToastContainer from './components/ui/ToastContainer';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import CatalogPage from './pages/CatalogPage';
+import ChatDetailPage from './pages/ChatDetailPage';
 import CosplayPage from './pages/CosplayPage';
 import CostumeDetailPage from './pages/CostumeDetailPage';
 import CustomerCarePage from './pages/CustomerCarePage';
@@ -45,7 +46,7 @@ import { hasUserRole } from './utils/roles';
 function CustomerLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
   const location = useLocation();
   const currentPage = getCurrentPageFromPath(location.pathname);
-  const hidesFooter = currentPage === 'staffDashboard';
+  const hidesFooter = currentPage === 'staffDashboard' || currentPage === 'chat';
 
   const isAdmin = currentUser?.role === 'ADMIN';
   const isStaff = currentUser?.role === 'STAFF';
@@ -165,6 +166,7 @@ function App() {
   const addToast = useToastStore((state) => state.addToast);
   const isInternalDashboard =
     location.pathname.startsWith('/admin') || location.pathname.startsWith('/staff');
+  const hidesStylistWidget = isInternalDashboard || location.pathname === '/chat';
 
   useEffect(() => {
     if (!currentUser?.id) return undefined;
@@ -353,6 +355,7 @@ function App() {
         />
 
         <Route path="/orders" element={<RentalOrdersPage currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/chat" element={<ChatDetailPage currentUser={currentUser} />} />
         <Route path="/yearbook" element={<YearbookPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/cosplay" element={<CosplayPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/events" element={<EventsPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
@@ -381,7 +384,7 @@ function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      {!isInternalDashboard && <StylistChatWidget />}
+      {!hidesStylistWidget && <StylistChatWidget />}
     </>
   );
 }

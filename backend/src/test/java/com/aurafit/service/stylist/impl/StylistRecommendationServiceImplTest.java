@@ -3,9 +3,11 @@ package com.aurafit.service.stylist.impl;
 import com.aurafit.dto.response.ChatMessageResponse;
 import com.aurafit.entity.ChatMessage;
 import com.aurafit.entity.ChatSession;
+import com.aurafit.entity.User;
 import com.aurafit.enums.ChatMessageRole;
 import com.aurafit.enums.AiErrorType;
 import com.aurafit.exception.AiProviderException;
+import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.integration.ai.GeminiClient;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -188,5 +191,56 @@ class StylistRecommendationServiceImplTest {
                 messageCaptor.getAllValues().get(1).getContent()
         );
         verifyNoInteractions(geminiClient, costumeRepository);
+    }
+
+    @Test
+    void handleUserMessage_shouldAttachAuthenticatedUserToAnonymousSession() {
+        ChatSession session = ChatSession.builder().id(4L).sessionId("anonymous-session").build();
+        User user = user(20L, "user@aurafit.com");
+        when(userRepository.findById(20L)).thenReturn(Optional.of(user));
+        when(chatSessionRepository.findBySessionId("anonymous-session"))
+                .thenReturn(Optional.of(session));
+        when(chatSessionRepository.save(session)).thenReturn(session);
+        when(chatMessageRepository
+                .countByChatSessionAndRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        eq(session),
+                        eq(ChatMessageRole.USER),
+                        any(LocalDateTime.class),
+                        any(LocalDateTime.class)
+                ))
+                .thenReturn(20L);
+
+        service.handleUserMessage("anonymous-session", 20L, "Tư vấn cho tôi");
+
+        assertEquals(20L, session.getUser().getId());
+        verify(chatSessionRepository).save(session);
+    }
+
+    @Test
+    void handleUserMessage_shouldRejectSessionOwnedByAnotherUser() {
+        User owner = user(30L, "owner@aurafit.com");
+        User requester = user(31L, "requester@aurafit.com");
+        ChatSession session = ChatSession.builder()
+                .id(5L)
+                .sessionId("owned-session")
+                .user(owner)
+                .build();
+        when(userRepository.findById(31L)).thenReturn(Optional.of(requester));
+        when(chatSessionRepository.findBySessionId("owned-session"))
+                .thenReturn(Optional.of(session));
+
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> service.handleUserMessage("owned-session", 31L, "Tư vấn cho tôi")
+        );
+
+        verifyNoInteractions(chatMessageRepository, stylistIntentService, geminiClient, costumeRepository);
+    }
+
+    private User user(Long id, String email) {
+        User user = new User();
+        user.setId(id);
+        user.setEmail(email);
+        return user;
     }
 }
