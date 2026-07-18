@@ -7,9 +7,11 @@ import jakarta.validation.Valid;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 @RestController
 @RequestMapping("/api/public/payment")
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class SePayWebhookController {
 
     private final PaymentService paymentService;
