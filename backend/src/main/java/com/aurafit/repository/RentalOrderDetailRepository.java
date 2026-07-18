@@ -15,6 +15,12 @@ public interface RentalOrderDetailRepository extends JpaRepository<RentalOrderDe
 
     List<RentalOrderDetail> findByRentalOrderId(Long orderId);
 
+    boolean existsByRentalOrder_User_IdAndCostumeItem_Costume_IdAndRentalOrder_StatusIn(
+            Long userId,
+            Long costumeId,
+            List<OrderStatus> statuses
+    );
+
     @Query("""
             SELECT DISTINCT rd.costumeItem.id
             FROM RentalOrderDetail rd

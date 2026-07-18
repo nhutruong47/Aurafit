@@ -5,6 +5,7 @@ import AiInsightTab from '../components/admin/AiInsightTab';
 import AdminOverviewTab from '../components/admin/AdminOverviewTab';
 import AdminOrdersSection from '../components/admin/AdminOrdersSection';
 import AdminProductsSection from '../components/admin/AdminProductsSection';
+import AdminReviewSection from '../components/admin/AdminReviewSection';
 import AdminRevenueSection from '../components/admin/AdminRevenueSection';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
 import AdminUsersSection from '../components/admin/AdminUsersSection';
@@ -96,6 +97,7 @@ export default function AdminDashboardPage({ currentUser }) {
         ['products', 'Sản phẩm', 'inventory_2'],
         isAdmin ? ['users', 'Tài khoản', 'manage_accounts'] : null,
         isAdmin ? ['categories', 'Danh mục', 'category'] : null,
+        isAdmin ? ['reviews', 'Đánh giá', 'reviews'] : null,
         isAdmin ? ['support', 'Hỗ trợ', 'support_agent'] : null,
         isAdmin ? ['ai-insights', 'Phân tích AI', 'auto_awesome'] : null,
       ].filter(Boolean),
@@ -241,6 +243,7 @@ export default function AdminDashboardPage({ currentUser }) {
               setPage={setCategoryPage}
             />
           )}
+          {activeTab === 'reviews' && isAdmin && <AdminReviewSection />}
           {activeTab === 'ai-insights' && isAdmin && <AiInsightTab />}
           {activeTab === 'support' && isAdmin && <AdminSupportSection />}
         </main>

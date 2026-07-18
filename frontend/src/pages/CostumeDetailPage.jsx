@@ -2,15 +2,52 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CatalogProductCard from '../components/catalog/CatalogProductCard';
 import ProductHero from '../components/product/ProductHero';
+import ProductReviewsSection from '../components/product/ProductReviewsSection';
 import TryOnPanel from '../components/product/TryOnPanel';
 import AlertMessage from '../components/ui/AlertMessage';
 import { fetchCostumeById, fetchRelatedCostumes } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
+import { fetchOrderDetail, fetchOrders } from '../services/rentalOrderService';
+import {
+  createReview,
+  deleteReview,
+  fetchReviewsByCostume,
+  fetchReviewSummary,
+  updateReview,
+} from '../services/reviewService';
 import {
   getCostumeApiCategoryName,
   getCostumeImage,
   toCartItemFromCostume,
 } from '../utils/costumeUtils';
+
+const REVIEW_PAGE_SIZE = 6;
+const REVIEWABLE_ORDER_STATUSES = new Set(['RENTED', 'RETURNING', 'RETURNED', 'COMPLETED']);
+const EMPTY_REVIEW_SUMMARY = {
+  averageRating: 0,
+  totalCount: 0,
+  ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+};
+
+const getReviewErrorMessage = (error, fallbackMessage) => {
+  const message = error?.message || '';
+  const normalizedMessage = message.toLocaleLowerCase('vi-VN');
+
+  if (normalizedMessage.includes('đã đánh giá')) {
+    return 'Bạn đã đánh giá lượt thuê này rồi.';
+  }
+  if (normalizedMessage.includes('trạng thái cho phép đánh giá')) {
+    return 'Lượt thuê này chưa đủ điều kiện để đánh giá.';
+  }
+  if (normalizedMessage.includes('quyền đánh giá')) {
+    return 'Bạn không đủ điều kiện đánh giá lượt thuê này.';
+  }
+  if (normalizedMessage.includes('quá thời gian cho phép chỉnh sửa')) {
+    return 'Đã quá thời gian cho phép chỉnh sửa.';
+  }
+
+  return message || fallbackMessage;
+};
 
 export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, currentUser }) {
   const { productId } = useParams();
@@ -21,6 +58,26 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   const [selectedItem, setSelectedItem] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [isRelatedLoading, setIsRelatedLoading] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState(EMPTY_REVIEW_SUMMARY);
+  const [reviewPage, setReviewPage] = useState(0);
+  const [reviewTotalPages, setReviewTotalPages] = useState(0);
+  const [reviewTotalElements, setReviewTotalElements] = useState(0);
+  const [reviewRatingFilter, setReviewRatingFilter] = useState(null);
+  const [reviewReloadKey, setReviewReloadKey] = useState(0);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newReviewData, setNewReviewData] = useState({
+    rentalOrderDetailId: '',
+    rating: 5,
+    comment: '',
+    uploadAssetIds: [],
+  });
+  const [eligibleRentalDetails, setEligibleRentalDetails] = useState([]);
+  const [isEligibleRentalLoading, setIsEligibleRentalLoading] = useState(false);
+  const [isReviewMutating, setIsReviewMutating] = useState(false);
 
   const getLocalDateString = (daysOffset = 0) => {
     const date = new Date();
@@ -113,6 +170,106 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   }, [productId]);
 
   useEffect(() => {
+    if (!productId) {
+      return undefined;
+    }
+
+    let isMounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsReviewsLoading(true);
+    setReviewError('');
+
+    Promise.all([
+      fetchReviewsByCostume(productId, {
+        page: reviewPage,
+        size: REVIEW_PAGE_SIZE,
+        rating: reviewRatingFilter,
+      }),
+      fetchReviewSummary(productId),
+    ])
+      .then(([reviewsPage, summary]) => {
+        if (!isMounted) return;
+
+        const content = Array.isArray(reviewsPage?.content) ? reviewsPage.content : [];
+        setReviews(content);
+        setReviewTotalPages(Number(reviewsPage?.totalPages || 0));
+        setReviewTotalElements(Number(reviewsPage?.totalElements || content.length));
+        setReviewSummary(summary || EMPTY_REVIEW_SUMMARY);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setReviews([]);
+        setReviewSummary(EMPTY_REVIEW_SUMMARY);
+        setReviewError(getReviewErrorMessage(error, 'Không thể tải đánh giá sản phẩm.'));
+      })
+      .finally(() => {
+        if (isMounted) setIsReviewsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [productId, reviewPage, reviewRatingFilter, reviewReloadKey]);
+
+  useEffect(() => {
+    if (!currentUser?.id || !product?.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEligibleRentalDetails([]);
+      setIsEligibleRentalLoading(false);
+      return undefined;
+    }
+
+    let isMounted = true;
+    setIsEligibleRentalLoading(true);
+
+    fetchOrders()
+      .then((orders) => Promise.all(
+        orders
+          .filter((order) => REVIEWABLE_ORDER_STATUSES.has(order?.status))
+          .map((order) => fetchOrderDetail(order.id))
+      ))
+      .then((orders) => {
+        if (!isMounted) return;
+
+        const costumeItemIds = new Set(
+          (product.items || []).map((item) => String(item.id))
+        );
+        const matchingDetails = orders
+          .flatMap((order) => (order.details || [])
+            .filter((detail) => costumeItemIds.has(String(detail.costumeItemId)))
+            .map((detail) => ({
+              id: detail.id,
+              orderId: order.id,
+              orderStatus: order.status,
+              orderCreatedAt: order.createdAt,
+              costumeName: detail.costumeName,
+              sku: detail.skuCode || detail.sku || '',
+            })))
+          .sort((left, right) => new Date(right.orderCreatedAt) - new Date(left.orderCreatedAt));
+
+        setEligibleRentalDetails(matchingDetails);
+        setNewReviewData((currentData) => ({
+          ...currentData,
+          rentalOrderDetailId: matchingDetails.some(
+            (detail) => String(detail.id) === String(currentData.rentalOrderDetailId)
+          )
+            ? currentData.rentalOrderDetailId
+            : matchingDetails[0]?.id || '',
+        }));
+      })
+      .catch(() => {
+        if (isMounted) setEligibleRentalDetails([]);
+      })
+      .finally(() => {
+        if (isMounted) setIsEligibleRentalLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, product]);
+
+  useEffect(() => {
     if (!isLoading && !product && !loadError) {
       onNavigate?.('catalog');
     }
@@ -187,6 +344,114 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
       rentalStartDate,
       rentalEndDate,
     });
+  };
+
+  const refreshReviews = () => {
+    setReviewReloadKey((currentKey) => currentKey + 1);
+  };
+
+  const handleReviewFilterChange = (rating) => {
+    setReviewRatingFilter(rating === 'all' ? null : rating);
+    setReviewPage(0);
+  };
+
+  const handleToggleReviewForm = (nextValue) => {
+    setShowReviewForm(nextValue);
+    setReviewError('');
+    setReviewSuccess('');
+  };
+
+  const handleSubmitReview = async (_event, payload) => {
+    if (!currentUser?.id || !product?.id) return;
+
+    const rentalOrderDetailId = Number(payload?.rentalOrderDetailId);
+    if (!rentalOrderDetailId) {
+      setReviewError('Bạn chưa có lượt thuê hợp lệ cho trang phục này.');
+      return;
+    }
+
+    setIsReviewMutating(true);
+    setReviewError('');
+    setReviewSuccess('');
+
+    try {
+      await createReview(product.id, {
+        rentalOrderDetailId,
+        rating: Number(payload.rating),
+        comment: payload.comment?.trim() || null,
+        uploadAssetIds: payload.uploadAssetIds || [],
+      });
+      setReviewSuccess('Đánh giá của bạn đã được gửi thành công.');
+      setShowReviewForm(false);
+      setReviewPage(0);
+      const remainingRentalDetails = eligibleRentalDetails.filter(
+        (detail) => Number(detail.id) !== rentalOrderDetailId
+      );
+      setNewReviewData({
+        rentalOrderDetailId: remainingRentalDetails[0]?.id || '',
+        rating: 5,
+        comment: '',
+        uploadAssetIds: [],
+      });
+      setEligibleRentalDetails(remainingRentalDetails);
+      refreshReviews();
+    } catch (error) {
+      setReviewError(getReviewErrorMessage(error, 'Không thể gửi đánh giá.'));
+      if (error?.message?.toLocaleLowerCase('vi-VN').includes('đã đánh giá')) {
+        const remainingRentalDetails = eligibleRentalDetails.filter(
+          (detail) => Number(detail.id) !== rentalOrderDetailId
+        );
+        setEligibleRentalDetails(remainingRentalDetails);
+        setNewReviewData((currentData) => ({
+          ...currentData,
+          rentalOrderDetailId: remainingRentalDetails[0]?.id || '',
+        }));
+      }
+      throw error;
+    } finally {
+      setIsReviewMutating(false);
+    }
+  };
+
+  const handleUpdateReview = async (reviewId, payload) => {
+    setIsReviewMutating(true);
+    setReviewError('');
+    setReviewSuccess('');
+
+    try {
+      await updateReview(reviewId, {
+        rating: Number(payload.rating),
+        comment: payload.comment?.trim() || null,
+      });
+      setReviewSuccess('Đánh giá đã được cập nhật.');
+      refreshReviews();
+    } catch (error) {
+      setReviewError(getReviewErrorMessage(error, 'Không thể cập nhật đánh giá.'));
+      throw error;
+    } finally {
+      setIsReviewMutating(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    setIsReviewMutating(true);
+    setReviewError('');
+    setReviewSuccess('');
+
+    try {
+      await deleteReview(reviewId);
+      setReviewSuccess('Đánh giá đã được xoá.');
+      if (reviewPage > 0 && reviews.length === 1) {
+        setReviewPage((currentPage) => Math.max(0, currentPage - 1));
+      } else {
+        refreshReviews();
+      }
+    } catch (error) {
+      setReviewError(getReviewErrorMessage(error, 'Không thể xoá đánh giá.'));
+      throw error;
+    } finally {
+      setIsReviewMutating(false);
+    }
   };
 
   if (!product && !isLoading && !loadError) {
@@ -278,6 +543,32 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
               />
             </div>
           </div>
+        )}
+
+        {product && (
+          <ProductReviewsSection
+            reviews={reviews}
+            summary={reviewSummary}
+            page={reviewPage}
+            totalPages={reviewTotalPages}
+            totalElements={reviewTotalElements}
+            ratingFilter={reviewRatingFilter}
+            isLoading={isReviewsLoading}
+            error={reviewError}
+            successMessage={reviewSuccess}
+            showReviewForm={showReviewForm}
+            newReviewData={newReviewData}
+            eligibleRentalDetails={eligibleRentalDetails}
+            isEligibleRentalLoading={isEligibleRentalLoading}
+            isMutating={isReviewMutating}
+            onFilterRatingChange={handleReviewFilterChange}
+            onPageChange={setReviewPage}
+            onToggleReviewForm={handleToggleReviewForm}
+            onReviewDataChange={setNewReviewData}
+            onSubmitReview={handleSubmitReview}
+            onUpdateReview={handleUpdateReview}
+            onDeleteReview={handleDeleteReview}
+          />
         )}
 
         {(isRelatedLoading || relatedProducts.length > 0) && (
