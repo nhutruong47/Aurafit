@@ -104,4 +104,23 @@ public interface CostumeRepository extends JpaRepository<Costume, Long>, JpaSpec
     @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items ORDER BY c.id DESC")
     List<Costume> findAllWithItems();
 
+    @Query("""
+            SELECT DISTINCT c
+            FROM Costume c
+            JOIN FETCH c.category
+            LEFT JOIN FETCH c.metadata metadata
+            LEFT JOIN FETCH metadata.tags
+            WHERE c.id IN :ids
+            """)
+    List<Costume> findAllByIdWithMetadata(@Param("ids") List<Long> ids);
+
+    @Query("""
+            SELECT DISTINCT c
+            FROM Costume c
+            JOIN FETCH c.category
+            LEFT JOIN FETCH c.items
+            WHERE c.id IN :ids
+            """)
+    List<Costume> findAllByIdWithItems(@Param("ids") List<Long> ids);
+
 }

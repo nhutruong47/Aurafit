@@ -8,7 +8,7 @@ import HomeStyleSlider from '../components/home/HomeStyleSlider';
 import HomeTrendingSection from '../components/home/HomeTrendingSection';
 import HomeTrustSection from '../components/home/HomeTrustSection';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
-import { fetchSeasonalCostumes } from '../services/costumeService';
+import { fetchRecommendedForYou, fetchSeasonalCostumes } from '../services/costumeService';
 import { getCostumeRootCategory } from '../utils/costumeUtils';
 
 function uniqueProducts(products) {
@@ -32,6 +32,9 @@ export default function HomePage({ onNavigate, onAddToCart }) {
   const [trendingProducts, setTrendingProducts] = useState([]);
   const [isTrendingLoading, setIsTrendingLoading] = useState(false);
   const [trendingError, setTrendingError] = useState('');
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [isRecommendedLoading, setIsRecommendedLoading] = useState(false);
+  const [recommendedError, setRecommendedError] = useState('');
 
   const products = useMemo(
     () => ({
@@ -46,6 +49,7 @@ export default function HomePage({ onNavigate, onAddToCart }) {
   useEffect(() => {
     let isMounted = true;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsTrendingLoading(true);
     setTrendingError('');
 
@@ -69,6 +73,41 @@ export default function HomePage({ onNavigate, onAddToCart }) {
       .finally(() => {
         if (isMounted) {
           setIsTrendingLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsRecommendedLoading(true);
+    setRecommendedError('');
+
+    fetchRecommendedForYou()
+      .then((recommendationData) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setRecommendedProducts(uniqueProducts(recommendationData || []));
+        setRecommendedError('');
+      })
+      .catch((requestError) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setRecommendedProducts([]);
+        setRecommendedError(requestError.message || 'Không thể tải gợi ý dành cho bạn.');
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsRecommendedLoading(false);
         }
       });
 
@@ -107,8 +146,6 @@ export default function HomePage({ onNavigate, onAddToCart }) {
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
       <HomeHero onNavigate={onNavigate} />
       <HomeServicesSection />
-      <HomeCategoryMosaic onNavigate={onNavigate} />
-      <HomeStyleSlider sliderRef={sliderRef} onNavigate={onNavigate} onScroll={scrollSlider} />
       <HomeFeaturedSection
         activeTab={activeTab}
         isLoading={isLoading}
@@ -117,13 +154,23 @@ export default function HomePage({ onNavigate, onAddToCart }) {
         onAddToCart={onAddToCart}
         onNavigate={onNavigate}
       />
-      <HomeTrustSection />
+      <HomeTrendingSection
+        title="Gợi ý dành cho bạn"
+        emptyMessage="Chưa có sản phẩm gợi ý phù hợp lúc này."
+        trending={recommendedProducts}
+        isLoading={isRecommendedLoading}
+        error={recommendedError}
+        onNavigate={onNavigate}
+      />
       <HomeTrendingSection
         trending={trendingProducts}
         isLoading={isTrendingLoading}
         error={trendingError}
         onNavigate={onNavigate}
       />
+      <HomeCategoryMosaic onNavigate={onNavigate} />
+      <HomeStyleSlider sliderRef={sliderRef} onNavigate={onNavigate} onScroll={scrollSlider} />
+      <HomeTrustSection />
       <HomeInsiderSection
         email={email}
         isSubscribed={isSubscribed}

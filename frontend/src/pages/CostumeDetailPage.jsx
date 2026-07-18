@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import CatalogProductCard from '../components/catalog/CatalogProductCard';
 import ProductHero from '../components/product/ProductHero';
 import AlertMessage from '../components/ui/AlertMessage';
-import { fetchCostumeById } from '../services/costumeService';
+import { fetchCostumeById, fetchRelatedCostumes } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
 import { getCostumeApiCategoryName, toCartItemFromCostume } from '../utils/costumeUtils';
 
@@ -13,6 +14,8 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [isRelatedLoading, setIsRelatedLoading] = useState(false);
 
   const getLocalDateString = (daysOffset = 0) => {
     const date = new Date();
@@ -68,6 +71,38 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
       isMounted = false;
     };
   }, [onNavigate, productId]);
+
+  useEffect(() => {
+    if (!productId) {
+      return undefined;
+    }
+
+    let isMounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsRelatedLoading(true);
+    setRelatedProducts([]);
+
+    fetchRelatedCostumes(productId)
+      .then((costumes) => {
+        if (isMounted) {
+          setRelatedProducts(costumes);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setRelatedProducts([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsRelatedLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [productId]);
 
   useEffect(() => {
     if (!isLoading && !product && !loadError) {
@@ -167,6 +202,35 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
               </p>
             </div>
           </div>
+        )}
+
+        {(isRelatedLoading || relatedProducts.length > 0) && (
+          <section className="mt-12 border-t border-[#cfc4c5] pt-10">
+            <h2 className="mb-8 font-serif text-3xl font-normal text-[#1a1c1c] sm:text-4xl">
+              Sản phẩm liên quan
+            </h2>
+
+            {isRelatedLoading ? (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="overflow-hidden border border-[#cfc4c5] bg-white">
+                    <div className="h-64 animate-pulse bg-[#f1eceb]" />
+                    <div className="space-y-4 p-5">
+                      <div className="h-5 w-3/4 animate-pulse bg-[#ece7e6]" />
+                      <div className="h-4 w-1/2 animate-pulse bg-[#f1eceb]" />
+                      <div className="h-11 animate-pulse bg-[#ece7e6]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {relatedProducts.map((costume) => (
+                  <CatalogProductCard key={costume.id} costume={costume} onNavigate={onNavigate} />
+                ))}
+              </div>
+            )}
+          </section>
         )}
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { requestJson } from './http/request';
+import { getInteractionSessionId } from './interactionsService';
 
 const normalizeListResponse = (payload) => {
   if (Array.isArray(payload)) {
@@ -89,6 +90,35 @@ export const fetchSeasonalCostumes = async () =>
     },
     'Không thể tải danh sách sản phẩm theo mùa.'
   );
+
+export const fetchRelatedCostumes = async (costumeId, limit = 8) => {
+  const payload = await requestJson(
+    {
+      url: `/costumes/${encodeURIComponent(costumeId)}/related`,
+      method: 'GET',
+      params: { limit },
+    },
+    'Không thể tải danh sách sản phẩm liên quan.'
+  );
+
+  return normalizeListResponse(payload);
+};
+
+export const fetchRecommendedForYou = async (limit = 12) => {
+  const payload = await requestJson(
+    {
+      url: '/costumes/recommended-for-you',
+      method: 'GET',
+      params: {
+        sessionId: getInteractionSessionId(),
+        limit,
+      },
+    },
+    'Không thể tải danh sách gợi ý dành cho bạn.'
+  );
+
+  return normalizeListResponse(payload);
+};
 
 export const fetchAdminCostumes = async (options = {}) => {
   const {

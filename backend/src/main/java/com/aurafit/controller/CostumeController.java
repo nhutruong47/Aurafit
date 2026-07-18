@@ -13,6 +13,8 @@ import com.aurafit.dto.response.PaginatedResponse;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.service.CostumeItemService;
 import com.aurafit.service.CostumeService;
+import com.aurafit.service.recommendation.BehaviorBasedRecommendationService;
+import com.aurafit.service.recommendation.RelatedProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,12 +35,19 @@ public class CostumeController {
     private final CostumeService costumeService;
     private final CostumeItemService costumeItemService;
     private final com.aurafit.service.UserService userService;
+    private final RelatedProductService relatedProductService;
+    private final BehaviorBasedRecommendationService behaviorBasedRecommendationService;
 
     public CostumeController(CostumeService costumeService,
-                            CostumeItemService costumeItemService, com.aurafit.service.UserService userService) {
+                            CostumeItemService costumeItemService,
+                            com.aurafit.service.UserService userService,
+                            RelatedProductService relatedProductService,
+                            BehaviorBasedRecommendationService behaviorBasedRecommendationService) {
         this.costumeService = costumeService;
         this.costumeItemService = costumeItemService;
         this.userService = userService;
+        this.relatedProductService = relatedProductService;
+        this.behaviorBasedRecommendationService = behaviorBasedRecommendationService;
     }
 
     // --- Public Endpoints ---
@@ -62,11 +71,39 @@ public class CostumeController {
         return ResponseEntity.ok(ApiResponse.success("Costumes retrieved successfully.", response));
     }
 
+    @GetMapping("/recommended-for-you")
+    @Operation(summary = "Get behavior-based costume recommendations")
+    public ResponseEntity<ApiResponse<List<CatalogCostumeDTO>>> getRecommendedCostumes(
+            Authentication authentication,
+            @RequestParam(required = false) String sessionId,
+            @RequestParam(defaultValue = "12") int limit
+    ) {
+        Long userId = extractUserIdSafely(authentication);
+        List<CatalogCostumeDTO> recommendations = behaviorBasedRecommendationService
+                .getRecommendationsForUser(userId, sessionId, limit);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Recommendations retrieved successfully.",
+                recommendations
+        ));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Get costume details", description = "Returns a single costume by ID")
     public ResponseEntity<ApiResponse<CostumeDTO>> getCostumeById(@PathVariable Long id, Authentication authentication) {
         Long userId = extractUserIdSafely(authentication);
         return ResponseEntity.ok(ApiResponse.success("Costume retrieved successfully.", costumeService.getCostumeById(id, userId)));
+    }
+
+    @GetMapping("/{id}/related")
+    @Operation(summary = "Get related costumes")
+    public ResponseEntity<ApiResponse<List<CatalogCostumeDTO>>> getRelatedCostumes(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "8") int limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Related costumes retrieved successfully.",
+                relatedProductService.findRelatedCostumes(id, limit)
+        ));
     }
 
     @GetMapping("/{id}/items")

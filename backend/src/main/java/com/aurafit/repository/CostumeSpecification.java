@@ -8,12 +8,14 @@ import com.aurafit.enums.CostumeStatus;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public final class CostumeSpecification {
 
@@ -23,14 +25,11 @@ public final class CostumeSpecification {
     public static Specification<Costume> build(StylistFilterCriteria criteria) {
         StylistFilterCriteria safeCriteria = criteria == null ? StylistFilterCriteria.empty() : criteria;
 
-        return (root, query, criteriaBuilder) -> {
+        Specification<Costume> criteriaSpecification = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            Join<Costume, Category> categoryJoin = root.join("category", JoinType.INNER);
-
-            predicates.add(criteriaBuilder.equal(root.get("status"), CostumeStatus.ACTIVE));
-            predicates.add(criteriaBuilder.isTrue(categoryJoin.get("isActive")));
 
             if (StringUtils.hasText(safeCriteria.category())) {
+                Join<Costume, Category> categoryJoin = categoryJoin(root);
                 String categoryPath = normalize(safeCriteria.category());
                 predicates.add(criteriaBuilder.or(
                         criteriaBuilder.equal(criteriaBuilder.lower(categoryJoin.get("path")), categoryPath),
@@ -46,7 +45,7 @@ public final class CostumeSpecification {
                     || hasTags(safeCriteria.tags());
 
             if (hasMetadataFilters) {
-                Join<Costume, CostumeMetadata> metadataJoin = root.join("metadata", JoinType.INNER);
+                Join<Costume, CostumeMetadata> metadataJoin = metadataJoin(root);
                 addTextPredicate(predicates, criteriaBuilder, metadataJoin, "style", safeCriteria.style());
                 addTextPredicate(predicates, criteriaBuilder, metadataJoin, "occasion", safeCriteria.occasion());
                 addTextPredicate(predicates, criteriaBuilder, metadataJoin, "season", safeCriteria.season());
@@ -74,6 +73,52 @@ public final class CostumeSpecification {
 
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         };
+
+        return Specification.where(activeAndCategoryActive()).and(criteriaSpecification);
+    }
+
+    public static Specification<Costume> activeAndCategoryActive() {
+        return (root, query, criteriaBuilder) -> {
+            Join<Costume, Category> categoryJoin = categoryJoin(root);
+            return criteriaBuilder.and(
+                    criteriaBuilder.equal(root.get("status"), CostumeStatus.ACTIVE),
+                    criteriaBuilder.isTrue(categoryJoin.get("isActive"))
+            );
+        };
+    }
+
+    public static Specification<Costume> inCategoryIds(List<Long> categoryIds) {
+        List<Long> safeCategoryIds = normalizeIds(categoryIds);
+        if (safeCategoryIds.isEmpty()) {
+            return Specification.where(null);
+        }
+
+        return (root, query, criteriaBuilder) -> root.get("category").get("id").in(safeCategoryIds);
+    }
+
+    public static Specification<Costume> hasAnyStyle(List<String> styles) {
+        return hasAnyMetadataValue("style", styles);
+    }
+
+    public static Specification<Costume> hasAnyOccasion(List<String> occasions) {
+        return hasAnyMetadataValue("occasion", occasions);
+    }
+
+    public static Specification<Costume> hasAnySeason(List<String> seasons) {
+        return hasAnyMetadataValue("season", seasons);
+    }
+
+    public static Specification<Costume> hasAnyColor(List<String> colors) {
+        return hasAnyMetadataValue("color", colors);
+    }
+
+    public static Specification<Costume> excludeCostumeIds(List<Long> excludeIds) {
+        List<Long> safeExcludeIds = normalizeIds(excludeIds);
+        if (safeExcludeIds.isEmpty()) {
+            return Specification.where(null);
+        }
+
+        return (root, query, criteriaBuilder) -> criteriaBuilder.not(root.get("id").in(safeExcludeIds));
     }
 
     private static void addTextPredicate(
@@ -93,6 +138,59 @@ public final class CostumeSpecification {
 
     private static boolean hasTags(List<String> tags) {
         return tags != null && tags.stream().anyMatch(StringUtils::hasText);
+    }
+
+    private static Specification<Costume> hasAnyMetadataValue(String field, List<String> values) {
+        List<String> normalizedValues = normalizeValues(values);
+        if (normalizedValues.isEmpty()) {
+            return Specification.where(null);
+        }
+
+        return (root, query, criteriaBuilder) -> {
+            Join<Costume, CostumeMetadata> metadataJoin = metadataJoin(root);
+            return criteriaBuilder.lower(metadataJoin.<String>get(field)).in(normalizedValues);
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Join<Costume, Category> categoryJoin(Root<Costume> root) {
+        return root.getJoins().stream()
+                .filter(join -> "category".equals(join.getAttribute().getName()))
+                .map(join -> (Join<Costume, Category>) join)
+                .findFirst()
+                .orElseGet(() -> root.join("category", JoinType.INNER));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Join<Costume, CostumeMetadata> metadataJoin(Root<Costume> root) {
+        return root.getJoins().stream()
+                .filter(join -> "metadata".equals(join.getAttribute().getName()))
+                .map(join -> (Join<Costume, CostumeMetadata>) join)
+                .findFirst()
+                .orElseGet(() -> root.join("metadata", JoinType.INNER));
+    }
+
+    private static List<Long> normalizeIds(List<Long> ids) {
+        if (ids == null) {
+            return List.of();
+        }
+
+        return ids.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    private static List<String> normalizeValues(List<String> values) {
+        if (values == null) {
+            return List.of();
+        }
+
+        return values.stream()
+                .filter(StringUtils::hasText)
+                .map(CostumeSpecification::normalize)
+                .distinct()
+                .toList();
     }
 
     private static String normalize(String value) {
