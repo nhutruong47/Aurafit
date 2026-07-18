@@ -29,8 +29,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             FROM Review r
             WHERE (:status IS NULL OR r.status = :status)
               AND (:rating IS NULL OR r.rating = :rating)
-              AND (:costumeName IS NULL
-                   OR LOWER(r.costume.name) LIKE LOWER(CONCAT('%', :costumeName, '%')))
+              AND (CAST(:costumeName AS String) IS NULL
+                   OR LOWER(r.costume.name) LIKE LOWER(CONCAT('%', CAST(:costumeName AS String), '%')))
             """)
     Page<Review> findAdminReviews(
             @Param("status") ReviewStatus status,

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import ConfirmDialog from '../common/ConfirmDialog';
 import AdminDrawer from './AdminDrawer';
 import { AdminField, Panel } from './AdminDashboardShared';
-
+import CustomerDetailModal from './CustomerDetailModal';
 import Pagination from './Pagination';
 
 const emptyStaffForm = {
@@ -34,6 +34,7 @@ export default function AdminUsersSection({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [staffForm, setStaffForm] = useState(emptyStaffForm);
   const [pendingStatusChange, setPendingStatusChange] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   const handleOpenCreate = () => {
     setStaffForm(emptyStaffForm);
@@ -170,27 +171,38 @@ export default function AdminUsersSection({
                             </span>
                           </td>
                           <td className="px-4 py-4 text-right">
-                            <button
-                              type="button"
-                              disabled={updatingUserId === user.id}
-                              onClick={() =>
-                                setPendingStatusChange({
-                                  user,
-                                  nextStatus: user.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE',
-                                })
-                              }
-                              className={`border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                                user.status === 'ACTIVE'
-                                  ? 'border-red-300 text-red-700 hover:bg-red-50'
-                                  : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'
-                              }`}
-                            >
-                              {updatingUserId === user.id
-                                ? 'Đang cập nhật...'
-                                : user.status === 'ACTIVE'
-                                  ? 'Vô hiệu hóa'
-                                  : 'Kích hoạt'}
-                            </button>
+                            <div className="flex items-center justify-end gap-3">
+                              {activeRole === 'CUSTOMER' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedCustomer(user)}
+                                  className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041] transition hover:underline"
+                                >
+                                  Xem chi tiết
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                disabled={updatingUserId === user.id}
+                                onClick={() =>
+                                  setPendingStatusChange({
+                                    user,
+                                    nextStatus: user.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE',
+                                  })
+                                }
+                                className={`border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                  user.status === 'ACTIVE'
+                                    ? 'border-red-300 text-red-700 hover:bg-red-50'
+                                    : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'
+                                }`}
+                              >
+                                {updatingUserId === user.id
+                                  ? 'Đang cập nhật...'
+                                  : user.status === 'ACTIVE'
+                                    ? 'Vô hiệu hóa'
+                                    : 'Kích hoạt'}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -279,13 +291,22 @@ export default function AdminUsersSection({
         title={pendingStatusChange?.nextStatus === 'ACTIVE' ? 'Kích hoạt tài khoản' : 'Vô hiệu hóa tài khoản'}
         message={
           pendingStatusChange?.nextStatus === 'ACTIVE'
-            ? `Tài khoản ${pendingStatusChange?.user.email || ''} sẽ có thể đăng nhập và sử dụng hệ thống trở lại.`
-            : `Tài khoản ${pendingStatusChange?.user.email || ''} sẽ không thể đăng nhập hoặc tiếp tục sử dụng phiên hiện tại.`
+            ? `Tài khoản ${pendingStatusChange?.user?.email || ''} sẽ có thể đăng nhập và sử dụng hệ thống trở lại.`
+            : `Tài khoản ${pendingStatusChange?.user?.email || ''} sẽ không thể đăng nhập hoặc tiếp tục sử dụng phiên hiện tại.`
         }
         confirmLabel={pendingStatusChange?.nextStatus === 'ACTIVE' ? 'Kích hoạt' : 'Vô hiệu hóa'}
+        cancelLabel="Hủy"
         onConfirm={handleConfirmStatusChange}
         onCancel={() => setPendingStatusChange(null)}
       />
+
+      {/* Customer Detail Modal */}
+      {selectedCustomer && (
+        <CustomerDetailModal
+          customer={selectedCustomer}
+          onClose={() => setSelectedCustomer(null)}
+        />
+      )}
     </>
   );
 }
