@@ -1,5 +1,5 @@
 // Hero section gioi thieu bo suu tap Cosplay.
-export default function CosplayHero({ onNavigate }) {
+export default function CosplayHero() {
   return (
     <section className="relative min-h-[calc(100dvh-80px)] overflow-hidden">
       <img
@@ -26,12 +26,6 @@ export default function CosplayHero({ onNavigate }) {
               className="bg-white px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-[#99854e] hover:text-white"
             >
               Thuê trang phục
-            </button>
-            <button
-              onClick={() => onNavigate?.('chat')}
-              className="border border-white/70 px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:border-[#d8c176] hover:text-[#d8c176]"
-            >
-              Gửi nhân vật cần tìm
             </button>
           </div>
         </div>

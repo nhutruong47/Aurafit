@@ -224,17 +224,6 @@ public class CostumeServiceImpl implements CostumeService {
                 .toList();
     }
 
-    @Override
-    public List<CatalogCostumeDTO> getRecommendedCostumes(Long userId, int limit) {
-        List<Costume> costumes = costumeRepository
-                .findActiveCostumesForRecommendations(CostumeStatus.ACTIVE);
-        Collections.shuffle(costumes);
-        return costumes.stream()
-                .limit(limit)
-                .map(CatalogCostumeDTO::fromEntity)
-                .toList();
-    }
-
     private String resolveCategoryPath(Long categoryId, String categoryPath) {
         if (categoryPath != null && !categoryPath.trim().isEmpty()) {
             return categoryPath.trim().toLowerCase(Locale.ROOT);

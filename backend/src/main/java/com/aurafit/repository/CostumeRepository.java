@@ -75,41 +75,8 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
             """)
     List<Costume> findSeasonalCostumes(@Param("status") CostumeStatus status, Pageable pageable);
 
-    /**
-     * Returns personalized costume recommendations for a user.
-     * Currently returns random active costumes as a simple baseline.
-     * TODO: Replace with ML-based collaborative filtering using user interaction history.
-     */
-    @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.status = :status AND c.category.isActive = true")
-    List<Costume> findActiveCostumesForRecommendations(@Param("status") CostumeStatus status);
-
     @Query("SELECT DISTINCT c FROM Costume c JOIN FETCH c.category LEFT JOIN FETCH c.metadata LEFT JOIN FETCH c.items WHERE c.id = :id AND c.category.isActive = true")
     Optional<Costume> findByIdWithItems(@Param("id") Long id);
-
-    @Query("""
-            SELECT DISTINCT c FROM Costume c
-            JOIN FETCH c.category
-            LEFT JOIN FETCH c.metadata
-            LEFT JOIN FETCH c.items
-            WHERE c.status = :status
-              AND c.category.isActive = true
-            ORDER BY c.id DESC
-            """)
-    List<Costume> findActiveWithItems(@Param("status") CostumeStatus status);
-
-    @Query("""
-            SELECT DISTINCT c FROM Costume c
-            JOIN FETCH c.category
-            LEFT JOIN FETCH c.metadata
-            LEFT JOIN FETCH c.items
-            WHERE c.status = :status
-              AND c.category.isActive = true
-              AND c.id <> :excludeId
-            """)
-    List<Costume> findActiveWithItemsExcludingId(
-            @Param("status") CostumeStatus status,
-            @Param("excludeId") Long excludeId
-    );
 
     @Query(value = """
             SELECT DISTINCT c FROM Costume c

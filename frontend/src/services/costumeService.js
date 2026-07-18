@@ -90,46 +90,6 @@ export const fetchSeasonalCostumes = async () =>
     'Không thể tải danh sách sản phẩm theo mùa.'
   );
 
-export const fetchRecommendedCostumes = async (userId) =>
-  requestJson(
-    {
-      url: '/costumes/recommendations',
-      method: 'GET',
-      params: userId ? { userId } : undefined,
-    },
-    'Không thể tải danh sách gợi ý sản phẩm.'
-  );
-
-export const fetchSimilarCostumes = async (costumeId, limit = 4) =>
-  requestJson(
-    {
-      url: `/recommendations/similar/${encodeURIComponent(costumeId)}`,
-      method: 'GET',
-      params: {
-        limit,
-      },
-    },
-    'Không thể tải danh sách sản phẩm tương tự.'
-  );
-
-export const fetchHomepageRecommendations = async (options = {}, legacyLimit) => {
-  const requestOptions =
-    typeof options === 'object' && options !== null ? options : { sessionId: options, limit: legacyLimit };
-  const { sessionId, limit = 6 } = requestOptions;
-
-  return requestJson(
-    {
-      url: '/recommendations/home',
-      method: 'GET',
-      params: {
-        ...(sessionId ? { sessionId } : {}),
-        limit,
-      },
-    },
-    'Không thể tải gợi ý cá nhân hóa cho trang chủ.'
-  );
-};
-
 export const fetchAdminCostumes = async (options = {}) => {
   const {
     pageNo = 0,

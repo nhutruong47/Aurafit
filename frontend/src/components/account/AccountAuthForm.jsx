@@ -160,7 +160,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
             Tủ đồ thuê của bạn chỉ cách một lần đăng nhập.
           </h1>
           <p className="mt-7 max-w-lg text-base leading-8 text-[#5f5e5e]">
-            Đăng nhập để theo dõi đơn thuê, quản lý giỏ hàng và chat với Chatbot AuraFit khi cần tư vấn.
+            Đăng nhập để theo dõi đơn thuê và quản lý giỏ hàng của bạn.
           </p>
           <div className="mt-10 grid max-w-md grid-cols-2 gap-4">
             {[

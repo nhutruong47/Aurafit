@@ -1,9 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ProductHero from '../components/product/ProductHero';
-import SimilarProductsSection from '../components/product/SimilarProductsSection';
 import AlertMessage from '../components/ui/AlertMessage';
-import { useSimilarProducts } from '../hooks/useSimilarProducts';
 import { fetchCostumeById } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
 import { getCostumeApiCategoryName, toCartItemFromCostume } from '../utils/costumeUtils';
@@ -15,7 +13,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
-  const impressionKeyRef = useRef('');
 
   const getLocalDateString = (daysOffset = 0) => {
     const date = new Date();
@@ -28,12 +25,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
 
   const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
   const [rentalEndDate, setRentalEndDate] = useState(() => getLocalDateString(1));
-
-  const {
-    recommendations: similarRecommendations,
-    isLoading: isSimilarLoading,
-    error: similarError,
-  } = useSimilarProducts(product?.id);
 
   useEffect(() => {
     if (!productId) {
@@ -102,34 +93,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     }).catch(() => {});
   }, [product]);
 
-  useEffect(() => {
-    if (!product?.id || !similarRecommendations.length) {
-      return;
-    }
-
-    const recommendedIds = similarRecommendations
-      .map((item) => item?.costume?.id)
-      .filter((id) => id !== undefined && id !== null);
-    const impressionKey = `${product.id}:${recommendedIds.join(',')}`;
-
-    if (!recommendedIds.length || impressionKeyRef.current === impressionKey) {
-      return;
-    }
-
-    impressionKeyRef.current = impressionKey;
-
-    logUserInteraction({
-      eventType: 'RECOMMENDATION_IMPRESSION',
-      targetType: 'RECOMMENDATION',
-      targetId: product.id,
-      metadata: {
-        slot: 'similar_products',
-        sourceCostumeId: product.id,
-        recommendedCostumeIds: recommendedIds,
-      },
-    }).catch(() => {});
-  }, [product?.id, similarRecommendations]);
-
   const handleAddToCartClick = async (itemFromHero) => {
     if (!currentUser?.id) {
       onNavigate?.('account');
@@ -164,25 +127,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     });
   };
 
-  const handleRecommendationClick = (recommendation, index, page, recommendedProduct) => {
-    if (page !== 'productDetail' || !recommendedProduct?.id || !product?.id) {
-      return;
-    }
-
-    logUserInteraction({
-      eventType: 'RECOMMENDATION_CLICK',
-      targetType: 'RECOMMENDATION',
-      targetId: recommendedProduct.id,
-      metadata: {
-        slot: 'similar_products',
-        sourceCostumeId: product.id,
-        recommendedCostumeId: recommendedProduct.id,
-        reason: recommendation?.reason || null,
-        position: index + 1,
-      },
-    }).catch(() => {});
-  };
-
   if (!product && !isLoading && !loadError) {
     return null;
   }
@@ -214,7 +158,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
         />
 
         {product && (
-          <div className="mt-6 grid gap-6 md:grid-cols-[1fr_340px]">
+          <div className="mt-6">
             <div className="border border-[#cfc4c5] bg-white p-6">
               <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">Mô tả sản phẩm</h3>
               <p className="text-sm leading-7 text-[#5f5e5e]">
@@ -222,27 +166,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
                   'Trang phục cao cấp mang đến trải nghiệm nổi bật cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu chỉn chu và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
               </p>
             </div>
-
-            <div className="flex flex-col justify-center border border-[#cfc4c5] bg-white p-5">
-              <button
-                onClick={() => onNavigate?.('chat', product)}
-                className="w-full border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
-              >
-                Chatbot tư vấn
-              </button>
-            </div>
           </div>
-        )}
-
-        {product && (
-          <SimilarProductsSection
-            recommendations={similarRecommendations}
-            isLoading={isSimilarLoading}
-            error={similarError}
-            onNavigate={onNavigate}
-            onAddToCart={onAddToCart}
-            onRecommendationClick={handleRecommendationClick}
-          />
         )}
       </div>
     </div>

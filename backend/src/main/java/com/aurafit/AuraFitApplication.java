@@ -13,12 +13,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import jakarta.annotation.PostConstruct;
 import java.util.TimeZone;
 
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableJpaAuditing
-@EnableCaching
 @EnableScheduling
 public class AuraFitApplication {
 

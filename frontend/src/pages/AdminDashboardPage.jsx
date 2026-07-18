@@ -3,15 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AdminCategoriesSection from '../components/admin/AdminCategoriesSection';
 import AdminOverviewTab from '../components/admin/AdminOverviewTab';
 import AdminProductsSection from '../components/admin/AdminProductsSection';
-import AdminReportsSection from '../components/admin/AdminReportsSection';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
 import AdminUsersSection from '../components/admin/AdminUsersSection';
 import { useAdminCategories } from '../hooks/useAdminCategories';
 import { useAdminCostumes } from '../hooks/useAdminCostumes';
 import { useAdminUsers } from '../hooks/useAdminUsers';
-import { useRecommendationAnalytics } from '../hooks/useRecommendationAnalytics';
 
-export default function AdminDashboardPage({ currentUser, onNavigate }) {
+export default function AdminDashboardPage({ currentUser }) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -83,14 +81,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     createStaff,
   } = useAdminUsers(currentUser);
 
-  const {
-    analytics,
-    periodDays,
-    isLoading: isAnalyticsLoading,
-    error: analyticsError,
-    setPeriodDays,
-  } = useRecommendationAnalytics(currentUser);
-
   const tabs = useMemo(
     () =>
       [
@@ -99,7 +89,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
         isAdmin ? ['users', 'Tài khoản', 'manage_accounts'] : null,
         isAdmin ? ['categories', 'Danh mục', 'category'] : null,
         isAdmin ? ['support', 'Hỗ trợ', 'support_agent'] : null,
-        isAdmin ? ['reports', 'Báo cáo', 'monitoring'] : null,
       ].filter(Boolean),
     [isAdmin]
   );
@@ -169,7 +158,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
         <main className="min-w-0 flex-1 p-5 md:p-8">
           {activeTab === 'overview' && isAdmin && (
             <AdminOverviewTab 
-              analytics={analytics} 
               productsCount={products?.length || 0} 
               categoriesCount={managedCategories?.length || 0} 
             />
@@ -243,15 +231,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
             />
           )}
           {activeTab === 'support' && isAdmin && <AdminSupportSection />}
-          {activeTab === 'reports' && isAdmin && (
-            <AdminReportsSection
-              analytics={analytics}
-              isLoading={isAnalyticsLoading}
-              error={analyticsError}
-              periodDays={periodDays}
-              onPeriodDaysChange={setPeriodDays}
-            />
-          )}
         </main>
       </div>
     </div>

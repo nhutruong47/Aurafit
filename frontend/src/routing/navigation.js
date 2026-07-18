@@ -8,7 +8,6 @@ export const pagePathMap = {
   'direct-rental': '/direct-rental',
   payment: '/payment',
   success: '/success',
-  chat: '/chat',
   orders: '/orders',
   adminDashboard: '/admin',
   staffDashboard: '/staff',
@@ -53,14 +52,6 @@ export function useLegacyNavigate() {
         navigate(`/products/${encodeURIComponent(productId)}`, {
           ...options,
           state: { product: data },
-        });
-        return;
-      }
-
-      if (page === 'chat') {
-        navigate(pagePathMap.chat, {
-          ...options,
-          state: data ? { contextProduct: data } : null,
         });
         return;
       }

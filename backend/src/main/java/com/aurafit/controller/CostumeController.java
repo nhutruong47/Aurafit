@@ -84,14 +84,6 @@ public class CostumeController {
         return ResponseEntity.ok(ApiResponse.success("Seasonal costumes retrieved.", costumeService.getSeasonalCostumes(8)));
     }
 
-    @GetMapping("/recommendations")
-    @Operation(summary = "Get recommended costumes")
-    public ResponseEntity<ApiResponse<List<CatalogCostumeDTO>>> getRecommendedCostumes(
-            @RequestParam(required = false) Long userId
-    ) {
-        return ResponseEntity.ok(ApiResponse.success("Recommended costumes retrieved.", costumeService.getRecommendedCostumes(userId, 6)));
-    }
-
     @GetMapping("/admin")
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")

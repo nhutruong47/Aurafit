@@ -53,15 +53,13 @@ Thumbs.db
 # Docker
 pgdata/
 
-# AI Agent config (do not push to repo)
+# Agent context (do not push to repo)
 .agent/
 .ai-context/
-GEMINI.md
 ERRORS.md
 
 # Markdown
 *.md
-!backend/src/main/resources/ai/*.md
 !backend/src/main/resources/ai/**/*.md
 
 

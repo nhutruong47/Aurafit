@@ -49,11 +49,8 @@ public class SecurityConfig {
 
                 // Public product browsing (future catalog endpoints)
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/ai-stylist/sessions/attach").authenticated()
-                .requestMatchers("/api/ai-stylist/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/interactions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/costumes/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/recommendations/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/clubs/**").permitAll()
                 // Swagger UI & OpenAPI docs
