@@ -139,29 +139,30 @@ public class PaymentServiceImpl implements PaymentService {
 
                 log.info("Token validated successfully");
 
-                // 1) Idempotency
-                if (paymentRepository.findFirstByTransactionId(webhookBody.code()).isPresent()) {
-                        log.info("Already processed, skipping: {}", webhookBody.code());
+                // 1) Idempotency - skip if already processed
+                String transactionCode = webhookBody.getCode();
+                if (transactionCode.isBlank() || paymentRepository.findFirstByTransactionId(transactionCode).isPresent()) {
+                        log.info("Already processed or invalid code, skipping: {}", transactionCode);
                         return;
                 }
 
                 // 2) Sanity check on the receiving account
-                log.info("VA Account: {}, Webhook accountNumber: {}", sepayVaAccount, webhookBody.accountNumber());
-                if (webhookBody.accountNumber() != null
-                                && !webhookBody.accountNumber().isBlank()
-                                && !webhookBody.accountNumber().equals(sepayVaAccount)) {
+                String accountNumber = webhookBody.accountNumber();
+                log.info("VA Account: {}, Webhook accountNumber: {}", sepayVaAccount, accountNumber);
+                if (accountNumber != null && !accountNumber.isBlank() && !accountNumber.equals(sepayVaAccount)) {
                         log.warn("REJECTED: Account mismatch");
                         throw new BadRequestException(
                                         "Transfer arrived on a different account. Expected " + sepayVaAccount
-                                                        + ", got " + webhookBody.accountNumber());
+                                                        + ", got " + accountNumber);
                 }
 
-                // 3) Resolve order
-                Matcher matcher = ORDER_ID_PATTERN.matcher(webhookBody.content());
+                // 3) Resolve order from content
+                String content = webhookBody.getContent();
+                Matcher matcher = ORDER_ID_PATTERN.matcher(content);
                 if (!matcher.find()) {
-                        log.warn("REJECTED: No valid order reference in content: {}", webhookBody.content());
+                        log.warn("REJECTED: No valid order reference in content: {}", content);
                         throw new BadRequestException(
-                                        "No valid order reference found in transfer content: " + webhookBody.content());
+                                        "No valid order reference found in transfer content: " + content);
                 }
                 Long orderId = Long.valueOf(matcher.group(1));
                 log.info("Found orderId: {}", orderId);
@@ -172,18 +173,19 @@ public class PaymentServiceImpl implements PaymentService {
                                 .orElseThrow(() -> new BadRequestException(
                                                 "No payment found for orderId: " + orderId));
 
+                BigDecimal transferAmount = webhookBody.getTransferAmount();
                 log.info("Payment found: {}, Amount in DB: {}, Transfer amount: {}",
-                                payment.getId(), payment.getAmount(), webhookBody.getTransferAmount());
+                                payment.getId(), payment.getAmount(), transferAmount);
 
-                if (webhookBody.getTransferAmount().compareTo(payment.getAmount()) < 0) {
+                if (transferAmount.compareTo(payment.getAmount()) < 0) {
                         log.warn("REJECTED: Amount mismatch");
                         throw new BadRequestException(
                                         "Transfer amount mismatch. Expected >= " + payment.getAmount()
-                                                        + ", got " + webhookBody.getTransferAmount());
+                                                        + ", got " + transferAmount);
                 }
 
                 payment.setStatus(PaymentStatus.PAID);
-                payment.setTransactionId(webhookBody.code());
+                payment.setTransactionId(transactionCode);
                 paymentRepository.save(payment);
                 log.info("Payment updated to PAID");
 
