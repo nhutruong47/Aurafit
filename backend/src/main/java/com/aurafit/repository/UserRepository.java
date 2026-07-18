@@ -13,11 +13,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     org.springframework.data.domain.Page<User> findAll(org.springframework.data.domain.Pageable pageable);
 
+    org.springframework.data.domain.Page<User> findByRole(Role role, org.springframework.data.domain.Pageable pageable);
+
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE " +
             "LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
             "LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
             "LOWER(u.phone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))")
     org.springframework.data.domain.Page<User> searchUsers(@org.springframework.data.repository.query.Param("keyword") String keyword, org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.role = :role AND (" +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "LOWER(COALESCE(u.phone, '')) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))" )
+    org.springframework.data.domain.Page<User> searchUsersByRole(
+            @org.springframework.data.repository.query.Param("role") Role role,
+            @org.springframework.data.repository.query.Param("keyword") String keyword,
+            org.springframework.data.domain.Pageable pageable
+    );
 
     List<User> findAllByOrderByIdDesc();
 

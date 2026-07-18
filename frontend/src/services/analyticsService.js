@@ -16,6 +16,28 @@ export const fetchRevenueChart = async (startDate, endDate) =>
     'Không thể tải dữ liệu biểu đồ doanh thu.'
   );
 
+export const fetchRevenueTransactions = async ({
+  page = 0,
+  size = 10,
+  keyword,
+  startDate,
+  endDate,
+} = {}) =>
+  requestJson(
+    {
+      url: '/analytics/revenue-transactions',
+      method: 'GET',
+      params: {
+        page,
+        size,
+        ...(keyword ? { keyword } : {}),
+        ...(startDate ? { startDate } : {}),
+        ...(endDate ? { endDate } : {}),
+      },
+    },
+    'Không thể tải danh sách giao dịch doanh thu.'
+  );
+
 export const fetchTopCostumes = async (limit = 5) =>
   requestJson(
     {

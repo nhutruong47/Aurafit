@@ -48,12 +48,34 @@ export function AdminField({ label, name, value, onChange, type = 'text', multil
   );
 }
 
-export function MetricCard({ label, value, delta }) {
+export function MetricCard({ label, value, delta, onClick }) {
+  const content = (
+    <>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#777777]">{label}</p>
+      <p className="mt-5 break-words font-serif text-4xl italic leading-none text-black xl:text-5xl">{value}</p>
+      <div className="mt-4 flex items-center justify-between gap-3 text-sm text-[#5f5e5e]">
+        <span>{delta}</span>
+        {onClick && <span className="material-symbols-outlined text-[20px] text-[#7f7041]">arrow_forward</span>}
+      </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`Xem chi tiết ${label}`}
+        className="border border-[#d7d2c8] bg-[#fdfdfb] p-6 text-left transition hover:-translate-y-0.5 hover:border-[#7f7041] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#7f7041]/40"
+      >
+        {content}
+      </button>
+    );
+  }
+
   return (
     <article className="border border-[#d7d2c8] bg-[#fdfdfb] p-6">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#777777]">{label}</p>
-      <p className="mt-5 font-serif text-5xl italic leading-none text-black">{value}</p>
-      <p className="mt-4 text-sm text-[#5f5e5e]">{delta}</p>
+      {content}
     </article>
   );
 }

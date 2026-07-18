@@ -204,7 +204,7 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                   {order.details?.map(detail => (
                     <div key={detail.id} className="flex items-center gap-4 border border-[#e1dddc] p-2 bg-white">
                       <img 
-                        src={detail.costumeImageUrl || detail.imageUrls?.[0] || 'https://placehold.co/100x120?text=No+Image'} 
+                        src={detail.imageUrl || detail.imageUrls?.[0] || 'https://placehold.co/100x120?text=No+Image'}
                         alt={detail.costumeName} 
                         className="w-16 h-20 object-cover bg-gray-100" 
                       />

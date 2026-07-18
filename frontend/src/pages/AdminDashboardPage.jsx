@@ -3,7 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AdminCategoriesSection from '../components/admin/AdminCategoriesSection';
 import AiInsightTab from '../components/admin/AiInsightTab';
 import AdminOverviewTab from '../components/admin/AdminOverviewTab';
+import AdminOrdersSection from '../components/admin/AdminOrdersSection';
 import AdminProductsSection from '../components/admin/AdminProductsSection';
+import AdminRevenueSection from '../components/admin/AdminRevenueSection';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
 import AdminUsersSection from '../components/admin/AdminUsersSection';
 import { useAdminCategories } from '../hooks/useAdminCategories';
@@ -73,19 +75,24 @@ export default function AdminDashboardPage({ currentUser }) {
     setPage: setUserPage,
     filteredUsers,
     userSearch,
+    activeRole,
     message: userMessage,
     error: userError,
     isLoading: isUserLoading,
     isCreatingStaff,
     updatingUserId,
     setUserSearch,
+    setActiveRole,
     createStaff,
+    changeUserStatus,
   } = useAdminUsers(currentUser);
 
   const tabs = useMemo(
     () =>
       [
         isAdmin ? ['overview', 'Tổng quan', 'dashboard'] : null,
+        isAdmin ? ['orders', 'Đơn hàng', 'receipt_long'] : null,
+        isAdmin ? ['revenue', 'Doanh thu', 'payments'] : null,
         ['products', 'Sản phẩm', 'inventory_2'],
         isAdmin ? ['users', 'Tài khoản', 'manage_accounts'] : null,
         isAdmin ? ['categories', 'Danh mục', 'category'] : null,
@@ -159,11 +166,10 @@ export default function AdminDashboardPage({ currentUser }) {
         {/* Main content area — 100% width */}
         <main className="min-w-0 flex-1 p-5 md:p-8">
           {activeTab === 'overview' && isAdmin && (
-            <AdminOverviewTab 
-              productsCount={products?.length || 0} 
-              categoriesCount={managedCategories?.length || 0} 
-            />
+            <AdminOverviewTab onNavigate={setActiveTab} />
           )}
+          {activeTab === 'orders' && isAdmin && <AdminOrdersSection />}
+          {activeTab === 'revenue' && isAdmin && <AdminRevenueSection />}
           {activeTab === 'products' && (
             <AdminProductsSection
               products={products}
@@ -196,13 +202,16 @@ export default function AdminDashboardPage({ currentUser }) {
             <AdminUsersSection
               filteredUsers={filteredUsers}
               userSearch={userSearch}
+              activeRole={activeRole}
               message={userMessage}
               error={userError}
               isLoading={isUserLoading}
               isCreatingStaff={isCreatingStaff}
               updatingUserId={updatingUserId}
               onUserSearchChange={setUserSearch}
+              onActiveRoleChange={setActiveRole}
               onCreateStaff={createStaff}
+              onChangeUserStatus={changeUserStatus}
               page={userPage}
               totalPages={userTotalPages}
               totalElements={userTotalElements}

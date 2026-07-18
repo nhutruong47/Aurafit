@@ -25,7 +25,11 @@ public interface OrderService {
     List<StaffOrderDetailResponse> getAllOrdersForStaff();
 
     // Admin/Staff Order Management
-    org.springframework.data.domain.Page<StaffOrderDetailResponse> getAllOrdersForAdmin(org.springframework.data.domain.Pageable pageable, com.aurafit.enums.OrderStatus status);
+    org.springframework.data.domain.Page<StaffOrderDetailResponse> getAllOrdersForAdmin(
+            org.springframework.data.domain.Pageable pageable,
+            com.aurafit.enums.OrderStatus status,
+            String keyword
+    );
     void shipOrder(Long orderId);
     void markOrderRented(Long orderId);
     void markOrderReturned(Long orderId);

@@ -4,6 +4,8 @@ import com.aurafit.entity.RentalOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.aurafit.enums.OrderStatus;
 import java.time.LocalDateTime;
@@ -17,6 +19,64 @@ public interface RentalOrderRepository extends JpaRepository<RentalOrder, Long> 
     Optional<RentalOrder> findByGhnReturnOrderCode(String ghnReturnOrderCode);
 
     org.springframework.data.domain.Page<RentalOrder> findByStatus(OrderStatus status, org.springframework.data.domain.Pageable pageable);
+
+    @Query(value = """
+            SELECT ro
+            FROM RentalOrder ro
+            JOIN FETCH ro.user u
+            WHERE LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR LOWER(COALESCE(u.phone, '')) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR LOWER(ro.receiverName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR LOWER(ro.receiverPhone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR CAST(ro.id AS string) LIKE CONCAT('%', CAST(:keyword AS string), '%')
+            """,
+            countQuery = """
+            SELECT COUNT(ro)
+            FROM RentalOrder ro
+            JOIN ro.user u
+            WHERE LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR LOWER(COALESCE(u.phone, '')) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR LOWER(ro.receiverName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR LOWER(ro.receiverPhone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+               OR CAST(ro.id AS string) LIKE CONCAT('%', CAST(:keyword AS string), '%')
+            """)
+    Page<RentalOrder> searchForAdmin(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query(value = """
+            SELECT ro
+            FROM RentalOrder ro
+            JOIN FETCH ro.user u
+            WHERE ro.status = :status
+              AND (
+                    LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR LOWER(COALESCE(u.phone, '')) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR LOWER(ro.receiverName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR LOWER(ro.receiverPhone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR CAST(ro.id AS string) LIKE CONCAT('%', CAST(:keyword AS string), '%')
+              )
+            """,
+            countQuery = """
+            SELECT COUNT(ro)
+            FROM RentalOrder ro
+            JOIN ro.user u
+            WHERE ro.status = :status
+              AND (
+                    LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR LOWER(COALESCE(u.phone, '')) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR LOWER(ro.receiverName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR LOWER(ro.receiverPhone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                    OR CAST(ro.id AS string) LIKE CONCAT('%', CAST(:keyword AS string), '%')
+              )
+            """)
+    Page<RentalOrder> searchByStatusForAdmin(
+            @Param("status") OrderStatus status,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 
     List<RentalOrder> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime dateTime);
 

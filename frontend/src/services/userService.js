@@ -1,7 +1,7 @@
 import { requestJson } from './http/request';
 
 export const fetchUsers = async (options = {}) => {
-  const { pageNo = 0, pageSize = 12, sortBy = 'id', sortDir = 'desc', keyword } = options;
+  const { pageNo = 0, pageSize = 12, sortBy = 'id', sortDir = 'desc', keyword, role } = options;
 
   const payload = await requestJson(
     {
@@ -13,6 +13,7 @@ export const fetchUsers = async (options = {}) => {
         sortBy,
         sortDir,
         ...(keyword ? { keyword } : {}),
+        ...(role ? { role } : {}),
       },
     },
     'Hệ thống không thể truy xuất danh sách tài khoản.'
@@ -50,6 +51,16 @@ export const createStaffAccount = async (payload) =>
       data: payload,
     },
     'Hệ thống gặp sự cố khi khởi tạo tài khoản nhân viên.'
+  );
+
+export const updateUserStatus = async (userId, status) =>
+  requestJson(
+    {
+      url: `/users/${encodeURIComponent(userId)}/status`,
+      method: 'PATCH',
+      data: { status },
+    },
+    'Không thể cập nhật trạng thái tài khoản.'
   );
 
 export const updateProfile = async (payload) =>

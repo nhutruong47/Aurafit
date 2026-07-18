@@ -41,10 +41,11 @@ public class AdminOrderController {
     public ResponseEntity<ApiResponse<Page<StaffOrderDetailResponse>>> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) OrderStatus status) {
+            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) String keyword) {
         
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<StaffOrderDetailResponse> orders = orderService.getAllOrdersForAdmin(pageable, status);
+        Page<StaffOrderDetailResponse> orders = orderService.getAllOrdersForAdmin(pageable, status, keyword);
         return ResponseEntity.ok(ApiResponse.success("Fetched all orders successfully", orders));
     }
 

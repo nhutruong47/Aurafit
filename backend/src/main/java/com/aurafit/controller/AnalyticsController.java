@@ -1,7 +1,9 @@
 package com.aurafit.controller;
 
 import com.aurafit.dto.response.DashboardMetricsDTO;
+import com.aurafit.dto.response.PaginatedResponse;
 import com.aurafit.dto.response.RevenueChartDTO;
+import com.aurafit.dto.response.RevenueTransactionDTO;
 import com.aurafit.dto.response.TopCostumeDTO;
 import com.aurafit.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,18 @@ public class AnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         return ResponseEntity.ok(analyticsService.getRevenueChart(startDate, endDate));
+    }
+
+    @GetMapping("/revenue-transactions")
+    public ResponseEntity<PaginatedResponse<RevenueTransactionDTO>> getRevenueTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        return ResponseEntity.ok(
+                analyticsService.getRevenueTransactions(page, size, keyword, startDate, endDate)
+        );
     }
 
     @GetMapping("/top-costumes")

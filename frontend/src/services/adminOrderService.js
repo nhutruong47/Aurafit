@@ -1,11 +1,17 @@
 import { apiClient as api } from './http/apiClient';
 
 export const adminOrderService = {
-  getAllOrders: async (page = 0, size = 10, status = '') => {
+  getAllOrders: async (page = 0, size = 10, status = '', keyword = '') => {
     const params = new URLSearchParams({ page, size });
     if (status) params.append('status', status);
+    if (keyword) params.append('keyword', keyword);
     const response = await api.get(`/admin/orders?${params.toString()}`);
-    return response.data;
+    return response.data?.data ?? response.data;
+  },
+
+  getOrderDetail: async (orderId) => {
+    const response = await api.get(`/orders/${orderId}/management`);
+    return response.data?.data ?? response.data;
   },
 
   shipOrder: async (orderId) => {

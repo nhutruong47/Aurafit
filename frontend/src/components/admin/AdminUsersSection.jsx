@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ConfirmDialog from '../common/ConfirmDialog';
 import AdminDrawer from './AdminDrawer';
 import { AdminField, Panel } from './AdminDashboardShared';
 
@@ -15,12 +16,16 @@ const emptyStaffForm = {
 export default function AdminUsersSection({
   filteredUsers,
   userSearch,
+  activeRole,
   message,
   error,
   isLoading,
   isCreatingStaff,
+  updatingUserId,
   onUserSearchChange,
+  onActiveRoleChange,
   onCreateStaff,
+  onChangeUserStatus,
   page,
   totalPages,
   totalElements,
@@ -28,6 +33,7 @@ export default function AdminUsersSection({
 }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [staffForm, setStaffForm] = useState(emptyStaffForm);
+  const [pendingStatusChange, setPendingStatusChange] = useState(null);
 
   const handleOpenCreate = () => {
     setStaffForm(emptyStaffForm);
@@ -63,21 +69,50 @@ export default function AdminUsersSection({
     }
   };
 
+  const handleConfirmStatusChange = async () => {
+    if (!pendingStatusChange) return;
+    await onChangeUserStatus?.(pendingStatusChange.user.id, pendingStatusChange.nextStatus);
+    setPendingStatusChange(null);
+  };
+
   return (
     <>
       <Panel
-        title="Quản lý nhân viên"
+        title="Quản lý tài khoản"
         action={
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            Tạo staff
-          </button>
+          activeRole === 'STAFF' ? (
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Tạo staff
+            </button>
+          ) : null
         }
       >
+        <div className="mb-5 grid grid-cols-2 border border-[#d7d2c8] bg-[#f4f4f2] p-1 sm:w-fit">
+          {[
+            ['STAFF', 'Nhân viên', 'badge'],
+            ['CUSTOMER', 'Khách hàng', 'group'],
+          ].map(([role, label, icon]) => (
+            <button
+              key={role}
+              type="button"
+              onClick={() => onActiveRoleChange(role)}
+              className={`flex min-w-40 items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold transition ${
+                activeRole === role
+                  ? 'bg-[#111111] text-white shadow-sm'
+                  : 'text-[#5f5e5e] hover:bg-white hover:text-black'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[19px]">{icon}</span>
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
           <label className="relative block flex-1 max-w-md">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
@@ -86,7 +121,7 @@ export default function AdminUsersSection({
             <input
               value={userSearch}
               onChange={(event) => onUserSearchChange(event.target.value)}
-              placeholder="Tìm theo tên, email hoặc vai trò..."
+              placeholder={`Tìm ${activeRole === 'STAFF' ? 'nhân viên' : 'khách hàng'} theo tên, email hoặc SĐT...`}
               className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
             />
           </label>
@@ -105,13 +140,14 @@ export default function AdminUsersSection({
           !isLoading && (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-sm">
+                <table className="w-full min-w-[940px] text-left text-sm">
                   <thead className="bg-[#111111] text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
                     <tr>
                       <th className="px-4 py-3">Tài khoản</th>
                       <th className="px-4 py-3">Email</th>
-                      <th className="px-4 py-3">Vai trò</th>
+                      <th className="px-4 py-3">Số điện thoại</th>
                       <th className="px-4 py-3">Trạng thái</th>
+                      <th className="px-4 py-3 text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
@@ -120,21 +156,41 @@ export default function AdminUsersSection({
                         <tr key={user.id} className="transition hover:bg-[#f5f2eb]">
                           <td className="px-4 py-4 font-medium text-black">{user.fullName || 'Chưa cập nhật'}</td>
                           <td className="px-4 py-4 text-[#5f5e5e]">{user.email}</td>
-                          <td className="px-4 py-4">
-                            <span className="border border-[#d7d2c8] bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5f5e5e]">
-                              {user.role}
-                            </span>
-                          </td>
+                          <td className="px-4 py-4 text-[#5f5e5e]">{user.phone || 'Chưa cập nhật'}</td>
                           <td className="px-4 py-4 text-[#5f5e5e]">
                             <span
-                              className={`inline-block border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] ${
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${
                                 user.status === 'ACTIVE'
-                                  ? 'border-green-200 bg-green-50 text-green-700'
-                                  : 'border-red-200 bg-red-50 text-red-700'
+                                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                                  : 'border-red-300 bg-red-50 text-red-800'
                               }`}
                             >
-                              {user.status}
+                              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                              {user.status === 'ACTIVE' ? 'Hoạt động' : 'Vô hiệu hóa'}
                             </span>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <button
+                              type="button"
+                              disabled={updatingUserId === user.id}
+                              onClick={() =>
+                                setPendingStatusChange({
+                                  user,
+                                  nextStatus: user.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE',
+                                })
+                              }
+                              className={`border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                user.status === 'ACTIVE'
+                                  ? 'border-red-300 text-red-700 hover:bg-red-50'
+                                  : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'
+                              }`}
+                            >
+                              {updatingUserId === user.id
+                                ? 'Đang cập nhật...'
+                                : user.status === 'ACTIVE'
+                                  ? 'Vô hiệu hóa'
+                                  : 'Kích hoạt'}
+                            </button>
                           </td>
                         </tr>
                       );
@@ -187,7 +243,7 @@ export default function AdminUsersSection({
               className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
             >
               <option value="ACTIVE">Hoạt động (ACTIVE)</option>
-              <option value="BLOCKED">Khóa (BLOCKED)</option>
+              <option value="BLOCKED">Vô hiệu hóa (BLOCKED)</option>
             </select>
           </label>
 
@@ -198,7 +254,7 @@ export default function AdminUsersSection({
             onChange={handleFieldChange}
             required={false}
           />
-          <p className="text-xs text-[#5f5e5e] italic -mt-2">Nếu để trống, mật khẩu mặc định sẽ là AuraFit123</p>
+          <p className="text-xs text-[#5f5e5e] italic -mt-2">Nếu để trống, mật khẩu mặc định sẽ là Staff@12345</p>
 
           <div className="flex gap-3 pt-4">
             <button
@@ -217,6 +273,19 @@ export default function AdminUsersSection({
           </div>
         </form>
       </AdminDrawer>
+
+      <ConfirmDialog
+        isOpen={Boolean(pendingStatusChange)}
+        title={pendingStatusChange?.nextStatus === 'ACTIVE' ? 'Kích hoạt tài khoản' : 'Vô hiệu hóa tài khoản'}
+        message={
+          pendingStatusChange?.nextStatus === 'ACTIVE'
+            ? `Tài khoản ${pendingStatusChange?.user.email || ''} sẽ có thể đăng nhập và sử dụng hệ thống trở lại.`
+            : `Tài khoản ${pendingStatusChange?.user.email || ''} sẽ không thể đăng nhập hoặc tiếp tục sử dụng phiên hiện tại.`
+        }
+        confirmLabel={pendingStatusChange?.nextStatus === 'ACTIVE' ? 'Kích hoạt' : 'Vô hiệu hóa'}
+        onConfirm={handleConfirmStatusChange}
+        onCancel={() => setPendingStatusChange(null)}
+      />
     </>
   );
 }

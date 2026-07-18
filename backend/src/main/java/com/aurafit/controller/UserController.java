@@ -3,11 +3,13 @@ package com.aurafit.controller;
 import com.aurafit.dto.request.ChangePasswordRequestDTO;
 import com.aurafit.dto.request.StaffCreateRequest;
 import com.aurafit.dto.request.UpdateProfileRequestDTO;
+import com.aurafit.dto.request.UserStatusUpdateRequest;
 
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.StaffAccountResponseDTO;
 import com.aurafit.dto.response.UserResponseDTO;
 import com.aurafit.service.UserService;
+import com.aurafit.enums.Role;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -46,9 +48,10 @@ public class UserController {
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int pageSize,
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "id") String sortBy,
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "desc") String sortDir,
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String keyword
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String keyword,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Role role
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully.", userService.getAllUsers(pageNo, pageSize, sortBy, sortDir, keyword)));
+        return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully.", userService.getAllUsers(pageNo, pageSize, sortBy, sortDir, keyword, role)));
     }
 
 
@@ -60,6 +63,16 @@ public class UserController {
         StaffAccountResponseDTO createdStaff = userService.createStaffAccount(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Tạo tài khoản staff thành công.", createdStaff));
+    }
+
+    @PatchMapping("/{userId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponseDTO>> updateUserStatus(
+            @PathVariable Long userId,
+            @Valid @RequestBody UserStatusUpdateRequest request
+    ) {
+        UserResponseDTO updatedUser = userService.updateUserStatus(userId, request.status());
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái tài khoản thành công.", updatedUser));
     }
 
     // -------------------------------------------------------------------------

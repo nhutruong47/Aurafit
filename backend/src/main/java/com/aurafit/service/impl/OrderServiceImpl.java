@@ -261,12 +261,17 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public org.springframework.data.domain.Page<StaffOrderDetailResponse> getAllOrdersForAdmin(org.springframework.data.domain.Pageable pageable, com.aurafit.enums.OrderStatus status) {
+    public org.springframework.data.domain.Page<StaffOrderDetailResponse> getAllOrdersForAdmin(
+            org.springframework.data.domain.Pageable pageable,
+            com.aurafit.enums.OrderStatus status,
+            String keyword
+    ) {
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
         if (status != null) {
-            return rentalOrderRepository.findByStatus(status, pageable)
+            return rentalOrderRepository.searchByStatusForAdmin(status, normalizedKeyword, pageable)
                     .map(order -> StaffOrderDetailResponse.fromEntity(order, handoverRecordRepository.findByOrderId(order.getId())));
         }
-        return rentalOrderRepository.findAll(pageable)
+        return rentalOrderRepository.searchForAdmin(normalizedKeyword, pageable)
                 .map(order -> StaffOrderDetailResponse.fromEntity(order, handoverRecordRepository.findByOrderId(order.getId())));
     }
 

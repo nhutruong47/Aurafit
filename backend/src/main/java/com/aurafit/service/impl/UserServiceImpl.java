@@ -101,14 +101,25 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public com.aurafit.dto.response.PaginatedResponse<UserResponseDTO> getAllUsers(int pageNo, int pageSize, String sortBy, String sortDir, String keyword) {
+    public com.aurafit.dto.response.PaginatedResponse<UserResponseDTO> getAllUsers(
+            int pageNo,
+            int pageSize,
+            String sortBy,
+            String sortDir,
+            String keyword,
+            Role role
+    ) {
         org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase(org.springframework.data.domain.Sort.Direction.ASC.name())
                 ? org.springframework.data.domain.Sort.by(sortBy).ascending()
                 : org.springframework.data.domain.Sort.by(sortBy).descending();
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(pageNo, pageSize, sort);
 
         org.springframework.data.domain.Page<User> page;
-        if (keyword != null && !keyword.isBlank()) {
+        if (role != null && keyword != null && !keyword.isBlank()) {
+            page = userRepository.searchUsersByRole(role, keyword.trim(), pageable);
+        } else if (role != null) {
+            page = userRepository.findByRole(role, pageable);
+        } else if (keyword != null && !keyword.isBlank()) {
             page = userRepository.searchUsers(keyword, pageable);
         } else {
             page = userRepository.findAll(pageable);
@@ -151,6 +162,24 @@ public class UserServiceImpl implements UserService {
         staff.setEmailVerified(true);
 
         return StaffAccountResponseDTO.fromEntity(userRepository.save(staff));
+    }
+
+    @Override
+    @Transactional
+    public UserResponseDTO updateUserStatus(Long userId, UserStatus status) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (user.getRole() == Role.ADMIN) {
+            throw new BadRequestException("Không thể thay đổi trạng thái tài khoản admin.");
+        }
+
+        if (user.getStatus() != status) {
+            user.setStatus(status);
+            userRepository.save(user);
+        }
+
+        return toUserResponse(user);
     }
 
     // -------------------------------------------------------------------------
