@@ -53,7 +53,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/costumes/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/clubs/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/dev/ai-ping").permitAll()
+                .requestMatchers("/api/stylist/**").permitAll()
+                .requestMatchers("/api/admin/analytics/**").hasAnyRole("ADMIN", "STAFF")
                 // Swagger UI & OpenAPI docs
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 

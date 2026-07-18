@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AdminCategoriesSection from '../components/admin/AdminCategoriesSection';
+import AiInsightTab from '../components/admin/AiInsightTab';
 import AdminOverviewTab from '../components/admin/AdminOverviewTab';
 import AdminProductsSection from '../components/admin/AdminProductsSection';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
@@ -89,6 +90,7 @@ export default function AdminDashboardPage({ currentUser }) {
         isAdmin ? ['users', 'Tài khoản', 'manage_accounts'] : null,
         isAdmin ? ['categories', 'Danh mục', 'category'] : null,
         isAdmin ? ['support', 'Hỗ trợ', 'support_agent'] : null,
+        isAdmin ? ['ai-insights', 'Phân tích AI', 'auto_awesome'] : null,
       ].filter(Boolean),
     [isAdmin]
   );
@@ -230,6 +232,7 @@ export default function AdminDashboardPage({ currentUser }) {
               setPage={setCategoryPage}
             />
           )}
+          {activeTab === 'ai-insights' && isAdmin && <AiInsightTab />}
           {activeTab === 'support' && isAdmin && <AdminSupportSection />}
         </main>
       </div>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import ScrollToTop from './components/common/ScrollToTop';
+import StylistChatWidget from './components/common/StylistChatWidget';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
 import ToastContainer from './components/ui/ToastContainer';
@@ -155,12 +156,15 @@ function BareLayout() {
 
 function App() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const currentUser = useAppSelector(selectCurrentUser);
   const cartItems = useAppSelector(selectCartItems);
   const cartCount = useAppSelector(selectCartCount);
   const handleNavigate = useLegacyNavigate();
   const handleSearchOpen = useSearchNavigation();
   const addToast = useToastStore((state) => state.addToast);
+  const isInternalDashboard =
+    location.pathname.startsWith('/admin') || location.pathname.startsWith('/staff');
 
   useEffect(() => {
     if (!currentUser?.id) return undefined;
@@ -310,7 +314,8 @@ function App() {
   );
 
   return (
-    <Routes>
+    <>
+      <Routes>
       {/* Admin-only layout: no Navbar, no cart, no customer UI */}
       <Route
         element={
@@ -375,7 +380,9 @@ function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+      {!isInternalDashboard && <StylistChatWidget />}
+    </>
   );
 }
 
