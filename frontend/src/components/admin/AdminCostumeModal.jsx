@@ -1,14 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AdminField } from './AdminDashboardShared';
 import ImageGalleryUploadField from '../ui/ImageGalleryUploadField';
 import SearchableSelect from '../ui/SearchableSelect';
-import {
-  fetchAdminCostumeItems,
-  createCostumeItem,
-  updateCostumeItem,
-  deleteCostumeItem,
-} from '../../services/costumeService';
 import { useToastStore } from '../../store/useToastStore';
+import { useAdminCostumeItems } from '../../hooks/useAdminCostumeItems';
 
 const TABS = [
   { key: 'general', label: 'Thông tin chung', icon: 'info' },
@@ -24,64 +19,6 @@ const STATUS_OPTIONS = [
 
 const SIZE_SUGGESTIONS = ['Freesize', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
 const COLOR_SUGGESTIONS = ['Trắng', 'Đen', 'Đỏ', 'Xanh dương', 'Xanh lá', 'Vàng', 'Hồng', 'Tím', 'Cam', 'Nâu', 'Xám', 'Be'];
-
-const emptyItemForm = { sku: '', size: '', color: '', status: 'AVAILABLE' };
-
-/**
- * Strips Vietnamese diacritics and returns uppercase ASCII.
- * e.g. "Áo Dài Cưới" -> "AO DAI CUOI"
- */
-function stripAccents(str) {
-  return str
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D');
-}
-
-/**
- * Generates a smart SKU from costume name, size, color, and existing items.
- * Format: [PREFIX]-[SIZE]-[COLOR]-[SEQ]
- * Example: "Áo Dài Cưới", "M", "Đỏ" -> "ADC-M-DO-001"
- */
-function generateSKU(costumeName, size, color, existingItems) {
-  // Prefix: initials of costume name words
-  const prefix = costumeName
-    ? stripAccents(costumeName)
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 5)
-    : 'AF';
-
-  const sizeCode = stripAccents(size || '').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'X';
-  const colorCode = stripAccents(color || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'X';
-
-  // Find existing items with same size+color to determine next sequence
-  const sameVariants = (existingItems || []).filter(
-    (item) => item.size === size && item.color === color
-  );
-
-  // Extract sequence numbers from existing SKUs matching the pattern
-  const basePattern = `${prefix}-${sizeCode}-${colorCode}-`;
-  let maxSeq = 0;
-  for (const item of sameVariants) {
-    if (item.sku && item.sku.startsWith(basePattern)) {
-      const seqPart = item.sku.slice(basePattern.length);
-      const num = parseInt(seqPart, 10);
-      if (!isNaN(num) && num > maxSeq) maxSeq = num;
-    }
-  }
-  // Fallback: if no pattern match, use count
-  if (maxSeq === 0 && sameVariants.length > 0) {
-    maxSeq = sameVariants.length;
-  }
-
-  const seq = String(maxSeq + 1).padStart(3, '0');
-  return `${prefix}-${sizeCode}-${colorCode}-${seq}`;
-}
 
 export default function AdminCostumeModal({
   isOpen,
@@ -102,39 +39,31 @@ export default function AdminCostumeModal({
   const [activeTab, setActiveTab] = useState('general');
   const [imageUploadState, setImageUploadState] = useState({ isUploading: false, error: '' });
 
-  // --- Inventory state ---
-  const [items, setItems] = useState([]);
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const [itemForm, setItemForm] = useState(emptyItemForm);
-  const [editingItemId, setEditingItemId] = useState(null);
-  const [isSavingItem, setIsSavingItem] = useState(false);
-  const [skuManuallyEdited, setSkuManuallyEdited] = useState(false);
+  const {
+    items,
+    isLoadingItems,
+    itemForm,
+    editingItemId,
+    isSavingItem,
+    skuManuallyEdited,
+    loadItems,
+    resetItemsState,
+    handleItemFieldChange,
+    handleSaveItem,
+    handleEditItem,
+    handleCancelEditItem,
+    handleDeleteItem,
+    handleRegenerateSku
+  } = useAdminCostumeItems(editingProductId, productForm.name);
 
   // Reset tab when modal opens/closes or product changes
   useEffect(() => {
     if (isOpen) {
       setActiveTab('general');
-      setItems([]);
-      setItemForm(emptyItemForm);
-      setEditingItemId(null);
-      setSkuManuallyEdited(false);
+      resetItemsState();
       setImageUploadState({ isUploading: false, error: '' });
     }
-  }, [isOpen, editingProductId]);
-
-  // Fetch items when switching to inventory tab (only for existing costumes)
-  const loadItems = useCallback(async () => {
-    if (!editingProductId) return;
-    setIsLoadingItems(true);
-    try {
-      const data = await fetchAdminCostumeItems(editingProductId);
-      setItems(Array.isArray(data) ? data : []);
-    } catch (err) {
-      useToastStore.getState().addToast(err.message || 'Không thể tải phân loại kho.', 'error');
-    } finally {
-      setIsLoadingItems(false);
-    }
-  }, [editingProductId]);
+  }, [isOpen, editingProductId, resetItemsState]);
 
   useEffect(() => {
     if (activeTab === 'inventory' && editingProductId) {
@@ -166,73 +95,6 @@ export default function AdminCostumeModal({
     if (el) el.addEventListener('mousedown', handleMouseDown);
     return () => { if (el) el.removeEventListener('mousedown', handleMouseDown); };
   }, [isOpen, onClose]);
-
-  // --- Auto-generate SKU when size or color changes ---
-  useEffect(() => {
-    if (editingItemId || skuManuallyEdited) return; // Don't override when editing or manually typed
-    if (!itemForm.size && !itemForm.color) return;
-    const newSku = generateSKU(productForm.name, itemForm.size, itemForm.color, items);
-    setItemForm((prev) => ({ ...prev, sku: newSku }));
-  }, [itemForm.size, itemForm.color, items, productForm.name, editingItemId, skuManuallyEdited]);
-
-  // --- Item handlers ---
-  const handleItemFieldChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'sku') {
-      setSkuManuallyEdited(true);
-    }
-    setItemForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSaveItem = async () => {
-    if (!editingProductId) return;
-    setIsSavingItem(true);
-    try {
-      if (editingItemId) {
-        const updated = await updateCostumeItem(editingProductId, editingItemId, itemForm);
-        setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-        useToastStore.getState().addToast('Cập nhật phân loại thành công.', 'success');
-        setItemForm(emptyItemForm);
-        setEditingItemId(null);
-        setSkuManuallyEdited(false);
-      } else {
-        const created = await createCostumeItem(editingProductId, itemForm);
-        const updatedItems = [...items, created];
-        setItems(updatedItems);
-        useToastStore.getState().addToast('Thêm phân loại thành công.', 'success');
-        // Rapid entry: keep size & color, regenerate SKU for next sequence
-        setSkuManuallyEdited(false);
-        const nextSku = generateSKU(productForm.name, itemForm.size, itemForm.color, updatedItems);
-        setItemForm((prev) => ({ ...prev, sku: nextSku }));
-      }
-    } catch (err) {
-      useToastStore.getState().addToast(err.message || 'Lỗi khi lưu phân loại.', 'error');
-    } finally {
-      setIsSavingItem(false);
-    }
-  };
-
-  const handleEditItem = (item) => {
-    setEditingItemId(item.id);
-    setItemForm({ sku: item.sku, size: item.size, color: item.color, status: item.status });
-  };
-
-  const handleCancelEditItem = () => {
-    setEditingItemId(null);
-    setItemForm(emptyItemForm);
-    setSkuManuallyEdited(false);
-  };
-
-  const handleDeleteItem = async (itemId) => {
-    if (!editingProductId) return;
-    try {
-      await deleteCostumeItem(editingProductId, itemId);
-      setItems((prev) => prev.filter((i) => i.id !== itemId));
-      useToastStore.getState().addToast('Đã xóa phân loại.', 'success');
-    } catch (err) {
-      useToastStore.getState().addToast(err.message || 'Không thể xóa phân loại.', 'error');
-    }
-  };
 
   const handleSubmitGeneral = async (e) => {
     e.preventDefault();
@@ -499,11 +361,7 @@ export default function AdminCostumeModal({
                           : 'Tự động tạo từ Tên + Size + Màu — '}
                         <button
                           type="button"
-                          onClick={() => {
-                            setSkuManuallyEdited(false);
-                            const newSku = generateSKU(productForm.name, itemForm.size, itemForm.color, items);
-                            setItemForm((prev) => ({ ...prev, sku: newSku }));
-                          }}
+                          onClick={handleRegenerateSku}
                           className="text-[#7f7041] underline hover:text-black"
                         >
                           Tạo lại
@@ -606,33 +464,10 @@ export default function AdminCostumeModal({
                   </table>
                 </div>
               )}
-
-              {items.length > 0 && (
-                <div className="flex items-center gap-3 border-t border-[#ebe7df] pt-4">
-                  <span className="material-symbols-outlined text-[16px] text-[#7f7041]">info</span>
-                  <p className="text-xs text-[#5f5e5e]">
-                    Tổng: <strong>{items.length}</strong> phân loại ·
-                    Sẵn sàng: <strong>{items.filter((i) => i.status === 'AVAILABLE').length}</strong> ·
-                    Đang thuê: <strong>{items.filter((i) => i.status === 'RENTED').length}</strong>
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>
       </div>
-
-      {/* CSS animations */}
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.95) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

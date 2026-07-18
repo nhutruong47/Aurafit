@@ -2,10 +2,18 @@ import { useEffect, useState } from 'react';
 import { adminOrderService } from '../../services/adminOrderService';
 import { formatCurrency } from '../../utils/formatCurrency';
 import InspectionModal from './InspectionModal';
+import { useAdminOrderDetail } from '../../hooks/useAdminOrderDetail';
 
 export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, isReadOnly = false }) {
-  const [isLoading, setIsLoading] = useState(false);
   const [isInspectionModalOpen, setIsInspectionModalOpen] = useState(false);
+  
+  const {
+    isLoading,
+    handleAction,
+    copyToClipboard,
+    onDeliveryFailedClick,
+    onLostPackageClick
+  } = useAdminOrderDetail(order?.id, onRefresh);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -30,64 +38,6 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
   };
 
   if (!isOpen || !order) return null;
-
-  const handleAction = async (actionFn, successMsg) => {
-    try {
-      setIsLoading(true);
-      await actionFn(order.id);
-      window.alert(successMsg);
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      window.alert(error.response?.data?.message || 'Có lỗi xảy ra khi thực hiện thao tác.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const copyToClipboard = (text, type) => {
-    navigator.clipboard.writeText(text);
-    window.alert(`Đã copy mã vận đơn ${type}`);
-  };
-
-  const onDeliveryFailedClick = async () => {
-    const reason = window.prompt('Nhập lý do / Ghi chú sự cố giao hàng thất bại (Bắt buộc):');
-    if (!reason || !reason.trim()) {
-      window.alert('Vui lòng nhập lý do để xử lý.');
-      return;
-    }
-    
-    try {
-      setIsLoading(true);
-      await adminOrderService.handleDeliveryFailed(order.id, reason.trim());
-      window.alert('Đã đánh dấu đơn hàng: Giao hàng thất bại (Boom hàng).');
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      window.alert(error.response?.data?.message || 'Lỗi khi xử lý thao tác này');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const onLostPackageClick = async () => {
-    const reason = window.prompt('Nhập lý do / Ghi chú sự cố thất lạc hàng hóa (Bắt buộc):');
-    if (!reason || !reason.trim()) {
-      window.alert('Vui lòng nhập lý do để xử lý.');
-      return;
-    }
-    
-    try {
-      setIsLoading(true);
-      await adminOrderService.handleLostPackage(order.id, reason.trim());
-      window.alert('Đã đánh dấu đơn hàng: Thất lạc kiện hàng.');
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      window.alert(error.response?.data?.message || 'Lỗi khi xử lý thao tác này');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const renderActionButtons = () => {
     if (isReadOnly) return null;

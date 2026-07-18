@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { loadJson, saveJson } from './browserStorage';
+import { fallbackCostumeImage } from '../utils/costumeUtils';
 
 const persistItems = (items) => {
   saveJson('aurafitCartItems', items);
@@ -20,7 +21,7 @@ const mapCartItemToLocal = (cartItem) => ({
   name: cartItem.costumeName,
   rawCategory: cartItem.category || 'Costume',
   category: cartItem.category || 'Costume',
-  image: cartItem.imageUrl,
+  image: cartItem.imageUrls?.[0] || cartItem.imageUrl || fallbackCostumeImage,
   rentalStartDate: cartItem.rentalStartDate,
   rentalEndDate: cartItem.rentalEndDate,
   unitPrice: cartItem.unitPrice,

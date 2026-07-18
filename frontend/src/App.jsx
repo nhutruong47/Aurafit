@@ -372,6 +372,7 @@ function App() {
           path="/products/:productId"
           element={<CostumeDetailPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} onRentNow={handleRentNow} />}
         />
+        <Route path="/success" element={<RentalOrderSuccessPage cartItems={cartItems} onNavigate={handleNavigate} />} />
       </Route>
 
       {/* Staff layout: no Navbar, no cart, internal dashboard UI */}
@@ -385,7 +386,6 @@ function App() {
 
       <Route element={<BareLayout />}>
         <Route path="/payment" element={<PaymentPage cartItems={cartItems} currentUser={currentUser} onNavigate={handleNavigate} />} />
-        <Route path="/success" element={<RentalOrderSuccessPage cartItems={cartItems} onNavigate={handleNavigate} />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

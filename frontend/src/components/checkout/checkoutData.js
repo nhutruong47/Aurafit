@@ -1,4 +1,5 @@
 import { formatCurrency } from '../../utils/formatCurrency';
+import { fallbackCostumeImage } from '../../utils/costumeUtils';
 
 /**
  * Tiered Duration Multiplier (mirrors PricingEngineService.java)
@@ -63,7 +64,7 @@ export function toRentalItem(item, index) {
     name: item.name,
     tone: [item.size, item.color].filter(Boolean).join(' • ') || 'Tuyển chọn cho thuê',
     badge: null,
-    image: item.image,
+    image: item.image || fallbackCostumeImage,
     rawCategory: item.rawCategory,
     category: item.category,
     sku: item.sku,
