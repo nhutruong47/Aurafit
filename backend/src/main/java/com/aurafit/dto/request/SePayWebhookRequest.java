@@ -1,6 +1,7 @@
 package com.aurafit.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
 
 import java.math.BigDecimal;
 
@@ -14,9 +15,10 @@ public record SePayWebhookRequest(
         // SePay also sends "amount" in some webhooks
         BigDecimal amount,
 
-        // Content field - might be empty for test webhooks
+        @NotBlank
         String content,
 
+        @NotBlank
         @JsonProperty("code")
         String code,
 
@@ -40,18 +42,7 @@ public record SePayWebhookRequest(
 
         String status
 ) {
-        public BigDecimal getTransferAmount() {
-                if (transferAmount != null) return transferAmount;
-                if (amount != null) return amount;
-                // Default for test webhooks
-                return BigDecimal.ZERO;
-        }
-
-        public String getContent() {
-                return content != null ? content : "";
-        }
-
-        public String getCode() {
-                return code != null ? code : "";
+        public BigDecimal resolvedTransferAmount() {
+                return transferAmount != null ? transferAmount : amount;
         }
 }

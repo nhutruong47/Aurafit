@@ -238,9 +238,9 @@ export default function AdminCostumeModal({
                   {/* Metadata section */}
                   <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
                     <div className="mb-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Metadata gợi ý AI</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Metadata sản phẩm</p>
                       <p className="mt-1 text-xs text-[#5f5e5e]">
-                        Các trường style, occasion, season, color, tags là bắt buộc cho gợi ý sản phẩm.
+                        Các trường style, occasion, season, color, tags là bắt buộc cho thông tin catalog sản phẩm.
                       </p>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">

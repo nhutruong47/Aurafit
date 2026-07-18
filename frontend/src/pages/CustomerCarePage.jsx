@@ -39,12 +39,11 @@ const faqSections = [
 ];
 
 const careChannels = [
-  { icon: 'smart_toy', label: 'Chatbot tự động', copy: 'Tư vấn phong cách và đơn thuê nhanh chóng bằng chatbot AuraFit.' },
   { icon: 'local_shipping', label: 'Hỗ trợ giao nhận', copy: 'Theo dõi giao hàng, nhận hàng, hoàn trả và thay đổi lịch thuê.' },
   { icon: 'straighten', label: 'Tư vấn form dáng', copy: 'Kiểm tra số đo trước khi bạn chốt size cuối cùng.' },
 ];
 
-export default function CustomerCarePage({ onNavigate }) {
+export default function CustomerCarePage() {
   const [openQuestion, setOpenQuestion] = useState('shipping-0');
 
   const toggleQuestion = (sectionId, index) => {
@@ -143,14 +142,6 @@ export default function CustomerCarePage({ onNavigate }) {
                 Stylist của AuraFit có thể hỗ trợ bạn chọn dáng, size, bộ phụ kiện và thời gian giao nhận phù hợp
                 trước khi chốt đơn thuê.
               </p>
-              <div className="mt-10">
-                <button
-                  onClick={() => onNavigate?.('chat')}
-                  className="border border-white px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white hover:text-black"
-                >
-                  Đặt lịch tư vấn phong cách
-                </button>
-              </div>
             </div>
           </div>
         </section>

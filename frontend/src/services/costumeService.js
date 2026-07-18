@@ -1,4 +1,5 @@
 import { requestJson } from './http/request';
+import { getInteractionSessionId } from './interactionsService';
 
 const normalizeListResponse = (payload) => {
   if (Array.isArray(payload)) {
@@ -90,44 +91,33 @@ export const fetchSeasonalCostumes = async () =>
     'Không thể tải danh sách sản phẩm theo mùa.'
   );
 
-export const fetchRecommendedCostumes = async (userId) =>
-  requestJson(
+export const fetchRelatedCostumes = async (costumeId, limit = 8) => {
+  const payload = await requestJson(
     {
-      url: '/costumes/recommendations',
+      url: `/costumes/${encodeURIComponent(costumeId)}/related`,
       method: 'GET',
-      params: userId ? { userId } : undefined,
+      params: { limit },
     },
-    'Không thể tải danh sách gợi ý sản phẩm.'
+    'Không thể tải danh sách sản phẩm liên quan.'
   );
 
-export const fetchSimilarCostumes = async (costumeId, limit = 4) =>
-  requestJson(
+  return normalizeListResponse(payload);
+};
+
+export const fetchRecommendedForYou = async (limit = 12) => {
+  const payload = await requestJson(
     {
-      url: `/recommendations/similar/${encodeURIComponent(costumeId)}`,
+      url: '/costumes/recommended-for-you',
       method: 'GET',
       params: {
+        sessionId: getInteractionSessionId(),
         limit,
       },
     },
-    'Không thể tải danh sách sản phẩm tương tự.'
+    'Không thể tải danh sách gợi ý dành cho bạn.'
   );
 
-export const fetchHomepageRecommendations = async (options = {}, legacyLimit) => {
-  const requestOptions =
-    typeof options === 'object' && options !== null ? options : { sessionId: options, limit: legacyLimit };
-  const { sessionId, limit = 6 } = requestOptions;
-
-  return requestJson(
-    {
-      url: '/recommendations/home',
-      method: 'GET',
-      params: {
-        ...(sessionId ? { sessionId } : {}),
-        limit,
-      },
-    },
-    'Không thể tải gợi ý cá nhân hóa cho trang chủ.'
-  );
+  return normalizeListResponse(payload);
 };
 
 export const fetchAdminCostumes = async (options = {}) => {

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import ScrollToTop from './components/common/ScrollToTop';
+import StylistChatWidget from './components/common/StylistChatWidget';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
 import ToastContainer from './components/ui/ToastContainer';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import CatalogPage from './pages/CatalogPage';
-import ChatPage from './pages/ChatPage';
 import CosplayPage from './pages/CosplayPage';
 import CostumeDetailPage from './pages/CostumeDetailPage';
 import CustomerCarePage from './pages/CustomerCarePage';
@@ -25,10 +25,7 @@ import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from '
 import { addItemToCart as addItemToCartApi, fetchCart, removeCartItem as removeCartItemApi, updateCartItem as updateCartItemApi } from './services/cartService';
 import {
   attachGuestSessionToCurrentUser,
-  consumeAiStylistRecommendationAttribution,
   logUserInteraction,
-  mergeAiStylistCartAttribution,
-  rememberAiStylistCartAttribution,
 } from './services/interactionsService';
 import { clearCurrentUser, selectCurrentUser, setCurrentUser } from './store/authSlice';
 import {
@@ -48,7 +45,7 @@ import { hasUserRole } from './utils/roles';
 function CustomerLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
   const location = useLocation();
   const currentPage = getCurrentPageFromPath(location.pathname);
-  const hidesFooter = currentPage === 'chat' || currentPage === 'staffDashboard';
+  const hidesFooter = currentPage === 'staffDashboard';
 
   const isAdmin = currentUser?.role === 'ADMIN';
   const isStaff = currentUser?.role === 'STAFF';
@@ -81,7 +78,7 @@ function CustomerLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
   );
 }
 
-function AdminLayout({ currentUser, onNavigate }) {
+function AdminLayout({ currentUser }) {
   // Only ADMIN can access this layout
   if (!currentUser || currentUser.role !== 'ADMIN') {
     return <Navigate to="/" replace />;
@@ -159,12 +156,15 @@ function BareLayout() {
 
 function App() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const currentUser = useAppSelector(selectCurrentUser);
   const cartItems = useAppSelector(selectCartItems);
   const cartCount = useAppSelector(selectCartCount);
   const handleNavigate = useLegacyNavigate();
   const handleSearchOpen = useSearchNavigation();
   const addToast = useToastStore((state) => state.addToast);
+  const isInternalDashboard =
+    location.pathname.startsWith('/admin') || location.pathname.startsWith('/staff');
 
   useEffect(() => {
     if (!currentUser?.id) return undefined;
@@ -176,7 +176,7 @@ function App() {
     fetchCart()
       .then((cart) => {
         if (!isMounted) return;
-        dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
+        dispatch(setCartItems(cart?.items || []));
       })
       .catch(() => {});
 
@@ -194,7 +194,6 @@ function App() {
 
   const handleAddToCart = useCallback(
     async (item) => {
-      const aiStylistAttribution = item?.id ? consumeAiStylistRecommendationAttribution(item.id) : null;
       // Allow adding to cart even if dates are not selected yet (they will be selected on Checkout)
       const apiEligible = !!(currentUser?.id && item?.costumeItemId);
 
@@ -219,14 +218,9 @@ function App() {
             rentalStartDate: item.rentalStartDate,
             rentalEndDate: item.rentalEndDate,
             quantity: item.quantity || 1,
-            aiStylistAttribution,
           });
 
-          if (aiStylistAttribution) {
-            rememberAiStylistCartAttribution(item, aiStylistAttribution);
-          }
-
-          dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
+          dispatch(setCartItems(cart?.items || []));
           addToast(`Sản phẩm "${item.name}" đã được thêm vào giỏ hàng.`);
           return;
         } catch (error) {
@@ -235,7 +229,7 @@ function App() {
         }
       }
 
-      dispatch(addCartItem(aiStylistAttribution ? { ...item, attribution: aiStylistAttribution } : item));
+      dispatch(addCartItem(item));
       addToast(`Sản phẩm "${item.name}" đã được thêm vào giỏ hàng.`);
     },
     [currentUser, dispatch, addToast]
@@ -279,7 +273,7 @@ function App() {
             for (const id of idsToDelete) {
               latestCart = await removeCartItemApi(id);
             }
-            dispatch(setCartItems(mergeAiStylistCartAttribution(latestCart?.items || [])));
+            dispatch(setCartItems(latestCart?.items || []));
             return;
           } catch (error) {
             if (error?.response?.status === 404) {
@@ -302,7 +296,7 @@ function App() {
       if (currentUser?.id && cartItemId && typeof cartItemId === 'number') {
         try {
           const cart = await updateCartItemApi(cartItemId, data);
-          dispatch(setCartItems(mergeAiStylistCartAttribution(cart?.items || [])));
+          dispatch(setCartItems(cart?.items || []));
           isApiUpdated = true;
           addToast('Giỏ hàng đã được cập nhật thành công.');
         } catch {
@@ -320,17 +314,15 @@ function App() {
   );
 
   return (
-    <Routes>
+    <>
+      <Routes>
       {/* Admin-only layout: no Navbar, no cart, no customer UI */}
       <Route
         element={
-          <AdminLayout
-            currentUser={currentUser}
-            onNavigate={handleNavigate}
-          />
+          <AdminLayout currentUser={currentUser} />
         }
       >
-        <Route path="/admin" element={<AdminDashboardPage currentUser={currentUser} onNavigate={handleNavigate} />} />
+        <Route path="/admin" element={<AdminDashboardPage currentUser={currentUser} />} />
       </Route>
 
       {/* Customer layout: full Navbar, cart, footer */}
@@ -360,7 +352,6 @@ function App() {
           }
         />
 
-        <Route path="/chat" element={<ChatPage currentUser={currentUser} onNavigate={handleNavigate} cartItems={cartItems} />} />
         <Route path="/orders" element={<RentalOrdersPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/yearbook" element={<YearbookPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/cosplay" element={<CosplayPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
@@ -389,7 +380,9 @@ function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+      {!isInternalDashboard && <StylistChatWidget />}
+    </>
   );
 }
 

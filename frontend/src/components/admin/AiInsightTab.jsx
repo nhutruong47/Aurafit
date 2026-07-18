@@ -1,0 +1,183 @@
+import { useEffect, useState } from 'react';
+import {
+  fetchAiInsights,
+  triggerAiInsightGeneration,
+} from '../../services/aiInsightService';
+import { Panel } from './AdminDashboardShared';
+
+const formatPeriodDate = (value) => {
+  if (!value) return '—';
+
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+};
+
+const formatCreatedAt = (value) => {
+  if (!value) return '—';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
+
+export default function AiInsightTab() {
+  const [insights, setInsights] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchAiInsights()
+      .then((data) => {
+        if (isMounted) {
+          setInsights(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch((loadError) => {
+        if (isMounted) {
+          setError(loadError.message || 'Không thể tải danh sách phân tích AI.');
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleGenerate = async () => {
+    if (isGenerating) return;
+
+    setIsGenerating(true);
+    setError('');
+    setMessage('');
+
+    try {
+      await triggerAiInsightGeneration();
+      const refreshedInsights = await fetchAiInsights();
+      setInsights(Array.isArray(refreshedInsights) ? refreshedInsights : []);
+      setMessage('Đã tạo phân tích AI mới thành công.');
+    } catch (generationError) {
+      setError(generationError.message || 'Không thể tạo phân tích AI mới.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <Panel
+      title="Phân tích AI"
+      action={
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          className="flex items-center gap-2 bg-black px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777] sm:px-5"
+        >
+          <span className={`material-symbols-outlined text-[18px] ${isGenerating ? 'animate-spin' : ''}`}>
+            {isGenerating ? 'progress_activity' : 'auto_awesome'}
+          </span>
+          <span>{isGenerating ? 'Đang phân tích...' : 'Tạo phân tích mới'}</span>
+        </button>
+      }
+    >
+      <div className="mb-6 border-l-2 border-[#7f7041] bg-[#f5f2eb] px-4 py-3 text-sm leading-6 text-[#5f5e5e]">
+        AI tổng hợp dữ liệu hội thoại và hành vi trong 7 ngày hoàn chỉnh gần nhất để nhận diện xu hướng, sau đó đề xuất hành động cho cửa hàng.
+      </div>
+
+      {message && (
+        <p className="mb-5 border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          {message}
+        </p>
+      )}
+
+      {error && (
+        <p className="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+
+      {isLoading ? (
+        <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
+          <span className="material-symbols-outlined animate-spin text-[30px] text-[#7f7041]">
+            progress_activity
+          </span>
+          <p className="text-sm text-[#5f5e5e]">Đang tải các phân tích gần nhất...</p>
+        </div>
+      ) : insights.length === 0 ? (
+        <div className="flex min-h-72 flex-col items-center justify-center border border-dashed border-[#cfc7ba] bg-[#fafaf8] px-6 text-center">
+          <span className="material-symbols-outlined text-[48px] text-[#b7aa8a]">insights</span>
+          <h3 className="mt-4 font-serif text-2xl italic text-black">Chưa có phân tích AI</h3>
+          <p className="mt-3 max-w-lg text-sm leading-6 text-[#5f5e5e]">
+            Bấm “Tạo phân tích mới” để tổng hợp dữ liệu 7 ngày gần nhất và nhận đề xuất xu hướng cho cửa hàng.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {insights.map((insight, index) => {
+            const isLatest = index === 0;
+
+            return (
+              <article
+                key={insight.id}
+                className={`relative border bg-white p-5 sm:p-6 ${
+                  isLatest
+                    ? 'border-[#7f7041] shadow-[0_8px_24px_rgba(127,112,65,0.12)]'
+                    : 'border-[#d7d2c8]'
+                }`}
+              >
+                <div className="flex flex-col gap-3 border-b border-[#ebe7df] pb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="material-symbols-outlined text-[20px] text-[#7f7041]">
+                        date_range
+                      </span>
+                      <h3 className="text-sm font-semibold text-black">
+                        {formatPeriodDate(insight.periodStart)} – {formatPeriodDate(insight.periodEnd)}
+                      </h3>
+                      {isLatest && (
+                        <span className="border border-[#c9b982] bg-[#fbf7e8] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#7f7041]">
+                          Mới nhất
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs text-[#777777]">
+                      Tạo lúc {formatCreatedAt(insight.createdAt)}
+                    </p>
+                  </div>
+                  <span className="w-fit border border-[#d7d2c8] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#5f5e5e]">
+                    Xu hướng tuần
+                  </span>
+                </div>
+
+                <div className="mt-5 whitespace-pre-line text-sm leading-7 text-[#333333]">
+                  {insight.content}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </Panel>
+  );
+}

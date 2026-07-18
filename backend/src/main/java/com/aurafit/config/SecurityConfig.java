@@ -49,13 +49,12 @@ public class SecurityConfig {
 
                 // Public product browsing (future catalog endpoints)
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/ai-stylist/sessions/attach").authenticated()
-                .requestMatchers("/api/ai-stylist/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/interactions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/costumes/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/recommendations/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/clubs/**").permitAll()
+                .requestMatchers("/api/stylist/**").permitAll()
+                .requestMatchers("/api/admin/analytics/**").hasAnyRole("ADMIN", "STAFF")
                 // Swagger UI & OpenAPI docs
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 

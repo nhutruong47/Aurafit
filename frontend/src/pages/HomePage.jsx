@@ -3,15 +3,12 @@ import HomeCategoryMosaic from '../components/home/HomeCategoryMosaic';
 import HomeFeaturedSection from '../components/home/HomeFeaturedSection';
 import HomeHero from '../components/home/HomeHero';
 import HomeInsiderSection from '../components/home/HomeInsiderSection';
-import HomePersonalizedSection from '../components/home/HomePersonalizedSection';
 import HomeServicesSection from '../components/home/HomeServicesSection';
 import HomeStyleSlider from '../components/home/HomeStyleSlider';
 import HomeTrendingSection from '../components/home/HomeTrendingSection';
 import HomeTrustSection from '../components/home/HomeTrustSection';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
-import { useHomepageRecommendations } from '../hooks/useHomepageRecommendations';
-import { fetchSeasonalCostumes } from '../services/costumeService';
-import { getInteractionSessionId, logUserInteraction } from '../services/interactionsService';
+import { fetchRecommendedForYou, fetchSeasonalCostumes } from '../services/costumeService';
 import { getCostumeRootCategory } from '../utils/costumeUtils';
 
 function uniqueProducts(products) {
@@ -26,22 +23,18 @@ function uniqueProducts(products) {
   });
 }
 
-export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
+export default function HomePage({ onNavigate, onAddToCart }) {
   const [activeTab, setActiveTab] = useState('event');
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const sliderRef = useRef(null);
-  const homepageImpressionKeyRef = useRef('');
   const { costumes, isLoading } = useCatalogCostumes();
   const [trendingProducts, setTrendingProducts] = useState([]);
   const [isTrendingLoading, setIsTrendingLoading] = useState(false);
   const [trendingError, setTrendingError] = useState('');
-  const interactionSessionId = useMemo(() => getInteractionSessionId(), []);
-  const {
-    recommendations: rawHomepageRecommendations,
-    isLoading: isHomepageRecommendationsLoading,
-    error: homepageRecommendationsError,
-  } = useHomepageRecommendations(interactionSessionId, currentUser?.id);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [isRecommendedLoading, setIsRecommendedLoading] = useState(false);
+  const [recommendedError, setRecommendedError] = useState('');
 
   const products = useMemo(
     () => ({
@@ -56,6 +49,7 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
   useEffect(() => {
     let isMounted = true;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsTrendingLoading(true);
     setTrendingError('');
 
@@ -87,43 +81,40 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
     };
   }, []);
 
-  const homepageRecommendations = useMemo(() => {
-    const seen = new Set();
-    return (rawHomepageRecommendations || []).filter((recommendation) => {
-      const costumeId = recommendation?.costume?.id;
-      if (costumeId === undefined || costumeId === null || seen.has(costumeId)) {
-        return false;
-      }
-
-      seen.add(costumeId);
-      return true;
-    });
-  }, [rawHomepageRecommendations]);
-
   useEffect(() => {
-    if (!homepageRecommendations.length) return;
+    let isMounted = true;
 
-    const recommendedIds = homepageRecommendations
-      .map((item) => item?.costume?.id)
-      .filter((id) => id !== undefined && id !== null);
-    const impressionKey = `home:${recommendedIds.join(',')}:${currentUser?.id || 'guest'}`;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsRecommendedLoading(true);
+    setRecommendedError('');
 
-    if (!recommendedIds.length || homepageImpressionKeyRef.current === impressionKey) {
-      return;
-    }
+    fetchRecommendedForYou()
+      .then((recommendationData) => {
+        if (!isMounted) {
+          return;
+        }
 
-    homepageImpressionKeyRef.current = impressionKey;
+        setRecommendedProducts(uniqueProducts(recommendationData || []));
+        setRecommendedError('');
+      })
+      .catch((requestError) => {
+        if (!isMounted) {
+          return;
+        }
 
-    logUserInteraction({
-      eventType: 'RECOMMENDATION_IMPRESSION',
-      targetType: 'HOMEPAGE',
-      metadata: {
-        slot: 'homepage_personalized',
-        recommendedCostumeIds: recommendedIds,
-        userType: currentUser?.id ? 'authenticated' : 'guest',
-      },
-    }).catch(() => {});
-  }, [currentUser?.id, homepageRecommendations]);
+        setRecommendedProducts([]);
+        setRecommendedError(requestError.message || 'Không thể tải gợi ý dành cho bạn.');
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsRecommendedLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const scrollSlider = (direction) => {
     const slider = sliderRef.current;
@@ -151,38 +142,10 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
     }, 2000);
   };
 
-  const handleHomepageRecommendationClick = (recommendation, index, page, costume) => {
-    if (page !== 'productDetail' || !costume?.id) {
-      return;
-    }
-
-    logUserInteraction({
-      eventType: 'RECOMMENDATION_CLICK',
-      targetType: 'RECOMMENDATION',
-      targetId: costume.id,
-      metadata: {
-        slot: 'homepage_personalized',
-        recommendedCostumeId: costume.id,
-        reason: recommendation?.reason || null,
-        position: index + 1,
-        userType: currentUser?.id ? 'authenticated' : 'guest',
-      },
-    }).catch(() => {});
-  };
-
   return (
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
       <HomeHero onNavigate={onNavigate} />
       <HomeServicesSection />
-      <HomePersonalizedSection
-        recommendations={homepageRecommendations}
-        isLoading={isHomepageRecommendationsLoading}
-        error={homepageRecommendationsError}
-        onNavigate={onNavigate}
-        onRecommendationClick={handleHomepageRecommendationClick}
-      />
-      <HomeCategoryMosaic onNavigate={onNavigate} />
-      <HomeStyleSlider sliderRef={sliderRef} onNavigate={onNavigate} onScroll={scrollSlider} />
       <HomeFeaturedSection
         activeTab={activeTab}
         isLoading={isLoading}
@@ -191,13 +154,23 @@ export default function HomePage({ currentUser, onNavigate, onAddToCart }) {
         onAddToCart={onAddToCart}
         onNavigate={onNavigate}
       />
-      <HomeTrustSection />
+      <HomeTrendingSection
+        title="Gợi ý dành cho bạn"
+        emptyMessage="Chưa có sản phẩm gợi ý phù hợp lúc này."
+        trending={recommendedProducts}
+        isLoading={isRecommendedLoading}
+        error={recommendedError}
+        onNavigate={onNavigate}
+      />
       <HomeTrendingSection
         trending={trendingProducts}
         isLoading={isTrendingLoading}
         error={trendingError}
         onNavigate={onNavigate}
       />
+      <HomeCategoryMosaic onNavigate={onNavigate} />
+      <HomeStyleSlider sliderRef={sliderRef} onNavigate={onNavigate} onScroll={scrollSlider} />
+      <HomeTrustSection />
       <HomeInsiderSection
         email={email}
         isSubscribed={isSubscribed}

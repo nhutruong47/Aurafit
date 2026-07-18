@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { fetchProvinces, fetchDistricts, fetchWards, calculateShippingFee } from '../services/ghnService';
 import { createOrder } from '../services/rentalOrderService';
-import { clearAiStylistCartAttribution, toAiStylistAttributionRequest } from '../services/interactionsService';
 import { setCartItems } from '../store/cartSlice';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 import { useToastStore } from '../store/useToastStore';
@@ -183,15 +182,11 @@ export function useCheckout({
           quantity: item.quantity || 1,
           rentalStartDate: item.rentalStartDate,
           rentalEndDate: item.rentalEndDate,
-          aiStylistAttribution: toAiStylistAttributionRequest(item.attribution),
         })),
       });
 
       setPendingOrderId(orderResponse.id);
-      itemsToOrder.forEach((item) => {
-        clearAiStylistCartAttribution(item);
-      });
-      
+
       const remainingCartItems = cartItems.filter(item => !selectedCartItemIds.has(item.cartId || item.id || item.costumeItemId));
       dispatch(setCartItems(remainingCartItems));
 

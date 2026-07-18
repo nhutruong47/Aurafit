@@ -1,5 +1,5 @@
 // Hero section mo dau cho trang Events.
-export default function EventsHero({ onNavigate }) {
+export default function EventsHero() {
   return (
     <section className="mx-auto grid min-h-[calc(100dvh-80px)] max-w-[1440px] grid-cols-1 items-center gap-10 px-5 py-12 md:grid-cols-12 md:px-20 md:py-16">
       <div className="md:col-span-5">
@@ -17,12 +17,6 @@ export default function EventsHero({ onNavigate }) {
             className="bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
           >
             Xem sản phẩm
-          </button>
-          <button
-            onClick={() => onNavigate?.('chat')}
-            className="border border-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:border-[#99854e] hover:text-[#99854e]"
-          >
-            Hỏi AI stylist
           </button>
         </div>
       </div>

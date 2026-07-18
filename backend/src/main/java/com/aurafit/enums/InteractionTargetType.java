@@ -5,9 +5,6 @@ public enum InteractionTargetType {
     CATEGORY,
     CART,
     ORDER,
-    CHAT,
-    HOMEPAGE,
     SEARCH,
-    RECOMMENDATION,
     WISHLIST
 }

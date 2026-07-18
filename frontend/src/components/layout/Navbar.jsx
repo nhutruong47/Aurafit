@@ -79,19 +79,6 @@ export default function Navbar({
             )}
           </button>
           <button
-            onClick={() => goPage('chat')}
-            className={`${iconButtonClass} ${currentPage === 'chat' ? 'text-[#99854e]' : ''}`}
-            aria-label="Chatbot AuraFit"
-            title="Chatbot AuraFit"
-          >
-            <span
-              className="material-symbols-outlined"
-              style={currentPage === 'chat' ? { fontVariationSettings: "'FILL' 1" } : undefined}
-            >
-              smart_toy
-            </span>
-          </button>
-          <button
             onClick={() => goPage('orders')}
             className={`${iconButtonClass} ${currentPage === 'orders' ? 'text-[#99854e]' : ''}`}
             aria-label="Đơn hàng"

@@ -59,12 +59,4 @@ public interface CostumeService {
      */
     List<CatalogCostumeDTO> getSeasonalCostumes(int limit);
 
-    /**
-     * Fetches personalized recommendations for a user.
-     *
-     * @param userId The user ID (nullable for anonymous users).
-     * @param limit  Number of recommendations to return.
-     * @return A list of CatalogCostumeDTOs.
-     */
-    List<CatalogCostumeDTO> getRecommendedCostumes(Long userId, int limit);
 }

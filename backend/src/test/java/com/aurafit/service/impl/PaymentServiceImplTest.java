@@ -6,6 +6,7 @@ import com.aurafit.entity.RentalOrder;
 import com.aurafit.enums.OrderStatus;
 import com.aurafit.enums.PaymentStatus;
 import com.aurafit.exception.BadRequestException;
+import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.PaymentRepository;
 import com.aurafit.repository.RentalOrderRepository;
 import com.aurafit.repository.UserRepository;
@@ -35,6 +36,9 @@ class PaymentServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private CostumeItemRepository costumeItemRepository;
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
@@ -137,5 +141,94 @@ class PaymentServiceImplTest {
 
         verify(paymentRepository, never()).save(any(Payment.class));
         verify(rentalOrderRepository, never()).save(any(RentalOrder.class));
+    }
+
+    @Test
+    void processSePayWebhook_shouldAcceptAmountFallback() {
+        SePayWebhookRequest request = new SePayWebhookRequest(
+                "Sepay",
+                null,
+                new BigDecimal("650000"),
+                "ARF123",
+                "FT-AMOUNT-FALLBACK",
+                null,
+                2L,
+                null,
+                null,
+                VA_ACCOUNT,
+                null,
+                null
+        );
+
+        RentalOrder order = new RentalOrder();
+        order.setId(123L);
+        order.setStatus(OrderStatus.PENDING);
+
+        Payment payment = new Payment();
+        payment.setId(2L);
+        payment.setAmount(new BigDecimal("650000"));
+        payment.setStatus(PaymentStatus.PENDING);
+        payment.setRentalOrder(order);
+
+        when(paymentRepository.findFirstByTransactionId(request.code())).thenReturn(Optional.empty());
+        when(paymentRepository.findByRentalOrderIdAndType(123L, com.aurafit.enums.PaymentType.PAYMENT))
+                .thenReturn(Optional.of(payment));
+
+        paymentService.processSePayWebhook(request, VALID_TOKEN);
+
+        assertEquals(PaymentStatus.PAID, payment.getStatus());
+        assertEquals(OrderStatus.CONFIRMED, order.getStatus());
+    }
+
+    @Test
+    void processSePayWebhook_shouldRejectMissingAmount() {
+        SePayWebhookRequest request = new SePayWebhookRequest(
+                "Sepay",
+                null,
+                null,
+                "ARF123",
+                "FT-MISSING-AMOUNT",
+                VA_ACCOUNT,
+                3L,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> paymentService.processSePayWebhook(request, VALID_TOKEN)
+        );
+
+        assertEquals("Transfer amount is required", exception.getMessage());
+        verifyNoInteractions(paymentRepository, rentalOrderRepository);
+    }
+
+    @Test
+    void processSePayWebhook_shouldRejectInvalidToken() {
+        SePayWebhookRequest request = new SePayWebhookRequest(
+                "Sepay",
+                new BigDecimal("650000"),
+                null,
+                "ARF123",
+                "FT-INVALID-TOKEN",
+                VA_ACCOUNT,
+                4L,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> paymentService.processSePayWebhook(request, "wrong-token")
+        );
+
+        assertEquals("Invalid Webhook Token", exception.getMessage());
+        verifyNoInteractions(paymentRepository, rentalOrderRepository);
     }
 }

@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import CatalogProductCard from '../components/catalog/CatalogProductCard';
 import ProductHero from '../components/product/ProductHero';
-import SimilarProductsSection from '../components/product/SimilarProductsSection';
 import AlertMessage from '../components/ui/AlertMessage';
-import { useSimilarProducts } from '../hooks/useSimilarProducts';
-import { fetchCostumeById } from '../services/costumeService';
+import { fetchCostumeById, fetchRelatedCostumes } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
 import { getCostumeApiCategoryName, toCartItemFromCostume } from '../utils/costumeUtils';
 
@@ -15,7 +14,8 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
-  const impressionKeyRef = useRef('');
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [isRelatedLoading, setIsRelatedLoading] = useState(false);
 
   const getLocalDateString = (daysOffset = 0) => {
     const date = new Date();
@@ -28,12 +28,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
 
   const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
   const [rentalEndDate, setRentalEndDate] = useState(() => getLocalDateString(1));
-
-  const {
-    recommendations: similarRecommendations,
-    isLoading: isSimilarLoading,
-    error: similarError,
-  } = useSimilarProducts(product?.id);
 
   useEffect(() => {
     if (!productId) {
@@ -79,6 +73,38 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   }, [onNavigate, productId]);
 
   useEffect(() => {
+    if (!productId) {
+      return undefined;
+    }
+
+    let isMounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsRelatedLoading(true);
+    setRelatedProducts([]);
+
+    fetchRelatedCostumes(productId)
+      .then((costumes) => {
+        if (isMounted) {
+          setRelatedProducts(costumes);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setRelatedProducts([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsRelatedLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [productId]);
+
+  useEffect(() => {
     if (!isLoading && !product && !loadError) {
       onNavigate?.('catalog');
     }
@@ -101,34 +127,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
       },
     }).catch(() => {});
   }, [product]);
-
-  useEffect(() => {
-    if (!product?.id || !similarRecommendations.length) {
-      return;
-    }
-
-    const recommendedIds = similarRecommendations
-      .map((item) => item?.costume?.id)
-      .filter((id) => id !== undefined && id !== null);
-    const impressionKey = `${product.id}:${recommendedIds.join(',')}`;
-
-    if (!recommendedIds.length || impressionKeyRef.current === impressionKey) {
-      return;
-    }
-
-    impressionKeyRef.current = impressionKey;
-
-    logUserInteraction({
-      eventType: 'RECOMMENDATION_IMPRESSION',
-      targetType: 'RECOMMENDATION',
-      targetId: product.id,
-      metadata: {
-        slot: 'similar_products',
-        sourceCostumeId: product.id,
-        recommendedCostumeIds: recommendedIds,
-      },
-    }).catch(() => {});
-  }, [product?.id, similarRecommendations]);
 
   const handleAddToCartClick = async (itemFromHero) => {
     if (!currentUser?.id) {
@@ -164,25 +162,6 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     });
   };
 
-  const handleRecommendationClick = (recommendation, index, page, recommendedProduct) => {
-    if (page !== 'productDetail' || !recommendedProduct?.id || !product?.id) {
-      return;
-    }
-
-    logUserInteraction({
-      eventType: 'RECOMMENDATION_CLICK',
-      targetType: 'RECOMMENDATION',
-      targetId: recommendedProduct.id,
-      metadata: {
-        slot: 'similar_products',
-        sourceCostumeId: product.id,
-        recommendedCostumeId: recommendedProduct.id,
-        reason: recommendation?.reason || null,
-        position: index + 1,
-      },
-    }).catch(() => {});
-  };
-
   if (!product && !isLoading && !loadError) {
     return null;
   }
@@ -214,7 +193,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
         />
 
         {product && (
-          <div className="mt-6 grid gap-6 md:grid-cols-[1fr_340px]">
+          <div className="mt-6">
             <div className="border border-[#cfc4c5] bg-white p-6">
               <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">Mô tả sản phẩm</h3>
               <p className="text-sm leading-7 text-[#5f5e5e]">
@@ -222,27 +201,36 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
                   'Trang phục cao cấp mang đến trải nghiệm nổi bật cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu chỉn chu và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
               </p>
             </div>
-
-            <div className="flex flex-col justify-center border border-[#cfc4c5] bg-white p-5">
-              <button
-                onClick={() => onNavigate?.('chat', product)}
-                className="w-full border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
-              >
-                Chatbot tư vấn
-              </button>
-            </div>
           </div>
         )}
 
-        {product && (
-          <SimilarProductsSection
-            recommendations={similarRecommendations}
-            isLoading={isSimilarLoading}
-            error={similarError}
-            onNavigate={onNavigate}
-            onAddToCart={onAddToCart}
-            onRecommendationClick={handleRecommendationClick}
-          />
+        {(isRelatedLoading || relatedProducts.length > 0) && (
+          <section className="mt-12 border-t border-[#cfc4c5] pt-10">
+            <h2 className="mb-8 font-serif text-3xl font-normal text-[#1a1c1c] sm:text-4xl">
+              Sản phẩm liên quan
+            </h2>
+
+            {isRelatedLoading ? (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="overflow-hidden border border-[#cfc4c5] bg-white">
+                    <div className="h-64 animate-pulse bg-[#f1eceb]" />
+                    <div className="space-y-4 p-5">
+                      <div className="h-5 w-3/4 animate-pulse bg-[#ece7e6]" />
+                      <div className="h-4 w-1/2 animate-pulse bg-[#f1eceb]" />
+                      <div className="h-11 animate-pulse bg-[#ece7e6]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {relatedProducts.map((costume) => (
+                  <CatalogProductCard key={costume.id} costume={costume} onNavigate={onNavigate} />
+                ))}
+              </div>
+            )}
+          </section>
         )}
       </div>
     </div>
