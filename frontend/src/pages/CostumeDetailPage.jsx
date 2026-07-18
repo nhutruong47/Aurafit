@@ -34,6 +34,8 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
   const [rentalEndDate, setRentalEndDate] = useState(() => getLocalDateString(1));
   const tryOnRef = useRef(null);
+  const tryOnBtnRef = useRef(null);
+  const chatBtnRef = useRef(null);
 
   useEffect(() => {
     if (!productId) {
@@ -134,6 +136,25 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
     }).catch(() => {});
   }, [product]);
 
+  useEffect(() => {
+    const tryEqualize = () => {
+      const a = tryOnBtnRef.current;
+      const b = chatBtnRef.current;
+      if (!a || !b) return;
+
+      a.style.width = 'auto';
+      b.style.width = 'auto';
+
+      const max = Math.max(a.offsetWidth, b.offsetWidth);
+      a.style.width = `${max}px`;
+      b.style.width = `${max}px`;
+    };
+
+    tryEqualize();
+    window.addEventListener('resize', tryEqualize);
+    return () => window.removeEventListener('resize', tryEqualize);
+  }, [product]);
+
   const handleAddToCartClick = async (itemFromHero) => {
     if (!currentUser?.id) {
       onNavigate?.('account');
@@ -208,18 +229,20 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
               </p>
             </div>
 
-            <div className="flex flex-col justify-center gap-3 border border-[#cfc4c5] bg-white p-5">
+            <div className="flex flex-col items-center justify-center gap-3 border border-[#cfc4c5] bg-white p-5">
               <button
+                ref={tryOnBtnRef}
                 type="button"
                 onClick={() => tryOnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                className="w-full border border-[#99854e] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#99854e] transition-all duration-300 hover:bg-[#99854e] hover:text-white"
+                className="inline-block whitespace-nowrap border border-[#99854e] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#99854e] transition-all duration-300 hover:bg-[#99854e] hover:text-white"
               >
                 AI Virtual Try-On
               </button>
               <button
+                ref={chatBtnRef}
                 type="button"
                 onClick={() => onNavigate?.('chat', product)}
-                className="w-full border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
+                className="inline-block border border-black px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-black transition-all duration-300 hover:bg-black hover:text-white"
               >
                 Chatbot tư vấn
               </button>
