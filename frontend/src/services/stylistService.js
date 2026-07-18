@@ -43,7 +43,7 @@ export const sendChatMessage = async (sessionId, message) => {
         message,
       },
     },
-    'Có lỗi xảy ra, vui lòng thử lại'
+    'Không thể kết nối, vui lòng kiểm tra mạng và thử lại'
   );
 
   const response = {
@@ -52,6 +52,8 @@ export const sendChatMessage = async (sessionId, message) => {
     recommendedCostumes: Array.isArray(data?.recommendedCostumes)
       ? data.recommendedCostumes
       : [],
+    hasError: data?.hasError === true,
+    errorType: typeof data?.errorType === 'string' ? data.errorType : null,
   };
 
   saveStylistSessionId(response.sessionId);

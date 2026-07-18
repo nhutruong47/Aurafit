@@ -47,7 +47,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AiProviderException.class)
     public ResponseEntity<ErrorResponse> handleAiProvider(AiProviderException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_GATEWAY, "Bad Gateway", ex.getMessage(), request.getRequestURI());
+        return buildErrorResponse(
+                HttpStatus.BAD_GATEWAY,
+                "Bad Gateway",
+                ex.getUserFriendlyMessage(),
+                request.getRequestURI()
+        );
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

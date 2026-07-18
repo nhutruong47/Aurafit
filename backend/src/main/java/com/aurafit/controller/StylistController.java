@@ -3,6 +3,7 @@ package com.aurafit.controller;
 import com.aurafit.dto.request.ChatMessageRequest;
 import com.aurafit.dto.response.ApiResponse;
 import com.aurafit.dto.response.ChatMessageResponse;
+import com.aurafit.exception.AiProviderException;
 import com.aurafit.service.UserService;
 import com.aurafit.service.stylist.StylistRecommendationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,11 +40,20 @@ public class StylistController {
             @Valid @RequestBody ChatMessageRequest request
     ) {
         Long userId = extractOptionalUserId(authentication);
-        ChatMessageResponse response = stylistRecommendationService.handleUserMessage(
-                request.sessionId(),
-                userId,
-                request.message()
-        );
+        ChatMessageResponse response;
+        try {
+            response = stylistRecommendationService.handleUserMessage(
+                    request.sessionId(),
+                    userId,
+                    request.message()
+            );
+        } catch (AiProviderException exception) {
+            response = ChatMessageResponse.error(
+                    request.sessionId(),
+                    exception.getUserFriendlyMessage(),
+                    exception.getErrorType().name()
+            );
+        }
         return ResponseEntity.ok(ApiResponse.success("Stylist response generated successfully.", response));
     }
 

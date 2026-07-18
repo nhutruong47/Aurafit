@@ -9,6 +9,7 @@ import com.aurafit.entity.Costume;
 import com.aurafit.entity.CostumeMetadata;
 import com.aurafit.entity.User;
 import com.aurafit.enums.ChatMessageRole;
+import com.aurafit.exception.AiProviderException;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
 import com.aurafit.repository.CostumeRepository;
@@ -99,52 +100,61 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                 .content(userMessage.trim())
                 .build());
 
-        List<ChatMessage> recentHistory = getRecentHistory(chatSession);
-        IntentResult intentResult = resolveIntent(userMessage, recentHistory, previousUserMessage);
-        StylistFilterCriteria criteria = intentResult.criteria();
-        savedUserMessage.setIntentJson(intentResult.intentJson());
-        chatMessageRepository.save(savedUserMessage);
+        try {
+            List<ChatMessage> recentHistory = getRecentHistory(chatSession);
+            IntentResult intentResult = resolveIntent(userMessage, recentHistory, previousUserMessage);
+            StylistFilterCriteria criteria = intentResult.criteria();
+            savedUserMessage.setIntentJson(intentResult.intentJson());
+            chatMessageRepository.save(savedUserMessage);
 
-        List<Costume> candidates = costumeRepository.findAll(
-                CostumeSpecification.build(criteria),
-                PageRequest.of(
-                        0,
-                        RECOMMENDATION_LIMIT,
-                        Sort.by(Sort.Direction.DESC, "availableItemCount")
-                )
-        ).getContent();
+            List<Costume> candidates = costumeRepository.findAll(
+                    CostumeSpecification.build(criteria),
+                    PageRequest.of(
+                            0,
+                            RECOMMENDATION_LIMIT,
+                            Sort.by(Sort.Direction.DESC, "availableItemCount")
+                    )
+            ).getContent();
 
-        if (candidates.isEmpty()) {
-            saveAssistantMessage(chatSession, NO_RESULTS_REPLY, null);
-            return new ChatMessageResponse(chatSession.getSessionId(), NO_RESULTS_REPLY, List.of());
+            if (candidates.isEmpty()) {
+                saveAssistantMessage(chatSession, NO_RESULTS_REPLY, null);
+                return new ChatMessageResponse(chatSession.getSessionId(), NO_RESULTS_REPLY, List.of());
+            }
+
+            String rawReply = geminiClient.generateText(
+                    AiCallType.RESPONSE_GENERATION,
+                    RECOMMENDATION_SYSTEM_PROMPT,
+                    buildRecommendationPrompt(userMessage, candidates)
+            );
+
+            ParsedRecommendation parsedRecommendation = parseRecommendation(rawReply, candidates);
+            String recommendedIds = parsedRecommendation.costumeIds().isEmpty()
+                    ? null
+                    : parsedRecommendation.costumeIds().stream()
+                            .map(String::valueOf)
+                            .collect(Collectors.joining(","));
+
+            saveAssistantMessage(chatSession, parsedRecommendation.replyText(), recommendedIds);
+
+            List<CatalogCostumeDTO> recommendedCostumes = parsedRecommendation.costumeIds().stream()
+                    .map(costumeRepository::findByIdWithItems)
+                    .flatMap(java.util.Optional::stream)
+                    .map(CatalogCostumeDTO::fromEntity)
+                    .toList();
+
+            return new ChatMessageResponse(
+                    chatSession.getSessionId(),
+                    parsedRecommendation.replyText(),
+                    recommendedCostumes
+            );
+        } catch (AiProviderException exception) {
+            saveAssistantMessage(chatSession, exception.getUserFriendlyMessage(), null);
+            return ChatMessageResponse.error(
+                    chatSession.getSessionId(),
+                    exception.getUserFriendlyMessage(),
+                    exception.getErrorType().name()
+            );
         }
-
-        String rawReply = geminiClient.generateText(
-                AiCallType.RESPONSE_GENERATION,
-                RECOMMENDATION_SYSTEM_PROMPT,
-                buildRecommendationPrompt(userMessage, candidates)
-        );
-
-        ParsedRecommendation parsedRecommendation = parseRecommendation(rawReply, candidates);
-        String recommendedIds = parsedRecommendation.costumeIds().isEmpty()
-                ? null
-                : parsedRecommendation.costumeIds().stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(","));
-
-        saveAssistantMessage(chatSession, parsedRecommendation.replyText(), recommendedIds);
-
-        List<CatalogCostumeDTO> recommendedCostumes = parsedRecommendation.costumeIds().stream()
-                .map(costumeRepository::findByIdWithItems)
-                .flatMap(java.util.Optional::stream)
-                .map(CatalogCostumeDTO::fromEntity)
-                .toList();
-
-        return new ChatMessageResponse(
-                chatSession.getSessionId(),
-                parsedRecommendation.replyText(),
-                recommendedCostumes
-        );
     }
 
     private ChatSession findOrCreateSession(String sessionId, Long userId) {

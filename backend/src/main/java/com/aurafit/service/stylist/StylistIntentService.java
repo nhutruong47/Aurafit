@@ -2,8 +2,11 @@ package com.aurafit.service.stylist;
 
 import com.aurafit.dto.request.StylistFilterCriteria;
 import com.aurafit.entity.ChatMessage;
+import com.aurafit.exception.AiErrorType;
+import com.aurafit.exception.AiProviderException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 
 @Service
+@Slf4j
 public class StylistIntentService {
 
     private static final int MAX_HISTORY_MESSAGES = 3;
@@ -63,7 +67,17 @@ public class StylistIntentService {
         try {
             return objectMapper.readValue(rawJson, StylistFilterCriteria.class);
         } catch (JsonProcessingException | IllegalArgumentException exception) {
-            return StylistFilterCriteria.empty();
+            log.error(
+                    "Failed to parse Gemini intent response responseBody={}",
+                    rawJson,
+                    exception
+            );
+            throw new AiProviderException(
+                    AiErrorType.INVALID_RESPONSE,
+                    exception.getMessage(),
+                    "Có chút trục trặc khi xử lý câu trả lời, bạn thử hỏi lại theo cách khác nhé",
+                    exception
+            );
         }
     }
 

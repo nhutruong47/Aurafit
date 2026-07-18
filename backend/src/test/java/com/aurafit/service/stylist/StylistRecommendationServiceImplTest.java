@@ -4,6 +4,8 @@ import com.aurafit.dto.response.ChatMessageResponse;
 import com.aurafit.entity.ChatMessage;
 import com.aurafit.entity.ChatSession;
 import com.aurafit.enums.ChatMessageRole;
+import com.aurafit.exception.AiErrorType;
+import com.aurafit.exception.AiProviderException;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
 import com.aurafit.repository.CostumeRepository;
@@ -24,10 +26,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -129,5 +133,58 @@ class StylistRecommendationServiceImplTest {
                 .findFirst()
                 .orElseThrow();
         assertEquals(cachedIntent, savedUserMessage.getIntentJson());
+    }
+
+    @Test
+    void handleUserMessage_shouldReturnTypedErrorAndPersistBothMessagesWhenProviderFails() {
+        ChatSession session = ChatSession.builder().id(3L).sessionId("session-provider-error").build();
+        when(chatSessionRepository.findBySessionId("session-provider-error"))
+                .thenReturn(Optional.of(session));
+        when(chatMessageRepository
+                .countByChatSessionAndRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        eq(session),
+                        eq(ChatMessageRole.USER),
+                        any(LocalDateTime.class),
+                        any(LocalDateTime.class)
+                ))
+                .thenReturn(0L);
+        when(chatMessageRepository.findFirstByChatSessionAndRoleOrderByCreatedAtDesc(
+                session,
+                ChatMessageRole.USER
+        )).thenReturn(Optional.empty());
+        when(chatMessageRepository.save(any(ChatMessage.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(chatMessageRepository.findByChatSessionOrderByCreatedAtDesc(eq(session), any(Pageable.class)))
+                .thenReturn(List.of());
+        when(stylistIntentService.extractIntent(any(), any()))
+                .thenThrow(new AiProviderException(
+                        AiErrorType.RATE_LIMIT_EXCEEDED,
+                        "Gemini returned HTTP 429 with quota details",
+                        "Hệ thống đang được nhiều người sử dụng, vui lòng thử lại sau ít phút"
+                ));
+
+        ChatMessageResponse response = service.handleUserMessage(
+                "session-provider-error",
+                null,
+                "Tìm váy đỏ"
+        );
+
+        assertTrue(response.hasError());
+        assertEquals(AiErrorType.RATE_LIMIT_EXCEEDED.name(), response.errorType());
+        assertEquals(
+                "Hệ thống đang được nhiều người sử dụng, vui lòng thử lại sau ít phút",
+                response.replyText()
+        );
+        assertEquals(List.of(), response.recommendedCostumes());
+
+        ArgumentCaptor<ChatMessage> messageCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+        verify(chatMessageRepository, times(2)).save(messageCaptor.capture());
+        assertEquals(ChatMessageRole.USER, messageCaptor.getAllValues().get(0).getRole());
+        assertEquals(ChatMessageRole.ASSISTANT, messageCaptor.getAllValues().get(1).getRole());
+        assertEquals(
+                response.replyText(),
+                messageCaptor.getAllValues().get(1).getContent()
+        );
+        verifyNoInteractions(geminiClient, costumeRepository);
     }
 }

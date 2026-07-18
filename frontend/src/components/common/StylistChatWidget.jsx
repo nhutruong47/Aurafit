@@ -8,7 +8,7 @@ import {
 import { fallbackCostumeImage, getCostumeImage } from '../../utils/costumeUtils';
 import { formatCurrency } from '../../utils/formatCurrency';
 
-const ERROR_MESSAGE = 'Có lỗi xảy ra, vui lòng thử lại';
+const NETWORK_ERROR_MESSAGE = 'Không thể kết nối, vui lòng kiểm tra mạng và thử lại';
 
 const createMessageId = () => {
   if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
@@ -105,6 +105,8 @@ export default function StylistChatWidget() {
           role: 'assistant',
           text: response.replyText,
           recommendedCostumes: response.recommendedCostumes,
+          isError: response.hasError,
+          errorType: response.errorType,
         },
       ]);
     } catch {
@@ -113,9 +115,10 @@ export default function StylistChatWidget() {
         {
           id: createMessageId(),
           role: 'assistant',
-          text: ERROR_MESSAGE,
+          text: NETWORK_ERROR_MESSAGE,
           recommendedCostumes: [],
           isError: true,
+          errorType: 'NETWORK_ERROR',
         },
       ]);
     } finally {
@@ -176,6 +179,8 @@ export default function StylistChatWidget() {
 
             {messages.map((message) => {
               const isUser = message.role === 'user';
+              const isRateLimitWarning =
+                message.isError && message.errorType === 'RATE_LIMIT_EXCEEDED';
 
               return (
                 <div
@@ -186,12 +191,26 @@ export default function StylistChatWidget() {
                     className={`max-w-[88%] px-3.5 py-2.5 text-sm leading-6 ${
                       isUser
                         ? 'bg-[#111111] text-white'
-                        : message.isError
+                        : isRateLimitWarning
+                          ? 'border border-amber-300 bg-amber-50 text-amber-800'
+                          : message.isError
                           ? 'border border-red-200 bg-red-50 text-red-700'
                           : 'border border-[#e4ddd2] bg-white text-[#333333]'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{message.text}</p>
+                    {isRateLimitWarning ? (
+                      <div className="flex items-start gap-2">
+                        <span
+                          className="material-symbols-outlined mt-0.5 text-[18px]"
+                          aria-hidden="true"
+                        >
+                          schedule
+                        </span>
+                        <p className="whitespace-pre-wrap">{message.text}</p>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{message.text}</p>
+                    )}
                   </div>
 
                   {message.recommendedCostumes.length > 0 && (
