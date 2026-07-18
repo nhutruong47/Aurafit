@@ -331,6 +331,20 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
+    public void markOrderReturned(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING) {
+            throw new BadRequestException("Order must be RETURNING to mark as returned");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.RETURNED);
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
     public void returnOrder(Long orderId) {
         RentalOrder order = rentalOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
@@ -365,8 +379,10 @@ public class OrderServiceImpl implements OrderService {
         RentalOrder order = rentalOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        if (order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING && order.getStatus() != com.aurafit.enums.OrderStatus.RENTED) {
-            throw new BadRequestException("Order must be RETURNING or RENTED to complete");
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.RETURNED && 
+            order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING && 
+            order.getStatus() != com.aurafit.enums.OrderStatus.RENTED) {
+            throw new BadRequestException("Order must be RETURNED, RETURNING or RENTED to complete");
         }
 
         order.setStatus(com.aurafit.enums.OrderStatus.COMPLETED);

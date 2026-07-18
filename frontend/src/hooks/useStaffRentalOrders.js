@@ -408,6 +408,96 @@ export function useStaffRentalOrders(currentUser) {
     }
   };
 
+  const markOrderRented = async () => {
+    if (!activeOrder || isSubmitting) return;
+    setIsSubmitting(true);
+    setError('');
+    setMessage('');
+    try {
+      await adminOrderService.markOrderRented(activeOrder.id);
+      const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
+      setActiveOrder(refreshedOrder);
+      setMessage('Đã xác nhận khách nhận hàng (RENTED).');
+      await loadOrders(activeOrder.id);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi khi cập nhật trạng thái nhận hàng.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeliveryFailed = async (reason) => {
+    if (!activeOrder || isSubmitting) return;
+    setIsSubmitting(true);
+    setError('');
+    setMessage('');
+    try {
+      await adminOrderService.handleDeliveryFailed(activeOrder.id, reason);
+      const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
+      setActiveOrder(refreshedOrder);
+      setMessage('Đã báo Boom hàng/Giao thất bại.');
+      await loadOrders(activeOrder.id);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi khi báo giao thất bại.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLostPackage = async (reason) => {
+    if (!activeOrder || isSubmitting) return;
+    setIsSubmitting(true);
+    setError('');
+    setMessage('');
+    try {
+      await adminOrderService.handleLostPackage(activeOrder.id, reason);
+      const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
+      setActiveOrder(refreshedOrder);
+      setMessage('Đã báo thất lạc hàng hóa.');
+      await loadOrders(activeOrder.id);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi khi báo thất lạc.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const returnOrder = async () => {
+    if (!activeOrder || isSubmitting) return;
+    setIsSubmitting(true);
+    setError('');
+    setMessage('');
+    try {
+      await adminOrderService.returnOrder(activeOrder.id);
+      const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
+      setActiveOrder(refreshedOrder);
+      setMessage('Đã tạo đơn thu hồi qua GHN (RETURNING).');
+      await loadOrders(activeOrder.id);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi khi cập nhật trạng thái gửi trả.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const markOrderReturned = async () => {
+    if (!activeOrder || isSubmitting) return;
+    setIsSubmitting(true);
+    setError('');
+    setMessage('');
+    try {
+      await adminOrderService.markOrderReturned(activeOrder.id);
+      const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
+      setActiveOrder(refreshedOrder);
+      setMessage('Đã nhận hàng tại kho (RETURNED).');
+      await loadOrders(activeOrder.id);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi khi xác nhận nhận hàng tại kho.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const updateHandoverEvidenceImage = async (handoverType, asset) => {
     if (!activeOrder?.id || updatingHandoverImageType) return;
 
@@ -512,6 +602,12 @@ export function useStaffRentalOrders(currentUser) {
     setNote,
     setPreviewImage,
     handleHandoverImageUploaded,
+    submitShipping,
+    markOrderRented,
+    handleDeliveryFailed,
+    handleLostPackage,
+    returnOrder,
+    markOrderReturned,
     updateHandoverEvidenceImage,
     submitHandover,
     submitShipping,

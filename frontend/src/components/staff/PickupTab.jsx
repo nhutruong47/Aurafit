@@ -141,13 +141,18 @@ export default function PickupTab({
                         placeholder="Ghi chú thêm..."
                       />
                     </div>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || !handoverImageUrl.trim()}
-                      className="w-full py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 mt-auto"
-                    >
-                      {isSubmitting ? 'Đang xử lý...' : `Xác nhận PICKUP`}
-                    </button>
+                    <div className="mt-auto">
+                      {(!handoverImageUrl || !handoverImageUrl.trim()) && (
+                        <p className="text-xs text-red-500 mb-2 italic">* Vui lòng tải lên ảnh minh chứng</p>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !handoverImageUrl || !handoverImageUrl.trim()}
+                        className="w-full py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSubmitting ? 'Đang xử lý...' : `Xác nhận PICKUP`}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </form>

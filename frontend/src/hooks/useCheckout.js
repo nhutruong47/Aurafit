@@ -93,7 +93,7 @@ export function useCheckout({
     }
     setIsCalculatingFee(true);
     calculateShippingFee(selectedDistrictId, selectedWardCode)
-      .then(setShippingFee)
+      .then(fee => setShippingFee(fee * 2))
       .catch(console.error)
       .finally(() => setIsCalculatingFee(false));
   }, [selectedWardCode, selectedDistrictId]);

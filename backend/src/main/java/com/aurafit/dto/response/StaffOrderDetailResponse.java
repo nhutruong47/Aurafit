@@ -30,7 +30,10 @@ public record StaffOrderDetailResponse(
         List<HandoverRecordDTO> handovers,
         String ghnOrderCode,
         String ghnReturnOrderCode,
-        com.aurafit.enums.DeliveryMethod deliveryMethod
+        com.aurafit.enums.DeliveryMethod deliveryMethod,
+        BigDecimal totalLateFee,
+        BigDecimal totalDamageFee,
+        String inspectionNote
 ) {
     public record StaffOrderItemResponse(
             Long id,
@@ -100,7 +103,10 @@ public record StaffOrderDetailResponse(
                 handoverDTOs,
                 order.getGhnOrderCode(),
                 order.getGhnReturnOrderCode(),
-                order.getDeliveryMethod()
+                order.getDeliveryMethod(),
+                order.getTotalLateFee(),
+                order.getTotalDamageFee(),
+                order.getInspectionNote()
         );
     }
 }
