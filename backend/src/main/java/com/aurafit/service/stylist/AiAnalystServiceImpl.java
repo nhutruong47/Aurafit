@@ -69,7 +69,11 @@ public class AiAnalystServiceImpl implements AiAnalystService {
         String metricsSnapshot = serializeMetrics(metrics);
         String analystInput = buildAnalystInput(metrics);
 
-        String generatedContent = geminiClient.generateText(ANALYST_SYSTEM_PROMPT, analystInput);
+        String generatedContent = geminiClient.generateText(
+                AiCallType.INSIGHT,
+                ANALYST_SYSTEM_PROMPT,
+                analystInput
+        );
 
         AiInsight savedInsight = aiInsightRepository.save(AiInsight.builder()
                 .periodStart(periodStart)

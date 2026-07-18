@@ -10,12 +10,25 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
     List<ChatMessage> findByChatSessionOrderByCreatedAtAsc(ChatSession chatSession);
 
     List<ChatMessage> findByChatSessionOrderByCreatedAtDesc(ChatSession chatSession, Pageable pageable);
+
+    Optional<ChatMessage> findFirstByChatSessionAndRoleOrderByCreatedAtDesc(
+            ChatSession chatSession,
+            ChatMessageRole role
+    );
+
+    long countByChatSessionAndRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            ChatSession chatSession,
+            ChatMessageRole role,
+            LocalDateTime periodStart,
+            LocalDateTime periodEnd
+    );
 
     @Query("""
             SELECT m.intentJson

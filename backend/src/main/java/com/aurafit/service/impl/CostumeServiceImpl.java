@@ -40,10 +40,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)   // all methods are read-only by default
 public class CostumeServiceImpl implements CostumeService {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "id",
+            "name",
+            "rentalPrice",
+            "createdAt"
+    );
 
     private final CostumeRepository costumeRepository;
     private final CategoryRepository categoryRepository;
@@ -75,9 +83,10 @@ public class CostumeServiceImpl implements CostumeService {
                                                               String statusStr, Long categoryId) {
         requireProductManager(authenticatedEmail);
 
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name())
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
+        String resolvedSortBy = resolveSortField(sortBy);
+        Sort sort = Sort.Direction.ASC.name().equalsIgnoreCase(sortDir)
+                ? Sort.by(resolvedSortBy).ascending()
+                : Sort.by(resolvedSortBy).descending();
         Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
 
         CostumeStatus status = null;
@@ -164,9 +173,10 @@ public class CostumeServiceImpl implements CostumeService {
                                                               int pageNo, int pageSize,
                                                               String sortBy, String sortDir, Long userId) {
         // Build Sort object from parameters
-        Sort sort = sortDir.equalsIgnoreCase("desc")
-                ? Sort.by(sortBy).descending()
-                : Sort.by(sortBy).ascending();
+        String resolvedSortBy = resolveSortField(sortBy);
+        Sort sort = "desc".equalsIgnoreCase(sortDir)
+                ? Sort.by(resolvedSortBy).descending()
+                : Sort.by(resolvedSortBy).ascending();
 
         Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
 
@@ -241,6 +251,15 @@ public class CostumeServiceImpl implements CostumeService {
         }
 
         return category.getPath();
+    }
+
+    private String resolveSortField(String sortBy) {
+        if (sortBy == null) {
+            return "id";
+        }
+
+        String candidate = sortBy.trim();
+        return ALLOWED_SORT_FIELDS.contains(candidate) ? candidate : "id";
     }
 
     private User requireProductManager(String authenticatedEmail) {

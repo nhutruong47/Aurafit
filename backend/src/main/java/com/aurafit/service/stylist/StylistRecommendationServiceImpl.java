@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -37,7 +38,9 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
 
     private static final int HISTORY_LIMIT = 3;
     private static final int RECOMMENDATION_LIMIT = 12;
+    private static final int DAILY_USER_MESSAGE_LIMIT = 20;
     private static final String NO_RESULTS_REPLY = "Xin lỗi, hiện chưa tìm thấy sản phẩm phù hợp với yêu cầu, bạn có thể mô tả cụ thể hơn không?";
+    private static final String DAILY_LIMIT_REPLY = "Bạn đã đạt giới hạn tư vấn hôm nay, vui lòng quay lại vào ngày mai";
     private static final Pattern RECOMMENDED_IDS_PATTERN = Pattern.compile(
             "(?im)^\\s*RECOMMENDED_IDS\\s*:\\s*([0-9]+(?:\\s*,\\s*[0-9]+)*)\\s*$"
     );
@@ -82,6 +85,14 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     public ChatMessageResponse handleUserMessage(String sessionId, Long userId, String userMessage) {
         ChatSession chatSession = findOrCreateSession(sessionId, userId);
 
+        if (hasReachedDailyLimit(chatSession)) {
+            return new ChatMessageResponse(chatSession.getSessionId(), DAILY_LIMIT_REPLY, List.of());
+        }
+
+        ChatMessage previousUserMessage = chatMessageRepository
+                .findFirstByChatSessionAndRoleOrderByCreatedAtDesc(chatSession, ChatMessageRole.USER)
+                .orElse(null);
+
         ChatMessage savedUserMessage = chatMessageRepository.save(ChatMessage.builder()
                 .chatSession(chatSession)
                 .role(ChatMessageRole.USER)
@@ -89,8 +100,9 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                 .build());
 
         List<ChatMessage> recentHistory = getRecentHistory(chatSession);
-        StylistFilterCriteria criteria = stylistIntentService.extractIntent(userMessage, recentHistory);
-        savedUserMessage.setIntentJson(serializeCriteria(criteria));
+        IntentResult intentResult = resolveIntent(userMessage, recentHistory, previousUserMessage);
+        StylistFilterCriteria criteria = intentResult.criteria();
+        savedUserMessage.setIntentJson(intentResult.intentJson());
         chatMessageRepository.save(savedUserMessage);
 
         List<Costume> candidates = costumeRepository.findAll(
@@ -108,6 +120,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         }
 
         String rawReply = geminiClient.generateText(
+                AiCallType.RESPONSE_GENERATION,
                 RECOMMENDATION_SYSTEM_PROMPT,
                 buildRecommendationPrompt(userMessage, candidates)
         );
@@ -148,6 +161,57 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                         .sessionId(resolvedSessionId)
                         .user(user)
                         .build()));
+    }
+
+    private boolean hasReachedDailyLimit(ChatSession chatSession) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        long userMessageCount = chatMessageRepository
+                .countByChatSessionAndRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        chatSession,
+                        ChatMessageRole.USER,
+                        today.atStartOfDay(),
+                        today.plusDays(1).atStartOfDay()
+                );
+        return userMessageCount >= DAILY_USER_MESSAGE_LIMIT;
+    }
+
+    private IntentResult resolveIntent(
+            String userMessage,
+            List<ChatMessage> recentHistory,
+            ChatMessage previousUserMessage
+    ) {
+        if (canReusePreviousIntent(userMessage, previousUserMessage)) {
+            String cachedIntentJson = previousUserMessage.getIntentJson();
+            return new IntentResult(deserializeCriteria(cachedIntentJson), cachedIntentJson);
+        }
+
+        StylistFilterCriteria criteria = stylistIntentService.extractIntent(userMessage, recentHistory);
+        return new IntentResult(criteria, serializeCriteria(criteria));
+    }
+
+    private boolean canReusePreviousIntent(String userMessage, ChatMessage previousUserMessage) {
+        return previousUserMessage != null
+                && StringUtils.hasText(previousUserMessage.getIntentJson())
+                && normalizeMessage(userMessage).equals(normalizeMessage(previousUserMessage.getContent()));
+    }
+
+    private String normalizeMessage(String message) {
+        if (message == null) {
+            return "";
+        }
+
+        return message.toLowerCase(Locale.ROOT)
+                .replaceAll("\\p{P}+", " ")
+                .trim()
+                .replaceAll("\\s+", " ");
+    }
+
+    private StylistFilterCriteria deserializeCriteria(String intentJson) {
+        try {
+            return objectMapper.readValue(intentJson, StylistFilterCriteria.class);
+        } catch (JsonProcessingException | IllegalArgumentException exception) {
+            return StylistFilterCriteria.empty();
+        }
     }
 
     private ChatSession attachUserIfNeeded(ChatSession chatSession, User user) {
@@ -230,5 +294,8 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     }
 
     private record ParsedRecommendation(String replyText, List<Long> costumeIds) {
+    }
+
+    private record IntentResult(StylistFilterCriteria criteria, String intentJson) {
     }
 }

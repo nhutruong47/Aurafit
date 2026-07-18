@@ -55,6 +55,7 @@ public class StylistIntentService {
 
     public StylistFilterCriteria extractIntent(String userMessage, List<ChatMessage> recentHistory) {
         String rawJson = geminiClient.generateJson(
+                AiCallType.INTENT_EXTRACTION,
                 SYSTEM_PROMPT,
                 buildUserPrompt(userMessage, limitHistory(recentHistory))
         );
