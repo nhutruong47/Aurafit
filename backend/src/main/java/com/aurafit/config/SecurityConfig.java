@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/ai-stylist/sessions/attach").authenticated()
                 .requestMatchers("/api/ai-stylist/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/interactions").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/try-on").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/costumes/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/recommendations/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
