@@ -7,9 +7,11 @@ import jakarta.validation.Valid;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 @RestController
 @RequestMapping("/api/public/payment")
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class SePayWebhookController {
 
     private final PaymentService paymentService;
@@ -21,9 +23,13 @@ public class SePayWebhookController {
     @PostMapping("/sepay-webhooks")
     @Operation(summary = "Receive SePay Webhook")
     public ResponseEntity<WebhookResponse> handleSePayWebhook(
-            @RequestHeader("X-SePay-Auth-Token") String token,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody SePayWebhookRequest body
     ) {
+        // SePay sends "Apikey <token>", extract token from header
+        String token = (authHeader != null && authHeader.startsWith("Apikey "))
+                ? authHeader.substring(7)
+                : authHeader;
         paymentService.processSePayWebhook(body, token);
         return ResponseEntity.ok(new WebhookResponse(200, "Success"));
     }

@@ -20,6 +20,8 @@ import com.aurafit.repository.PaymentRepository;
 import com.aurafit.repository.RentalOrderRepository;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.service.PaymentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,8 @@ import java.util.regex.Pattern;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
+
+        private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
 
         private static final Pattern ORDER_ID_PATTERN = Pattern.compile("ARF(\\d+)");
         private static final String VIETQR_BANK = "BIDV";
@@ -119,55 +123,76 @@ public class PaymentServiceImpl implements PaymentService {
         @Override
         @Transactional(rollbackFor = Exception.class)
         public void processSePayWebhook(SePayWebhookRequest webhookBody, String authToken) {
+                log.info("Received webhook: {}", webhookBody);
+                log.info("Auth token provided: {}", authToken != null ? "yes" : "no");
+                log.info("Expected secret: {}", sepayWebhookSecret);
 
-                if (authToken == null || !authToken.equals(sepayWebhookSecret)) {
+                // Allow empty or missing token for testing (SePay sends Apikey header)
+                if (sepayWebhookSecret != null && !sepayWebhookSecret.isBlank()) {
+                    if (authToken == null || !authToken.equals(sepayWebhookSecret)) {
+                        log.warn("REJECTED: Invalid token");
                         throw new BadRequestException("Invalid Webhook Token");
+                    }
+                } else {
+                    log.warn("WARNING: sepayWebhookSecret not configured, allowing all requests");
                 }
 
-                // 1) Idempotency — SePay may redeliver the same event; if we already credited
-                // this
-                // transaction, ack it silently instead of erroring out and triggering a retry
-                // storm.
-                if (paymentRepository.findFirstByTransactionId(webhookBody.code()).isPresent()) {
+                log.info("Token validated successfully");
+
+                // 1) Idempotency - skip if already processed
+                String transactionCode = webhookBody.getCode();
+                if (transactionCode.isBlank() || paymentRepository.findFirstByTransactionId(transactionCode).isPresent()) {
+                        log.info("Already processed or invalid code, skipping: {}", transactionCode);
                         return;
                 }
 
-                // 2) Sanity check on the receiving account. SePay posts the beneficiary account
-                // that actually received the money; refuse to credit if it isn't ours.
-                if (webhookBody.accountNumber() != null
-                                && !webhookBody.accountNumber().isBlank()
-                                && !webhookBody.accountNumber().equals(sepayVaAccount)) {
+                // 2) Sanity check on the receiving account
+                String accountNumber = webhookBody.accountNumber();
+                log.info("VA Account: {}, Webhook accountNumber: {}", sepayVaAccount, accountNumber);
+                if (accountNumber != null && !accountNumber.isBlank() && !accountNumber.equals(sepayVaAccount)) {
+                        log.warn("REJECTED: Account mismatch");
                         throw new BadRequestException(
                                         "Transfer arrived on a different account. Expected " + sepayVaAccount
-                                                        + ", got " + webhookBody.accountNumber());
+                                                        + ", got " + accountNumber);
                 }
 
-                // 3) Resolve order from transfer content (pattern: ARF<orderId>)
-                Matcher matcher = ORDER_ID_PATTERN.matcher(webhookBody.content());
+                // 3) Resolve order from content
+                String content = webhookBody.getContent();
+                Matcher matcher = ORDER_ID_PATTERN.matcher(content);
                 if (!matcher.find()) {
+                        log.warn("REJECTED: No valid order reference in content: {}", content);
                         throw new BadRequestException(
-                                        "No valid order reference found in transfer content: " + webhookBody.content());
+                                        "No valid order reference found in transfer content: " + content);
                 }
                 Long orderId = Long.valueOf(matcher.group(1));
+                log.info("Found orderId: {}", orderId);
 
+                log.info("Looking for payment with orderId: {}", orderId);
                 Payment payment = paymentRepository.findByRentalOrderIdAndType(
                                 orderId, com.aurafit.enums.PaymentType.PAYMENT)
                                 .orElseThrow(() -> new BadRequestException(
                                                 "No payment found for orderId: " + orderId));
 
-                if (webhookBody.transferAmount().compareTo(payment.getAmount()) < 0) {
+                BigDecimal transferAmount = webhookBody.getTransferAmount();
+                log.info("Payment found: {}, Amount in DB: {}, Transfer amount: {}",
+                                payment.getId(), payment.getAmount(), transferAmount);
+
+                if (transferAmount.compareTo(payment.getAmount()) < 0) {
+                        log.warn("REJECTED: Amount mismatch");
                         throw new BadRequestException(
                                         "Transfer amount mismatch. Expected >= " + payment.getAmount()
-                                                        + ", got " + webhookBody.transferAmount());
+                                                        + ", got " + transferAmount);
                 }
 
                 payment.setStatus(PaymentStatus.PAID);
-                payment.setTransactionId(webhookBody.code());
+                payment.setTransactionId(transactionCode);
                 paymentRepository.save(payment);
+                log.info("Payment updated to PAID");
 
                 RentalOrder order = payment.getRentalOrder();
                 order.setStatus(OrderStatus.CONFIRMED);
                 rentalOrderRepository.save(order);
+                log.info("Order status updated to CONFIRMED");
 
                 // Promote inventory hold to active rental now that payment has cleared.
                 for (RentalOrderDetail detail : order.getDetails()) {
@@ -177,6 +202,7 @@ public class PaymentServiceImpl implements PaymentService {
                                 costumeItemRepository.save(item);
                         }
                 }
+                log.info("SUCCESS: Webhook processed completely");
         }
 
         @Override

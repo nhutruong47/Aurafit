@@ -159,9 +159,9 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
   const summary = useMemo(
     () => ({
       rentalSubtotal: Number(order?.totalRentalPrice || 0),
-      deliveryFee: 0,
+      deliveryFee: Number(order?.shippingFee || 0),
       refundableDeposit: Number(order?.totalDeposit || 0),
-      orderTotal: Number(order?.finalAmount || 0) + Number(order?.totalDeposit || 0),
+      orderTotal: Number(order?.finalAmount || 0),
     }),
     [order]
   );
