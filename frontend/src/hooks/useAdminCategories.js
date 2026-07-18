@@ -23,7 +23,6 @@ function generateSlug(name) {
 export function useAdminCategories(currentUser) {
   const isAdmin = hasUserRole(currentUser, 'ADMIN');
 
-  const [categories, setCategories] = useState([]);
   const [categoryForm, setCategoryForm] = useState(emptyCategoryForm);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,35 +30,18 @@ export function useAdminCategories(currentUser) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  // Pagination state
-  const [page, setPage] = useState(0);
-  const [pageSize] = useState(12);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(0);
-
   const [categorySearch, setCategorySearch] = useState('');
-
-  // Dropdown categories
   const [publicCategories, setPublicCategories] = useState([]);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // Load danh sách categories khi admin mount
+  // Load the complete hierarchy so parent and child nodes are never split across pages.
   useEffect(() => {
     if (!isAdmin) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
 
-    Promise.all([
-      import('../services/categoryService').then(m => m.fetchAdminCategories({
-        pageNo: page,
-        pageSize: pageSize,
-        keyword: categorySearch.trim() || undefined,
-      })),
-      fetchCategoryTree()
-    ])
-      .then(([adminData, treeData]) => {
-        setCategories(adminData.data || []);
-        setTotalPages(adminData.totalPages || 1);
-        setTotalElements(adminData.totalElements || 0);
-
+    fetchCategoryTree()
+      .then((treeData) => {
         setPublicCategories(flattenCategoryTree(Array.isArray(treeData) ? treeData : []));
       })
       .catch(() => {
@@ -67,12 +49,7 @@ export function useAdminCategories(currentUser) {
         useToastStore.getState().addToast('Hệ thống không thể truy xuất danh sách danh mục.', 'error');
       })
       .finally(() => setIsLoading(false));
-  }, [isAdmin, page, pageSize, categorySearch]);
-
-  // Reset page to 0 when filters change
-  useEffect(() => {
-    setPage(0);
-  }, [categorySearch]);
+  }, [isAdmin, reloadKey]);
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
@@ -123,18 +100,15 @@ export function useAdminCategories(currentUser) {
 
       if (editingCategoryId) {
         const updated = await updateCategory(editingCategoryId, payload);
-        setCategories((prev) =>
-          prev.map((cat) => (cat.id === updated.id ? updated : cat))
-        );
         setMessage(`Đã cập nhật danh mục "${updated.name}" thành công.`);
         useToastStore.getState().addToast(`Đã cập nhật danh mục "${updated.name}" thành công.`, 'success');
       } else {
         const created = await createCategory(payload);
-        setCategories((prev) => [...prev, created]);
         setMessage(`Đã tạo danh mục "${created.name}" thành công.`);
         useToastStore.getState().addToast(`Đã tạo danh mục "${created.name}" thành công.`, 'success');
       }
 
+      setReloadKey((currentKey) => currentKey + 1);
       resetForm();
     } catch (err) {
       setError(err.message || 'Hệ thống gặp sự cố khi lưu thông tin danh mục.');
@@ -149,7 +123,7 @@ export function useAdminCategories(currentUser) {
     setError('');
     try {
       await deleteCategory(id);
-      setCategories((prev) => prev.filter((cat) => cat.id !== id));
+      setReloadKey((currentKey) => currentKey + 1);
       setMessage(`Đã xóa danh mục "${name}".`);
       useToastStore.getState().addToast(`Đã xóa danh mục "${name}".`, 'success');
       if (editingCategoryId === id) resetForm();
@@ -160,14 +134,9 @@ export function useAdminCategories(currentUser) {
   };
 
   return {
-    page,
-    totalPages,
-    totalElements,
-    setPage,
     categorySearch,
     setCategorySearch,
     publicCategories,
-    categories,
     categoryForm,
     editingCategoryId,
     isLoading,

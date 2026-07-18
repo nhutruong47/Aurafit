@@ -494,23 +494,76 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
               </p>
             </div>
 
-            <div className="flex flex-col items-center justify-center gap-3 border border-[#cfc4c5] bg-white p-5">
-              <button
-                ref={tryOnBtnRef}
-                type="button"
-                onClick={() => tryOnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                className="inline-block whitespace-nowrap border border-[#99854e] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#99854e] transition-all duration-300 hover:bg-[#99854e] hover:text-white"
-              >
-                AI Virtual Try-On
-              </button>
-              <button
-                ref={chatBtnRef}
-                type="button"
-                onClick={() => onNavigate?.('chat', product)}
-                className="inline-block border border-black px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-black transition-all duration-300 hover:bg-black hover:text-white"
-              >
-                Chatbot tư vấn
-              </button>
+            <div className="border-x border-b border-[#cfc4c5] bg-[#f5f2eb] p-4 sm:p-5">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
+                    Trợ lý thông minh AuraFit
+                  </p>
+                  <h3 className="mt-1 font-serif text-lg text-black">Chọn trải nghiệm dành cho bạn</h3>
+                </div>
+                <p className="text-xs text-[#777777]">Nhanh chóng · Cá nhân hóa · Dễ sử dụng</p>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <button
+                  ref={tryOnBtnRef}
+                  type="button"
+                  onClick={() => tryOnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="group relative min-h-44 overflow-hidden border border-[#c8b378] bg-gradient-to-br from-[#fffdf7] via-[#f8f0d9] to-[#ead9aa] p-5 text-left shadow-[0_8px_24px_rgba(127,112,65,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-[#99854e] hover:shadow-[0_16px_32px_rgba(127,112,65,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#99854e] focus-visible:ring-offset-2"
+                >
+                  <span className="pointer-events-none absolute -right-8 -top-10 size-32 rounded-full border border-white/60 bg-white/25 transition-transform duration-500 group-hover:scale-125" />
+                  <span className="relative flex h-full flex-col justify-between gap-5">
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="inline-flex size-11 items-center justify-center rounded-full bg-[#99854e] text-white shadow-lg shadow-[#99854e]/20">
+                        <span className="material-symbols-outlined text-[23px]">apparel</span>
+                      </span>
+                      <span className="border border-[#99854e]/30 bg-white/70 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#7f7041] backdrop-blur-sm">
+                        AI Powered
+                      </span>
+                    </span>
+                    <span>
+                      <span className="block font-serif text-xl text-[#2d291f]">AI Virtual Try-On</span>
+                      <span className="mt-1 block text-xs leading-5 text-[#665d49]">
+                        Tải ảnh và xem trước trang phục trên chính bạn chỉ trong vài bước.
+                      </span>
+                      <span className="mt-4 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">
+                        Thử đồ ngay
+                        <span className="material-symbols-outlined text-[17px] transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+                      </span>
+                    </span>
+                  </span>
+                </button>
+
+                <button
+                  ref={chatBtnRef}
+                  type="button"
+                  onClick={() => onNavigate?.('chat', product)}
+                  className="group relative min-h-44 overflow-hidden border border-black bg-gradient-to-br from-[#181818] via-[#24221e] to-[#4a402b] p-5 text-left text-white shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 hover:border-[#7f7041] hover:shadow-[0_16px_32px_rgba(0,0,0,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                >
+                  <span className="pointer-events-none absolute -bottom-14 -right-8 size-40 rounded-full border border-white/10 bg-white/5 transition-transform duration-500 group-hover:scale-125" />
+                  <span className="relative flex h-full flex-col justify-between gap-5">
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="inline-flex size-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[#ead9aa] backdrop-blur-sm">
+                        <span className="material-symbols-outlined text-[23px]">forum</span>
+                      </span>
+                      <span className="border border-white/20 bg-white/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#f3e7c7] backdrop-blur-sm">
+                        Tư vấn 24/7
+                      </span>
+                    </span>
+                    <span>
+                      <span className="block font-serif text-xl">Chatbot tư vấn</span>
+                      <span className="mt-1 block text-xs leading-5 text-white/65">
+                        Nhận gợi ý phối đồ, kích cỡ và dịp sử dụng phù hợp với bạn.
+                      </span>
+                      <span className="mt-4 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ead9aa]">
+                        Bắt đầu trò chuyện
+                        <span className="material-symbols-outlined text-[17px] transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         )}

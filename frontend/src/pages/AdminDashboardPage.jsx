@@ -49,13 +49,9 @@ export default function AdminDashboardPage({ currentUser }) {
   } = useAdminCostumes(currentUser);
 
   const {
-    page: categoryPage,
-    totalPages: categoryTotalPages,
-    totalElements: categoryTotalElements,
-    setPage: setCategoryPage,
     categorySearch,
     setCategorySearch,
-    categories: managedCategories,
+    publicCategories: managedCategoryTree,
     categoryForm,
     editingCategoryId,
     isLoading: isCategoryLoading,
@@ -222,8 +218,7 @@ export default function AdminDashboardPage({ currentUser }) {
           )}
           {activeTab === 'categories' && isAdmin && (
             <AdminCategoriesSection
-              publicCategories={publicCategories}
-              categories={managedCategories}
+              publicCategories={managedCategoryTree}
               categoryForm={categoryForm}
               editingCategoryId={editingCategoryId}
               isLoading={isCategoryLoading}
@@ -237,10 +232,6 @@ export default function AdminDashboardPage({ currentUser }) {
               onDelete={handleDeleteCategory}
               categorySearch={categorySearch}
               setCategorySearch={setCategorySearch}
-              page={categoryPage}
-              totalPages={categoryTotalPages}
-              totalElements={categoryTotalElements}
-              setPage={setCategoryPage}
             />
           )}
           {activeTab === 'reviews' && isAdmin && <AdminReviewSection />}
