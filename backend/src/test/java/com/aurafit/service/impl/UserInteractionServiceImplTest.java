@@ -9,7 +9,6 @@ import com.aurafit.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.cache.CacheManager;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,30 +26,26 @@ class UserInteractionServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private CacheManager cacheManager;
-
     private UserInteractionServiceImpl userInteractionService;
 
     @BeforeEach
     void setUp() {
         userInteractionService = new UserInteractionServiceImpl(
                 userInteractionEventRepository,
-                userRepository,
-                cacheManager
+                userRepository
         );
     }
 
     @Test
-    void track_ShouldPersistAiStylistAssistantMessageEventMetadata() {
+    void track_ShouldPersistProductViewEventMetadata() {
         TrackInteractionRequest request = new TrackInteractionRequest(
                 "interaction-001",
-                InteractionEventType.AI_CHAT_ASSISTANT_MESSAGE,
-                InteractionTargetType.CHAT,
-                "42",
+                InteractionEventType.VIEW_PRODUCT,
+                InteractionTargetType.COSTUME,
+                "7",
                 null,
-                "/chat",
-                "{\"source\":\"AI_STYLIST\",\"aiStylistSessionId\":42,\"aiStylistMessageId\":99,\"recommendedCostumeIds\":[7,8]}"
+                "/products/7",
+                "{\"source\":\"product_detail\"}"
         );
 
         userInteractionService.track(request, null);
@@ -60,14 +55,11 @@ class UserInteractionServiceImplTest {
 
         UserInteractionEvent savedEvent = eventCaptor.getValue();
         assertEquals("interaction-001", savedEvent.getSessionId());
-        assertEquals(InteractionEventType.AI_CHAT_ASSISTANT_MESSAGE, savedEvent.getEventType());
-        assertEquals(InteractionTargetType.CHAT, savedEvent.getTargetType());
-        assertEquals("42", savedEvent.getTargetId());
-        assertEquals("/chat", savedEvent.getPagePath());
-        assertEquals(
-                "{\"source\":\"AI_STYLIST\",\"aiStylistSessionId\":42,\"aiStylistMessageId\":99,\"recommendedCostumeIds\":[7,8]}",
-                savedEvent.getMetadataJson()
-        );
+        assertEquals(InteractionEventType.VIEW_PRODUCT, savedEvent.getEventType());
+        assertEquals(InteractionTargetType.COSTUME, savedEvent.getTargetType());
+        assertEquals("7", savedEvent.getTargetId());
+        assertEquals("/products/7", savedEvent.getPagePath());
+        assertEquals("{\"source\":\"product_detail\"}", savedEvent.getMetadataJson());
         assertNull(savedEvent.getUser());
     }
 }

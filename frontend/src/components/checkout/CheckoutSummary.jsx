@@ -2,7 +2,6 @@
 export default function CheckoutSummary({
   summaryRows,
   formattedTotalDue,
-  onNavigate,
   onProceedToCheckout,
   isSubmitting,
   submitError,
@@ -54,12 +53,6 @@ export default function CheckoutSummary({
             className="mb-3 w-full bg-black py-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition duration-500 hover:bg-[#99854e] hover:tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isSubmitting ? 'Đang xử lý yêu cầu...' : isCalculatingFee ? 'Đang tính phí vận chuyển...' : `Thanh toán (${selectedCount})`}
-          </button>
-          <button
-            onClick={() => onNavigate?.('chat')}
-            className="w-full border border-black py-4 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:bg-black hover:text-white"
-          >
-            Chatbot tư vấn
           </button>
           <p className="mt-4 text-center text-[11px] leading-relaxed text-[#999999]">
             Bằng việc nhấn thanh toán, bạn đồng ý với{' '}

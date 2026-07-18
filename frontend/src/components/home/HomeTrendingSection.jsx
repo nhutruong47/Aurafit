@@ -4,12 +4,19 @@ import {
   getCostumePrice,
 } from '../../utils/costumeUtils';
 
-export default function HomeTrendingSection({ trending, isLoading = false, error = '', onNavigate }) {
+export default function HomeTrendingSection({
+  trending,
+  isLoading = false,
+  error = '',
+  onNavigate,
+  title = 'Xu hướng tuần này',
+  emptyMessage = 'Chưa có sản phẩm phù hợp lúc này. Hệ thống sẽ tự làm mới khi có thêm dữ liệu từ shop.',
+}) {
   return (
     <section className="bg-[#f7f7f7] py-24 md:py-[120px]">
       <div className="mx-auto max-w-[1440px] px-5 md:px-20">
         <div className="mb-16 flex items-end justify-between gap-8">
-          <h2 className="font-serif text-4xl font-normal md:text-5xl">Xu hướng tuần này</h2>
+          <h2 className="font-serif text-4xl font-normal md:text-5xl">{title}</h2>
           <a
             className="border-b border-[#99854e] pb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]"
             href="#categories"
@@ -62,7 +69,7 @@ export default function HomeTrendingSection({ trending, isLoading = false, error
           </div>
         ) : (
           <div className="border border-dashed border-[#d8d0cf] bg-[#faf8f7] px-5 py-8 text-sm leading-6 text-[#5f5e5e]">
-            Chưa có sản phẩm xu hướng phù hợp lúc này. Hệ thống sẽ tự làm mới khi có thêm dữ liệu từ shop.
+            {emptyMessage}
           </div>
         )}
       </div>

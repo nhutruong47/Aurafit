@@ -23,7 +23,5 @@ public record AddToCartRequestDTO(
         LocalDate rentalEndDate,
 
         @jakarta.validation.constraints.Min(value = 1, message = "quantity must be at least 1")
-        Integer quantity,
-
-        AiStylistAttributionRequest aiStylistAttribution
+        Integer quantity
 ) {}
