@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -13,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -27,6 +29,9 @@ import java.util.List;
 @Entity
 @Table(
         name = "categories",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_categories_path", columnNames = "path")
+        },
         indexes = {
                 @Index(name = "idx_categories_parent_id", columnList = "parent_id"),
                 @Index(name = "idx_categories_path", columnList = "path"),
@@ -57,7 +62,7 @@ public class Category extends BaseEntity {
 
     @NotBlank(message = "Đường dẫn danh mục không được để trống")
     @Size(max = 500, message = "Đường dẫn danh mục không được vượt quá 500 ký tự")
-    @Column(nullable = false, unique = true, length = 500)
+    @Column(nullable = false, length = 500)
     private String path;
 
     @Size(max = 1000, message = "Mô tả danh mục không được vượt quá 1000 ký tự")
@@ -74,7 +79,7 @@ public class Category extends BaseEntity {
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
+    @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name = "fk_categories_parent"))
     private Category parent;
 
     @JsonIgnore

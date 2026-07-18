@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AdminCategoriesSection from '../components/admin/AdminCategoriesSection';
-import AdminOverviewSection from '../components/admin/AdminOverviewSection';
+import AdminOverviewTab from '../components/admin/AdminOverviewTab';
 import AdminProductsSection from '../components/admin/AdminProductsSection';
 import AdminReportsSection from '../components/admin/AdminReportsSection';
-import { StatusBadge } from '../components/admin/AdminDashboardShared';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
 import AdminUsersSection from '../components/admin/AdminUsersSection';
 import { useAdminCategories } from '../hooks/useAdminCategories';
@@ -12,17 +11,11 @@ import { useAdminCostumes } from '../hooks/useAdminCostumes';
 import { useAdminUsers } from '../hooks/useAdminUsers';
 import { useRecommendationAnalytics } from '../hooks/useRecommendationAnalytics';
 
-const supportTickets = [
-  { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chưa nhận hoàn cọc', channel: 'Chat', status: 'Đang xử lý', owner: 'Admin' },
-  { id: 'SP-2187', customer: 'Quốc Huy', subject: 'Muốn đổi lịch nhận đồ', channel: 'Hotline', status: 'Mới', owner: 'Admin' },
-  { id: 'SP-2172', customer: 'Bảo Trân', subject: 'Lỗi thanh toán chuyển khoản', channel: 'Email', status: 'Đã phản hồi', owner: 'Admin' },
-];
-
 export default function AdminDashboardPage({ currentUser, onNavigate }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Step 2: Read active tab from URL hash, default to 'overview'
+  // Read active tab from URL hash, default to 'overview'
   const hashTab = location.hash.replace('#', '') || 'overview';
 
   const {
@@ -33,7 +26,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     isAdmin,
     canManageProducts,
     products,
-    categories,
+    categories: publicCategories,
     filteredProducts,
     productForm,
     editingProductId,
@@ -47,7 +40,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     setProductCategoryFilter,
     setProductStatusFilter,
     handleProductFieldChange,
-    handleProductImageUploaded,
+    handleProductImagesChange,
     hydrateProductForm,
     resetProductForm,
     submitProduct,
@@ -60,7 +53,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     setPage: setCategoryPage,
     categorySearch,
     setCategorySearch,
-    publicCategories,
     categories: managedCategories,
     categoryForm,
     editingCategoryId,
@@ -80,7 +72,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     totalPages: userTotalPages,
     totalElements: userTotalElements,
     setPage: setUserPage,
-    users,
     filteredUsers,
     userSearch,
     message: userMessage,
@@ -100,7 +91,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     setPeriodDays,
   } = useRecommendationAnalytics(currentUser);
 
-  const ticketCount = useMemo(() => supportTickets.length, []);
   const tabs = useMemo(
     () =>
       [
@@ -132,40 +122,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
       navigate(`/admin#${tabs[0]?.[0] || 'products'}`, { replace: true });
     }
   }, [canManageProducts, hashTab, navigate, tabs]);
-
-  const metricCards = useMemo(() => {
-    if (!analytics?.overview || !analytics?.aiStylist) {
-      return [
-        { label: 'Đơn đang xử lý', value: '47', delta: '+8 hôm nay' },
-        { label: 'Recommendation CTR', value: '--', delta: 'Đang chờ dữ liệu' },
-        { label: 'AI Stylist session', value: '--', delta: 'Đang chờ dữ liệu' },
-        { label: 'Sản phẩm đang hiển thị', value: `${products.length}`, delta: 'Admin quản lý' },
-      ];
-    }
-
-    return [
-      {
-        label: 'Recommendation CTR',
-        value: `${Number(analytics.overview.recommendationCtr || 0).toFixed(2)}%`,
-        delta: `${analytics.overview.recommendationClicks} click / ${analytics.overview.recommendationImpressions} impression`,
-      },
-      {
-        label: 'AI Stylist session',
-        value: `${analytics.aiStylist.sessionsStarted}`,
-        delta: `${analytics.aiStylist.userMessages} tin nhắn người dùng`,
-      },
-      {
-        label: 'Rent từ AI Stylist',
-        value: `${analytics.aiStylist.attributedRents}`,
-        delta: `${analytics.aiStylist.attributedAddToCarts} add-to-cart có attribution`,
-      },
-      {
-        label: 'Sản phẩm đang hiển thị',
-        value: `${products.length}`,
-        delta: `${managedCategories.length} danh mục đang hoạt động`,
-      },
-    ];
-  }, [analytics, managedCategories.length, products.length]);
 
   const handleSubmitProduct = async (event) => {
     event.preventDefault();
@@ -211,7 +167,13 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
 
         {/* Main content area — 100% width */}
         <main className="min-w-0 flex-1 p-5 md:p-8">
-          {activeTab === 'overview' && isAdmin && <AdminOverviewSection metricCards={metricCards} />}
+          {activeTab === 'overview' && isAdmin && (
+            <AdminOverviewTab 
+              analytics={analytics} 
+              productsCount={products?.length || 0} 
+              categoriesCount={managedCategories?.length || 0} 
+            />
+          )}
           {activeTab === 'products' && (
             <AdminProductsSection
               products={products}
@@ -230,7 +192,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               onProductCategoryFilterChange={setProductCategoryFilter}
               onProductStatusFilterChange={setProductStatusFilter}
               onProductFieldChange={handleProductFieldChange}
-              onProductImageUploaded={handleProductImageUploaded}
+              onProductImagesChange={handleProductImagesChange}
               onEditProduct={hydrateProductForm}
               onResetProductForm={resetProductForm}
               onSubmitProduct={handleSubmitProduct}
@@ -280,7 +242,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
               setPage={setCategoryPage}
             />
           )}
-          {activeTab === 'support' && isAdmin && <AdminSupportSection supportTickets={supportTickets} />}
+          {activeTab === 'support' && isAdmin && <AdminSupportSection />}
           {activeTab === 'reports' && isAdmin && (
             <AdminReportsSection
               analytics={analytics}

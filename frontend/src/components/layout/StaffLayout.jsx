@@ -26,9 +26,9 @@ export default function StaffLayout({ currentUser }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
     { id: 'orders', label: 'Orders', icon: 'list_alt' },
-    { id: 'pickup', label: 'Pickup', icon: 'local_shipping' },
+    { id: 'pickup', label: 'Pickup', icon: 'storefront' },
+    { id: 'shipping', label: 'Shipping', icon: 'local_shipping' },
     { id: 'return', label: 'Return', icon: 'undo' },
-    { id: 'history', label: 'History', icon: 'history' },
     { id: 'profile', label: 'Profile', icon: 'manage_accounts' },
   ];
 

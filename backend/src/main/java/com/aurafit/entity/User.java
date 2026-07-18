@@ -12,7 +12,9 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "\"User\"")
+@Table(name = "\"User\"", indexes = {
+        @Index(name = "idx_user_role_id", columnList = "role, id")
+})
 @Data
 public class User extends BaseEntity {
 

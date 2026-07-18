@@ -29,7 +29,8 @@ import java.util.List;
 @Entity
 @Table(name = "ai_stylist_sessions", indexes = {
         @Index(name = "idx_ai_stylist_session_user_created", columnList = "user_id, created_at"),
-        @Index(name = "idx_ai_stylist_session_guest_created", columnList = "guest_session_id, created_at")
+        @Index(name = "idx_ai_stylist_session_guest_created", columnList = "guest_session_id, created_at"),
+        @Index(name = "idx_ai_stylist_sessions_user_id_updated_at_id", columnList = "user_id, updated_at, id")
 })
 public class AiStylistSession extends BaseEntity {
 

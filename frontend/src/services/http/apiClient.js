@@ -15,35 +15,31 @@ const refreshApi = axios.create({
 // Helpers
 // ---------------------------------------------------------------------------
 
+const logClientStorageError = (context, error) => {
+  if (typeof console !== 'undefined') {
+    console.warn('[HandledError]', { context, name: error?.name || 'Error' });
+  }
+};
+
 const getAccessToken = () => {
   if (typeof window === 'undefined') return null;
   try {
     const user = JSON.parse(window.localStorage.getItem('aurafitCurrentUser') || 'null');
     return user?.accessToken || null;
-  } catch {
+  } catch (error) {
+    logClientStorageError('Read access token', error);
     return null;
   }
 };
 
-const getRefreshToken = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const user = JSON.parse(window.localStorage.getItem('aurafitCurrentUser') || 'null');
-    return user?.refreshToken || null;
-  } catch {
-    return null;
-  }
-};
-
-const setTokens = ({ accessToken, refreshToken }) => {
+const setTokens = ({ accessToken }) => {
   if (typeof window === 'undefined') return;
   try {
     const user = JSON.parse(window.localStorage.getItem('aurafitCurrentUser') || 'null') || {};
     if (accessToken !== undefined) user.accessToken = accessToken;
-    if (refreshToken !== undefined) user.refreshToken = refreshToken;
     window.localStorage.setItem('aurafitCurrentUser', JSON.stringify(user));
-  } catch {
-    // ignore
+  } catch (error) {
+    logClientStorageError('Persist refreshed tokens', error);
   }
 };
 
@@ -116,27 +112,16 @@ apiClient.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
 
-    const refreshToken = getRefreshToken();
-
-    if (!refreshToken) {
-      clearTokens();
-      if (window.location.pathname !== '/account') {
-        window.location.href = '/account';
-      }
-      return Promise.reject(error);
-    }
-
     try {
-      const { data } = await refreshApi.post('/auth/refresh', { refreshToken });
+      const { data } = await refreshApi.post('/auth/refresh');
 
       const newAccessToken = data?.accessToken || data?.data?.accessToken;
-      const newRefreshToken = data?.refreshToken || data?.data?.refreshToken;
 
       if (!newAccessToken) {
         throw new Error('No accessToken in refresh response');
       }
 
-      setTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken });
+      setTokens({ accessToken: newAccessToken });
       resolvePendingRequests(null, newAccessToken);
 
       originalRequest.headers = originalRequest.headers || {};

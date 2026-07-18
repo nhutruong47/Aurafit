@@ -3,7 +3,7 @@ import PaymentFormSections from '../components/payment/PaymentFormSections';
 import PaymentHeader from '../components/payment/PaymentHeader';
 import PaymentSummary from '../components/payment/PaymentSummary';
 import { fetchOrderDetail } from '../services/rentalOrderService';
-import { createPayment, getPaymentStatus } from '../services/paymentService';
+import { createPayment, getPaymentStatus, testWebhookPayment } from '../services/paymentService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 import { formatCurrency } from '../utils/formatCurrency';
 import { fallbackProductImage } from '../utils/productMapper';
@@ -29,6 +29,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [countdown, setCountdown] = useState(PAYMENT_STATUS_POLL_MS / 1000);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const pollIntervalRef = useRef(null);
   const countdownRef = useRef(null);
   const isMountedRef = useRef(true);
@@ -188,6 +189,32 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
     }
   };
 
+  const handleTestWebhook = async () => {
+    if (!pendingOrderId || !paymentInit) return;
+
+    setIsTestingWebhook(true);
+    try {
+      await testWebhookPayment({
+        orderId: pendingOrderId,
+        paymentContent: paymentInit.paymentContent,
+        amount: paymentInit.amount,
+      });
+
+      // Check status immediately after webhook
+      const statusData = await getPaymentStatus(pendingOrderId);
+      setPaymentStatus(statusData?.status || null);
+
+      if (statusData?.status === 'PAID') {
+        clearPolling();
+        onNavigate?.('success');
+      }
+    } catch {
+      // webhook failed, will retry via polling
+    } finally {
+      setIsTestingWebhook(false);
+    }
+  };
+
   const isPaid = paymentStatus === 'PAID' || paymentStatus === 'CONFIRMED';
   const statusLabel = statusLabels[paymentStatus] || statusLabels[paymentStatus] || paymentStatus;
 
@@ -267,6 +294,8 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
               isPaid={isPaid}
               onCompletePayment={handleCompletePayment}
               onViewOrders={() => onNavigate?.('orders')}
+              onTestWebhook={handleTestWebhook}
+              isTestingWebhook={isTestingWebhook}
             />
           </aside>
         </div>

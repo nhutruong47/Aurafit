@@ -58,6 +58,9 @@ export default function Footer({ onNavigate }) {
 
           <div className="col-span-2 flex flex-col gap-4 md:col-span-1">
             <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.15em] text-black">Kết nối</p>
+            <p className="text-[13px] leading-relaxed text-[#5f5e5e]">
+              📍 Địa chỉ: Lô E2a-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức, TP. Hồ Chí Minh.
+            </p>
             <div className="flex gap-4">
               {['share', 'mail'].map((icon) => (
                 <a key={icon} className="cursor-pointer text-[#5f5e5e] transition hover:text-[#99854e]" href="#">

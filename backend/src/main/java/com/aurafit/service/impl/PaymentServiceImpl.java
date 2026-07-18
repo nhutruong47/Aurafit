@@ -4,14 +4,18 @@ import com.aurafit.dto.request.PaymentCreateRequest;
 import com.aurafit.dto.request.SePayWebhookRequest;
 import com.aurafit.dto.response.PaymentInitResponse;
 import com.aurafit.dto.response.PaymentStatusResponse;
+import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.Payment;
 import com.aurafit.entity.RentalOrder;
+import com.aurafit.entity.RentalOrderDetail;
 import com.aurafit.entity.User;
+import com.aurafit.enums.ItemStatus;
 import com.aurafit.enums.OrderStatus;
 import com.aurafit.enums.PaymentMethod;
 import com.aurafit.enums.PaymentStatus;
 import com.aurafit.exception.BadRequestException;
 import com.aurafit.exception.ResourceNotFoundException;
+import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.PaymentRepository;
 import com.aurafit.repository.RentalOrderRepository;
 import com.aurafit.repository.UserRepository;
@@ -34,6 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
         private final PaymentRepository paymentRepository;
         private final RentalOrderRepository rentalOrderRepository;
         private final UserRepository userRepository;
+        private final CostumeItemRepository costumeItemRepository;
 
         @Value("${sepay.api-key}")
         private String sepayApiKey;
@@ -49,10 +54,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         public PaymentServiceImpl(PaymentRepository paymentRepository,
                         RentalOrderRepository rentalOrderRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        CostumeItemRepository costumeItemRepository) {
                 this.paymentRepository = paymentRepository;
                 this.rentalOrderRepository = rentalOrderRepository;
                 this.userRepository = userRepository;
+                this.costumeItemRepository = costumeItemRepository;
         }
 
         @Override
@@ -77,7 +84,8 @@ public class PaymentServiceImpl implements PaymentService {
 
                 BigDecimal amountPayable = order.getTotalRentalPrice()
                                 .add(order.getTotalDeposit())
-                                .subtract(order.getDiscountAmount());
+                                .subtract(order.getDiscountAmount())
+                                .add(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO);
 
                 Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(
                                 Long.valueOf(request.orderId()), PaymentStatus.PENDING,
@@ -142,10 +150,10 @@ public class PaymentServiceImpl implements PaymentService {
                 }
                 Long orderId = Long.valueOf(matcher.group(1));
 
-                Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(
-                                orderId, PaymentStatus.PENDING, com.aurafit.enums.PaymentType.PAYMENT)
+                Payment payment = paymentRepository.findByRentalOrderIdAndType(
+                                orderId, com.aurafit.enums.PaymentType.PAYMENT)
                                 .orElseThrow(() -> new BadRequestException(
-                                                "No pending payment found for orderId: " + orderId));
+                                                "No payment found for orderId: " + orderId));
 
                 if (webhookBody.transferAmount().compareTo(payment.getAmount()) < 0) {
                         throw new BadRequestException(
@@ -160,6 +168,52 @@ public class PaymentServiceImpl implements PaymentService {
                 RentalOrder order = payment.getRentalOrder();
                 order.setStatus(OrderStatus.CONFIRMED);
                 rentalOrderRepository.save(order);
+
+                // Promote inventory hold to active rental now that payment has cleared.
+                for (RentalOrderDetail detail : order.getDetails()) {
+                        CostumeItem item = detail.getCostumeItem();
+                        if (item != null && item.getStatus() == ItemStatus.RESERVED) {
+                                item.setStatus(ItemStatus.RENTED);
+                                costumeItemRepository.save(item);
+                        }
+                }
+        }
+
+        @Override
+        @Transactional(rollbackFor = Exception.class)
+        public void processTestWebhook(SePayWebhookRequest webhookBody) {
+                if (paymentRepository.findFirstByTransactionId(webhookBody.code()).isPresent()) {
+                        return;
+                }
+
+                Matcher matcher = ORDER_ID_PATTERN.matcher(webhookBody.content());
+                if (!matcher.find()) {
+                        throw new BadRequestException(
+                                        "No valid order reference found in transfer content: " + webhookBody.content());
+                }
+                Long orderId = Long.valueOf(matcher.group(1));
+
+                Payment payment = paymentRepository.findByRentalOrderIdAndType(
+                                orderId, com.aurafit.enums.PaymentType.PAYMENT)
+                                .orElseThrow(() -> new BadRequestException(
+                                                "No payment found for orderId: " + orderId));
+
+                payment.setStatus(PaymentStatus.PAID);
+                payment.setTransactionId(webhookBody.code());
+                paymentRepository.save(payment);
+
+                RentalOrder order = payment.getRentalOrder();
+                order.setStatus(OrderStatus.CONFIRMED);
+                rentalOrderRepository.save(order);
+
+                // Mirror the real webhook: flip the held inventory to RENTED on test path too.
+                for (RentalOrderDetail detail : order.getDetails()) {
+                        CostumeItem item = detail.getCostumeItem();
+                        if (item != null && item.getStatus() == ItemStatus.RESERVED) {
+                                item.setStatus(ItemStatus.RENTED);
+                                costumeItemRepository.save(item);
+                        }
+                }
         }
 
         private String buildSepayVietQrUrl(String paymentContent, BigDecimal amount) {
@@ -188,8 +242,7 @@ public class PaymentServiceImpl implements PaymentService {
                 String paymentContent = "ARF" + orderId;
 
                 return paymentRepository
-                                .findByRentalOrderIdAndStatusAndType(orderId, PaymentStatus.PENDING,
-                                                com.aurafit.enums.PaymentType.PAYMENT)
+                                .findByRentalOrderIdAndType(orderId, com.aurafit.enums.PaymentType.PAYMENT)
                                 .map(p -> new PaymentStatusResponse(p.getStatus(), paymentContent, p.getAmount(),
                                                 p.getTransactionId()))
                                 .orElseGet(() -> new PaymentStatusResponse(null, paymentContent, null, null));

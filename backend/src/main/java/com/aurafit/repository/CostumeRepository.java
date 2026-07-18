@@ -29,10 +29,11 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * @return A Page of Costume entities with their Category eagerly loaded.
      */
     @Query(value = """
-            SELECT c
+            SELECT DISTINCT c
             FROM Costume c
             JOIN FETCH c.category category
             LEFT JOIN FETCH c.metadata
+            LEFT JOIN FETCH c.items
             WHERE c.status = :status
               AND category.isActive = true
               AND (:categoryPath IS NULL OR category.path = :categoryPath OR category.path LIKE CONCAT(CAST(:categoryPath AS string), '/%'))
@@ -64,13 +65,13 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
      * Seasonal/featured costumes for the homepage.
      */
     @Query(value = """
-            SELECT c FROM Costume c
+            SELECT DISTINCT c FROM Costume c
             JOIN FETCH c.category
             LEFT JOIN FETCH c.metadata
             LEFT JOIN FETCH c.items
             WHERE c.status = :status
               AND c.category.isActive = true
-            ORDER BY SIZE(c.items) DESC
+            ORDER BY c.availableItemCount DESC
             """)
     List<Costume> findSeasonalCostumes(@Param("status") CostumeStatus status, Pageable pageable);
 
@@ -111,9 +112,10 @@ public interface CostumeRepository extends JpaRepository<Costume, Long> {
     );
 
     @Query(value = """
-            SELECT c FROM Costume c
+            SELECT DISTINCT c FROM Costume c
             JOIN FETCH c.category category
             LEFT JOIN FETCH c.metadata
+            LEFT JOIN FETCH c.items
             WHERE (:status IS NULL OR c.status = :status)
               AND (:categoryId IS NULL OR category.id = :categoryId)
               AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))

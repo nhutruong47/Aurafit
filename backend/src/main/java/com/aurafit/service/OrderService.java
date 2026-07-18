@@ -3,6 +3,7 @@ package com.aurafit.service;
 import com.aurafit.dto.request.CheckoutRequest;
 import com.aurafit.dto.response.OrderResponse;
 import com.aurafit.dto.response.OrderSummaryResponse;
+import com.aurafit.dto.response.StaffOrderDetailResponse;
 
 import java.util.List;
 
@@ -21,6 +22,19 @@ public interface OrderService {
 
     OrderResponse getUserOrderDetail(Long orderId, Long userId);
 
+    List<StaffOrderDetailResponse> getAllOrdersForStaff();
+
+    // Admin/Staff Order Management
+    org.springframework.data.domain.Page<StaffOrderDetailResponse> getAllOrdersForAdmin(org.springframework.data.domain.Pageable pageable, com.aurafit.enums.OrderStatus status);
+    void shipOrder(Long orderId);
+    void markOrderRented(Long orderId);
+    void returnOrder(Long orderId);
+    void completeOrder(Long orderId, com.aurafit.dto.request.InspectionRequest request);
+    void handleDeliveryFailed(Long orderId, String reason);
+    void handleLostPackage(Long orderId, String reason);
+
+    StaffOrderDetailResponse getOrderDetail(Long orderId);
+
     OrderResponse cancelOrder(Long orderId, Long userId, String cancelReason);
 
     /**
@@ -32,4 +46,11 @@ public interface OrderService {
      * Process order return handover.
      */
     List<com.aurafit.dto.response.HandoverRecordDTO> processReturnHandover(Long orderId, Long staffId, com.aurafit.dto.request.ReturnRequestDTO request);
+
+    List<com.aurafit.dto.response.HandoverRecordDTO> updateHandoverImage(
+            Long orderId,
+            Long staffId,
+            com.aurafit.enums.HandoverType handoverType,
+            com.aurafit.dto.request.HandoverImageUpdateRequest request
+    );
 }

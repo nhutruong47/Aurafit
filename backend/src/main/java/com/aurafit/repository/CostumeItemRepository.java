@@ -60,6 +60,15 @@ public interface CostumeItemRepository extends JpaRepository<CostumeItem, Long> 
     int countByCostumeIdAndSizeAndColorAndStatus(@Param("costumeId") Long costumeId, @Param("size") String size, @Param("color") String color, @Param("status") ItemStatus status);
 
     /**
+     * Counts stock still in the public pool (AVAILABLE + RESERVED) for a variant.
+     * Cart and storefront UIs surface this so customers see the true on-hand
+     * quantity, not just the un-held subset.
+     */
+    @Query("SELECT COUNT(ci) FROM CostumeItem ci WHERE ci.costume.id = :costumeId AND ci.size = :size AND ci.color = :color " +
+           "AND ci.status IN (com.aurafit.enums.ItemStatus.AVAILABLE, com.aurafit.enums.ItemStatus.RESERVED)")
+    int countPooledByCostumeIdAndSizeAndColor(@Param("costumeId") Long costumeId, @Param("size") String size, @Param("color") String color);
+
+    /**
      * Dynamically fetch and lock N available items for a specific costume, size, and color.
      */
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)

@@ -4,6 +4,7 @@ import com.aurafit.dto.request.SePayWebhookRequest;
 import com.aurafit.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,16 @@ public class SePayWebhookController {
     ) {
         paymentService.processSePayWebhook(body, token);
         return ResponseEntity.ok(new WebhookResponse(200, "Success"));
+    }
+
+    @PostMapping("/test-webhook")
+    @Profile("dev")
+    @Operation(summary = "[DEV ONLY] Simulate SePay webhook to test payment flow")
+    public ResponseEntity<WebhookResponse> simulateWebhook(
+            @Valid @RequestBody SePayWebhookRequest body
+    ) {
+        paymentService.processTestWebhook(body);
+        return ResponseEntity.ok(new WebhookResponse(200, "Test webhook processed"));
     }
 
     private record WebhookResponse(int status, String message) {}

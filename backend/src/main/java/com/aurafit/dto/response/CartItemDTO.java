@@ -6,6 +6,7 @@ import com.aurafit.enums.ItemStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Represents a single item in the user's cart.
@@ -20,6 +21,7 @@ public record CartItemDTO(
         String size,
         String color,
         String imageUrl,
+        List<String> imageUrls,
         LocalDate rentalStartDate,
         LocalDate rentalEndDate,
         Integer rentalDays,
@@ -36,8 +38,8 @@ public record CartItemDTO(
 
         int availableStock = 1;
         if (costumeItemRepository != null) {
-            availableStock = costumeItemRepository.countByCostumeIdAndSizeAndColorAndStatus(
-                    costume.getId(), costumeItem.getSize(), costumeItem.getColor(), ItemStatus.AVAILABLE
+            availableStock = costumeItemRepository.countPooledByCostumeIdAndSizeAndColor(
+                    costume.getId(), costumeItem.getSize(), costumeItem.getColor()
             );
         }
 
@@ -49,7 +51,8 @@ public record CartItemDTO(
                 costumeItem.getSku(),
                 costumeItem.getSize(),
                 costumeItem.getColor(),
-                costume.getImageUrl(),
+                costume.getPrimaryImageUrl(),
+                costume.getAllImageUrls(),
                 cartItem.getRentalStartDate(),
                 cartItem.getRentalEndDate(),
                 cartItem.getRentalDays(),

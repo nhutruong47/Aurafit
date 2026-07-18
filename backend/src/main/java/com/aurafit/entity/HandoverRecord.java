@@ -17,7 +17,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "handover_records")
+@Table(name = "handover_records", indexes = {
+        @Index(name = "idx_handover_records_rental_order_detail_id_created_at", columnList = "rental_order_detail_id, created_at")
+})
 public class HandoverRecord extends BaseEntity {
 
     @Id

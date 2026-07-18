@@ -22,7 +22,7 @@ export default function AdminProductsSection({
   onProductCategoryFilterChange,
   onProductStatusFilterChange,
   onProductFieldChange,
-  onProductImageUploaded,
+  onProductImagesChange,
   onEditProduct,
   onResetProductForm,
   onSubmitProduct,
@@ -210,7 +210,7 @@ export default function AdminProductsSection({
         editingProductId={editingProductId}
         productForm={productForm}
         onProductFieldChange={onProductFieldChange}
-        onProductImageUploaded={onProductImageUploaded}
+        onProductImagesChange={onProductImagesChange}
         onSubmitProduct={handleSubmit}
         isSavingProduct={isSavingProduct}
         productMessage={productMessage}

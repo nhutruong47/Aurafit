@@ -14,7 +14,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "costume_items")
+@Table(name = "costume_items", indexes = {
+        @Index(name = "idx_costume_items_costume_id_status_size_color", columnList = "costume_id, status, size, color")
+})
 public class CostumeItem extends BaseEntity {
 
     @Id

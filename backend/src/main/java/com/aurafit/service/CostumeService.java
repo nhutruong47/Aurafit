@@ -1,5 +1,9 @@
 package com.aurafit.service;
 
+import com.aurafit.dto.request.CostumeCreateRequest;
+import com.aurafit.dto.request.CostumeUpdateRequest;
+import com.aurafit.dto.response.AdminCostumeDTO;
+import com.aurafit.dto.response.CatalogCostumeDTO;
 import com.aurafit.dto.response.CategoryDTO;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.PaginatedResponse;
@@ -7,6 +11,14 @@ import com.aurafit.dto.response.PaginatedResponse;
 import java.util.List;
 
 public interface CostumeService {
+
+    PaginatedResponse<AdminCostumeDTO> getAllCostumes(String authenticatedEmail, int pageNo, int pageSize,
+                                                       String sortBy, String sortDir, String keyword,
+                                                       String status, Long categoryId);
+
+    AdminCostumeDTO createCostume(CostumeCreateRequest request, String authenticatedEmail);
+
+    AdminCostumeDTO updateCostume(Long id, CostumeUpdateRequest request, String authenticatedEmail);
 
     /**
      * Fetches a paginated, filtered list of ACTIVE costumes for the public catalog.
@@ -20,7 +32,7 @@ public interface CostumeService {
      * @param sortDir    Sort direction: "asc" or "desc".
      * @return A paginated response containing CostumeDTOs.
      */
-    PaginatedResponse<CostumeDTO> getAllActiveCostumes(Long categoryId, String categoryPath, String keyword,
+    PaginatedResponse<CatalogCostumeDTO> getAllActiveCostumes(Long categoryId, String categoryPath, String keyword,
                                                        int pageNo, int pageSize,
                                                        String sortBy, String sortDir, Long userId);
 
@@ -43,16 +55,16 @@ public interface CostumeService {
      * Fetches seasonal / featured costumes for the homepage banner.
      *
      * @param limit Number of costumes to return.
-     * @return A list of CostumeDTOs, sorted by popularity.
+     * @return A list of CatalogCostumeDTOs, sorted by popularity.
      */
-    List<CostumeDTO> getSeasonalCostumes(int limit);
+    List<CatalogCostumeDTO> getSeasonalCostumes(int limit);
 
     /**
      * Fetches personalized recommendations for a user.
      *
      * @param userId The user ID (nullable for anonymous users).
      * @param limit  Number of recommendations to return.
-     * @return A list of CostumeDTOs.
+     * @return A list of CatalogCostumeDTOs.
      */
-    List<CostumeDTO> getRecommendedCostumes(Long userId, int limit);
+    List<CatalogCostumeDTO> getRecommendedCostumes(Long userId, int limit);
 }

@@ -1,7 +1,13 @@
 // Khu vuc theo doi yeu cau ho tro khach hang trong admin dashboard.
 import { Panel } from './AdminDashboardShared';
 
-export default function AdminSupportSection({ supportTickets }) {
+const supportTickets = [
+  { id: 'SP-2198', customer: 'Minh Anh', subject: 'Chưa nhận hoàn cọc', channel: 'Chat', status: 'Đang xử lý', owner: 'Admin' },
+  { id: 'SP-2187', customer: 'Quốc Huy', subject: 'Muốn đổi lịch nhận đồ', channel: 'Hotline', status: 'Mới', owner: 'Admin' },
+  { id: 'SP-2172', customer: 'Bảo Trân', subject: 'Lỗi thanh toán chuyển khoản', channel: 'Email', status: 'Đã phản hồi', owner: 'Admin' },
+];
+
+export default function AdminSupportSection() {
   return (
     <Panel title="Hỗ trợ khách hàng" action={`${supportTickets.length} yêu cầu`}>
       <div className="overflow-x-auto">

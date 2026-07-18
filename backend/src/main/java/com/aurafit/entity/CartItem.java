@@ -12,7 +12,10 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "cart_items")
+@Table(name = "cart_items", indexes = {
+        @Index(name = "idx_cart_items_cart_id_costume_item_id", columnList = "cart_id, costume_item_id"),
+        @Index(name = "idx_cart_items_costume_item_id", columnList = "costume_item_id")
+})
 public class CartItem extends BaseEntity {
 
     @Id

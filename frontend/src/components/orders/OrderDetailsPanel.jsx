@@ -1,14 +1,11 @@
-import { formatCurrency } from '../../utils/formatCurrency';
-import { getOrderCode, getOrderTimeline, mapOrderStatus } from './orderUtils';
-import OrderTimeline from './OrderTimeline';
-
 import { useNavigate } from 'react-router-dom';
 import { useCheckoutStore } from '../../store/useCheckoutStore';
+import { getOrderCode, getOrderTimeline, mapOrderStatus } from './orderUtils';
+import OrderTimeline from './OrderTimeline';
+import OrderSummaryCard from './OrderSummaryCard';
+import CustomerOrderDetailSkeleton from './CustomerOrderDetailSkeleton';
 
-const fallbackImage =
-  'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=200&q=80';
-
-export default function OrderDetailsPanel({ order, onCancel }) {
+export default function OrderDetailsPanel({ order, isDetailLoading, onCancel }) {
   const statusInfo = mapOrderStatus(order.status);
   const timeline = getOrderTimeline(order);
   const navigate = useNavigate();
@@ -43,55 +40,23 @@ export default function OrderDetailsPanel({ order, onCancel }) {
         </div>
       </div>
 
-      <div className="mb-12">
-        <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
-          Tiến trình đơn hàng
-        </h3>
-        <OrderTimeline timeline={timeline} />
-      </div>
-
-      <div className="border-t border-[#cfc4c5] pt-8">
-        <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
-          Sản phẩm đã thuê
-        </h3>
-        <div className="space-y-4">
-          {order.details?.map((item, index) => (
-            <div
-              key={`${item.skuCode}-${index}`}
-              className="flex items-center justify-between border-b border-[#cfc4c5]/20 pb-4"
-            >
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-12 overflow-hidden bg-[#eeeeee]">
-                  <img
-                    src={item.costumeImageUrl || fallbackImage}
-                    alt={item.costumeName}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-black">
-                    {item.costumeName}
-                  </p>
-                  <p className="mt-1 text-[10px] text-[#5f5e5e]">
-                    {[item.skuCode, item.size ? `Size ${item.size}` : null, item.color]
-                      .filter(Boolean)
-                      .join(' | ')}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-bold text-black">
-                  {formatCurrency(item.subtotal || item.rentalPrice || 0)}
-                </p>
-                <p className="mt-0.5 text-[9px] text-[#999999]">
-                  {item.rentalDays
-                    ? `${item.rentalDays} ngày thuê`
-                    : `Giá/ngày: ${formatCurrency(item.rentalPrice || 0)}`}
-                </p>
-              </div>
+      <div
+        className={`transition-opacity duration-300 ${isDetailLoading ? 'opacity-40' : 'opacity-100'}`}
+      >
+        {isDetailLoading && !order.details ? (
+          <CustomerOrderDetailSkeleton />
+        ) : (
+          <>
+            <div className="mb-12">
+              <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+                Tiến trình đơn hàng
+              </h3>
+              <OrderTimeline timeline={timeline} />
             </div>
-          ))}
-        </div>
+
+            <OrderSummaryCard details={order.details} />
+          </>
+        )}
       </div>
     </div>
   );

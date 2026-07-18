@@ -13,8 +13,7 @@ import java.util.List;
 
 public interface RentalOrderDetailRepository extends JpaRepository<RentalOrderDetail, Long> {
 
-    @Query("SELECT rd FROM RentalOrderDetail rd WHERE rd.rentalOrder.id = :orderId")
-    List<RentalOrderDetail> findByRentalOrderId(@Param("orderId") Long orderId);
+    List<RentalOrderDetail> findByRentalOrderId(Long orderId);
 
     @Query("""
             SELECT DISTINCT rd.costumeItem.id

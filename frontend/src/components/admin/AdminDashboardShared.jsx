@@ -2,6 +2,18 @@
 export function AdminField({ label, name, value, onChange, type = 'text', multiline = false, required }) {
   const isRequired = required ?? ['name', 'rentalPrice', 'depositPrice'].includes(name);
 
+  const handleCurrencyChange = (e) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    onChange({
+      target: {
+        name,
+        value: rawValue
+      }
+    });
+  };
+
+  const displayValue = type === 'currency' && value ? Number(value).toLocaleString('vi-VN') : value;
+
   return (
     <label className="block">
       <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">{label}</span>
@@ -12,6 +24,15 @@ export function AdminField({ label, name, value, onChange, type = 'text', multil
           onChange={onChange}
           required={isRequired}
           className="min-h-24 w-full resize-none border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+        />
+      ) : type === 'currency' ? (
+        <input
+          name={name}
+          value={displayValue}
+          onChange={handleCurrencyChange}
+          type="text"
+          required={isRequired}
+          className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
         />
       ) : (
         <input

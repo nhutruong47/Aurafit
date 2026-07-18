@@ -28,7 +28,10 @@ export default function PaymentSummary({
   isPaid = false,
   onCompletePayment,
   onViewOrders,
+  onTestWebhook,
+  isTestingWebhook = false,
 }) {
+  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
   return (
     <>
       <aside className="lg:w-96">
@@ -121,6 +124,16 @@ export default function PaymentSummary({
               <p className="mt-3 text-xs leading-relaxed text-[#5f5e5e]">
                 Sau khi chuyển khoản thành công, hệ thống sẽ đối soát tự động và cập nhật trạng thái đơn hàng trong 10 giây.
               </p>
+              {/* DEV: Test webhook button - only visible on localhost */}
+              {isLocalhost && onTestWebhook && (
+                <button
+                  onClick={onTestWebhook}
+                  disabled={isTestingWebhook}
+                  className="mt-4 w-full border-2 border-dashed border-[#99854e] bg-[#fdfbf5] py-3 text-[11px] font-bold uppercase tracking-[0.15em] text-[#99854e] transition hover:border-[#725f2f] hover:bg-[#f5f0e0] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isTestingWebhook ? 'Đang xử lý...' : '🧪 Test Thanh Toán (Dev Only)'}
+                </button>
+              )}
             </div>
           )}
 

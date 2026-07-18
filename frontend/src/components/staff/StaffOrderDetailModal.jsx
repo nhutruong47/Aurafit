@@ -1,0 +1,261 @@
+import React from 'react';
+import { 
+  formatDate, 
+  formatDateTime, 
+  formatCurrency, 
+  getDetailStatusLabel, 
+  canShowPickupInfo, 
+  getStaffPickupInfo, 
+  getStaffReturnInfo, 
+  StatusBadge 
+} from './StaffDashboardUtils';
+
+export default function StaffOrderDetailModal({ 
+  activeOrder, 
+  setIsModalOpen, 
+  setPreviewImage 
+}) {
+  if (!activeOrder) return null;
+
+  const modalPickupInfo = getStaffPickupInfo(activeOrder);
+  const showModalPickupInfo = canShowPickupInfo(activeOrder?.status);
+  const modalReturnInfo = getStaffReturnInfo(activeOrder);
+  const showModalReturnInfo = modalReturnInfo.returnedAt || modalReturnInfo.returnedBy || modalReturnInfo.returnNote || modalReturnInfo.returnImages.length > 0;
+
+  const copyToClipboard = (text, type) => {
+    navigator.clipboard.writeText(text);
+    window.alert(`Đã copy mã vận đơn ${type}`);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-lg">
+          <h3 className="text-lg font-medium text-gray-900">Chi tiết đơn hàng RO-{String(activeOrder.id).padStart(4, '0')}</h3>
+          <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-500">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-sm mb-6 bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-gray-800 border-b pb-2 mb-3">Thông tin Đơn hàng</h4>
+              <p className="flex justify-between items-start gap-4">
+                <span className="text-gray-500 whitespace-nowrap">Khách hàng:</span> 
+                <span className="font-medium text-gray-900 text-right">{activeOrder.customerName} - {activeOrder.customerPhone}</span>
+              </p>
+              {activeOrder.customerEmail && (
+                <p className="flex justify-between items-start gap-4">
+                  <span className="text-gray-500 whitespace-nowrap">Email:</span> 
+                  <span className="font-medium text-gray-900 text-right">{activeOrder.customerEmail}</span>
+                </p>
+              )}
+              <p className="flex justify-between items-start gap-4">
+                <span className="text-gray-500 whitespace-nowrap">Ngày tạo đơn:</span> 
+                <span className="font-medium text-gray-900 text-right">{formatDateTime(activeOrder.createdAt)}</span>
+              </p>
+              <p className="flex justify-between items-start gap-4">
+                <span className="text-gray-500 whitespace-nowrap">Thời gian thuê:</span> 
+                <span className="font-medium text-gray-900 text-right">
+                  {formatDateTime(activeOrder.rentalStartDate)} <br/>
+                  <span className="text-gray-400 font-normal italic text-xs">đến</span> <br/>
+                  {formatDateTime(activeOrder.rentalEndDate)}
+                </span>
+              </p>
+              <p className="flex justify-between items-center gap-4">
+                <span className="text-gray-500 whitespace-nowrap">Giao hàng:</span> 
+                <span className="font-medium text-gray-900 text-right">{activeOrder.deliveryMethod === 'GHN_DELIVERY' ? 'Giao hàng GHN' : 'Nhận tại cửa hàng'}</span>
+              </p>
+              <p className="flex justify-between items-center gap-4">
+                <span className="text-gray-500 whitespace-nowrap">Trạng thái:</span> 
+                <StatusBadge status={activeOrder.status} label={getDetailStatusLabel(activeOrder.status)} />
+              </p>
+            </div>
+            <div className="space-y-3 border-t lg:border-t-0 lg:border-l border-gray-200 lg:pl-6 pt-4 lg:pt-0">
+              <h4 className="font-semibold text-gray-800 border-b pb-2 mb-3">Thông tin Tài chính</h4>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Phí thuê:</span>
+                <span className="font-medium">{formatCurrency(activeOrder.totalRentalFee || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Tiền cọc ban đầu:</span>
+                <span className="font-medium">{formatCurrency(activeOrder.totalDeposit || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Phí vận chuyển:</span>
+                <span className="font-medium">{activeOrder.shippingFee ? formatCurrency(activeOrder.shippingFee) : '0 đ'}</span>
+              </div>
+              <div className="flex justify-between border-t border-gray-200 mt-2 pt-2">
+                <span className="font-bold text-gray-700">Tổng thanh toán:</span>
+                <span className="font-bold text-[#ba1a1a]">{formatCurrency(activeOrder.finalAmount || activeOrder.totalAmount || 0)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* GHN Tracking */}
+          {(activeOrder.ghnOrderCode || activeOrder.ghnReturnOrderCode) && (
+            <section className="mb-6 rounded-lg border border-gray-200 p-4">
+              <h4 className="font-medium text-gray-900 mb-3 uppercase tracking-wider text-sm">Vận Đơn GHN</h4>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {activeOrder.ghnOrderCode && (
+                  <div className="bg-[#f8f4e8] p-3 border border-[#99854e] flex justify-between items-center rounded">
+                    <div>
+                      <p className="text-xs text-[#5f5e5e] uppercase tracking-wider">Mã giao hàng</p>
+                      <p className="font-semibold text-gray-800">{activeOrder.ghnOrderCode}</p>
+                    </div>
+                    <button 
+                      onClick={() => copyToClipboard(activeOrder.ghnOrderCode, 'giao')}
+                      className="text-[#99854e] hover:text-[#857241] p-2"
+                      title="Copy mã giao hàng"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {activeOrder.ghnReturnOrderCode && (
+                  <div className="bg-[#fdf3f3] p-3 border border-[#d32f2f] flex justify-between items-center rounded">
+                    <div>
+                      <p className="text-xs text-[#5f5e5e] uppercase tracking-wider">Mã thu hồi</p>
+                      <p className="font-semibold text-gray-800">{activeOrder.ghnReturnOrderCode}</p>
+                    </div>
+                    <button 
+                      onClick={() => copyToClipboard(activeOrder.ghnReturnOrderCode, 'thu hồi')}
+                      className="text-[#d32f2f] hover:text-[#b71c1c] p-2"
+                      title="Copy mã thu hồi"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {showModalPickupInfo && (
+            <section className="mb-6 rounded-lg border border-gray-200 p-4">
+              <h4 className="font-medium text-gray-900 mb-3">Thông tin Pickup</h4>
+              <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+                {modalPickupInfo.pickedUpAt && (
+                  <div>
+                    <span className="text-gray-500">Thời gian Pickup:</span>
+                    <p className="mt-1 font-medium">{formatDateTime(modalPickupInfo.pickedUpAt)}</p>
+                  </div>
+                )}
+                {modalPickupInfo.pickedUpBy && (
+                  <div>
+                    <span className="text-gray-500">Nhân viên Pickup:</span>
+                    <p className="mt-1 font-medium">{modalPickupInfo.pickedUpBy}</p>
+                  </div>
+                )}
+                <div className="sm:col-span-2">
+                  <span className="text-gray-500">Ghi chú Pickup:</span>
+                  <p className="mt-1 font-medium whitespace-pre-line">{modalPickupInfo.pickupNote || 'Chưa có ghi chú'}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <span className="text-gray-500">Ảnh minh chứng Pickup:</span>
+                  {modalPickupInfo.pickupImages.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {modalPickupInfo.pickupImages.map((imageUrl, index) => (
+                        <button
+                          key={imageUrl}
+                          type="button"
+                          onClick={() => setPreviewImage(imageUrl)}
+                          className="block h-24 w-24 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
+                        >
+                          <img src={imageUrl} alt={`Ảnh minh chứng Pickup ${index + 1}`} className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-1 font-medium">Không có ảnh minh chứng</p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+          {showModalReturnInfo && (
+            <section className="mb-6 rounded-lg border border-gray-200 p-4">
+              <h4 className="font-medium text-gray-900 mb-3">Thông tin Return</h4>
+              <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+                {modalReturnInfo.returnedAt && (
+                  <div>
+                    <span className="text-gray-500">Thời gian Return:</span>
+                    <p className="mt-1 font-medium">{formatDateTime(modalReturnInfo.returnedAt)}</p>
+                  </div>
+                )}
+                {modalReturnInfo.returnedBy && (
+                  <div>
+                    <span className="text-gray-500">Nhân viên Return:</span>
+                    <p className="mt-1 font-medium">{modalReturnInfo.returnedBy}</p>
+                  </div>
+                )}
+                <div className="sm:col-span-2">
+                  <span className="text-gray-500">Ghi chú Return:</span>
+                  <p className="mt-1 font-medium whitespace-pre-line">{modalReturnInfo.returnNote || 'Chưa có ghi chú'}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <span className="text-gray-500">Ảnh minh chứng Return:</span>
+                  {modalReturnInfo.returnImages.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {modalReturnInfo.returnImages.map((imageUrl, index) => (
+                        <button
+                          key={imageUrl}
+                          type="button"
+                          onClick={() => setPreviewImage(imageUrl)}
+                          className="block h-24 w-24 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
+                        >
+                          <img src={imageUrl} alt={`Ảnh minh chứng Return ${index + 1}`} className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-1 font-medium">Không có ảnh minh chứng</p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+          <h4 className="font-medium text-gray-900 mb-3">Danh sách sản phẩm chi tiết</h4>
+          <div className="space-y-4">
+            {activeOrder.details?.map(detail => (
+              <div key={detail.id} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium text-gray-900 text-base">{detail.costumeName}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      SKU: <span className="font-medium">{detail.skuCode || 'N/A'}</span> | Size: <span className="font-medium">{detail.size || 'N/A'}</span>
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Giá thuê: {formatCurrency(detail.rentalPrice)} | Cọc: {formatCurrency(detail.depositPrice)}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <StatusBadge status={detail.returnStatus || 'PENDING'} label={getDetailStatusLabel(detail.returnStatus || 'PENDING')} />
+                    {detail.itemStatus && <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded border border-gray-200">Tình trạng: {detail.itemStatus}</span>}
+                  </div>
+                </div>
+                {/* Các loại phí phát sinh / hoàn tiền nếu có */}
+                {(detail.lateFee > 0 || detail.damageFee > 0 || detail.refundedAmount > 0) && (
+                  <div className="bg-gray-50 p-3 rounded-md text-sm grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 border border-gray-100">
+                    {detail.lateFee > 0 && <div className="flex justify-between sm:block"><span className="text-gray-500">Phí trễ hạn:</span> <span className="font-medium text-red-600 sm:ml-2">{formatCurrency(detail.lateFee)}</span></div>}
+                    {detail.damageFee > 0 && <div className="flex justify-between sm:block"><span className="text-gray-500">Phí hư hỏng:</span> <span className="font-medium text-red-600 sm:ml-2">{formatCurrency(detail.damageFee)}</span></div>}
+                    {detail.refundedAmount > 0 && <div className="flex justify-between sm:col-span-2"><span className="text-gray-500">Đã hoàn tiền cọc:</span> <span className="font-medium text-green-600 sm:ml-2">{formatCurrency(detail.refundedAmount)}</span></div>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-lg">
+          <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

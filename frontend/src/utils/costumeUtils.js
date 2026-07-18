@@ -12,7 +12,20 @@ export const extractCategoryName = (value) => {
 };
 
 export const getCostumeImage = (costume) =>
-  costume?.imageUrl || costume?.image_url || costume?.image || fallbackCostumeImage;
+  costume?.imageUrls?.[0] || costume?.imageUrl || costume?.image_url || costume?.image || fallbackCostumeImage;
+
+export const getCostumeImages = (costume) => {
+  const imageUrls = Array.isArray(costume?.imageUrls)
+    ? costume.imageUrls.filter((imageUrl) => typeof imageUrl === 'string' && imageUrl.trim())
+    : [];
+
+  if (imageUrls.length > 0) {
+    return imageUrls;
+  }
+
+  const legacyImageUrl = costume?.imageUrl || costume?.image_url || costume?.image;
+  return legacyImageUrl ? [legacyImageUrl] : [fallbackCostumeImage];
+};
 
 export const getCostumeRentalPriceValue = (costume) =>
   Number(costume?.rentalPrice ?? costume?.rental_price ?? costume?.priceValue ?? costume?.price ?? 0);
@@ -75,6 +88,10 @@ export const isCostumeAvailable = (costume) => {
     return costume.available;
   }
 
+  if (typeof costume?.isAvailable === 'boolean') {
+    return costume.isAvailable;
+  }
+
   const isActive = String(costume?.status || '').toUpperCase() !== 'INACTIVE';
   return isActive && getCostumeAvailableItemCount(costume) > 0;
 };
@@ -97,6 +114,16 @@ export const getCostumeItems = (costume) =>
 
 export const getCostumeInventorySummary = (costume) =>
   Array.isArray(costume?.inventorySummary) ? costume.inventorySummary : [];
+
+/**
+ * Counts items currently being held by pending (unpaid) orders.
+ * The frontend uses this to show a "X đang được giữ" hint so shoppers
+ * understand why stock may differ from what they can actually book right now.
+ */
+export const getCostumeReservedCount = (costume) =>
+  Array.isArray(costume?.items)
+    ? costume.items.filter((item) => item?.status === 'RESERVED').length
+    : 0;
 
 export const getCostumePrice = (costume) => formatCurrency(getCostumeRentalPriceValue(costume));
 

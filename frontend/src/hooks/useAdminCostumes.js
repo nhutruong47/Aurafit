@@ -8,7 +8,7 @@ export const emptyProductForm = {
   name: '',
   slug: '',
   description: '',
-  imageUrl: '',
+  imageUrls: [],
   rentalPrice: '',
   depositPrice: '',
   categoryId: '',
@@ -135,22 +135,27 @@ export function useAdminCostumes(currentUser) {
     });
   };
 
-  const handleProductImageUploaded = (asset) => {
+  const handleProductImagesChange = (imageUrls) => {
     setProductForm((currentForm) => ({
       ...currentForm,
-      imageUrl: asset?.secureUrl || '',
+      imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
     }));
   };
 
   const hydrateProductForm = (product) => {
     const metadata = product.metadata || {};
+    const imageUrls = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+      ? product.imageUrls.filter(Boolean)
+      : product.imageUrl
+        ? [product.imageUrl]
+        : [];
 
     setEditingProductId(product.id);
     setProductForm({
       name: product.name || '',
       slug: product.slug || '',
       description: product.description || '',
-      imageUrl: product.imageUrl || '',
+      imageUrls,
       rentalPrice: product.rentalPrice ?? '',
       depositPrice: product.depositPrice ?? '',
       categoryId: product.category?.id || categories[0]?.id || 1,
@@ -192,7 +197,7 @@ export function useAdminCostumes(currentUser) {
         name: productForm.name,
         slug: productForm.slug.trim() || generateSlug(productForm.name),
         description: productForm.description,
-        imageUrl: productForm.imageUrl,
+        imageUrls: [...productForm.imageUrls],
         rentalPrice: Number(productForm.rentalPrice),
         depositPrice: Number(productForm.depositPrice),
         categoryId: Number(productForm.categoryId),
@@ -256,7 +261,7 @@ export function useAdminCostumes(currentUser) {
     setProductCategoryFilter,
     setProductStatusFilter,
     handleProductFieldChange,
-    handleProductImageUploaded,
+    handleProductImagesChange,
     hydrateProductForm,
     resetProductForm,
     submitProduct,

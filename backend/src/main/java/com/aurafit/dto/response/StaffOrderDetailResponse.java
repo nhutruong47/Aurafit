@@ -21,12 +21,16 @@ public record StaffOrderDetailResponse(
         OrderStatus status,
         BigDecimal totalRentalFee,
         BigDecimal totalDeposit,
+        BigDecimal shippingFee,
         BigDecimal finalAmount,
         LocalDateTime rentalStartDate,
         LocalDateTime rentalEndDate,
         LocalDateTime createdAt,
         List<StaffOrderItemResponse> details,
-        List<HandoverRecordDTO> handovers
+        List<HandoverRecordDTO> handovers,
+        String ghnOrderCode,
+        String ghnReturnOrderCode,
+        com.aurafit.enums.DeliveryMethod deliveryMethod
 ) {
     public record StaffOrderItemResponse(
             Long id,
@@ -35,6 +39,7 @@ public record StaffOrderDetailResponse(
             String size,
             String color,
             String imageUrl,
+            List<String> imageUrls,
             ReturnStatus itemStatus,
             ReturnStatus returnStatus,
             BigDecimal rentalPrice,
@@ -53,7 +58,8 @@ public record StaffOrderDetailResponse(
                         d.getCostumeItem().getSku(),
                         d.getCostumeItem().getSize(),
                         d.getCostumeItem().getColor(),
-                        d.getCostumeItem().getCostume().getImageUrl(),
+                        d.getCostumeItem().getCostume().getPrimaryImageUrl(),
+                        d.getCostumeItem().getCostume().getAllImageUrls(),
                         ReturnStatus.NOT_RETURNED,
                         d.getReturnStatus(),
                         d.getPricePerDay(),
@@ -70,7 +76,9 @@ public record StaffOrderDetailResponse(
                 .toList();
 
         BigDecimal finalAmount = order.getTotalRentalPrice()
-                .subtract(order.getDiscountAmount());
+                .add(order.getTotalDeposit())
+                .add(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO)
+                .subtract(order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO);
 
         return new StaffOrderDetailResponse(
                 order.getId(),
@@ -83,12 +91,16 @@ public record StaffOrderDetailResponse(
                 order.getStatus(),
                 order.getTotalRentalPrice(),
                 order.getTotalDeposit(),
+                order.getShippingFee(),
                 finalAmount,
                 order.getRentalStartDate(),
                 order.getRentalEndDate(),
                 order.getCreatedAt(),
                 items,
-                handoverDTOs
+                handoverDTOs,
+                order.getGhnOrderCode(),
+                order.getGhnReturnOrderCode(),
+                order.getDeliveryMethod()
         );
     }
 }

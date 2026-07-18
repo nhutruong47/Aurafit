@@ -4,7 +4,7 @@ import OrdersList from '../components/orders/OrdersList';
 import OrdersLoadingState from '../components/orders/OrdersLoadingState';
 import AlertMessage from '../components/ui/AlertMessage';
 import EmptyState from '../components/ui/EmptyState';
-import { useRentalOrders } from '../hooks/useRentalOrders';
+import { useCustomerOrders } from '../hooks/useCustomerOrders';
 
 import { cancelOrder } from '../services/rentalOrderService';
 import { useToastStore } from '../store/useToastStore';
@@ -13,7 +13,7 @@ import { useState } from 'react';
 import CancelOrderModal from '../components/orders/CancelOrderModal';
 
 export default function RentalOrdersPage({ currentUser, onNavigate }) {
-  const { orders, selectedOrder, isLoading, error, loadOrders, selectOrder } = useRentalOrders(currentUser);
+  const { orders, selectedOrder, isListLoading, isDetailLoading, error, loadOrders, selectOrder } = useCustomerOrders(currentUser);
   const addToast = useToastStore((s) => s.addToast);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState(null);
@@ -47,7 +47,7 @@ export default function RentalOrdersPage({ currentUser, onNavigate }) {
 
         {error && <AlertMessage text={error} className="mb-8" />}
 
-        {isLoading ? (
+        {isListLoading ? (
           <OrdersLoadingState />
         ) : orders.length === 0 ? (
           <EmptyState
@@ -61,7 +61,15 @@ export default function RentalOrdersPage({ currentUser, onNavigate }) {
         ) : (
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-20">
             <OrdersList orders={orders} selectedOrderId={selectedOrder?.id} onSelectOrder={selectOrder} />
-            <div className="lg:col-span-7">{selectedOrder && <OrderDetailsPanel order={selectedOrder} onCancel={handleCancelClick} />}</div>
+            <div className="lg:col-span-7">
+              {selectedOrder && (
+                <OrderDetailsPanel 
+                  order={selectedOrder} 
+                  isDetailLoading={isDetailLoading} 
+                  onCancel={handleCancelClick} 
+                />
+              )}
+            </div>
           </div>
         )}
 

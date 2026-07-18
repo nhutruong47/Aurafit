@@ -1,5 +1,6 @@
 package com.aurafit.entity;
 
+import com.aurafit.enums.DeliveryMethod;
 import com.aurafit.enums.OrderStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -20,7 +21,11 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "rental_orders")
+@Table(name = "rental_orders", indexes = {
+        @Index(name = "idx_rental_orders_user_id_created_at", columnList = "user_id, created_at"),
+        @Index(name = "idx_rental_orders_status_created_at", columnList = "status, created_at"),
+        @Index(name = "idx_rental_orders_created_at", columnList = "created_at")
+})
 public class RentalOrder extends BaseEntity {
 
     @Id
@@ -59,6 +64,20 @@ public class RentalOrder extends BaseEntity {
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_method")
+    private DeliveryMethod deliveryMethod;
+
+    @Builder.Default
+    @Column(name = "shipping_fee", nullable = false)
+    private BigDecimal shippingFee = BigDecimal.ZERO;
+
+    @Column(name = "ghn_order_code")
+    private String ghnOrderCode;
+
+    @Column(name = "ghn_return_order_code")
+    private String ghnReturnOrderCode;
+
     @Column(name = "cancel_reason", columnDefinition = "TEXT")
     private String cancelReason;
 
@@ -78,6 +97,9 @@ public class RentalOrder extends BaseEntity {
     @Column(name = "total_refunded_amount")
     @Builder.Default
     private BigDecimal totalRefundedAmount = BigDecimal.ZERO;
+
+    @Column(name = "inspection_note", columnDefinition = "TEXT")
+    private String inspectionNote;
 
     @JsonIgnore
     @Builder.Default

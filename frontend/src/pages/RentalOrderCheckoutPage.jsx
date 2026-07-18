@@ -1,18 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
 import CheckoutSummary from '../components/checkout/CheckoutSummary';
 import RentalItemCard from '../components/checkout/RentalItemCard';
-import { toRentalItem } from '../components/checkout/checkoutData';
 import EmptyState from '../components/ui/EmptyState';
-import { clearAiStylistCartAttribution, toAiStylistAttributionRequest } from '../services/interactionsService';
-import { createOrder } from '../services/rentalOrderService';
-import { useLocation } from 'react-router-dom';
-import { formatCurrency } from '../utils/formatCurrency';
-import { useCheckoutStore } from '@/store/useCheckoutStore';
 import ConfirmDialog from '../components/common/ConfirmDialog';
-import { useToastStore } from '../store/useToastStore';
-
-import { useDispatch } from 'react-redux';
-import { setCartItems } from '../store/cartSlice';
+import { useCheckout } from '../hooks/useCheckout';
 
 export default function RentalOrderCheckoutPage({
   cartItems = [],
@@ -22,192 +12,37 @@ export default function RentalOrderCheckoutPage({
   onCheckoutSuccess,
   onNavigate,
 }) {
-  const dispatch = useDispatch();
-  const location = useLocation();
-  const { setPendingOrderId } = useCheckoutStore();
-  const addToast = useToastStore((state) => state.addToast);
-  const [deliveryInfo, setDeliveryInfo] = useState({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
-  const [deliveryError, setDeliveryError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  const [problematicSku, setProblematicSku] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  
-  const autoSelectId = location.state?.autoSelectId;
-
-  const [selectedCartItemIds, setSelectedCartItemIds] = useState(() => {
-    if (autoSelectId) {
-      return new Set([autoSelectId]);
-    }
-    const ids = cartItems.map((item) => item.cartId || item.id || item.costumeItemId);
-    return new Set(ids);
+  const {
+    deliveryInfo, setDeliveryInfo,
+    deliveryMethod, setDeliveryMethod,
+    provinces, districts, wards,
+    selectedProvinceId, setSelectedProvinceId,
+    selectedDistrictId, setSelectedDistrictId,
+    selectedWardCode, setSelectedWardCode,
+    streetAddress, setStreetAddress,
+    shippingFee, isCalculatingFee,
+    storePickupAddress, setStorePickupAddress,
+    deliveryError, setDeliveryError,
+    isSubmitting, submitError, problematicSku,
+    isDeleteModalOpen, setIsDeleteModalOpen,
+    selectedCartItemIds, setSelectedCartItemIds,
+    cartDisplayItems, hasItems, isSingleItem,
+    itemsToOrder, hasMissingDates, summaryRows,
+    rawTotalDue, formattedTotalDue,
+    headingLabel, selectedCount, totalDisplayCount,
+    selectedDisplayCount, isCartEmpty,
+    handleDeliveryChange, handleProceedToCheckout,
+    handleRemoveFromCart, handleUpdateItemDates,
+    handleBulkDelete,
+  } = useCheckout({
+    cartItems,
+    currentUser,
+    onRemoveFromCart,
+    onUpdateCartItem,
+    onCheckoutSuccess,
+    onNavigate,
   });
 
-  useEffect(() => {
-    if (autoSelectId) {
-      window.history.replaceState({}, document.title);
-    }
-  }, [autoSelectId]);
-
-  const cartDisplayItems = cartItems.map((item, index) => toRentalItem(item, index + 1));
-  const hasItems = cartDisplayItems.length > 0;
-  const isSingleItem = cartDisplayItems.length === 1;
-
-  const handleDeliveryChange = (event) => {
-    const { name, value } = event.target;
-    setDeliveryInfo((current) => ({ ...current, [name]: value }));
-    setDeliveryError('');
-  };
-
-  const isDeliveryValid = () =>
-    deliveryInfo.receiverName.trim().length > 0 &&
-    deliveryInfo.receiverPhone.trim().length > 0 &&
-    deliveryInfo.deliveryAddress.trim().length > 0;
-
-  const itemsToOrder = useMemo(() => {
-    const nextItems = [];
-    cartDisplayItems.forEach((item) => {
-      if (selectedCartItemIds.has(item.id)) {
-        nextItems.push(item);
-      }
-    });
-    return nextItems;
-  }, [cartDisplayItems, selectedCartItemIds]);
-
-  const handleProceedToCheckout = async () => {
-    if (!currentUser?.id) {
-      onNavigate?.('account');
-      return;
-    }
-    if (!isDeliveryValid()) {
-      setDeliveryError('Vui lòng điền đầy đủ thông tin giao hàng.');
-      addToast('Vui lòng điền đầy đủ Thông tin giao hàng.', 'error');
-
-      let targetId = null;
-      if (!deliveryInfo.receiverName.trim()) targetId = 'receiverName';
-      else if (!deliveryInfo.receiverPhone.trim()) targetId = 'receiverPhone';
-      else if (!deliveryInfo.deliveryAddress.trim()) targetId = 'deliveryAddress';
-
-      if (targetId) {
-        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        document.getElementById(targetId)?.focus();
-      }
-      return;
-    }
-    if (!itemsToOrder.length) {
-      setSubmitError('Vui lòng chọn ít nhất một sản phẩm để thuê.');
-      return;
-    }
-
-    const invalidItems = itemsToOrder.filter((item) => !item?.sku || !item?.rentalStartDate || !item?.rentalEndDate);
-    if (invalidItems.length > 0) {
-      setSubmitError('Một số sản phẩm chưa có đủ thông tin thuê. Vui lòng kiểm tra lại.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError('');
-    setProblematicSku(null);
-
-    try {
-      const orderResponse = await createOrder({
-        receiverName: deliveryInfo.receiverName,
-        receiverPhone: deliveryInfo.receiverPhone,
-        deliveryAddress: deliveryInfo.deliveryAddress,
-        items: itemsToOrder.map((item) => ({
-          sku: item.sku,
-          quantity: item.quantity || 1,
-          rentalStartDate: item.rentalStartDate,
-          rentalEndDate: item.rentalEndDate,
-          aiStylistAttribution: toAiStylistAttributionRequest(item.attribution),
-        })),
-      });
-
-      setPendingOrderId(orderResponse.id);
-      itemsToOrder.forEach((item) => {
-        clearAiStylistCartAttribution(item);
-      });
-      
-      const remainingCartItems = cartItems.filter(item => !selectedCartItemIds.has(item.cartId || item.id || item.costumeItemId));
-      dispatch(setCartItems(remainingCartItems));
-
-      onCheckoutSuccess?.(orderResponse.id);
-      onNavigate?.('payment');
-    } catch (error) {
-      const errorMsg = error.message || '';
-      const skuMatch = errorMsg.match(/\[SKU:\s*(.*?)\]/);
-      if (skuMatch && skuMatch[1]) {
-        setSubmitError(`Sản phẩm [SKU: ${skuMatch[1]}] đã hết hàng hoặc không khả dụng. Vui lòng bỏ chọn sản phẩm này.`);
-        setProblematicSku(skuMatch[1]);
-      } else {
-        setSubmitError(errorMsg || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleRemoveFromCart = (itemId) => {
-    setSelectedCartItemIds((current) => {
-      const next = new Set(current);
-      next.delete(itemId);
-      return next;
-    });
-
-    onRemoveFromCart?.(itemId);
-  };
-
-  const handleUpdateItemDates = async (cartItemId, localCartId, data) => {
-    await onUpdateCartItem?.(cartItemId, localCartId, data);
-  };
-
-  const handleBulkDelete = () => {
-    selectedCartItemIds.forEach((id) => {
-      handleRemoveFromCart(id);
-    });
-    setIsDeleteModalOpen(false);
-    setSelectedCartItemIds(new Set());
-    addToast('Đã xóa các sản phẩm được chọn.');
-  };
-
-  const hasMissingDates = useMemo(() => {
-    return itemsToOrder.some((item) => !item.rentalStartDate || !item.rentalEndDate);
-  }, [itemsToOrder]);
-
-  const summaryRows = useMemo(() => {
-    const rows = [];
-    let totalRental = 0;
-    let totalDeposit = 0;
-
-    itemsToOrder.forEach((item) => {
-      totalRental += item.rentalFee || 0;
-      totalDeposit += item.deposit || 0;
-    });
-
-    if (totalRental > 0) {
-      rows.push({ label: 'Tiền thuê', value: formatCurrency(totalRental) });
-    }
-    if (totalDeposit > 0) {
-      rows.push({ label: 'Tiền đặt cọc (Hoàn trả)', value: formatCurrency(totalDeposit) });
-    }
-
-    return rows;
-  }, [itemsToOrder]);
-
-  const rawTotalDue = useMemo(() => {
-    return itemsToOrder.reduce((total, item) => total + (item.subtotal || 0), 0);
-  }, [itemsToOrder]);
-
-  const formattedTotalDue = useMemo(() => {
-    return formatCurrency(rawTotalDue);
-  }, [rawTotalDue]);
-
-  const headingLabel = isSingleItem ? 'Đơn thuê của bạn' : 'Giỏ hàng thuê';
-  const selectedCount = cartDisplayItems.filter((item) => selectedCartItemIds.has(item.id)).length;
-  const totalDisplayCount = cartDisplayItems.length;
-  const selectedDisplayCount = selectedCount;
-
-  const isCartEmpty = !cartItems || cartItems.length === 0;
   if (isCartEmpty) {
     return (
       <div className="bg-[#f9f9f9] pb-20 text-[#1a1c1c] md:pb-0">
@@ -311,7 +146,8 @@ export default function RentalOrderCheckoutPage({
                           });
                         }}
                         onRemoveFromCart={handleRemoveFromCart}
-                          />
+                        onUpdateDates={handleUpdateItemDates}
+                      />
                     ))}
                   </div>
                 )}
@@ -329,10 +165,13 @@ export default function RentalOrderCheckoutPage({
                           setDeliveryInfo({
                             receiverName: currentUser.fullName || '',
                             receiverPhone: currentUser.phone || '',
-                            deliveryAddress: currentUser.address || '',
                           });
+                          setStorePickupAddress(currentUser.address || '');
+                          setStreetAddress(currentUser.address || '');
                         } else {
-                          setDeliveryInfo({ receiverName: '', receiverPhone: '', deliveryAddress: '' });
+                          setDeliveryInfo({ receiverName: '', receiverPhone: '' });
+                          setStorePickupAddress('');
+                          setStreetAddress('');
                         }
                         setDeliveryError('');
                       }}
@@ -368,59 +207,120 @@ export default function RentalOrderCheckoutPage({
                         className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                       />
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
-                        Địa chỉ giao hàng *
-                      </label>
-                      <input
-                        type="text"
-                        id="deliveryAddress"
-                        name="deliveryAddress"
-                        value={deliveryInfo.deliveryAddress}
-                        onChange={handleDeliveryChange}
-                        placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                        className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
-                      />
+                    
+                    <div className="md:col-span-2 mt-4">
+                      <label className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em]">Hình thức nhận hàng</label>
+                      <div className="flex flex-col gap-3 md:flex-row md:gap-8 mb-4">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="radio" name="deliveryMethod" value="STORE_PICKUP" checked={deliveryMethod === 'STORE_PICKUP'} onChange={() => setDeliveryMethod('STORE_PICKUP')} className="h-4 w-4 accent-[#99854e]" />
+                          Nhận & Trả hàng tại cửa hàng
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="radio" name="deliveryMethod" value="GHN_DELIVERY" checked={deliveryMethod === 'GHN_DELIVERY'} onChange={() => setDeliveryMethod('GHN_DELIVERY')} className="h-4 w-4 accent-[#99854e]" />
+                          Giao hàng toàn quốc (GHN)
+                        </label>
+                      </div>
                     </div>
+
+                    {deliveryMethod === 'STORE_PICKUP' && (
+                      <div className="md:col-span-2">
+                        <div className="mb-6 border border-[#cfc4c5] bg-[#fdfaf5] p-5">
+                          <p className="text-[13px] font-medium text-black">
+                            📍 Địa chỉ nhận/trả đồ:
+                          </p>
+                          <p className="mt-1 text-[13px] leading-relaxed text-[#5f5e5e]">
+                            Cửa hàng AuraFit - Lô E2a-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức, TP. Hồ Chí Minh.
+                          </p>
+                        </div>
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
+                          Địa chỉ thường trú (Để đối chiếu) *
+                        </label>
+                        <input
+                          type="text"
+                          id="storePickupAddress"
+                          name="storePickupAddress"
+                          value={storePickupAddress}
+                          onChange={(e) => setStorePickupAddress(e.target.value)}
+                          placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                          className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {deliveryMethod === 'GHN_DELIVERY' && (
+                      <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Tỉnh/Thành phố *</label>
+                          <select value={selectedProvinceId} onChange={(e) => setSelectedProvinceId(e.target.value)} className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none">
+                            <option value="">Chọn Tỉnh/Thành</option>
+                            {provinces.map(p => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Quận/Huyện *</label>
+                          <select value={selectedDistrictId} onChange={(e) => setSelectedDistrictId(e.target.value)} disabled={!selectedProvinceId} className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
+                            <option value="">Chọn Quận/Huyện</option>
+                            {districts.map(d => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Phường/Xã *</label>
+                          <select value={selectedWardCode} onChange={(e) => setSelectedWardCode(e.target.value)} disabled={!selectedDistrictId} className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
+                            <option value="">Chọn Phường/Xã</option>
+                            {wards.map(w => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
+                          </select>
+                        </div>
+                        <div className="md:col-span-3">
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Địa chỉ chi tiết *</label>
+                          <input
+                            type="text"
+                            id="streetAddress"
+                            value={streetAddress}
+                            onChange={(e) => setStreetAddress(e.target.value)}
+                            placeholder="Số nhà, tên đường..."
+                            className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {deliveryError && <p className="mt-3 text-sm text-red-600">{deliveryError}</p>}
-                  {!currentUser?.id && (
-                    <p className="mt-3 text-sm text-[#99854e]">
-                      Vui lòng{' '}
-                      <button
-                        onClick={() => onNavigate?.('account')}
-                        className="underline hover:text-black"
-                      >
-                        đăng nhập
-                      </button>{' '}
-                      để tiếp tục thanh toán.
-                    </p>
+                  {deliveryError && (
+                    <div className="mt-4 border-l-2 border-[#ba1a1a] bg-[#fdf3f3] p-3 text-sm text-[#ba1a1a]">
+                      {deliveryError}
+                    </div>
                   )}
                 </div>
+
           </section>
 
-          <aside className="lg:col-span-4 sticky top-24 h-fit">
-            {hasItems && (
+          <aside className="lg:col-span-4">
+            <div className="sticky top-24">
               <CheckoutSummary
                 summaryRows={summaryRows}
                 formattedTotalDue={formattedTotalDue}
-                onNavigate={onNavigate}
-                onProceedToCheckout={handleProceedToCheckout}
-                isSubmitting={isSubmitting}
                 submitError={submitError}
-                selectedCount={selectedDisplayCount}
+                isSubmitting={isSubmitting}
                 hasMissingDates={hasMissingDates}
+                selectedCount={selectedCount}
+                onProceedToCheckout={handleProceedToCheckout}
+                onNavigate={onNavigate}
+                shippingFee={shippingFee}
+                deliveryMethod={deliveryMethod}
+                isCalculatingFee={isCalculatingFee}
               />
-            )}
+            </div>
           </aside>
         </div>
       </main>
       <ConfirmDialog
         isOpen={isDeleteModalOpen}
         title="Xóa sản phẩm"
-        message={`Bạn có chắc chắn muốn xóa ${selectedCount} sản phẩm đã chọn khỏi giỏ hàng?`}
+        message={`Bạn có chắc chắn muốn xóa ${selectedCount} sản phẩm đã chọn khỏi giỏ hàng không?`}
         onConfirm={handleBulkDelete}
         onCancel={() => setIsDeleteModalOpen(false)}
+        confirmLabel="Xóa"
+        cancelLabel="Hủy"
+        isDanger={true}
       />
     </div>
   );

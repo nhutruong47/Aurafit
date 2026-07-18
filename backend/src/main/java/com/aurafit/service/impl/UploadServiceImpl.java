@@ -5,6 +5,7 @@ import com.aurafit.dto.response.UploadAssetResponse;
 import com.aurafit.entity.UploadAsset;
 import com.aurafit.entity.User;
 import com.aurafit.exception.BadRequestException;
+import com.aurafit.exception.CloudinaryUploadException;
 import com.aurafit.exception.FileUploadException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.UploadAssetRepository;
@@ -77,7 +78,7 @@ public class UploadServiceImpl implements UploadService {
         String detectedFormat = detectImageFormat(content);
         validateExtensionMatchesFormat(extension, detectedFormat);
 
-        Map<?, ?> uploadResult = uploadToCloudinary(content, originalFileName);
+        Map<?, ?> uploadResult = uploadToCloudinary(userId, content, originalFileName);
         String publicId = getRequiredString(uploadResult, "public_id");
 
         try {
@@ -167,7 +168,7 @@ public class UploadServiceImpl implements UploadService {
         }
     }
 
-    private Map<?, ?> uploadToCloudinary(byte[] content, String originalFileName) {
+    private Map<?, ?> uploadToCloudinary(Long userId, byte[] content, String originalFileName) {
         try {
             return cloudinary.uploader().upload(content, ObjectUtils.asMap(
                     "folder", imageFolder,
@@ -179,6 +180,9 @@ public class UploadServiceImpl implements UploadService {
             ));
         } catch (IOException ex) {
             throw new FileUploadException("Tải ảnh lên máy chủ lưu trữ thất bại.", ex);
+        } catch (RuntimeException ex) {
+            log.error("Cloudinary upload failed for user {}: {}", userId, ex.getMessage(), ex);
+            throw new CloudinaryUploadException("Không thể tải ảnh lên. Vui lòng thử lại sau.", ex);
         }
     }
 

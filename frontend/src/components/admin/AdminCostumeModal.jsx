@@ -1,14 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AdminField } from './AdminDashboardShared';
-import ImageUploadField from '../ui/ImageUploadField';
+import ImageGalleryUploadField from '../ui/ImageGalleryUploadField';
 import SearchableSelect from '../ui/SearchableSelect';
-import {
-  fetchAdminCostumeItems,
-  createCostumeItem,
-  updateCostumeItem,
-  deleteCostumeItem,
-} from '../../services/costumeService';
 import { useToastStore } from '../../store/useToastStore';
+import { useAdminCostumeItems } from '../../hooks/useAdminCostumeItems';
 
 const TABS = [
   { key: 'general', label: 'Thông tin chung', icon: 'info' },
@@ -25,64 +20,6 @@ const STATUS_OPTIONS = [
 const SIZE_SUGGESTIONS = ['Freesize', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
 const COLOR_SUGGESTIONS = ['Trắng', 'Đen', 'Đỏ', 'Xanh dương', 'Xanh lá', 'Vàng', 'Hồng', 'Tím', 'Cam', 'Nâu', 'Xám', 'Be'];
 
-const emptyItemForm = { sku: '', size: '', color: '', status: 'AVAILABLE' };
-
-/**
- * Strips Vietnamese diacritics and returns uppercase ASCII.
- * e.g. "Áo Dài Cưới" -> "AO DAI CUOI"
- */
-function stripAccents(str) {
-  return str
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D');
-}
-
-/**
- * Generates a smart SKU from costume name, size, color, and existing items.
- * Format: [PREFIX]-[SIZE]-[COLOR]-[SEQ]
- * Example: "Áo Dài Cưới", "M", "Đỏ" -> "ADC-M-DO-001"
- */
-function generateSKU(costumeName, size, color, existingItems) {
-  // Prefix: initials of costume name words
-  const prefix = costumeName
-    ? stripAccents(costumeName)
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 5)
-    : 'AF';
-
-  const sizeCode = stripAccents(size || '').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'X';
-  const colorCode = stripAccents(color || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'X';
-
-  // Find existing items with same size+color to determine next sequence
-  const sameVariants = (existingItems || []).filter(
-    (item) => item.size === size && item.color === color
-  );
-
-  // Extract sequence numbers from existing SKUs matching the pattern
-  const basePattern = `${prefix}-${sizeCode}-${colorCode}-`;
-  let maxSeq = 0;
-  for (const item of sameVariants) {
-    if (item.sku && item.sku.startsWith(basePattern)) {
-      const seqPart = item.sku.slice(basePattern.length);
-      const num = parseInt(seqPart, 10);
-      if (!isNaN(num) && num > maxSeq) maxSeq = num;
-    }
-  }
-  // Fallback: if no pattern match, use count
-  if (maxSeq === 0 && sameVariants.length > 0) {
-    maxSeq = sameVariants.length;
-  }
-
-  const seq = String(maxSeq + 1).padStart(3, '0');
-  return `${prefix}-${sizeCode}-${colorCode}-${seq}`;
-}
-
 export default function AdminCostumeModal({
   isOpen,
   onClose,
@@ -90,7 +27,7 @@ export default function AdminCostumeModal({
   editingProductId,
   productForm,
   onProductFieldChange,
-  onProductImageUploaded,
+  onProductImagesChange,
   onSubmitProduct,
   isSavingProduct,
   productMessage,
@@ -100,39 +37,33 @@ export default function AdminCostumeModal({
   const backdropRef = useRef(null);
   const contentRef = useRef(null);
   const [activeTab, setActiveTab] = useState('general');
+  const [imageUploadState, setImageUploadState] = useState({ isUploading: false, error: '' });
 
-  // --- Inventory state ---
-  const [items, setItems] = useState([]);
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const [itemForm, setItemForm] = useState(emptyItemForm);
-  const [editingItemId, setEditingItemId] = useState(null);
-  const [isSavingItem, setIsSavingItem] = useState(false);
-  const [skuManuallyEdited, setSkuManuallyEdited] = useState(false);
+  const {
+    items,
+    isLoadingItems,
+    itemForm,
+    editingItemId,
+    isSavingItem,
+    skuManuallyEdited,
+    loadItems,
+    resetItemsState,
+    handleItemFieldChange,
+    handleSaveItem,
+    handleEditItem,
+    handleCancelEditItem,
+    handleDeleteItem,
+    handleRegenerateSku
+  } = useAdminCostumeItems(editingProductId, productForm.name);
 
   // Reset tab when modal opens/closes or product changes
   useEffect(() => {
     if (isOpen) {
       setActiveTab('general');
-      setItems([]);
-      setItemForm(emptyItemForm);
-      setEditingItemId(null);
-      setSkuManuallyEdited(false);
+      resetItemsState();
+      setImageUploadState({ isUploading: false, error: '' });
     }
-  }, [isOpen, editingProductId]);
-
-  // Fetch items when switching to inventory tab (only for existing costumes)
-  const loadItems = useCallback(async () => {
-    if (!editingProductId) return;
-    setIsLoadingItems(true);
-    try {
-      const data = await fetchAdminCostumeItems(editingProductId);
-      setItems(Array.isArray(data) ? data : []);
-    } catch (err) {
-      useToastStore.getState().addToast(err.message || 'Không thể tải phân loại kho.', 'error');
-    } finally {
-      setIsLoadingItems(false);
-    }
-  }, [editingProductId]);
+  }, [isOpen, editingProductId, resetItemsState]);
 
   useEffect(() => {
     if (activeTab === 'inventory' && editingProductId) {
@@ -165,75 +96,22 @@ export default function AdminCostumeModal({
     return () => { if (el) el.removeEventListener('mousedown', handleMouseDown); };
   }, [isOpen, onClose]);
 
-  // --- Auto-generate SKU when size or color changes ---
-  useEffect(() => {
-    if (editingItemId || skuManuallyEdited) return; // Don't override when editing or manually typed
-    if (!itemForm.size && !itemForm.color) return;
-    const newSku = generateSKU(productForm.name, itemForm.size, itemForm.color, items);
-    setItemForm((prev) => ({ ...prev, sku: newSku }));
-  }, [itemForm.size, itemForm.color, items, productForm.name, editingItemId, skuManuallyEdited]);
-
-  // --- Item handlers ---
-  const handleItemFieldChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'sku') {
-      setSkuManuallyEdited(true);
-    }
-    setItemForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSaveItem = async () => {
-    if (!editingProductId) return;
-    setIsSavingItem(true);
-    try {
-      if (editingItemId) {
-        const updated = await updateCostumeItem(editingProductId, editingItemId, itemForm);
-        setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-        useToastStore.getState().addToast('Cập nhật phân loại thành công.', 'success');
-        setItemForm(emptyItemForm);
-        setEditingItemId(null);
-        setSkuManuallyEdited(false);
-      } else {
-        const created = await createCostumeItem(editingProductId, itemForm);
-        const updatedItems = [...items, created];
-        setItems(updatedItems);
-        useToastStore.getState().addToast('Thêm phân loại thành công.', 'success');
-        // Rapid entry: keep size & color, regenerate SKU for next sequence
-        setSkuManuallyEdited(false);
-        const nextSku = generateSKU(productForm.name, itemForm.size, itemForm.color, updatedItems);
-        setItemForm((prev) => ({ ...prev, sku: nextSku }));
-      }
-    } catch (err) {
-      useToastStore.getState().addToast(err.message || 'Lỗi khi lưu phân loại.', 'error');
-    } finally {
-      setIsSavingItem(false);
-    }
-  };
-
-  const handleEditItem = (item) => {
-    setEditingItemId(item.id);
-    setItemForm({ sku: item.sku, size: item.size, color: item.color, status: item.status });
-  };
-
-  const handleCancelEditItem = () => {
-    setEditingItemId(null);
-    setItemForm(emptyItemForm);
-    setSkuManuallyEdited(false);
-  };
-
-  const handleDeleteItem = async (itemId) => {
-    if (!editingProductId) return;
-    try {
-      await deleteCostumeItem(editingProductId, itemId);
-      setItems((prev) => prev.filter((i) => i.id !== itemId));
-      useToastStore.getState().addToast('Đã xóa phân loại.', 'success');
-    } catch (err) {
-      useToastStore.getState().addToast(err.message || 'Không thể xóa phân loại.', 'error');
-    }
-  };
-
   const handleSubmitGeneral = async (e) => {
     e.preventDefault();
+
+    if (imageUploadState.isUploading) {
+      useToastStore.getState().addToast('Vui lòng chờ ảnh tải lên hoàn tất trước khi lưu sản phẩm.', 'error');
+      return;
+    }
+
+    if (imageUploadState.error) {
+      useToastStore.getState().addToast(
+        `Không thể lưu sản phẩm vì có ảnh tải lên thất bại: ${imageUploadState.error}`,
+        'error'
+      );
+      return;
+    }
+
     await onSubmitProduct(e);
   };
 
@@ -256,7 +134,7 @@ export default function AdminCostumeModal({
     >
       <div
         ref={contentRef}
-        className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden bg-[#fdfdfb] shadow-2xl"
+        className="relative flex h-[95vh] w-[95vw] max-w-none flex-col overflow-hidden bg-[#fdfdfb] shadow-2xl rounded-lg"
         style={{ animation: 'scaleIn 0.25s cubic-bezier(0.22, 1, 0.36, 1)' }}
       >
         {/* Header */}
@@ -300,75 +178,89 @@ export default function AdminCostumeModal({
         <div className="flex-1 overflow-y-auto px-6 py-6">
           {activeTab === 'general' && (
             <form className="space-y-4" onSubmit={handleSubmitGeneral}>
-              <AdminField label="Tên sản phẩm" name="name" value={productForm.name} onChange={onProductFieldChange} />
-              <AdminField label="Slug (tự động tạo)" name="slug" value={productForm.slug} onChange={onProductFieldChange} required={false} />
-              <AdminField label="Mô tả" name="description" value={productForm.description} onChange={onProductFieldChange} multiline required={false} />
-              <ImageUploadField
-                key={editingProductId || 'new-product'}
-                label="Ảnh sản phẩm"
-                value={productForm.imageUrl}
-                onUploaded={onProductImageUploaded}
-              />
-
-              <div className="grid grid-cols-2 gap-3">
-                <AdminField label="Giá thuê" name="rentalPrice" type="number" value={productForm.rentalPrice} onChange={onProductFieldChange} />
-                <AdminField label="Tiền cọc" name="depositPrice" type="number" value={productForm.depositPrice} onChange={onProductFieldChange} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
-                    Danh mục
-                  </span>
-                  <SearchableSelect
-                    name="categoryId"
-                    value={productForm.categoryId}
-                    onChange={onProductFieldChange}
-                    options={categories}
-                    placeholder="Chọn danh mục"
-                    disableNonLeafOptions={true}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+                
+                {/* Cột trái: Ảnh và Trạng thái */}
+                <div className="space-y-6 lg:col-span-4 flex flex-col">
+                  <ImageGalleryUploadField
+                    key={editingProductId || 'new-product'}
+                    label="Ảnh sản phẩm"
+                    value={productForm.imageUrls}
+                    onChange={onProductImagesChange}
+                    onUploadStateChange={setImageUploadState}
+                    disabled={isSavingProduct}
                   />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
-                    Trạng thái hiển thị
-                  </span>
-                  <select
-                    name="status"
-                    value={productForm.status}
-                    onChange={onProductFieldChange}
-                    className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
-                  >
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="INACTIVE">INACTIVE</option>
-                    <option value="DISCONTINUED">DISCONTINUED</option>
-                  </select>
-                </label>
-              </div>
+                  <label className="block">
+                    <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+                      Trạng thái hiển thị
+                    </span>
+                    <select
+                      name="status"
+                      value={productForm.status}
+                      onChange={onProductFieldChange}
+                      className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+                    >
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INACTIVE">INACTIVE</option>
+                      <option value="DISCONTINUED">DISCONTINUED</option>
+                    </select>
+                  </label>
+                </div>
 
-              {/* Metadata section */}
-              <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
-                <div className="mb-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Metadata gợi ý AI</p>
-                  <p className="mt-1 text-xs text-[#5f5e5e]">
-                    Các trường style, occasion, season, color, tags là bắt buộc cho gợi ý sản phẩm.
-                  </p>
+                {/* Cột phải: Thông tin văn bản */}
+                <div className="space-y-5 lg:col-span-8 flex flex-col">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <AdminField label="Tên sản phẩm" name="name" value={productForm.name} onChange={onProductFieldChange} />
+                    <AdminField label="Slug (tự động tạo)" name="slug" value={productForm.slug} onChange={onProductFieldChange} required={false} />
+                  </div>
+                  
+                  <AdminField label="Mô tả" name="description" value={productForm.description} onChange={onProductFieldChange} multiline required={false} />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <AdminField label="Giá thuê" name="rentalPrice" type="currency" value={productForm.rentalPrice} onChange={onProductFieldChange} />
+                    <AdminField label="Giá trị gốc của áo (để tính cọc)" name="depositPrice" type="currency" value={productForm.depositPrice} onChange={onProductFieldChange} />
+                  </div>
+
+                  <label className="block">
+                    <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+                      Danh mục
+                    </span>
+                    <SearchableSelect
+                      name="categoryId"
+                      value={productForm.categoryId}
+                      onChange={onProductFieldChange}
+                      options={categories}
+                      placeholder="Chọn danh mục"
+                      disableNonLeafOptions={true}
+                    />
+                  </label>
+
+                  {/* Metadata section */}
+                  <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
+                    <div className="mb-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Metadata gợi ý AI</p>
+                      <p className="mt-1 text-xs text-[#5f5e5e]">
+                        Các trường style, occasion, season, color, tags là bắt buộc cho gợi ý sản phẩm.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+                      <AdminField label="Phong cách *" name="style" value={productForm.style} onChange={onProductFieldChange} required />
+                      <AdminField label="Dịp sử dụng *" name="occasion" value={productForm.occasion} onChange={onProductFieldChange} required />
+                      <AdminField label="Mùa *" name="season" value={productForm.season} onChange={onProductFieldChange} required />
+                      <AdminField label="Màu sắc *" name="color" value={productForm.color} onChange={onProductFieldChange} required />
+                      <AdminField label="Từ khóa *" name="tags" value={productForm.tags} onChange={onProductFieldChange} required />
+                      <AdminField label="Tông da" name="skinTone" value={productForm.skinTone} onChange={onProductFieldChange} required={false} />
+                      <AdminField label="Dáng người" name="bodyType" value={productForm.bodyType} onChange={onProductFieldChange} required={false} />
+                      <AdminField label="Giới tính" name="gender" value={productForm.gender} onChange={onProductFieldChange} required={false} />
+                      <AdminField label="Size gợi ý" name="size" value={productForm.size} onChange={onProductFieldChange} required={false} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                      <AdminField label="Chất liệu" name="material" value={productForm.material} onChange={onProductFieldChange} required={false} />
+                      <AdminField label="Ghi chú form dáng" name="fitNote" value={productForm.fitNote} onChange={onProductFieldChange} multiline required={false} />
+                    </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <AdminField label="Phong cách *" name="style" value={productForm.style} onChange={onProductFieldChange} required />
-                  <AdminField label="Dịp sử dụng *" name="occasion" value={productForm.occasion} onChange={onProductFieldChange} required />
-                  <AdminField label="Mùa *" name="season" value={productForm.season} onChange={onProductFieldChange} required />
-                  <AdminField label="Màu sắc *" name="color" value={productForm.color} onChange={onProductFieldChange} required />
-                  <AdminField label="Từ khóa *" name="tags" value={productForm.tags} onChange={onProductFieldChange} required />
-                  <AdminField label="Tông da" name="skinTone" value={productForm.skinTone} onChange={onProductFieldChange} required={false} />
-                  <AdminField label="Dáng người" name="bodyType" value={productForm.bodyType} onChange={onProductFieldChange} required={false} />
-                  <AdminField label="Giới tính" name="gender" value={productForm.gender} onChange={onProductFieldChange} required={false} />
-                  <AdminField label="Size gợi ý" name="size" value={productForm.size} onChange={onProductFieldChange} required={false} />
-                  <AdminField label="Chất liệu" name="material" value={productForm.material} onChange={onProductFieldChange} required={false} />
-                </div>
-                <div className="mt-3">
-                  <AdminField label="Ghi chú form dáng" name="fitNote" value={productForm.fitNote} onChange={onProductFieldChange} multiline required={false} />
-                </div>
+
               </div>
 
               {productMessage && <p className="border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{productMessage}</p>}
@@ -376,10 +268,16 @@ export default function AdminCostumeModal({
 
               <div className="flex gap-3 pt-2">
                 <button
-                  disabled={isSavingProduct}
+                  disabled={isSavingProduct || imageUploadState.isUploading || Boolean(imageUploadState.error)}
                   className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
                 >
-                  {isSavingProduct ? 'Đang lưu...' : editingProductId ? 'Cập nhật sản phẩm' : 'Đăng tải sản phẩm'}
+                  {imageUploadState.isUploading
+                    ? 'Đang tải ảnh...'
+                    : isSavingProduct
+                      ? 'Đang lưu...'
+                      : editingProductId
+                        ? 'Cập nhật sản phẩm'
+                        : 'Đăng tải sản phẩm'}
                 </button>
                 <button
                   type="button"
@@ -463,11 +361,7 @@ export default function AdminCostumeModal({
                           : 'Tự động tạo từ Tên + Size + Màu — '}
                         <button
                           type="button"
-                          onClick={() => {
-                            setSkuManuallyEdited(false);
-                            const newSku = generateSKU(productForm.name, itemForm.size, itemForm.color, items);
-                            setItemForm((prev) => ({ ...prev, sku: newSku }));
-                          }}
+                          onClick={handleRegenerateSku}
                           className="text-[#7f7041] underline hover:text-black"
                         >
                           Tạo lại
@@ -570,33 +464,10 @@ export default function AdminCostumeModal({
                   </table>
                 </div>
               )}
-
-              {items.length > 0 && (
-                <div className="flex items-center gap-3 border-t border-[#ebe7df] pt-4">
-                  <span className="material-symbols-outlined text-[16px] text-[#7f7041]">info</span>
-                  <p className="text-xs text-[#5f5e5e]">
-                    Tổng: <strong>{items.length}</strong> phân loại ·
-                    Sẵn sàng: <strong>{items.filter((i) => i.status === 'AVAILABLE').length}</strong> ·
-                    Đang thuê: <strong>{items.filter((i) => i.status === 'RENTED').length}</strong>
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>
       </div>
-
-      {/* CSS animations */}
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.95) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

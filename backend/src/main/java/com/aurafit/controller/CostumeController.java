@@ -6,11 +6,11 @@ import com.aurafit.dto.request.CostumeItemUpdateRequest;
 import com.aurafit.dto.request.CostumeUpdateRequest;
 import com.aurafit.dto.response.AdminCostumeDTO;
 import com.aurafit.dto.response.ApiResponse;
+import com.aurafit.dto.response.CatalogCostumeDTO;
 import com.aurafit.dto.response.CostumeDTO;
 import com.aurafit.dto.response.CostumeItemDTO;
 import com.aurafit.dto.response.PaginatedResponse;
 import com.aurafit.enums.ItemStatus;
-import com.aurafit.service.AdminService;
 import com.aurafit.service.CostumeItemService;
 import com.aurafit.service.CostumeService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,14 +31,12 @@ import java.util.List;
 public class CostumeController {
 
     private final CostumeService costumeService;
-    private final AdminService adminService;
     private final CostumeItemService costumeItemService;
     private final com.aurafit.service.UserService userService;
 
-    public CostumeController(CostumeService costumeService, AdminService adminService,
+    public CostumeController(CostumeService costumeService,
                             CostumeItemService costumeItemService, com.aurafit.service.UserService userService) {
         this.costumeService = costumeService;
-        this.adminService = adminService;
         this.costumeItemService = costumeItemService;
         this.userService = userService;
     }
@@ -47,7 +45,7 @@ public class CostumeController {
 
     @GetMapping
     @Operation(summary = "Browse costumes", description = "Returns paginated list of ACTIVE costumes")
-    public ResponseEntity<ApiResponse<PaginatedResponse<CostumeDTO>>> getAllCostumes(
+    public ResponseEntity<ApiResponse<PaginatedResponse<CatalogCostumeDTO>>> getAllCostumes(
             Authentication authentication,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String categoryPath,
@@ -58,7 +56,7 @@ public class CostumeController {
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
         Long userId = extractUserIdSafely(authentication);
-        PaginatedResponse<CostumeDTO> response = costumeService.getAllActiveCostumes(
+        PaginatedResponse<CatalogCostumeDTO> response = costumeService.getAllActiveCostumes(
                 categoryId, categoryPath, keyword, pageNo, pageSize, sortBy, sortDir, userId
         );
         return ResponseEntity.ok(ApiResponse.success("Costumes retrieved successfully.", response));
@@ -82,13 +80,13 @@ public class CostumeController {
 
     @GetMapping("/seasonal")
     @Operation(summary = "Get seasonal costumes")
-    public ResponseEntity<ApiResponse<List<CostumeDTO>>> getSeasonalCostumes() {
+    public ResponseEntity<ApiResponse<List<CatalogCostumeDTO>>> getSeasonalCostumes() {
         return ResponseEntity.ok(ApiResponse.success("Seasonal costumes retrieved.", costumeService.getSeasonalCostumes(8)));
     }
 
     @GetMapping("/recommendations")
     @Operation(summary = "Get recommended costumes")
-    public ResponseEntity<ApiResponse<List<CostumeDTO>>> getRecommendedCostumes(
+    public ResponseEntity<ApiResponse<List<CatalogCostumeDTO>>> getRecommendedCostumes(
             @RequestParam(required = false) Long userId
     ) {
         return ResponseEntity.ok(ApiResponse.success("Recommended costumes retrieved.", costumeService.getRecommendedCostumes(userId, 6)));
@@ -108,7 +106,7 @@ public class CostumeController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long categoryId
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Manageable costumes retrieved successfully.", adminService.getAllCostumes(authentication.getName(), pageNo, pageSize, sortBy, sortDir, keyword, status, categoryId)));
+        return ResponseEntity.ok(ApiResponse.success("Manageable costumes retrieved successfully.", costumeService.getAllCostumes(authentication.getName(), pageNo, pageSize, sortBy, sortDir, keyword, status, categoryId)));
     }
 
     // --- Admin Endpoints ---
@@ -122,7 +120,7 @@ public class CostumeController {
             @Valid @RequestBody CostumeCreateRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Costume created successfully.", adminService.createCostume(request, authentication.getName()), HttpStatus.CREATED));
+                .body(ApiResponse.success("Costume created successfully.", costumeService.createCostume(request, authentication.getName()), HttpStatus.CREATED));
     }
 
     @PutMapping("/{id}")
@@ -134,7 +132,7 @@ public class CostumeController {
             @PathVariable Long id,
             @Valid @RequestBody CostumeUpdateRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Costume updated successfully.", adminService.updateCostume(id, request, authentication.getName())));
+        return ResponseEntity.ok(ApiResponse.success("Costume updated successfully.", costumeService.updateCostume(id, request, authentication.getName())));
     }
 
     // --- CostumeItem Admin Endpoints ---
@@ -149,7 +147,7 @@ public class CostumeController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Costume items retrieved successfully.",
-                adminService.getItemsByCostumeId(costumeId, authentication.getName())
+                costumeItemService.getItemsByCostumeId(costumeId, authentication.getName())
         ));
     }
 
@@ -165,7 +163,7 @@ public class CostumeController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
                         "Costume item created successfully.",
-                        adminService.createCostumeItem(costumeId, request, authentication.getName()),
+                        costumeItemService.createCostumeItem(costumeId, request, authentication.getName()),
                         HttpStatus.CREATED
                 ));
     }
@@ -182,7 +180,7 @@ public class CostumeController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Costume item updated successfully.",
-                adminService.updateCostumeItem(costumeId, itemId, request, authentication.getName())
+                costumeItemService.updateCostumeItem(costumeId, itemId, request, authentication.getName())
         ));
     }
 
@@ -195,7 +193,7 @@ public class CostumeController {
             @PathVariable Long costumeId,
             @PathVariable Long itemId
     ) {
-        adminService.deleteCostumeItem(costumeId, itemId, authentication.getName());
+        costumeItemService.deleteCostumeItem(costumeId, itemId, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Costume item deleted successfully.", null));
     }
 

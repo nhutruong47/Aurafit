@@ -7,6 +7,7 @@ import com.aurafit.dto.request.CheckoutItemRequest;
 import com.aurafit.dto.request.CheckoutRequest;
 import com.aurafit.dto.response.OrderResponse;
 import com.aurafit.dto.response.OrderSummaryResponse;
+import com.aurafit.dto.response.StaffOrderDetailResponse;
 import com.aurafit.entity.*;
 import com.aurafit.enums.CartStatus;
 import com.aurafit.enums.InteractionEventType;
@@ -54,6 +55,7 @@ public class OrderServiceImpl implements OrderService {
     private final RentalOrderDetailRepository rentalOrderDetailRepository;
     private final PaymentRepository paymentRepository;
     private final PricingEngineService pricingEngineService;
+    private final com.aurafit.service.GhnIntegrationService ghnIntegrationService;
 
     public OrderServiceImpl(RentalOrderRepository rentalOrderRepository,
                             CartRepository cartRepository,
@@ -66,7 +68,8 @@ public class OrderServiceImpl implements OrderService {
                             HandoverRecordRepository handoverRecordRepository,
                             RentalOrderDetailRepository rentalOrderDetailRepository,
                             PaymentRepository paymentRepository,
-                            PricingEngineService pricingEngineService) {
+                            PricingEngineService pricingEngineService,
+                            com.aurafit.service.GhnIntegrationService ghnIntegrationService) {
         this.rentalOrderRepository = rentalOrderRepository;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
@@ -79,6 +82,7 @@ public class OrderServiceImpl implements OrderService {
         this.rentalOrderDetailRepository = rentalOrderDetailRepository;
         this.paymentRepository = paymentRepository;
         this.pricingEngineService = pricingEngineService;
+        this.ghnIntegrationService = ghnIntegrationService;
     }
 
     /**
@@ -184,8 +188,8 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal singleItemDeposit = pricingEngineService.calculateItemDeposit(retailValue, singleItemRentalFee, 1);
             
             for (CostumeItem allocatedItem : availableItems) {
-                // Lock inventory immediately
-                allocatedItem.setStatus(ItemStatus.RENTED);
+                // Hold the inventory for the pending order; only flip to RENTED after payment.
+                allocatedItem.setStatus(ItemStatus.RESERVED);
                 costumeItemRepository.save(allocatedItem);
 
                 RentalOrderDetail detail = RentalOrderDetail.builder()
@@ -202,15 +206,20 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // ── Step 5: Create and persist RentalOrder ──────────────────────────────
+        BigDecimal shippingFee = request.shippingFee() != null ? request.shippingFee() : BigDecimal.ZERO;
+        BigDecimal finalTotalPrice = totalRentalPrice.add(totalDeposit).add(shippingFee);
+
         RentalOrder order = RentalOrder.builder()
                 .user(user)
                 .receiverName(request.receiverName())
                 .receiverPhone(request.receiverPhone())
                 .deliveryAddress(request.deliveryAddress())
+                .deliveryMethod(request.deliveryMethod())
+                .shippingFee(shippingFee)
                 .totalRentalPrice(totalRentalPrice)
                 .totalDeposit(totalDeposit)
                 .discountAmount(BigDecimal.ZERO)
-                .totalPrice(totalRentalPrice.add(totalDeposit))
+                .totalPrice(finalTotalPrice)
                 .rentalStartDate(orderStartDate)
                 .rentalEndDate(orderEndDate)
                 .details(orderDetails)
@@ -261,6 +270,245 @@ public class OrderServiceImpl implements OrderService {
         RentalOrder order = rentalOrderRepository.findByIdAndUserIdWithDetails(orderId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         return OrderResponse.fromEntity(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<StaffOrderDetailResponse> getAllOrdersForAdmin(org.springframework.data.domain.Pageable pageable, com.aurafit.enums.OrderStatus status) {
+        if (status != null) {
+            return rentalOrderRepository.findByStatus(status, pageable)
+                    .map(order -> StaffOrderDetailResponse.fromEntity(order, handoverRecordRepository.findByOrderId(order.getId())));
+        }
+        return rentalOrderRepository.findAll(pageable)
+                .map(order -> StaffOrderDetailResponse.fromEntity(order, handoverRecordRepository.findByOrderId(order.getId())));
+    }
+
+    @Override
+    @Transactional
+    public void shipOrder(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.CONFIRMED) {
+            throw new BadRequestException("Order must be CONFIRMED to ship");
+        }
+
+        // Mock destination district/ward for sandbox as DB doesn't store them
+        int toDistrictId = 1444; 
+        String toWardCode = "20308";
+        int totalWeight = 1000 * order.getDetails().size();
+
+        String ghnCode = ghnIntegrationService.createForwardOrder(
+                order, 
+                toDistrictId, 
+                toWardCode, 
+                totalWeight
+        );
+
+        if (ghnCode == null || ghnCode.isEmpty()) {
+            throw new BadRequestException("Failed to create GHN forward order");
+        }
+
+        order.setGhnOrderCode(ghnCode);
+        order.setStatus(com.aurafit.enums.OrderStatus.SHIPPING);
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void markOrderRented(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.SHIPPING) {
+            throw new BadRequestException("Order must be SHIPPING to mark as rented");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.RENTED);
+        order.getDetails().forEach(detail -> detail.setReturnStatus(com.aurafit.enums.ReturnStatus.NOT_RETURNED));
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void returnOrder(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.RENTED) {
+            throw new BadRequestException("Order must be RENTED to return");
+        }
+
+        int fromDistrictId = 1444; 
+        String fromWardCode = "20308";
+        int totalWeight = 1000 * order.getDetails().size();
+
+        String ghnCode = ghnIntegrationService.createReturnOrder(
+                order, 
+                fromDistrictId, 
+                fromWardCode, 
+                totalWeight
+        );
+
+        if (ghnCode == null || ghnCode.isEmpty()) {
+            throw new BadRequestException("Failed to create GHN return order");
+        }
+
+        order.setGhnReturnOrderCode(ghnCode);
+        order.setStatus(com.aurafit.enums.OrderStatus.RETURNING);
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void completeOrder(Long orderId, com.aurafit.dto.request.InspectionRequest request) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING && order.getStatus() != com.aurafit.enums.OrderStatus.RENTED) {
+            throw new BadRequestException("Order must be RETURNING or RENTED to complete");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.COMPLETED);
+
+        java.time.LocalDate actualReturnDate = request.getActualReturnDate() != null ? request.getActualReturnDate() : java.time.LocalDate.now();
+        long lateDays = java.time.temporal.ChronoUnit.DAYS.between(order.getRentalEndDate().toLocalDate(), actualReturnDate);
+        
+        BigDecimal lateFee = BigDecimal.ZERO;
+        String inspectionNote = request.getInspectionNote() != null ? request.getInspectionNote() : "";
+
+        if (lateDays > 0) {
+            if (request.getLateFee() != null) {
+                lateFee = request.getLateFee(); // Manual override
+            } else {
+                long rentalDays = java.time.temporal.ChronoUnit.DAYS.between(order.getRentalStartDate().toLocalDate(), order.getRentalEndDate().toLocalDate());
+                if (rentalDays <= 0) rentalDays = 1;
+                
+                BigDecimal dailyRentalRate = order.getTotalRentalPrice().divide(BigDecimal.valueOf(rentalDays), 0, java.math.RoundingMode.HALF_UP);
+                lateFee = dailyRentalRate.multiply(new BigDecimal("1.5")).multiply(new BigDecimal(lateDays));
+                
+                if (lateFee.compareTo(order.getTotalDeposit()) > 0) {
+                    lateFee = order.getTotalDeposit();
+                }
+            }
+            inspectionNote += (inspectionNote.isEmpty() ? "" : " | ") + String.format("Trả trễ %d ngày, áp dụng hệ số 1.5x giá thuê ngày (phí %s VND)", lateDays, lateFee.toPlainString());
+        } else {
+            if (request.getLateFee() != null) {
+                lateFee = request.getLateFee();
+            }
+        }
+
+        BigDecimal damageFee = request.getDamageFee() != null ? request.getDamageFee() : BigDecimal.ZERO;
+        
+        BigDecimal refundAmount = order.getTotalDeposit().subtract(damageFee).subtract(lateFee);
+        if (refundAmount.compareTo(BigDecimal.ZERO) < 0) {
+            refundAmount = BigDecimal.ZERO;
+        }
+
+        order.setTotalDamageFee(damageFee);
+        order.setTotalLateFee(lateFee);
+        order.setInspectionNote(inspectionNote);
+        order.setTotalRefundedAmount(refundAmount);
+        
+        // Update items to AVAILABLE or MAINTENANCE
+        for (RentalOrderDetail detail : order.getDetails()) {
+            detail.setReturnStatus(com.aurafit.enums.ReturnStatus.RETURNED);
+            CostumeItem item = detail.getCostumeItem();
+            if (damageFee.compareTo(BigDecimal.ZERO) > 0) {
+                item.setStatus(ItemStatus.MAINTENANCE);
+            } else {
+                item.setStatus(ItemStatus.AVAILABLE);
+            }
+            costumeItemRepository.save(item);
+        }
+
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void handleDeliveryFailed(Long orderId, String reason) {
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.SHIPPING) {
+            throw new BadRequestException("Order must be SHIPPING to mark as delivery failed.");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.CANCELLED);
+        
+        order.getDetails().forEach(detail -> {
+            CostumeItem costumeItem = detail.getCostumeItem();
+            costumeItem.setStatus(com.aurafit.enums.ItemStatus.AVAILABLE);
+            costumeItemRepository.save(costumeItem);
+        });
+
+        BigDecimal refundAmount = order.getTotalDeposit()
+                .add(order.getTotalRentalPrice())
+                .subtract(order.getShippingFee());
+        
+        if (refundAmount.compareTo(BigDecimal.ZERO) < 0) {
+            refundAmount = BigDecimal.ZERO;
+        }
+        order.setTotalRefundedAmount(refundAmount);
+
+        String note = "Giao hàng thất bại (Boom hàng). Lý do: " + reason;
+        order.setInspectionNote(order.getInspectionNote() != null && !order.getInspectionNote().isEmpty()
+                ? order.getInspectionNote() + "\n" + note 
+                : note);
+
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void handleLostPackage(Long orderId, String reason) {
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.SHIPPING && 
+            order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING) {
+            throw new BadRequestException("Order must be SHIPPING or RETURNING to mark as lost package.");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.CANCELLED);
+        
+        order.getDetails().forEach(detail -> {
+            CostumeItem costumeItem = detail.getCostumeItem();
+            costumeItem.setStatus(com.aurafit.enums.ItemStatus.MAINTENANCE);
+            costumeItemRepository.save(costumeItem);
+        });
+
+        BigDecimal refundAmount = order.getTotalDeposit().add(order.getTotalRentalPrice());
+        order.setTotalRefundedAmount(refundAmount);
+
+        String note = "Thất lạc kiện hàng. Lý do: " + reason;
+        order.setInspectionNote(order.getInspectionNote() != null && !order.getInspectionNote().isEmpty()
+                ? order.getInspectionNote() + "\n" + note 
+                : note);
+
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StaffOrderDetailResponse> getAllOrdersForStaff() {
+        return rentalOrderRepository.findAllOrdersForStaff()
+                .stream()
+                .map(order -> {
+                    List<HandoverRecord> handovers = handoverRecordRepository.findByOrderId(order.getId());
+                    return StaffOrderDetailResponse.fromEntity(order, handovers);
+                })
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StaffOrderDetailResponse getOrderDetail(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        List<HandoverRecord> handovers = handoverRecordRepository.findByOrderId(orderId);
+        return StaffOrderDetailResponse.fromEntity(order, handovers);
     }
 
     private void recordRentEvent(User user,
@@ -570,7 +818,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Chi co the giao hang khi don hang da duoc xac nhan (CONFIRMED). Trang thai hien tai: " + order.getStatus());
         }
 
-        order.setStatus(com.aurafit.enums.OrderStatus.PICKED_UP);
+        order.setStatus(com.aurafit.enums.OrderStatus.RENTED);
         rentalOrderRepository.save(order);
 
         List<HandoverRecord> records = new ArrayList<>();
@@ -664,6 +912,36 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
+        return handoverRecordRepository.saveAll(records).stream()
+                .map(com.aurafit.dto.response.HandoverRecordDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<com.aurafit.dto.response.HandoverRecordDTO> updateHandoverImage(
+            Long orderId,
+            Long staffId,
+            com.aurafit.enums.HandoverType handoverType,
+            com.aurafit.dto.request.HandoverImageUpdateRequest request
+    ) {
+        User staff = userRepository.findById(staffId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", staffId));
+        if (staff.getRole() != com.aurafit.enums.Role.STAFF && staff.getRole() != com.aurafit.enums.Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Chi nhan vien hoac admin moi co quyen thuc hien thao tac nay.");
+        }
+
+        String imageUrl = request.imageUrl() == null ? "" : request.imageUrl().trim();
+        if (imageUrl.isBlank()) {
+            throw new BadRequestException("Vui long tai anh minh chung truoc khi cap nhat.");
+        }
+
+        List<HandoverRecord> records = handoverRecordRepository.findByOrderIdAndHandoverType(orderId, handoverType);
+        if (records.isEmpty()) {
+            throw new ResourceNotFoundException("HandoverRecord", "orderId/type", orderId + "/" + handoverType);
+        }
+
+        records.forEach(record -> record.setImageUrl(imageUrl));
         return handoverRecordRepository.saveAll(records).stream()
                 .map(com.aurafit.dto.response.HandoverRecordDTO::fromEntity)
                 .collect(Collectors.toList());

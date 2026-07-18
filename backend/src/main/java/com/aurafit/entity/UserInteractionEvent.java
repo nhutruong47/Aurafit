@@ -18,7 +18,9 @@ import lombok.Setter;
 @Table(name = "user_interaction_events", indexes = {
         @Index(name = "idx_interaction_user_created", columnList = "user_id, created_at"),
         @Index(name = "idx_interaction_session_created", columnList = "session_id, created_at"),
-        @Index(name = "idx_interaction_event_created", columnList = "event_type, created_at")
+        @Index(name = "idx_interaction_event_created", columnList = "event_type, created_at"),
+        @Index(name = "idx_user_interaction_events_user_id_event_type_created_at", columnList = "user_id, event_type, created_at"),
+        @Index(name = "idx_user_interaction_events_created_at", columnList = "created_at")
 })
 public class UserInteractionEvent extends BaseEntity {
 

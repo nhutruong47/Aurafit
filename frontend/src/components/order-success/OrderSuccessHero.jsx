@@ -1,7 +1,7 @@
 // Hero section xac nhan dat hang thanh cong.
 import { formatCurrency } from '../../utils/formatCurrency';
 
-export default function OrderSuccessHero({ orderId, status, totalLabel, onContinue }) {
+export default function OrderSuccessHero({ orderId, status, totalLabel, onContinue, onTrackOrder }) {
   return (
     <section className="relative flex h-[614px] w-full items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0 overflow-hidden">
@@ -38,14 +38,24 @@ export default function OrderSuccessHero({ orderId, status, totalLabel, onContin
           Cảm ơn bạn đã chọn AuraFit. Đội ngũ của chúng tôi sẽ chuẩn bị đơn hàng và sớm liên hệ xác nhận thanh
           toán.
         </p>
-        {onContinue && (
-          <button
-            onClick={onContinue}
-            className="mt-10 bg-black px-8 py-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
-          >
-            Tiếp tục mua sắm
-          </button>
-        )}
+        <div className="mt-10 flex flex-col sm:flex-row gap-4 items-center justify-center">
+          {onContinue && (
+            <button
+              onClick={onContinue}
+              className="bg-black px-8 py-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+            >
+              Tiếp tục mua sắm
+            </button>
+          )}
+          {onTrackOrder && (
+            <button
+              onClick={onTrackOrder}
+              className="border border-black bg-transparent px-8 py-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-black hover:text-white"
+            >
+              Quản lý đơn hàng
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );

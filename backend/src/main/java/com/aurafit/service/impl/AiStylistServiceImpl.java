@@ -446,7 +446,8 @@ public class AiStylistServiceImpl implements AiStylistService {
             throw new BadRequestException("guestSessionId is required.");
         }
 
-        List<AiStylistSession> guestSessions = aiStylistSessionRepository.findGuestSessionsForAttach(normalizedGuestSessionId);
+        List<AiStylistSession> guestSessions = aiStylistSessionRepository
+                .findByUserIsNullAndGuestSessionIdIgnoreCaseOrderByUpdatedAtDescCreatedAtDescIdDesc(normalizedGuestSessionId);
         AiStylistSession latestExistingUserSession = aiStylistSessionRepository
                 .findTopByUser_IdOrderByUpdatedAtDescIdDesc(user.getId())
                 .orElse(null);

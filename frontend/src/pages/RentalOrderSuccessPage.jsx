@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import OrderSuccessFooter from '../components/order-success/OrderSuccessFooter';
-import OrderSuccessHeader from '../components/order-success/OrderSuccessHeader';
 import OrderSuccessHero from '../components/order-success/OrderSuccessHero';
 import OrderSelectionSection from '../components/order-success/OrderSelectionSection';
 import OrderSuccessSidebar from '../components/order-success/OrderSuccessSidebar';
 import OrderSuccessStorySection from '../components/order-success/OrderSuccessStorySection';
-import { footerColumns, mobileNavLinks, navLinks, storyLinks } from '../components/order-success/orderSuccessData';
+import { storyLinks } from '../components/order-success/orderSuccessData';
 import { fetchOrderDetail } from '../services/rentalOrderService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 
@@ -97,14 +95,13 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
-      <OrderSuccessHeader navLinks={navLinks} onNavigate={onNavigate} />
-
-      <main className="pt-20">
+      <main className="pt-10">
         <OrderSuccessHero
           orderId={order?.id || pendingOrderId}
           status={order?.status}
           totalLabel={totalLabel}
           onContinue={handleContinueShopping}
+          onTrackOrder={() => onNavigate?.('orders')}
         />
 
         {error && (
@@ -124,8 +121,6 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
 
         <OrderSuccessStorySection links={storyLinks} />
       </main>
-
-      <OrderSuccessFooter footerColumns={footerColumns} mobileNavLinks={mobileNavLinks} onNavigate={onNavigate} />
     </div>
   );
 }
