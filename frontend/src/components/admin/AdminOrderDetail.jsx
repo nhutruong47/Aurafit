@@ -138,7 +138,7 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[3px] p-4"
-      onClick={handleOverlayClick}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="relative flex w-full max-w-4xl max-h-[90vh] flex-col bg-white shadow-2xl">
         {/* Header */}
@@ -230,7 +230,9 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                   <p><span className="text-[#5f5e5e] w-24 inline-block">Họ tên:</span> <span className="font-semibold">{order.customerName}</span></p>
                   <p><span className="text-[#5f5e5e] w-24 inline-block">SĐT:</span> <span className="font-semibold">{order.customerPhone}</span></p>
                   <p><span className="text-[#5f5e5e] w-24 inline-block">Email:</span> <span className="font-semibold">{order.customerEmail}</span></p>
+                  <p><span className="text-[#5f5e5e] w-24 inline-block">Ngày tạo:</span> <span className="font-semibold">{order.createdAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(order.createdAt)) : '—'}</span></p>
                   <p><span className="text-[#5f5e5e] w-24 inline-block">Loại đơn:</span> <span className="font-semibold">{order.deliveryMethod === 'STORE_PICKUP' ? 'Thuê tại cửa hàng' : 'Giao hàng GHN'}</span></p>
+                  <p><span className="text-[#5f5e5e] w-24 inline-block align-top">Địa chỉ:</span> <span className="font-semibold inline-block w-[calc(100%-6rem)]">{order.deliveryAddress || 'Nhận tại cửa hàng'}</span></p>
                 </div>
               </section>
 

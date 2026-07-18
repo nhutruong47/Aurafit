@@ -6,10 +6,18 @@ export const mapOrderStatus = (status) => {
       return { text: 'Chờ thanh toán', color: 'text-[#a15c00]' };
     case 'CONFIRMED':
       return { text: 'Đã xác nhận', color: 'text-[#99854e]' };
+    case 'SHIPPING':
+      return { text: 'Đang giao hàng', color: 'text-[#1c6b9a]' };
     case 'PICKED_UP':
       return { text: 'Đã bàn giao', color: 'text-[#1c6b9a]' };
+    case 'RENTED':
+      return { text: 'Đang thuê', color: 'text-[#7f7041]' };
+    case 'RETURNING':
+      return { text: 'Đang thu hồi', color: 'text-[#1c6b9a]' };
     case 'RETURNED':
       return { text: 'Đã trả đồ', color: 'text-[#087b3f]' };
+    case 'PENDING_REFUND':
+      return { text: 'Chờ giải ngân', color: 'text-[#a15c00]' };
     case 'COMPLETED':
       return { text: 'Hoàn thành', color: 'text-[#087b3f]' };
     case 'CANCELLED':
@@ -34,58 +42,88 @@ const formatMoment = (value, fallbackLabel) => {
   });
 };
 
+// Ordered status progression for each delivery method
+const PICKUP_FLOW = ['PENDING', 'CONFIRMED', 'PICKED_UP', 'RENTED', 'RETURNED', 'PENDING_REFUND', 'COMPLETED'];
+const SHIPPING_FLOW = ['PENDING', 'CONFIRMED', 'SHIPPING', 'RENTED', 'RETURNING', 'RETURNED', 'PENDING_REFUND', 'COMPLETED'];
+
+const isAtOrPast = (currentStatus, targetStatus, flow) => {
+  const currentIdx = flow.indexOf(currentStatus);
+  const targetIdx = flow.indexOf(targetStatus);
+  if (currentIdx === -1 || targetIdx === -1) return false;
+  return currentIdx >= targetIdx;
+};
+
 export const getOrderTimeline = (order) => {
   const status = order?.status;
   const isCancelled = status === 'CANCELLED';
-  const isConfirmed = ['CONFIRMED', 'PICKED_UP', 'RETURNED', 'COMPLETED'].includes(status);
-  const isPickedUp = ['PICKED_UP', 'RETURNED', 'COMPLETED'].includes(status);
-  const isReturned = ['RETURNED', 'COMPLETED'].includes(status);
-  const isCompleted = status === 'COMPLETED';
+  const isGHN = order?.deliveryMethod === 'GHN_DELIVERY';
+  const flow = isGHN ? SHIPPING_FLOW : PICKUP_FLOW;
 
-  const timeline = [
-    {
-      status: 'Đơn được tạo',
-      date: formatMoment(order?.createdAt, 'Đang cập nhật'),
-      icon: 'receipt_long',
-      completed: true,
-      current: status === 'PENDING',
-    },
-    {
-      status: isCancelled ? 'Đơn đã hủy' : 'Xác nhận thanh toán',
-      date: isCancelled
-        ? formatMoment(order?.createdAt, 'Đã hủy')
-        : formatMoment(order?.createdAt, 'Chờ xác nhận'),
-      icon: isCancelled ? 'cancel' : 'verified',
-      completed: isCancelled || isConfirmed,
-      current: !isCancelled && status === 'CONFIRMED',
-      isCanceled: isCancelled,
-    },
-    {
-      status: 'Bàn giao trang phục',
-      date: formatMoment(order?.rentalStartDate, 'Chờ ngày bàn giao'),
-      icon: 'local_shipping',
-      completed: isPickedUp,
-      current: status === 'PICKED_UP',
-    },
-    {
-      status: 'Khách trả đồ',
-      date: formatMoment(order?.rentalEndDate, 'Chờ ngày trả đồ'),
-      icon: 'assignment_return',
-      completed: isReturned,
-      current: status === 'RETURNED',
-    },
-    {
-      status: 'Hoàn tất đơn hàng',
-      date: formatMoment(order?.rentalEndDate, 'Chờ hoàn tất'),
-      icon: 'check_circle',
-      completed: isCompleted,
-      current: isCompleted,
-    },
+  // Build steps based on delivery method
+  const pickupSteps = [
+    { key: 'PENDING',    label: 'Đơn được tạo',           icon: 'receipt_long',     dateFn: () => formatMoment(order?.createdAt, 'Đang cập nhật') },
+    { key: 'CONFIRMED',  label: 'Xác nhận thanh toán',    icon: 'verified',         dateFn: () => formatMoment(order?.createdAt, 'Chờ xác nhận') },
+    { key: 'PICKED_UP',  label: 'Lấy hàng tại cửa hàng', icon: 'storefront',       dateFn: () => formatMoment(order?.rentalStartDate, 'Chờ ngày lấy hàng') },
+    { key: 'RENTED',     label: 'Đang thuê',              icon: 'checkroom',        dateFn: () => formatMoment(order?.rentalStartDate, 'Chờ bàn giao') },
+    { key: 'RETURNED',   label: 'Đã trả đồ',             icon: 'assignment_return', dateFn: () => formatMoment(order?.rentalEndDate, 'Chờ trả đồ') },
+    { key: 'PENDING_REFUND', label: 'Chờ giải ngân',      icon: 'account_balance',  dateFn: () => 'Đang xử lý hoàn cọc' },
+    { key: 'COMPLETED',  label: 'Hoàn tất đơn hàng',      icon: 'check_circle',     dateFn: () => formatMoment(order?.rentalEndDate, 'Chờ hoàn tất') },
   ];
 
+  const shippingSteps = [
+    { key: 'PENDING',    label: 'Đơn được tạo',           icon: 'receipt_long',     dateFn: () => formatMoment(order?.createdAt, 'Đang cập nhật') },
+    { key: 'CONFIRMED',  label: 'Xác nhận thanh toán',    icon: 'verified',         dateFn: () => formatMoment(order?.createdAt, 'Chờ xác nhận') },
+    { key: 'SHIPPING',   label: 'Đang giao hàng (GHN)',   icon: 'local_shipping',   dateFn: () => formatMoment(order?.rentalStartDate, 'Chờ giao hàng') },
+    { key: 'RENTED',     label: 'Đang thuê',              icon: 'checkroom',        dateFn: () => formatMoment(order?.rentalStartDate, 'Chờ nhận hàng') },
+    { key: 'RETURNING',  label: 'Đang thu hồi (GHN)',     icon: 'local_shipping',   dateFn: () => formatMoment(order?.rentalEndDate, 'Chờ thu hồi') },
+    { key: 'RETURNED',   label: 'Đã trả đồ',             icon: 'assignment_return', dateFn: () => formatMoment(order?.rentalEndDate, 'Chờ xác nhận') },
+    { key: 'PENDING_REFUND', label: 'Chờ giải ngân',      icon: 'account_balance',  dateFn: () => 'Đang xử lý hoàn cọc' },
+    { key: 'COMPLETED',  label: 'Hoàn tất đơn hàng',      icon: 'check_circle',     dateFn: () => formatMoment(order?.rentalEndDate, 'Chờ hoàn tất') },
+  ];
+
+  const rawSteps = isGHN ? shippingSteps : pickupSteps;
+
+  // If not PENDING_REFUND and not COMPLETED, remove the PENDING_REFUND step to keep timeline clean
+  const shouldShowPendingRefund = isAtOrPast(status, 'PENDING_REFUND', flow);
+  const steps = shouldShowPendingRefund
+    ? rawSteps
+    : rawSteps.filter(s => s.key !== 'PENDING_REFUND');
+
+  // Handle cancelled orders
   if (isCancelled) {
-    return timeline.slice(0, 2);
+    return [
+      {
+        status: 'Đơn được tạo',
+        date: formatMoment(order?.createdAt, 'Đang cập nhật'),
+        icon: 'receipt_long',
+        completed: true,
+        current: false,
+      },
+      {
+        status: 'Đơn đã hủy',
+        date: formatMoment(order?.createdAt, 'Đã hủy'),
+        icon: 'cancel',
+        completed: true,
+        current: true,
+        isCanceled: true,
+      },
+    ];
   }
 
-  return timeline;
+  return steps.map((step) => {
+    const completed = isAtOrPast(status, step.key, flow);
+    const current = status === step.key;
+
+    // Special warning styling for PENDING_REFUND
+    const isWarning = step.key === 'PENDING_REFUND' && current;
+
+    return {
+      status: step.label,
+      date: step.dateFn(),
+      icon: step.icon,
+      completed,
+      current,
+      isWarning,
+    };
+  });
 };

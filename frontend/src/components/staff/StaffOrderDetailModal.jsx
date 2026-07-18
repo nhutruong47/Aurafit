@@ -34,7 +34,10 @@ export default function StaffOrderDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-lg">
           <h3 className="text-lg font-medium text-gray-900">Chi tiết đơn hàng RO-{String(activeOrder.id).padStart(4, '0')}</h3>
@@ -70,8 +73,19 @@ export default function StaffOrderDetailModal({
               </p>
               <p className="flex justify-between items-center gap-4">
                 <span className="text-gray-500 whitespace-nowrap">Giao hàng:</span> 
-                <span className="font-medium text-gray-900 text-right">{activeOrder.deliveryMethod === 'GHN_DELIVERY' ? 'Giao hàng GHN' : 'Nhận tại cửa hàng'}</span>
+                <span className="font-medium text-gray-900 text-right">{activeOrder.deliveryMethod === 'GHN_DELIVERY' || activeOrder.deliveryMethod === 'GHN' ? 'Giao hàng GHN' : 'Nhận tại cửa hàng'}</span>
               </p>
+              <div className="bg-white border border-gray-100 rounded p-3 mt-2 text-sm">
+                <p className="font-medium text-gray-700 mb-1">
+                  Địa chỉ nhận hàng:
+                </p>
+                <p className="text-gray-600">
+                  {activeOrder.receiverName || activeOrder.customerName} - {activeOrder.receiverPhone || activeOrder.customerPhone}
+                </p>
+                <p className="text-gray-600 mt-1">
+                  {activeOrder.deliveryAddress || 'Nhận tại cửa hàng'}
+                </p>
+              </div>
               <p className="flex justify-between items-center gap-4">
                 <span className="text-gray-500 whitespace-nowrap">Trạng thái:</span> 
                 <StatusBadge status={activeOrder.status} label={getDetailStatusLabel(activeOrder.status)} />
@@ -247,7 +261,6 @@ export default function StaffOrderDetailModal({
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <StatusBadge status={detail.returnStatus || 'PENDING'} label={getDetailStatusLabel(detail.returnStatus || 'PENDING')} />
-                    {detail.itemStatus && <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded border border-gray-200">Tình trạng: {detail.itemStatus}</span>}
                   </div>
                 </div>
                 {/* Các loại phí phát sinh / hoàn tiền nếu có */}

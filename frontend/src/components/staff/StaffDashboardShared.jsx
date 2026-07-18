@@ -1,4 +1,5 @@
 // Tap hop component dung chung cho staff dashboard.
+import { getDetailStatusLabel } from './StaffDashboardUtils';
 const statusTone = {
   PENDING: 'border-[#a15c00]/30 bg-[#fff7df] text-[#7a4d00]',
   CONFIRMED: 'border-[#99854e]/30 bg-[#f8f4e8] text-[#725f2f]',
@@ -8,6 +9,9 @@ const statusTone = {
   CANCELLED: 'border-[#cfc4c5] bg-[#f4f4f4] text-[#5f5e5e]',
   DAMAGED: 'border-[#a15c00]/30 bg-[#fff7df] text-[#7a4d00]',
   LOST: 'border-[#ba1a1a]/30 bg-[#ffdad6] text-[#93000a]',
+  NOT_RETURNED: 'border-[#cfc4c5] bg-[#f4f4f2] text-[#171717]',
+  RETURNED_GOOD: 'border-[#087b3f]/30 bg-[#e8f7ee] text-[#087b3f]',
+  LATE: 'border-[#a15c00]/30 bg-[#fff7df] text-[#7a4d00]',
 };
 
 export function Metric({ label, value, icon }) {
@@ -22,10 +26,10 @@ export function Metric({ label, value, icon }) {
   );
 }
 
-export function StatusBadge({ status }) {
+export function StatusBadge({ status, label }) {
   return (
     <span className={`border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusTone[status] || 'border-[#cfc4c5] bg-white text-[#5f5e5e]'}`}>
-      {status}
+      {label || getDetailStatusLabel(status) || status}
     </span>
   );
 }

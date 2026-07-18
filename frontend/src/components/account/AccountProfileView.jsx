@@ -1,8 +1,9 @@
 // Man hinh ho so tai khoan va cac hanh dong theo vai tro nguoi dung.
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getUserRoles } from '../../utils/roles';
 import { updateProfile, changePassword } from '../../services/userService';
 import { useToastStore } from '../../store/useToastStore';
+import SearchableSelect from '../common/SearchableSelect';
 
 function ProfileField({ label, value }) {
   return (
@@ -18,9 +19,24 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
     fullName: currentUser.fullName || '',
     phone: currentUser.phone || '',
     address: currentUser.address || '',
+    bankName: currentUser.bankName || '',
+    bankAccountNumber: currentUser.bankAccountNumber || '',
+    bankAccountName: currentUser.bankAccountName || '',
   });
+  const [banks, setBanks] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch('https://api.vietqr.io/v2/banks')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.data) {
+          setBanks(data.data);
+        }
+      })
+      .catch(err => console.error('Lỗi khi tải danh sách ngân hàng:', err));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,7 +55,10 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onMouseDown={(e) => { if (e.target === e.currentTarget && !isSubmitting) onClose(); }}
+    >
       <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 space-y-5">
         <h2 className="font-serif text-2xl italic">Chỉnh sửa hồ sơ</h2>
         <div>
@@ -53,6 +72,29 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
         <div>
           <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Địa chỉ</label>
           <input type="text" value={form.address} onChange={(e) => setForm(f => ({...f, address: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" placeholder="Số nhà, đường, phường, quận, TP" />
+        </div>
+        
+        <div className="border-t pt-4 mt-2">
+          <h3 className="font-serif italic text-lg mb-4 text-[#99854e]">Thông tin hoàn cọc (Tùy chọn)</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Ngân hàng</label>
+              <SearchableSelect
+                value={form.bankName}
+                onChange={(val) => setForm(f => ({...f, bankName: val}))}
+                options={banks.map(bank => ({ value: bank.shortName, label: `${bank.shortName} - ${bank.name}` }))}
+                placeholder="-- Chọn ngân hàng --"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Số tài khoản</label>
+              <input type="text" value={form.bankAccountNumber} onChange={(e) => setForm(f => ({...f, bankAccountNumber: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Chủ tài khoản</label>
+              <input type="text" value={form.bankAccountName} onChange={(e) => setForm(f => ({...f, bankAccountName: e.target.value.toUpperCase()}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none uppercase placeholder:normal-case" placeholder="NGUYEN VAN A" />
+            </div>
+          </div>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-3">
@@ -92,7 +134,10 @@ function ChangePasswordModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onMouseDown={(e) => { if (e.target === e.currentTarget && !isSubmitting) onClose(); }}
+    >
       <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 space-y-5">
         <h2 className="font-serif text-2xl italic">Đổi mật khẩu</h2>
         <div>
@@ -172,6 +217,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
               <ProfileField label="Số điện thoại" value={currentUser.phone || 'Chưa cập nhật'} />
               <ProfileField label="Địa chỉ" value={currentUser.address || 'Chưa cập nhật'} />
               <ProfileField label="Vai trò" value={roles.join(', ') || 'CUSTOMER'} />
+              <ProfileField label="Ngân hàng hoàn cọc" value={currentUser.bankName ? `${currentUser.bankName} - ${currentUser.bankAccountNumber} (${currentUser.bankAccountName})` : 'Chưa cập nhật'} />
             </div>
 
             <div className="mt-8 grid gap-4 md:grid-cols-2">

@@ -235,7 +235,10 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
   if (!isOpen || !item) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onMouseDown={(e) => { if (e.target === e.currentTarget && !isSaving) onClose(); }}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0"

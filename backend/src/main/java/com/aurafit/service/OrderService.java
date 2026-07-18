@@ -37,6 +37,7 @@ public interface OrderService {
     void completeOrder(Long orderId, com.aurafit.dto.request.InspectionRequest request);
     void handleDeliveryFailed(Long orderId, String reason);
     void handleLostPackage(Long orderId, String reason);
+    void reportInvalidBank(Long orderId);
 
     StaffOrderDetailResponse getOrderDetail(Long orderId);
 

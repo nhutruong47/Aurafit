@@ -2,7 +2,9 @@ package com.aurafit.dto.request;
 
 import java.math.BigDecimal;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record StylistFilterCriteria(
         String category,
         String style,

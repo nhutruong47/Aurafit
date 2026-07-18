@@ -69,7 +69,28 @@ public class StylistIntentServiceImpl implements StylistIntentService {
         );
 
         try {
-            return objectMapper.readValue(rawJson, StylistFilterCriteria.class);
+            if (rawJson != null) {
+                rawJson = rawJson.trim();
+                if (rawJson.startsWith("```json")) {
+                    rawJson = rawJson.substring(7);
+                } else if (rawJson.startsWith("```")) {
+                    rawJson = rawJson.substring(3);
+                }
+                if (rawJson.endsWith("```")) {
+                    rawJson = rawJson.substring(0, rawJson.length() - 3);
+                }
+                rawJson = rawJson.trim();
+            }
+            com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(rawJson);
+            if (rootNode.has("intent") && rootNode.has("entities")) {
+                com.fasterxml.jackson.databind.JsonNode entities = rootNode.get("entities");
+                String category = entities.has("product_category") ? entities.get("product_category").asText(null) : null;
+                String color = entities.has("color") ? entities.get("color").asText(null) : null;
+                String gender = entities.has("gender") ? entities.get("gender").asText(null) : null;
+                String style = entities.has("style") ? entities.get("style").asText(null) : null;
+                return new StylistFilterCriteria(category, style, null, null, color, gender, null, null, null);
+            }
+            return objectMapper.treeToValue(rootNode, StylistFilterCriteria.class);
         } catch (JsonProcessingException | IllegalArgumentException exception) {
             log.error(
                     "Failed to parse Gemini intent response responseBody={}",

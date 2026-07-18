@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdminOrders } from '../../hooks/useAdminOrders';
 import { formatCurrency } from '../../utils/formatCurrency';
 import AlertMessage from '../ui/AlertMessage';
@@ -60,6 +60,34 @@ export default function AdminOrdersSection() {
     openOrder,
   } = useAdminOrders();
   const [openingOrderId, setOpeningOrderId] = useState(null);
+  
+  const [statusOptions, setStatusOptions] = useState([['', 'Tất cả trạng thái']]);
+  const [statusLabels, setStatusLabels] = useState({});
+
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        const { adminOrderService } = await import('../../services/adminOrderService');
+        const response = await adminOrderService.getOrderStatuses();
+        if (response.data && response.data.data) {
+          const apiStatuses = response.data.data;
+          setStatusOptions([
+            ['', 'Tất cả trạng thái'],
+            ...apiStatuses.map(s => [s.value, s.label])
+          ]);
+          
+          const labelsMap = {};
+          apiStatuses.forEach(s => {
+            labelsMap[s.value] = s.label;
+          });
+          setStatusLabels(labelsMap);
+        }
+      } catch (err) {
+        console.error("Failed to fetch order statuses in admin:", err);
+      }
+    };
+    fetchStatuses();
+  }, []);
 
   const handleOpenOrder = async (orderId) => {
     setOpeningOrderId(orderId);
@@ -96,7 +124,7 @@ export default function AdminOrdersSection() {
               onChange={(event) => changeStatus(event.target.value)}
               className="h-11 min-w-52 border border-[#d7d2c8] bg-white px-3 text-sm outline-none focus:border-[#7f7041]"
             >
-              {ORDER_STATUSES.map(([value, label]) => (
+              {statusOptions.map(([value, label]) => (
                 <option key={value || 'all'} value={value}>{label}</option>
               ))}
             </select>
@@ -163,7 +191,7 @@ export default function AdminOrdersSection() {
                     <td className="whitespace-nowrap px-5 py-4">
                       <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${STATUS_STYLES[order.status] || 'border-slate-300 bg-slate-50 text-slate-700'}`}>
                         <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
-                        {STATUS_LABELS[order.status] || order.status}
+                        {statusLabels[order.status] || STATUS_LABELS[order.status] || order.status}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-right">

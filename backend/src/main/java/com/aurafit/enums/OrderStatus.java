@@ -9,5 +9,6 @@ public enum OrderStatus {
     COMPLETED,
     SHIPPING,
     RENTED,
-    RETURNING
+    RETURNING,
+    PENDING_REFUND
 }

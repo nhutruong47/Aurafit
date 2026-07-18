@@ -15,7 +15,10 @@ export default function ConfirmDialog({ isOpen, title, message, onConfirm, onCan
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-[fadeIn_0.2s_ease-out]">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-[fadeIn_0.2s_ease-out]"
+      onMouseDown={(e) => { if (e.target === e.currentTarget && !isLoading) onCancel(); }}
+    >
       <div className="w-full max-w-md bg-white p-6 shadow-xl animate-[slideUp_0.2s_ease-out]">
         <h3 className="mb-2 font-serif text-2xl font-normal uppercase italic text-black">{title}</h3>
         <p className="mb-8 text-sm text-[#5f5e5e]">{message}</p>

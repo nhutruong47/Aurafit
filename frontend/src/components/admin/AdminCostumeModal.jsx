@@ -131,6 +131,7 @@ export default function AdminCostumeModal({
       ref={backdropRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[3px]"
       style={{ animation: 'fadeIn 0.2s ease-out' }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget && !isSavingProduct) onClose(); }}
     >
       <div
         ref={contentRef}

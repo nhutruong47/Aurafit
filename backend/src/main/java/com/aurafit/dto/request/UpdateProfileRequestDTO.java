@@ -6,5 +6,8 @@ public record UpdateProfileRequestDTO(
         @NotBlank(message = "Họ tên không được để trống")
         String fullName,
         String phone,
-        String address
+        String address,
+        String bankName,
+        String bankAccountNumber,
+        String bankAccountName
 ) {}

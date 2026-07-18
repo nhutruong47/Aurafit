@@ -22,6 +22,7 @@ export default function ShippingTab({
   filteredOrders,
   activeOrder,
   handoverImageUrl,
+  handoverImageFile,
   note,
   isSubmitting,
   error,
@@ -31,6 +32,7 @@ export default function ShippingTab({
   openOrder,
   setMode,
   setHandoverImageUrl,
+  setHandoverImageFile,
   setNote,
   handleHandoverImageUploaded,
   submitShipping,
@@ -51,20 +53,20 @@ export default function ShippingTab({
   return (
     <div className="flex h-full gap-6">
       <div className="w-1/3 flex flex-col gap-4">
-        <div className="rounded-lg bg-white p-4 shadow-sm flex flex-col gap-4 shrink-0">
-          <div className="flex p-1 bg-gray-100 rounded-lg">
+        <div className="rounded-none md:rounded-sm bg-white border border-[#d7d2c8] p-4 shadow-sm flex flex-col gap-4 shrink-0">
+          <div className="flex p-1 bg-[#f4f4f2] rounded-md border border-[#d7d2c8]">
             <button
               onClick={() => setActiveSubTab('PENDING')}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeSubTab === 'PENDING' ? 'bg-white text-gray-900 shadow' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
+                activeSubTab === 'PENDING' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
               }`}
             >
               Chờ giao
             </button>
             <button
               onClick={() => setActiveSubTab('IN_TRANSIT')}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeSubTab === 'IN_TRANSIT' ? 'bg-white text-gray-900 shadow' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
+                activeSubTab === 'IN_TRANSIT' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
               }`}
             >
               Đang giao
@@ -77,11 +79,11 @@ export default function ShippingTab({
               placeholder="Tìm mã đơn, tên khách..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full rounded-md border-gray-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 border px-3"
+              className="block w-full rounded-md border-[#d7d2c8] pl-10 focus:border-[#7f7041] focus:ring-[#7f7041] sm:text-sm h-10 border px-3"
             />
           </div>
         </div>
-        <div className="flex-1 overflow-auto rounded-lg bg-white shadow-sm border border-gray-200 divide-y divide-gray-100">
+        <div className="flex-1 overflow-auto rounded-none md:rounded-sm bg-white shadow-sm border border-[#d7d2c8] divide-y divide-[#d7d2c8]">
           {displayedOrders.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-500">
               {activeSubTab === 'PENDING' ? 'Không có đơn hàng cần giao (GHN).' : 'Không có đơn hàng đang giao.'}
@@ -94,7 +96,7 @@ export default function ShippingTab({
                   setMode('SHIPPING');
                   openOrder(order.id);
                 }}
-                className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${activeOrder?.id === order.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
+                className={`w-full text-left p-4 hover:bg-[#f4f4f2] transition-colors ${activeOrder?.id === order.id ? 'bg-[#f4f4f2] border-l-4 border-[#7f7041]' : ''}`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-semibold text-gray-900">RO-{String(order.id).padStart(4, '0')}</span>
@@ -118,10 +120,10 @@ export default function ShippingTab({
           </div>
         ) : (
           <>
-            <div className="rounded-lg bg-white p-5 shadow-sm border border-gray-200 shrink-0 sticky top-0 z-10">
+            <div className="rounded-none md:rounded-sm bg-white p-5 shadow-sm border border-[#d7d2c8] shrink-0">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-sm">
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-800 border-b pb-2 mb-3">Thông tin Đơn hàng</h4>
+                  <h4 className="font-serif italic text-lg font-normal text-[#171717] border-b pb-2 mb-3">Thông tin Đơn hàng</h4>
                   <p className="flex justify-between items-start gap-4">
                     <span className="text-gray-500 whitespace-nowrap">Khách hàng:</span> 
                     <span className="font-medium text-gray-900 text-right">{activeOrder.customerName} - {activeOrder.customerPhone}</span>
@@ -148,9 +150,21 @@ export default function ShippingTab({
                     <span className="text-gray-500 whitespace-nowrap">Giao hàng:</span> 
                     <span className="font-medium text-gray-900 text-right">{activeOrder.deliveryMethod === 'GHN_DELIVERY' ? 'Giao hàng GHN' : 'Nhận tại cửa hàng'}</span>
                   </p>
+                  <div className="bg-white border border-gray-100 rounded p-3 mt-2 text-sm">
+                    <p className="font-medium text-gray-700 mb-1">
+                      Địa chỉ nhận hàng:
+                    </p>
+                    <p className="text-gray-600">
+                      {activeOrder.receiverName || activeOrder.customerName} - {activeOrder.receiverPhone || activeOrder.customerPhone}
+                    </p>
+                    <p className="text-gray-600 mt-1">
+                      {activeOrder.deliveryAddress || 'Nhận tại cửa hàng'}
+                    </p>
+                  </div>
                 </div>
+                
                 <div className="space-y-3 border-t lg:border-t-0 lg:border-l border-gray-200 lg:pl-6 pt-4 lg:pt-0">
-                  <h4 className="font-semibold text-gray-800 border-b pb-2 mb-3">Thông tin Tài chính</h4>
+                  <h4 className="font-serif italic text-lg font-normal text-[#171717] border-b pb-2 mb-3">Thông tin Tài chính</h4>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Phí thuê:</span>
                     <span className="font-medium">{formatCurrency(activeOrder.totalRentalFee || activeOrder.totalRentalPrice || 0)}</span>
@@ -171,13 +185,13 @@ export default function ShippingTab({
               </div>
             </div>
 
-            <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200 flex-1 flex flex-col">
+            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#d7d2c8] flex flex-col">
               {activeSubTab === 'PENDING' ? (
                 <>
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Đóng gói & Giao GHN</h3>
-                  <form onSubmit={(e) => { e.preventDefault(); submitShipping(); }} className="flex-1 flex flex-col gap-6 overflow-hidden">
-                    <div className="flex-1 overflow-auto space-y-4 pr-2">
-                      <h4 className="font-medium text-sm text-gray-700">Danh sách sản phẩm (Cần đóng gói)</h4>
+                  <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Đóng gói & Giao GHN</h3>
+                  <form onSubmit={(e) => { e.preventDefault(); submitShipping(); }} className="flex flex-col gap-6">
+                    <div className="space-y-4">
+                      <h4 className="font-serif italic text-lg font-normal text-[#171717]">Danh sách sản phẩm (Cần đóng gói)</h4>
                       {activeOrder.details?.map(detail => (
                         <div key={detail.id} className="p-4 border border-gray-200 rounded-md bg-gray-50 flex flex-col gap-3">
                           <div className="font-medium text-gray-900">{detail.costumeName}</div>
@@ -196,13 +210,16 @@ export default function ShippingTab({
                           label=""
                           value={handoverImageUrl}
                           disabled={isSubmitting}
-                          readyLabel="Ảnh đã được tải lên Cloudinary."
-                          autoUpload={true}
+                          readyLabel="Ảnh đã chọn."
+                          autoUpload={false}
+                          hideUploadButton={true}
+                          onFileSelect={(file) => setHandoverImageFile(file)}
                           onUploaded={handleHandoverImageUploaded}
                         />
-                        {handoverImageUrl && (
-                          <button type="button" onClick={() => setPreviewImage(handoverImageUrl)} className="mt-2 aspect-[2/1] w-full max-w-[200px] rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-                            <img src={handoverImageUrl} className="w-full h-full object-cover" alt="Minh chứng đóng gói" />
+                        {(handoverImageUrl || handoverImageFile) && (
+                          <button type="button" onClick={() => setPreviewImage(handoverImageFile ? URL.createObjectURL(handoverImageFile) : handoverImageUrl)} className="mt-2 text-xs font-medium text-[#7f7041] hover:underline flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]">image</span>
+                            Xem ảnh minh chứng đóng gói
                           </button>
                         )}
                       </div>
@@ -213,18 +230,18 @@ export default function ShippingTab({
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
                             rows={2}
-                            className="block w-full rounded-md border-gray-300 text-sm border p-3 focus:border-blue-500 focus:ring-blue-500"
+                            className="block w-full rounded-md border-[#d7d2c8] text-sm border p-3 focus:border-[#7f7041] focus:ring-[#7f7041]"
                             placeholder="Ghi chú đóng gói, tình trạng hàng..."
                           />
                         </div>
                     <div className="mt-auto">
-                      {(!handoverImageUrl || !handoverImageUrl.trim()) && (
-                        <p className="text-xs text-red-500 mb-2 italic">* Vui lòng tải lên ảnh minh chứng đóng gói</p>
+                      {(!handoverImageUrl && !handoverImageFile) && (
+                        <p className="text-xs text-red-500 mb-2 italic">* Vui lòng chọn ảnh minh chứng đóng gói</p>
                       )}
                       <button
                         type="submit"
-                        disabled={isSubmitting || !handoverImageUrl || !handoverImageUrl.trim()}
-                        className="w-full py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isSubmitting || (!handoverImageUrl && !handoverImageFile)}
+                        className="w-full py-2.5 px-4 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors focus:outline-none disabled:bg-[#d7d2c8] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSubmitting ? 'Đang xử lý...' : `GIAO HÀNG CHO GHN`}
                       </button>
@@ -235,8 +252,8 @@ export default function ShippingTab({
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Theo dõi Đơn Hàng GHN</h3>
-                  <div className="flex-1 flex flex-col gap-6 overflow-auto">
+                  <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Theo dõi Đơn Hàng GHN</h3>
+                  <div className="flex flex-col gap-6">
                     <div className="bg-orange-50 border border-orange-100 p-4 rounded-md flex items-center justify-between shrink-0">
                       <div>
                         <div className="text-sm text-orange-800 font-medium mb-1">Mã vận đơn GHN</div>
@@ -246,7 +263,7 @@ export default function ShippingTab({
                     </div>
 
                     <div className="border border-gray-200 rounded-md p-4 bg-gray-50">
-                      <h4 className="font-medium text-gray-900 mb-3">Danh sách sản phẩm chi tiết</h4>
+                      <h4 className="font-serif italic text-lg font-normal text-[#171717] mb-3">Danh sách sản phẩm chi tiết</h4>
                       <div className="space-y-4">
                         {activeOrder.details?.map(detail => (
                           <div key={detail.id} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3 bg-white">
@@ -288,12 +305,12 @@ export default function ShippingTab({
                     </div>
 
                     <div className="space-y-4 shrink-0">
-                      <h4 className="font-medium text-sm text-gray-700">Hành động trạng thái</h4>
+                      <h4 className="font-serif italic text-lg font-normal text-[#171717]">Hành động trạng thái</h4>
                       <div className="flex flex-col gap-3">
                         <button
                           onClick={() => markOrderRented()}
                           disabled={isSubmitting}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none disabled:bg-gray-400"
+                          className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-sm shadow-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none disabled:bg-gray-400"
                         >
                           <span className="material-symbols-outlined">check_circle</span>
                           XÁC NHẬN KHÁCH ĐÃ NHẬN HÀNG

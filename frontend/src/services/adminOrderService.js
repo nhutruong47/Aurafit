@@ -9,6 +9,10 @@ export const adminOrderService = {
     return response.data?.data ?? response.data;
   },
 
+  getOrderStatuses: async () => {
+    return await api.get(`/admin/orders/statuses`);
+  },
+
   getOrderDetail: async (orderId) => {
     const response = await api.get(`/orders/${orderId}/management`);
     return response.data?.data ?? response.data;
@@ -46,6 +50,11 @@ export const adminOrderService = {
 
   handleLostPackage: async (orderId, reason) => {
     const response = await api.post(`/admin/orders/${orderId}/lost-package`, null, { params: { reason } });
+    return response.data;
+  },
+
+  reportInvalidBank: async (orderId) => {
+    const response = await api.post(`/admin/orders/${orderId}/report-invalid-bank`);
     return response.data;
   }
 };

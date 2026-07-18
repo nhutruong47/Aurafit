@@ -199,6 +199,15 @@ public class UserServiceImpl implements UserService {
         if (request.address() != null) {
             user.setAddress(request.address());
         }
+        if (request.bankName() != null) {
+            user.setBankName(request.bankName());
+        }
+        if (request.bankAccountNumber() != null) {
+            user.setBankAccountNumber(request.bankAccountNumber());
+        }
+        if (request.bankAccountName() != null) {
+            user.setBankAccountName(request.bankAccountName());
+        }
 
         return toUserResponse(userRepository.save(user));
     }
@@ -240,7 +249,10 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getAddress(),
                 user.getRole(),
-                user.getStatus()
+                user.getStatus(),
+                user.getBankName(),
+                user.getBankAccountNumber(),
+                user.getBankAccountName()
         );
     }
 }

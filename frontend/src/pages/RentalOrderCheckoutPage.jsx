@@ -2,6 +2,7 @@ import CheckoutSummary from '../components/checkout/CheckoutSummary';
 import RentalItemCard from '../components/checkout/RentalItemCard';
 import EmptyState from '../components/ui/EmptyState';
 import ConfirmDialog from '../components/common/ConfirmDialog';
+import SearchableSelect from '../components/common/SearchableSelect';
 import { useCheckout } from '../hooks/useCheckout';
 
 export default function RentalOrderCheckoutPage({
@@ -251,24 +252,32 @@ export default function RentalOrderCheckoutPage({
                       <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Tỉnh/Thành phố *</label>
-                          <select value={selectedProvinceId} onChange={(e) => setSelectedProvinceId(e.target.value)} className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none">
-                            <option value="">Chọn Tỉnh/Thành</option>
-                            {provinces.map(p => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
-                          </select>
+                          <SearchableSelect
+                            value={selectedProvinceId}
+                            onChange={(val) => setSelectedProvinceId(val)}
+                            options={provinces.map(p => ({ value: p.ProvinceID, label: p.ProvinceName }))}
+                            placeholder="Chọn Tỉnh/Thành"
+                          />
                         </div>
                         <div>
                           <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Quận/Huyện *</label>
-                          <select value={selectedDistrictId} onChange={(e) => setSelectedDistrictId(e.target.value)} disabled={!selectedProvinceId} className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
-                            <option value="">Chọn Quận/Huyện</option>
-                            {districts.map(d => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
-                          </select>
+                          <SearchableSelect
+                            value={selectedDistrictId}
+                            onChange={(val) => setSelectedDistrictId(val)}
+                            disabled={!selectedProvinceId}
+                            options={districts.map(d => ({ value: d.DistrictID, label: d.DistrictName }))}
+                            placeholder="Chọn Quận/Huyện"
+                          />
                         </div>
                         <div>
                           <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Phường/Xã *</label>
-                          <select value={selectedWardCode} onChange={(e) => setSelectedWardCode(e.target.value)} disabled={!selectedDistrictId} className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
-                            <option value="">Chọn Phường/Xã</option>
-                            {wards.map(w => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
-                          </select>
+                          <SearchableSelect
+                            value={selectedWardCode}
+                            onChange={(val) => setSelectedWardCode(val)}
+                            disabled={!selectedDistrictId}
+                            options={wards.map(w => ({ value: w.WardCode, label: w.WardName }))}
+                            placeholder="Chọn Phường/Xã"
+                          />
                         </div>
                         <div className="md:col-span-3">
                           <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Địa chỉ chi tiết *</label>

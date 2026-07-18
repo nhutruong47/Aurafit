@@ -36,6 +36,31 @@ public class AdminOrderController {
         }
     }
 
+    @GetMapping("/statuses")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<ApiResponse<java.util.List<java.util.Map<String, String>>>> getOrderStatuses() {
+        java.util.Map<String, String> statusLabels = java.util.Map.ofEntries(
+            java.util.Map.entry("PENDING", "Chờ xác nhận"),
+            java.util.Map.entry("CONFIRMED", "Đã xác nhận"),
+            java.util.Map.entry("SHIPPING", "Đang giao hàng"),
+            java.util.Map.entry("RENTED", "Đang thuê"),
+            java.util.Map.entry("RETURNING", "Đang hoàn trả"),
+            java.util.Map.entry("RETURNED", "Đã trả đồ"),
+            java.util.Map.entry("PENDING_REFUND", "Chờ giải ngân"),
+            java.util.Map.entry("COMPLETED", "Hoàn thành"),
+            java.util.Map.entry("PICKED_UP", "Khách đã lấy hàng"),
+            java.util.Map.entry("CANCELLED", "Đã hủy")
+        );
+
+        java.util.List<java.util.Map<String, String>> statuses = java.util.Arrays.stream(OrderStatus.values())
+                .map(status -> java.util.Map.of(
+                        "value", status.name(), 
+                        "label", statusLabels.getOrDefault(status.name(), status.name())
+                ))
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success("Fetched order statuses successfully", statuses));
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ApiResponse<Page<StaffOrderDetailResponse>>> getAllOrders(
@@ -96,5 +121,12 @@ public class AdminOrderController {
     public ResponseEntity<ApiResponse<Void>> handleLostPackage(@PathVariable Long id, @RequestParam String reason) {
         orderService.handleLostPackage(id, reason);
         return ResponseEntity.ok(ApiResponse.success("Order marked as CANCELLED (Lost Package)", (Void) null));
+    }
+
+    @PostMapping("/{id}/report-invalid-bank")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<ApiResponse<Void>> reportInvalidBank(@PathVariable Long id) {
+        orderService.reportInvalidBank(id);
+        return ResponseEntity.ok(ApiResponse.success("Order marked as PENDING_REFUND due to invalid bank info", (Void) null));
     }
 }

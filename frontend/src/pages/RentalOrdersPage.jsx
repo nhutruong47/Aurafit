@@ -67,6 +67,7 @@ export default function RentalOrdersPage({ currentUser, onNavigate }) {
                   order={selectedOrder} 
                   isDetailLoading={isDetailLoading} 
                   onCancel={handleCancelClick} 
+                  currentUser={currentUser}
                 />
               )}
             </div>

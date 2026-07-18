@@ -25,7 +25,12 @@ public record OrderResponse(
         LocalDateTime rentalStartDate,
         LocalDateTime rentalEndDate,
         LocalDateTime createdAt,
-        List<OrderDetailResponse> details
+        List<OrderDetailResponse> details,
+        String ghnOrderCode,
+        String ghnReturnOrderCode,
+        BigDecimal totalLateFee,
+        BigDecimal totalDamageFee,
+        BigDecimal totalRefundedAmount
 ) {
     public record OrderDetailResponse(
             Long id,
@@ -77,7 +82,12 @@ public record OrderResponse(
                 order.getRentalStartDate(),
                 order.getRentalEndDate(),
                 order.getCreatedAt(),
-                details
+                details,
+                order.getGhnOrderCode(),
+                order.getGhnReturnOrderCode(),
+                order.getTotalLateFee(),
+                order.getTotalDamageFee(),
+                order.getTotalRefundedAmount()
         );
     }
 }

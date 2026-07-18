@@ -58,6 +58,7 @@ export function useStaffRentalOrders(currentUser) {
   const [mode, setMode] = useState('PICKUP');
   const [assessments, setAssessments] = useState({});
   const [handoverImageUrl, setHandoverImageUrl] = useState('');
+  const [handoverImageFile, setHandoverImageFile] = useState(null);
   const [note, setNote] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -288,10 +289,6 @@ export function useStaffRentalOrders(currentUser) {
       orderId: activeOrder?.id || activeOrderId,
       imageUrl: uploadedImageUrl,
     };
-    console.info('[Staff Pickup] Uploaded image URL', {
-      orderId: pickupImageDraftRef.current.orderId,
-      handoverImageUrl: uploadedImageUrl,
-    });
     setHandoverImageUrl(uploadedImageUrl);
   };
 
@@ -299,27 +296,12 @@ export function useStaffRentalOrders(currentUser) {
     if (!activeOrder) return;
     if (isSubmitting) return;
 
-    const draftedHandoverImageUrl =
-      pickupImageDraftRef.current.orderId === activeOrder.id
-        ? pickupImageDraftRef.current.imageUrl
-        : '';
-    const submittedImageUrl = (handoverImageUrl || draftedHandoverImageUrl).trim();
-    if (mode === 'PICKUP') {
-      if (submittedImageUrl && handoverImageUrl !== submittedImageUrl) {
-        setHandoverImageUrl(submittedImageUrl);
-      }
-      console.info('[Staff Pickup] Confirm Pickup image URL', {
-        handoverImageUrl,
-        draftedHandoverImageUrl,
-        payloadImageUrl: submittedImageUrl,
-      });
-    }
-    if (mode === 'PICKUP' && !submittedImageUrl) {
-      setError('Vui lòng tải ảnh minh chứng trước khi xác nhận Pickup.');
+    if (mode === 'PICKUP' && !handoverImageUrl && !handoverImageFile) {
+      setError('Vui lòng chọn ảnh minh chứng trước khi xác nhận Pickup.');
       return;
     }
-    if (mode === 'RETURN' && !submittedImageUrl) {
-      setError('Vui lòng tải ảnh minh chứng trước khi xác nhận Return.');
+    if (mode === 'RETURN' && !handoverImageUrl && !handoverImageFile) {
+      setError('Vui lòng chọn ảnh minh chứng trước khi xác nhận Return.');
       return;
     }
 
@@ -327,7 +309,21 @@ export function useStaffRentalOrders(currentUser) {
     setError('');
     setMessage('');
 
-    const payload = mode === 'PICKUP'
+    try {
+      let finalImageUrl = handoverImageUrl;
+      if (handoverImageFile) {
+        const { uploadImage } = await import('../services/uploadService');
+        const asset = await uploadImage(handoverImageFile);
+        finalImageUrl = asset?.secureUrl || asset?.secure_url || asset?.imageUrl || asset?.image_url || asset?.url || '';
+        setHandoverImageUrl(finalImageUrl);
+      }
+
+      const draftedHandoverImageUrl =
+        pickupImageDraftRef.current.orderId === activeOrder.id
+          ? pickupImageDraftRef.current.imageUrl
+          : '';
+      const submittedImageUrl = (finalImageUrl || draftedHandoverImageUrl).trim();
+      const payload = mode === 'PICKUP'
       ? {
           imageUrl: submittedImageUrl,
           note,
@@ -355,7 +351,6 @@ export function useStaffRentalOrders(currentUser) {
       });
     }
 
-    try {
       const savedHandovers = mode === 'PICKUP'
         ? await createPickupHandover(activeOrder.id, payload)
         : await createReturnHandover(activeOrder.id, payload);
@@ -366,6 +361,7 @@ export function useStaffRentalOrders(currentUser) {
       setActiveOrder(refreshedOrder);
       pickupImageDraftRef.current = { orderId: null, imageUrl: '' };
       setHandoverImageUrl('');
+      setHandoverImageFile(null);
       setNote('');
       setMessage(mode === 'PICKUP' ? 'Đã tạo biên bản bàn giao PICKUP.' : 'Đã ghi nhận khách trả đồ.');
 
@@ -381,9 +377,8 @@ export function useStaffRentalOrders(currentUser) {
     if (!activeOrder) return;
     if (isSubmitting) return;
 
-    const submittedImageUrl = (handoverImageUrl || '').trim();
-    if (!submittedImageUrl) {
-      setError('Vui lòng tải ảnh minh chứng đóng gói trước khi giao cho GHN.');
+    if (!handoverImageUrl && !handoverImageFile) {
+      setError('Vui lòng chọn ảnh minh chứng đóng gói trước khi giao cho GHN.');
       return;
     }
 
@@ -392,11 +387,21 @@ export function useStaffRentalOrders(currentUser) {
     setMessage('');
 
     try {
+      let finalImageUrl = handoverImageUrl;
+      if (handoverImageFile) {
+        const { uploadImage } = await import('../services/uploadService');
+        const asset = await uploadImage(handoverImageFile);
+        finalImageUrl = asset?.secureUrl || asset?.secure_url || asset?.imageUrl || asset?.image_url || asset?.url || '';
+        setHandoverImageUrl(finalImageUrl);
+      }
+      const submittedImageUrl = (finalImageUrl || '').trim();
+
       await adminOrderService.shipOrder(activeOrder.id);
       
       const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
       setActiveOrder(refreshedOrder);
       setHandoverImageUrl('');
+      setHandoverImageFile(null);
       setNote('');
       setMessage('Đã chuyển trạng thái sang SHIPPING (Giao cho GHN).');
 
@@ -599,6 +604,8 @@ export function useStaffRentalOrders(currentUser) {
     openOrder,
     setMode,
     setHandoverImageUrl,
+    setHandoverImageFile,
+    handoverImageFile,
     setNote,
     setPreviewImage,
     handleHandoverImageUploaded,

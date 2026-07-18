@@ -19,11 +19,11 @@ export default function DashboardTab({
           { label: 'Chờ trả', value: activeTotals.overdue, icon: 'warning', color: 'text-red-600' },
           { label: 'Đã hoàn thành', value: activeTotals.returned, icon: 'check_circle', color: 'text-green-600' },
         ].map((metric, idx) => (
-          <div key={idx} className="overflow-hidden rounded-lg bg-white shadow">
+          <div key={idx} className="overflow-hidden border border-[#d7d2c8] bg-white rounded-none md:rounded-sm shadow-sm">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <span className={`material-symbols-outlined text-3xl ${metric.color || 'text-gray-400'}`}>
+                  <span className={`material-symbols-outlined text-3xl ${metric.color || 'text-[#7f7041]'}`}>
                     {metric.icon}
                   </span>
                 </div>
@@ -38,8 +38,8 @@ export default function DashboardTab({
           </div>
         ))}
       </div>
-      <div className="rounded-lg bg-white shadow p-6">
-        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Công việc cần xử lý</h3>
+      <div className="border border-[#d7d2c8] bg-white rounded-none md:rounded-sm shadow-sm p-6">
+        <h3 className="font-serif italic text-2xl font-normal text-[#171717] mb-4">Công việc cần xử lý</h3>
         {priorityOrders?.length === 0 ? (
           <p className="text-sm text-gray-500">Tuyệt vời! Không có công việc nào cần xử lý khẩn cấp.</p>
         ) : (
@@ -52,18 +52,18 @@ export default function DashboardTab({
                   </div>
                   <div className="flex items-center gap-3">
                     <StatusBadge status={order.status} />
-                    <button onClick={() => { openOrder(order.id); setIsModalOpen(true); }} className="text-blue-600 hover:text-blue-900 font-medium text-xs">Xem chi tiết</button>
+                    <button onClick={() => { openOrder(order.id); setIsModalOpen(true); }} className="text-[#7f7041] hover:text-[#5c502b] font-medium text-xs underline underline-offset-2">Xem chi tiết</button>
                     {order.deliveryMethod === 'STORE_PICKUP' ? (
                       <>
                         {order.status === 'CONFIRMED' && (
-                          <button onClick={() => { navigate('/staff?tab=pickup'); setTimeout(() => openOrder(order.id), 100); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Đi tới Pickup</button>
+                          <button onClick={() => { navigate('/staff?tab=pickup'); setTimeout(() => openOrder(order.id), 100); }} className="px-4 py-2 border border-[#7f7041] text-[#7f7041] rounded-sm text-xs hover:bg-[#7f7041] hover:text-white transition-colors">Đi tới Pickup</button>
                         )}
                         {(order.status === 'RENTED' || order.status === 'PICKED_UP' || order.status === 'RETURNING') && (
-                          <button onClick={() => { navigate('/staff?tab=return'); setTimeout(() => openOrder(order.id), 100); }} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">Đi tới Return</button>
+                          <button onClick={() => { navigate('/staff?tab=return'); setTimeout(() => openOrder(order.id), 100); }} className="px-4 py-2 bg-[#111111] text-white rounded-sm text-xs hover:bg-[#7f7041] transition-colors">Đi tới Return</button>
                         )}
                       </>
                     ) : (
-                      <button onClick={() => { openOrder(order.id); setIsModalOpen(true); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Xử lý ngay</button>
+                      <button onClick={() => { openOrder(order.id); setIsModalOpen(true); }} className="px-4 py-2 border border-[#7f7041] text-[#7f7041] rounded-sm text-xs hover:bg-[#7f7041] hover:text-white transition-colors">Xử lý ngay</button>
                     )}
                   </div>
                </div>

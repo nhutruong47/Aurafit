@@ -32,8 +32,8 @@ export default function ProfileTab({ currentUser }) {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4 border-b pb-3">Thông tin cá nhân</h3>
+      <div className="rounded-none md:rounded-sm bg-white border border-[#d7d2c8] shadow-sm p-6">
+        <h3 className="font-serif italic text-xl font-normal text-[#171717] mb-4 border-b pb-3">Thông tin cá nhân</h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Họ và tên</label>
@@ -45,13 +45,13 @@ export default function ProfileTab({ currentUser }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Vai trò</label>
-            <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md font-mono text-blue-700 font-bold">{currentUser?.role}</div>
+            <div className="mt-1 p-3 bg-[#f4f4f2] border border-[#d7d2c8] rounded-md font-mono text-[#7f7041] font-bold">{currentUser?.role}</div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4 border-b pb-3">Đổi mật khẩu</h3>
+      <div className="rounded-none md:rounded-sm bg-white border border-[#d7d2c8] shadow-sm p-6">
+        <h3 className="font-serif italic text-xl font-normal text-[#171717] mb-4 border-b pb-3">Đổi mật khẩu</h3>
         <form onSubmit={handlePasswordChange} className="space-y-4">
           {profileMsg && <AlertMessage tone="success" text={profileMsg} />}
           {profileErr && <AlertMessage text={profileErr} />}
@@ -62,7 +62,7 @@ export default function ProfileTab({ currentUser }) {
               required
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
-              className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 border px-3"
+              className="block w-full rounded-md border-[#d7d2c8] focus:border-[#7f7041] focus:ring-[#7f7041] sm:text-sm h-10 border px-3"
             />
           </div>
           <div>
@@ -72,13 +72,13 @@ export default function ProfileTab({ currentUser }) {
               required
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 border px-3"
+              className="block w-full rounded-md border-[#d7d2c8] focus:border-[#7f7041] focus:ring-[#7f7041] sm:text-sm h-10 border px-3"
             />
           </div>
           <button
             type="submit"
             disabled={isChangingPwd || !oldPassword || !newPassword}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors disabled:bg-[#d7d2c8]"
           >
             {isChangingPwd ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
           </button>

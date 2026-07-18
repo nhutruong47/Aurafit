@@ -3,6 +3,8 @@ import AlertMessage from '../ui/AlertMessage';
 import ImageUploadField from '../ui/ImageUploadField';
 import { StatusBadge } from './StaffDashboardShared';
 import { adminOrderService } from '../../services/adminOrderService';
+import RefundDepositModal from './RefundDepositModal';
+import { uploadImage } from '../../services/uploadService';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
@@ -14,6 +16,18 @@ const formatDate = (dateString) => {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+  });
+};
+
+const formatDateTime = (dateString) => {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleString('vi-VN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
   });
 };
 
@@ -30,10 +44,13 @@ export default function ReturnTab({
   markOrderReturned,
   handleLostPackage
 }) {
-  const [activeSubTab, setActiveSubTab] = useState('PENDING'); // PENDING or IN_TRANSIT
-  const displayedOrders = filteredOrders.filter(o => 
-    activeSubTab === 'PENDING' ? o.status === 'RENTED' : (o.status === 'RETURNING' || o.status === 'RETURNED')
-  );
+  const [activeSubTab, setActiveSubTab] = useState('PENDING'); // PENDING, IN_TRANSIT, PENDING_REFUND
+  const displayedOrders = filteredOrders.filter(o => {
+    if (activeSubTab === 'PENDING') return o.status === 'RENTED';
+    if (activeSubTab === 'IN_TRANSIT') return o.status === 'RETURNING' || o.status === 'RETURNED';
+    if (activeSubTab === 'PENDING_REFUND') return o.status === 'PENDING_REFUND';
+    return false;
+  });
   
   const isOrderValidForTab = activeOrder && displayedOrders.some(o => o.id === activeOrder.id);
 
@@ -42,10 +59,12 @@ export default function ReturnTab({
   const [lateFee, setLateFee] = useState(0);
   const [inspectionNote, setInspectionNote] = useState('');
   const [returnImageUrl, setReturnImageUrl] = useState('');
+  const [returnImageFile, setReturnImageFile] = useState(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [lateDays, setLateDays] = useState(0);
 
   // Tự động tính phí trễ dựa trên ngày trả
@@ -91,6 +110,7 @@ export default function ReturnTab({
       setDamageFee(0);
       setInspectionNote('');
       setReturnImageUrl('');
+      setReturnImageFile(null);
       setError('');
       setMessage('');
       setLateDays(0);
@@ -121,11 +141,35 @@ export default function ReturnTab({
     setError('');
     setMessage('');
 
+    const calculatedRefund = Math.max(0, activeOrder.totalDeposit - Number(lateFee) - Number(damageFee));
+    
+    if (calculatedRefund > 0) {
+      setIsSubmitting(false);
+      setShowRefundModal(true);
+    } else {
+      await proceedCompleteOrder('');
+    }
+  };
+
+  const proceedCompleteOrder = async (receiptImageUrl) => {
+    setIsSubmitting(true);
+    setError('');
+    setMessage('');
+    
     try {
+      let finalReturnImageUrl = returnImageUrl;
+      if (returnImageFile) {
+        const asset = await uploadImage(returnImageFile);
+        finalReturnImageUrl = asset?.secureUrl || asset?.secure_url || asset?.imageUrl || asset?.image_url || asset?.url || '';
+        setReturnImageUrl(finalReturnImageUrl);
+      }
+
       const payload = {
         damageFee: Number(damageFee),
         lateFee: Number(lateFee),
-        inspectionNote: inspectionNote + (returnImageUrl ? `\n[Ảnh minh chứng: ${returnImageUrl}]` : ''),
+        inspectionNote: inspectionNote 
+          + (finalReturnImageUrl ? `\n[Ảnh minh chứng: ${finalReturnImageUrl}]` : '')
+          + (receiptImageUrl ? `\n[Biên lai chuyển khoản: ${receiptImageUrl}]` : ''),
         actualReturnDate: actualReturnDate
       };
 
@@ -141,11 +185,23 @@ export default function ReturnTab({
     }
   };
 
+  const handleRefundComplete = async (receiptImageUrl, reportedInvalid) => {
+    setShowRefundModal(false);
+    if (reportedInvalid) {
+      // It was already reported via reportInvalidBank API, just refresh
+      if (onOrderCompleted) {
+        onOrderCompleted(activeOrder.id);
+      }
+    } else if (receiptImageUrl) {
+      await proceedCompleteOrder(receiptImageUrl);
+    }
+  };
+
   const renderInspectionForm = () => (
     <>
-      <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Nghiệm thu & Thanh toán</h3>
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-6 overflow-hidden">
-        <div className="flex-1 overflow-auto space-y-4 pr-2">
+      <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Nghiệm thu & Thanh toán</h3>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Ngày trả thực tế</label>
@@ -164,16 +220,19 @@ export default function ReturnTab({
                 label=""
                 value={returnImageUrl}
                 disabled={isSubmitting}
-                readyLabel="Ảnh đã tải lên."
-                autoUpload={true}
+                readyLabel="Ảnh đã chọn."
+                autoUpload={false}
+                hideUploadButton={true}
+                onFileSelect={(file) => setReturnImageFile(file)}
                 onUploaded={(asset) => {
                   const url = asset?.secureUrl || asset?.secure_url || asset?.imageUrl || asset?.image_url || asset?.url || (typeof asset === 'string' ? asset : '');
                   setReturnImageUrl(url);
                 }}
               />
-              {returnImageUrl && (
-                <button type="button" onClick={() => setPreviewImage(returnImageUrl)} className="mt-2 text-xs text-blue-600 hover:underline">
-                  Xem ảnh minh chứng
+              {(returnImageUrl || returnImageFile) && (
+                <button type="button" onClick={() => setPreviewImage(returnImageFile ? URL.createObjectURL(returnImageFile) : returnImageUrl)} className="mt-2 text-xs font-medium text-[#7f7041] hover:underline flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">image</span>
+                  Xem ảnh minh chứng trả hàng
                 </button>
               )}
             </div>
@@ -216,7 +275,7 @@ export default function ReturnTab({
           </div>
           
           <div className="bg-blue-50 p-4 rounded-md mt-4 border border-blue-100">
-            <h4 className="font-medium text-blue-900 mb-2">Tổng kết thanh toán</h4>
+            <h4 className="font-serif italic text-lg font-normal text-[#171717] mb-2">Tổng kết thanh toán</h4>
             <div className="flex justify-between text-sm mb-1">
               <span className="text-blue-800">Tiền cọc khách đã trả:</span>
               <span className="font-medium">{formatCurrency(activeOrder.totalDeposit)}</span>
@@ -233,41 +292,143 @@ export default function ReturnTab({
         </div>
 
         <div className="border-t border-gray-200 pt-4 bg-white shrink-0 flex flex-col items-end gap-2">
-          {(!returnImageUrl || typeof returnImageUrl !== 'string' || !returnImageUrl.trim() || !actualReturnDate) && (
+          {((!returnImageUrl && !returnImageFile) || !actualReturnDate) && (
             <p className="text-xs text-red-500 italic">* Vui lòng chọn ngày trả thực tế và tải lên ảnh minh chứng</p>
           )}
           <button
             type="submit"
-            disabled={isSubmitting || !returnImageUrl || typeof returnImageUrl !== 'string' || !returnImageUrl.trim() || !actualReturnDate}
-            className="py-2.5 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubmitting || (!returnImageUrl && !returnImageFile) || !actualReturnDate}
+            className="py-2.5 px-6 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors focus:outline-none disabled:bg-[#d7d2c8] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Đang xử lý...' : `XÁC NHẬN NGHIỆM THU & HOÀN CỌC`}
           </button>
         </div>
       </form>
+      {showRefundModal && (
+        <RefundDepositModal 
+          order={activeOrder} 
+          refundAmount={Math.max(0, activeOrder.totalDeposit - Number(lateFee) - Number(damageFee))}
+          onClose={() => setShowRefundModal(false)}
+          onComplete={handleRefundComplete}
+        />
+      )}
     </>
   );
+
+  const renderDisbursementPanel = () => {
+    const hasBankInfo = activeOrder?.customer?.bankAccountNumber && activeOrder?.customer?.bankName;
+    const calculatedRefundAmount = Math.max(0, (activeOrder?.totalDeposit || 0) - (activeOrder?.totalLateFee || 0) - (activeOrder?.totalDamageFee || 0));
+    
+    const note = activeOrder?.inspectionNote || '';
+    const imgMatch = note.match(/\[Ảnh minh chứng:\s*(https?:\/\/[^\]]+)\]/);
+    const returnImageUrlFromNote = imgMatch ? imgMatch[1] : null;
+
+    return (
+      <>
+        <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Chi tiết giải ngân</h3>
+        <div className="flex flex-col gap-6">
+          <div className="bg-gray-50 border border-gray-200 p-4 rounded-md">
+            <h4 className="font-semibold text-gray-800 mb-3">Tóm tắt nghiệm thu</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tổng tiền cọc:</span>
+                <span className="font-medium text-gray-900">{formatCurrency(activeOrder?.totalDeposit)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tổng phí phạt (Trễ + Hư hỏng):</span>
+                <span className="font-medium text-red-600">- {formatCurrency((activeOrder?.totalLateFee || 0) + (activeOrder?.totalDamageFee || 0))}</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t font-semibold">
+                <span className="text-gray-800">Số tiền giải ngân:</span>
+                <span className="text-blue-600">{formatCurrency(calculatedRefundAmount)}</span>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-gray-200">
+              <span className="block text-sm text-gray-600 mb-2">Ảnh minh chứng nghiệm thu:</span>
+              {returnImageUrlFromNote ? (
+                <img src={returnImageUrlFromNote} alt="Minh chứng" className="w-32 h-32 object-cover rounded border border-gray-300" />
+              ) : (
+                <span className="text-sm text-gray-500 italic">Không có ảnh minh chứng</span>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 p-4 rounded-md">
+            <h4 className="font-semibold text-gray-800 mb-3">Thông tin nhận tiền (Khách hàng)</h4>
+            {hasBankInfo ? (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Ngân hàng:</span>
+                  <span className="font-medium text-gray-900">{activeOrder?.customer?.bankName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Số tài khoản:</span>
+                  <span className="font-medium text-gray-900">{activeOrder?.customer?.bankAccountNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Chủ tài khoản:</span>
+                  <span className="font-medium text-gray-900">{activeOrder?.customer?.bankAccountName}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md flex items-start gap-2">
+                <span className="material-symbols-outlined text-yellow-600 mt-0.5">warning</span>
+                <p className="text-sm text-yellow-800">Khách hàng chưa cập nhật số tài khoản. Vui lòng chờ khách thao tác trên hệ thống.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-gray-200 pt-4 mt-2 flex justify-end">
+            <button
+              onClick={() => setShowRefundModal(true)}
+              disabled={!hasBankInfo || isSubmitting}
+              className="py-2.5 px-6 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors disabled:bg-[#d7d2c8] disabled:cursor-not-allowed"
+            >
+              TIẾN HÀNH GIẢI NGÂN
+            </button>
+          </div>
+        </div>
+        {showRefundModal && (
+          <RefundDepositModal 
+            order={activeOrder} 
+            refundAmount={calculatedRefundAmount}
+            onClose={() => setShowRefundModal(false)}
+            onComplete={handleRefundComplete}
+          />
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="flex h-full gap-6">
       <div className="w-1/3 flex flex-col gap-4">
-        <div className="rounded-lg bg-white p-4 shadow-sm flex flex-col gap-4 shrink-0">
-          <div className="flex p-1 bg-gray-100 rounded-lg">
+        <div className="rounded-none md:rounded-sm bg-white border border-[#d7d2c8] p-4 shadow-sm flex flex-col gap-4 shrink-0">
+          <div className="flex p-1 bg-[#f4f4f2] rounded-md border border-[#d7d2c8]">
             <button
               onClick={() => setActiveSubTab('PENDING')}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeSubTab === 'PENDING' ? 'bg-white text-gray-900 shadow' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
+                activeSubTab === 'PENDING' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
               }`}
             >
               Cần thu hồi
             </button>
             <button
               onClick={() => setActiveSubTab('IN_TRANSIT')}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeSubTab === 'IN_TRANSIT' ? 'bg-white text-gray-900 shadow' : 'text-gray-500 hover:text-gray-700'
+              className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
+                activeSubTab === 'IN_TRANSIT' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
               }`}
             >
               Đang hoàn về
+            </button>
+            <button
+              onClick={() => setActiveSubTab('PENDING_REFUND')}
+              className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
+                activeSubTab === 'PENDING_REFUND' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
+              }`}
+            >
+              Chờ giải ngân
             </button>
           </div>
           <div className="relative">
@@ -277,14 +438,16 @@ export default function ReturnTab({
                placeholder="Tìm mã đơn, tên khách..."
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
-               className="block w-full rounded-md border-gray-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 border px-3"
+               className="block w-full rounded-md border-[#d7d2c8] pl-10 focus:border-[#7f7041] focus:ring-[#7f7041] sm:text-sm h-10 border px-3"
              />
           </div>
         </div>
-        <div className="flex-1 overflow-auto rounded-lg bg-white shadow-sm border border-gray-200 divide-y divide-gray-100">
+        <div className="flex-1 overflow-auto rounded-none md:rounded-sm bg-white shadow-sm border border-[#d7d2c8] divide-y divide-[#d7d2c8]">
           {displayedOrders.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-500">
-              {activeSubTab === 'PENDING' ? 'Không có đơn hàng cần thu hồi.' : 'Không có đơn hàng đang hoàn về.'}
+              {activeSubTab === 'PENDING' ? 'Không có đơn hàng cần thu hồi.' : 
+               activeSubTab === 'IN_TRANSIT' ? 'Không có đơn hàng đang hoàn về.' : 
+               'Không có đơn giải ngân.'}
             </div>
           ) : (
             displayedOrders.map(order => (
@@ -294,7 +457,7 @@ export default function ReturnTab({
                   setMode('RETURN');
                   openOrder(order.id);
                 }}
-                className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${activeOrder?.id === order.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
+                className={`w-full text-left p-4 hover:bg-[#f4f4f2] transition-colors ${activeOrder?.id === order.id ? 'bg-[#f4f4f2] border-l-4 border-[#7f7041]' : ''}`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-semibold text-gray-900">RO-{String(order.id).padStart(4, '0')}</span>
@@ -318,23 +481,27 @@ export default function ReturnTab({
           </div>
         ) : (
           <>
-            <div className="rounded-lg bg-white p-5 shadow-sm border border-gray-200 shrink-0 sticky top-0 z-10">
-              <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mb-3">Thông tin khách hàng & Đơn hàng</h3>
+            <div className="rounded-none md:rounded-sm bg-white p-5 shadow-sm border border-[#d7d2c8] shrink-0">
+              <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-2 mb-3">Thông tin khách hàng & Đơn hàng</h3>
               <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
                 <div><span className="text-gray-500">Khách hàng:</span> <span className="font-medium ml-1">{activeOrder.customerName}</span></div>
                 <div><span className="text-gray-500">Điện thoại:</span> <span className="font-medium ml-1">{activeOrder.customerPhone}</span></div>
+                <div><span className="text-gray-500">Ngày tạo đơn:</span> <span className="font-medium ml-1">{formatDateTime(activeOrder.createdAt)}</span></div>
+                <div><span className="text-gray-500">Giao hàng:</span> <span className="font-medium ml-1">{activeOrder.deliveryMethod === 'GHN_DELIVERY' ? 'Giao hàng GHN' : 'Nhận tại cửa hàng'}</span></div>
+                <div className="col-span-2"><span className="text-gray-500">Địa chỉ giao hàng:</span> <span className="font-medium ml-1">{activeOrder.deliveryAddress || 'Nhận tại cửa hàng'}</span></div>
                 <div><span className="text-gray-500">Ngày lấy dự kiến:</span> <span className="font-medium ml-1">{formatDate(activeOrder.rentalStartDate)}</span></div>
                 <div><span className="text-gray-500">Ngày trả dự kiến:</span> <span className="font-medium ml-1">{formatDate(activeOrder.rentalEndDate)}</span></div>
                 <div><span className="text-gray-500">Tiền thuê:</span> <span className="font-medium text-gray-900 ml-1">{formatCurrency(activeOrder.totalRentalPrice || activeOrder.totalRentalFee)}</span></div>
                 <div><span className="text-gray-500">Tổng cọc:</span> <span className="font-medium text-blue-600 ml-1">{formatCurrency(activeOrder.totalDeposit)}</span></div>
+                <div className="col-span-2"><span className="text-gray-500">Địa chỉ giao hàng:</span> <span className="font-medium ml-1">{activeOrder.deliveryAddress || 'Nhận tại cửa hàng'}</span></div>
               </div>
             </div>
 
-            <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200 flex-1 flex flex-col">
+            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#d7d2c8] flex flex-col">
               {activeSubTab === 'PENDING' ? (
                 activeOrder.deliveryMethod === 'STORE_PICKUP' ? renderInspectionForm() :
                 <>
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Theo dõi thu hồi GHN</h3>
+                  <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Theo dõi thu hồi GHN</h3>
                   <div className="flex-1 flex flex-col gap-6 justify-center max-w-sm mx-auto w-full">
                     <div className="text-center text-gray-600 mb-2">
                       <span className="material-symbols-outlined text-5xl text-blue-400 mb-4">archive</span>
@@ -344,17 +511,19 @@ export default function ReturnTab({
                     <button
                       onClick={() => returnOrder()}
                       disabled={isSubmitting}
-                      className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400"
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-sm shadow-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors focus:outline-none disabled:bg-[#d7d2c8]"
                     >
                       <span className="material-symbols-outlined">sync</span>
                       TẠO ĐƠN THU HỒI GHN
                     </button>
                   </div>
                 </>
+              ) : activeSubTab === 'PENDING_REFUND' ? (
+                renderDisbursementPanel()
               ) : (
                 activeOrder.status === 'RETURNING' ? (
                   <>
-                    <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Theo dõi Đơn Hàng Hoàn Trả GHN</h3>
+                    <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Theo dõi Đơn Hàng Hoàn Trả GHN</h3>
                     <div className="flex-1 flex flex-col gap-6 justify-center max-w-sm mx-auto w-full">
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
                         <span className="block text-sm text-gray-500 mb-1">Mã vận đơn thu hồi GHN</span>
@@ -366,7 +535,7 @@ export default function ReturnTab({
                         <button
                           onClick={() => markOrderReturned()}
                           disabled={isSubmitting}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400"
+                          className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-sm shadow-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors focus:outline-none disabled:bg-[#d7d2c8]"
                         >
                           <span className="material-symbols-outlined">inventory_2</span>
                           Xác nhận nhận hàng tại kho
@@ -379,7 +548,7 @@ export default function ReturnTab({
                               handleLostPackage('Thất lạc trong quá trình hoàn về (Lỗi GHN)');
                             }
                           }}
-                          className="w-full py-2.5 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-600 bg-white hover:bg-red-50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full py-2.5 px-4 border border-red-300 rounded-sm shadow-sm text-sm font-medium text-red-600 bg-white hover:bg-red-50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Báo Thất Lạc (Lỗi do GHN)
                         </button>

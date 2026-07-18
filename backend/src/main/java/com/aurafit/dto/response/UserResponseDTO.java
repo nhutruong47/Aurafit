@@ -14,6 +14,9 @@ public record UserResponseDTO(
         String phone,
         String address,
         Role role,
-        UserStatus status
+        UserStatus status,
+        String bankName,
+        String bankAccountNumber,
+        String bankAccountName
 ) {
 }

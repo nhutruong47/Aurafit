@@ -25,11 +25,11 @@ export default function StaffLayout({ currentUser }) {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { id: 'orders', label: 'Orders', icon: 'list_alt' },
-    { id: 'pickup', label: 'Pickup', icon: 'storefront' },
-    { id: 'shipping', label: 'Shipping', icon: 'local_shipping' },
-    { id: 'return', label: 'Return', icon: 'undo' },
-    { id: 'profile', label: 'Profile', icon: 'manage_accounts' },
+    { id: 'orders', label: 'Đơn hàng', icon: 'list_alt' },
+    { id: 'pickup', label: 'Giao hàng (Store)', icon: 'storefront' },
+    { id: 'shipping', label: 'Vận chuyển (GHN)', icon: 'local_shipping' },
+    { id: 'return', label: 'Nghiệm thu & Hoàn trả', icon: 'undo' },
+    { id: 'profile', label: 'Hồ sơ', icon: 'manage_accounts' },
   ];
 
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
@@ -39,11 +39,11 @@ export default function StaffLayout({ currentUser }) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 text-gray-900 font-sans">
+    <div className="flex h-screen overflow-hidden bg-[#f4f4f2] text-[#171717] font-sans">
       {/* Sidebar */}
-      <aside className="flex w-64 flex-col border-r border-gray-200 bg-white">
-        <div className="flex h-16 items-center px-6 border-b border-gray-200 bg-gray-900 text-white">
-          <span className="text-lg font-bold tracking-wider">AuraFit Staff</span>
+      <aside className="flex w-64 flex-col border-r border-[#d7d2c8] bg-[#111111] text-white">
+        <div className="flex h-16 items-center px-6 border-b border-white/10 bg-[#111111]">
+          <span className="text-xl font-serif italic tracking-wider">AuraFit Staff</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
@@ -51,10 +51,10 @@ export default function StaffLayout({ currentUser }) {
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-md px-4 py-3 text-sm font-medium transition-colors ${
                 currentTab === item.id
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-[#7f7041] text-white shadow-sm'
+                  : 'text-white/68 hover:bg-white/10 hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
@@ -63,16 +63,16 @@ export default function StaffLayout({ currentUser }) {
           ))}
         </nav>
 
-        <div className="border-t border-gray-200 p-4 relative">
+        <div className="border-t border-white/10 p-4 relative">
           <button
             onClick={() => setProfileOpen((prev) => !prev)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
           >
             <div className="flex items-center gap-2 overflow-hidden">
-              <span className="material-symbols-outlined text-gray-400">account_circle</span>
+              <span className="material-symbols-outlined text-white/60">account_circle</span>
               <span className="truncate">{currentUser.fullName || currentUser.email}</span>
             </div>
-            <span className="material-symbols-outlined text-gray-400 text-[18px]">
+            <span className="material-symbols-outlined text-white/60 text-[18px]">
               {profileOpen ? 'expand_less' : 'expand_more'}
             </span>
           </button>
@@ -96,9 +96,9 @@ export default function StaffLayout({ currentUser }) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-hidden flex flex-col bg-gray-50">
-        <header className="flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-8">
-          <h1 className="text-xl font-semibold text-gray-800 capitalize">
+      <main className="flex-1 overflow-hidden flex flex-col bg-[#f4f4f2]">
+        <header className="flex h-16 shrink-0 items-center border-b border-[#d7d2c8] bg-[#fdfdfb] px-8">
+          <h1 className="font-serif text-2xl font-normal italic text-[#171717] capitalize">
             {navItems.find(i => i.id === currentTab)?.label || 'Dashboard'}
           </h1>
         </header>

@@ -29,6 +29,8 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     openOrder,
     setMode,
     setHandoverImageUrl,
+    setHandoverImageFile,
+    handoverImageFile,
     setNote,
     setPreviewImage,
     handleHandoverImageUploaded,
@@ -73,7 +75,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     } else if (currentTab === 'pickup') {
       filtered = filtered.filter(o => o.status === 'CONFIRMED' && o.deliveryMethod === 'STORE_PICKUP');
     } else if (currentTab === 'return') {
-      filtered = filtered.filter(o => ((o.status === 'RENTED' || o.status === 'PICKED_UP') && o.deliveryMethod === 'STORE_PICKUP') || o.status === 'RETURNING' || o.status === 'RETURNED' || (o.status === 'RENTED' && o.deliveryMethod === 'GHN_DELIVERY'));
+      filtered = filtered.filter(o => ((o.status === 'RENTED' || o.status === 'PICKED_UP') && o.deliveryMethod === 'STORE_PICKUP') || o.status === 'RETURNING' || o.status === 'RETURNED' || o.status === 'PENDING_REFUND' || (o.status === 'RENTED' && o.deliveryMethod === 'GHN_DELIVERY'));
     } else if (currentTab === 'history') {
       filtered = filtered.filter(o => ['RETURNED', 'CANCELLED', 'COMPLETED', 'DAMAGED', 'LOST'].includes(o.status));
     }
@@ -178,6 +180,8 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               openOrder={openOrder}
               setMode={setMode}
               setHandoverImageUrl={setHandoverImageUrl}
+              setHandoverImageFile={setHandoverImageFile}
+              handoverImageFile={handoverImageFile}
               setNote={setNote}
               handleHandoverImageUploaded={handleHandoverImageUploaded}
               submitShipping={submitShipping}
@@ -201,6 +205,8 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               openOrder={openOrder}
               setMode={setMode}
               setHandoverImageUrl={setHandoverImageUrl}
+              setHandoverImageFile={setHandoverImageFile}
+              handoverImageFile={handoverImageFile}
               setNote={setNote}
               handleHandoverImageUploaded={handleHandoverImageUploaded}
               submitHandover={submitHandover}

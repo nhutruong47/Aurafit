@@ -1,5 +1,6 @@
 import { formatCurrency } from '../../utils/formatCurrency';
 import { SmallFact, StatusBadge } from './StaffDashboardShared';
+import { getDetailStatusLabel } from './StaffDashboardUtils';
 
 export default function StaffOrderDetails({ activeOrder, selectedDetailId, onSelectDetail, onPreviewImage }) {
   if (!activeOrder) {
@@ -47,7 +48,7 @@ export default function StaffOrderDetails({ activeOrder, selectedDetailId, onSel
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <SmallFact label="Item" value={detail.itemStatus} />
-                  <SmallFact label="Trả đồ" value={detail.returnStatus || 'Chưa trả'} />
+                  <SmallFact label="Trả đồ" value={detail.returnStatus ? getDetailStatusLabel(detail.returnStatus) : 'Chưa trả'} />
                   <SmallFact label="Phí thuê" value={formatCurrency(detail.rentalPrice || 0)} />
                   <SmallFact label="Tiền cọc" value={formatCurrency(detail.depositPrice || 0)} />
                   {detail.lateFee > 0 && (
@@ -82,7 +83,7 @@ export default function StaffOrderDetails({ activeOrder, selectedDetailId, onSel
                     <span className="border border-black px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]">
                       {handover.type}
                     </span>
-                    {handover.returnStatus && <StatusBadge status={handover.returnStatus} />}
+                    {handover.returnStatus && <StatusBadge status={handover.returnStatus} label={getDetailStatusLabel(handover.returnStatus)} />}
                     <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#999999]">
                       {new Date(handover.createdAt).toLocaleString('vi-VN')}
                     </span>

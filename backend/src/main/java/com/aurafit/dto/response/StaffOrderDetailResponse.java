@@ -15,6 +15,7 @@ public record StaffOrderDetailResponse(
         String customerName,
         String customerEmail,
         String customerPhone,
+        CustomerInfo customer,
         String receiverName,
         String receiverPhone,
         String deliveryAddress,
@@ -35,6 +36,12 @@ public record StaffOrderDetailResponse(
         BigDecimal totalDamageFee,
         String inspectionNote
 ) {
+    public record CustomerInfo(
+            String bankName,
+            String bankAccountNumber,
+            String bankAccountName
+    ) {}
+
     public record StaffOrderItemResponse(
             Long id,
             String costumeName,
@@ -88,6 +95,11 @@ public record StaffOrderDetailResponse(
                 order.getUser().getFullName(),
                 order.getUser().getEmail(),
                 order.getUser().getPhone(),
+                new CustomerInfo(
+                        order.getUser().getBankName(),
+                        order.getUser().getBankAccountNumber(),
+                        order.getUser().getBankAccountName()
+                ),
                 order.getReceiverName(),
                 order.getReceiverPhone(),
                 order.getDeliveryAddress(),

@@ -499,6 +499,25 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
+    public void reportInvalidBank(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING && order.getStatus() != com.aurafit.enums.OrderStatus.RETURNED && order.getStatus() != com.aurafit.enums.OrderStatus.PENDING_REFUND) {
+            throw new BadRequestException("Order must be RETURNING, RETURNED or PENDING_REFUND to report invalid bank.");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.PENDING_REFUND);
+        String note = "Thông tin ngân hàng bị sai, chờ khách cập nhật.";
+        order.setInspectionNote(order.getInspectionNote() != null && !order.getInspectionNote().isEmpty()
+                ? order.getInspectionNote() + "\n" + note
+                : note);
+
+        rentalOrderRepository.save(order);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<StaffOrderDetailResponse> getAllOrdersForStaff() {
         return rentalOrderRepository.findAllOrdersForStaff()

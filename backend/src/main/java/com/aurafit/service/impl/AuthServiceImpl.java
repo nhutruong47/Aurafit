@@ -129,7 +129,10 @@ public class AuthServiceImpl implements AuthService {
                 user.getPhone(),
                 user.getAddress(),
                 user.getRole(),
-                user.getStatus()
+                user.getStatus(),
+                user.getBankName(),
+                user.getBankAccountNumber(),
+                user.getBankAccountName()
         );
 
         return new AuthResponseDTO(accessToken, refreshToken, userDTO);
