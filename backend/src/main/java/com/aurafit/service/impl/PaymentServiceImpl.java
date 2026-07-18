@@ -127,9 +127,14 @@ public class PaymentServiceImpl implements PaymentService {
                 log.info("Auth token provided: {}", authToken != null ? "yes" : "no");
                 log.info("Expected secret: {}", sepayWebhookSecret);
 
-                if (authToken == null || !authToken.equals(sepayWebhookSecret)) {
+                // Allow empty or missing token for testing (SePay sends Apikey header)
+                if (sepayWebhookSecret != null && !sepayWebhookSecret.isBlank()) {
+                    if (authToken == null || !authToken.equals(sepayWebhookSecret)) {
                         log.warn("REJECTED: Invalid token");
                         throw new BadRequestException("Invalid Webhook Token");
+                    }
+                } else {
+                    log.warn("WARNING: sepayWebhookSecret not configured, allowing all requests");
                 }
 
                 log.info("Token validated successfully");
@@ -168,13 +173,13 @@ public class PaymentServiceImpl implements PaymentService {
                                                 "No payment found for orderId: " + orderId));
 
                 log.info("Payment found: {}, Amount in DB: {}, Transfer amount: {}",
-                                payment.getId(), payment.getAmount(), webhookBody.transferAmount());
+                                payment.getId(), payment.getAmount(), webhookBody.getTransferAmount());
 
-                if (webhookBody.transferAmount().compareTo(payment.getAmount()) < 0) {
+                if (webhookBody.getTransferAmount().compareTo(payment.getAmount()) < 0) {
                         log.warn("REJECTED: Amount mismatch");
                         throw new BadRequestException(
                                         "Transfer amount mismatch. Expected >= " + payment.getAmount()
-                                                        + ", got " + webhookBody.transferAmount());
+                                                        + ", got " + webhookBody.getTransferAmount());
                 }
 
                 payment.setStatus(PaymentStatus.PAID);
