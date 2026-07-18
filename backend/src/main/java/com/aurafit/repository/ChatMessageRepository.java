@@ -23,6 +23,11 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             ChatMessageRole role
     );
 
+    Optional<ChatMessage> findFirstByChatSessionAndRoleOrderByCreatedAtAsc(
+            ChatSession chatSession,
+            ChatMessageRole role
+    );
+
     long countByChatSessionAndRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
             ChatSession chatSession,
             ChatMessageRole role,

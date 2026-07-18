@@ -17,7 +17,22 @@ const formatFileSize = (sizeInBytes) => {
   return `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`;
 };
 
-export default function ImageUploadField({
+const validateImageFile = (file) => {
+  if (!file) {
+    throw new Error('Vui lòng chọn một ảnh để tải lên.');
+  }
+
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  if (!ACCEPTED_EXTENSIONS.includes(extension)) {
+    throw new Error('Chỉ chấp nhận ảnh jpg, jpeg, png hoặc webp.');
+  }
+
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    throw new Error('Ảnh vượt quá giới hạn 5 MB.');
+  }
+};
+
+function SingleImageUploadField({
   label = 'Ảnh',
   value,
   disabled = false,
@@ -35,6 +50,7 @@ export default function ImageUploadField({
   const [error, setError] = useState('');
   const autoUploadFileKeyRef = useRef('');
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!selectedFile) {
       setLocalPreviewUrl('');
@@ -63,6 +79,7 @@ export default function ImageUploadField({
 
     setSelectedFile(null);
   }, [uploadedAsset, value]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const previewUrl = useMemo(
     () => (
@@ -72,21 +89,6 @@ export default function ImageUploadField({
     ),
     [error, localPreviewUrl, uploadedAsset, value]
   );
-
-  const validateSelectedFile = (file) => {
-    if (!file) {
-      throw new Error('Vui lòng chọn một ảnh để tải lên.');
-    }
-
-    const extension = file.name.split('.').pop()?.toLowerCase() || '';
-    if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      throw new Error('Chỉ chấp nhận ảnh jpg, jpeg, png hoặc webp.');
-    }
-
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      throw new Error('Ảnh vượt quá giới hạn 5 MB.');
-    }
-  };
 
   const handleFileChange = (event) => {
     const nextFile = event.target.files?.[0] || null;
@@ -100,7 +102,7 @@ export default function ImageUploadField({
     }
 
     try {
-      validateSelectedFile(nextFile);
+      validateImageFile(nextFile);
       setSelectedFile(nextFile);
       onFileSelect?.(nextFile);
     } catch (validationError) {
@@ -141,6 +143,8 @@ export default function ImageUploadField({
     if (autoUploadFileKeyRef.current === fileKey) return;
     autoUploadFileKeyRef.current = fileKey;
     handleUpload();
+    // The upload callback intentionally uses the selected file from this render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoUpload, selectedFile, isUploading, uploadedAsset]);
 
   return (
@@ -168,19 +172,27 @@ export default function ImageUploadField({
         </div>
       )}
 
+      {showPreview && previewUrl && (
+        <div className="overflow-hidden border border-[#ebe7df] bg-[#fafaf8]">
+          <img src={previewUrl} alt="Xem trước ảnh tải lên" className="aspect-[3/4] w-full object-cover" />
+        </div>
+      )}
+
       {!autoUpload && !hideUploadButton && (
-      <button
-        type="button"
-        onClick={handleUpload}
-        disabled={disabled || isUploading || !selectedFile}
-        className="bg-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777]"
-      >
-        {isUploading ? 'Đang tải ảnh...' : 'Tải ảnh lên'}
-      </button>
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={disabled || isUploading || !selectedFile}
+          className="bg-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777]"
+        >
+          {isUploading ? 'Đang tải ảnh...' : 'Tải ảnh lên'}
+        </button>
       )}
 
       {autoUpload && selectedFile && isUploading && (
-        <p className="border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">Đang tải ảnh lên Cloudinary...</p>
+        <p className="border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+          Đang tải ảnh lên Cloudinary...
+        </p>
       )}
 
       {autoUpload && selectedFile && error && !isUploading && (
@@ -204,4 +216,190 @@ export default function ImageUploadField({
       {error && <p className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
     </div>
   );
+}
+
+function MultipleImageUploadField({
+  label = 'Ảnh đánh giá',
+  disabled = false,
+  maxFiles = 3,
+  onUploadsChange,
+  onUploadStateChange,
+}) {
+  const [items, setItems] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState('');
+  const itemsRef = useRef([]);
+  const previewUrlsRef = useRef(new Set());
+  const nextItemIdRef = useRef(0);
+  const isMountedRef = useRef(true);
+  const resolvedMaxFiles = Math.max(1, maxFiles);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    const previewUrls = previewUrlsRef.current;
+
+    return () => {
+      isMountedRef.current = false;
+      previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+      previewUrls.clear();
+    };
+  }, []);
+
+  const emitUploadsChange = (nextItems) => {
+    onUploadsChange?.(
+      nextItems
+        .filter((item) => item.asset)
+        .map((item) => item.asset)
+    );
+  };
+
+  const commitItems = (nextItems) => {
+    itemsRef.current = nextItems;
+    if (isMountedRef.current) {
+      setItems(nextItems);
+      emitUploadsChange(nextItems);
+    }
+  };
+
+  const handleFilesChange = async (event) => {
+    const input = event.target;
+    const files = Array.from(input.files || []);
+    input.value = '';
+
+    if (files.length === 0) return;
+
+    setError('');
+    if (itemsRef.current.length + files.length > resolvedMaxFiles) {
+      const message = `Chỉ được chọn tối đa ${resolvedMaxFiles} ảnh.`;
+      setError(message);
+      notify.error(message);
+      return;
+    }
+
+    try {
+      files.forEach(validateImageFile);
+    } catch (validationError) {
+      const message = validationError.message || 'Tệp hình ảnh không hợp lệ.';
+      setError(message);
+      notify.error(message);
+      return;
+    }
+
+    const newItems = files.map((file) => {
+      nextItemIdRef.current += 1;
+      const previewUrl = URL.createObjectURL(file);
+      previewUrlsRef.current.add(previewUrl);
+      return {
+        id: nextItemIdRef.current,
+        file,
+        previewUrl,
+        asset: null,
+        status: 'uploading',
+      };
+    });
+
+    commitItems([...itemsRef.current, ...newItems]);
+    setIsUploading(true);
+    onUploadStateChange?.({ isUploading: true, error: '' });
+
+    for (const item of newItems) {
+      try {
+        const asset = await uploadImage(item.file);
+        commitItems(itemsRef.current.map((currentItem) => (
+          currentItem.id === item.id
+            ? { ...currentItem, asset, status: 'uploaded' }
+            : currentItem
+        )));
+      } catch (uploadError) {
+        const detail = uploadError.message || 'Không thể tải ảnh lên backend.';
+        const message = `Ảnh "${item.file.name}" tải lên thất bại: ${detail}`;
+        commitItems(itemsRef.current.map((currentItem) => (
+          currentItem.id === item.id
+            ? { ...currentItem, status: 'error' }
+            : currentItem
+        )));
+        if (isMountedRef.current) {
+          setError(message);
+          notify.error(message);
+        }
+      }
+    }
+
+    if (isMountedRef.current) {
+      setIsUploading(false);
+      onUploadStateChange?.({ isUploading: false, error: '' });
+    }
+  };
+
+  const removeItem = (itemId) => {
+    const removedItem = itemsRef.current.find((item) => item.id === itemId);
+    if (removedItem?.previewUrl) {
+      URL.revokeObjectURL(removedItem.previewUrl);
+      previewUrlsRef.current.delete(removedItem.previewUrl);
+    }
+
+    // TODO: The uploaded asset may become orphaned after removal. Clean it up later with a scheduled job.
+    commitItems(itemsRef.current.filter((item) => item.id !== itemId));
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+          {label}
+        </p>
+        <input
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp"
+          multiple
+          disabled={disabled || isUploading || items.length >= resolvedMaxFiles}
+          onChange={handleFilesChange}
+          className="block w-full text-sm file:mr-3 file:border-0 file:bg-black file:px-4 file:py-3 file:text-[10px] file:font-semibold file:uppercase file:tracking-[0.14em] file:text-white disabled:opacity-60"
+        />
+        <p className="mt-1 text-xs text-[#777777]">
+          Tối đa {resolvedMaxFiles} ảnh, mỗi ảnh không quá 5 MB. Hỗ trợ JPG, PNG và WEBP.
+        </p>
+      </div>
+
+      {items.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {items.map((item) => {
+            const previewUrl = getUploadAssetUrl(item.asset) || item.previewUrl;
+            return (
+              <div key={item.id} className="relative overflow-hidden border border-[#d7d2c8] bg-white p-1.5">
+                <img
+                  src={previewUrl}
+                  alt={`Ảnh đánh giá ${item.file.name}`}
+                  className="aspect-square w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeItem(item.id)}
+                  disabled={disabled}
+                  aria-label={`Xóa ảnh ${item.file.name}`}
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white transition hover:bg-red-600 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[16px]">close</span>
+                </button>
+                <div className="px-1 pb-1 pt-2 text-[10px] text-[#5f5e5e]">
+                  <p className="truncate" title={item.file.name}>{item.file.name}</p>
+                  {item.status === 'uploading' && <p className="mt-1 text-blue-700">Đang tải lên...</p>}
+                  {item.status === 'uploaded' && <p className="mt-1 text-green-700">Đã tải lên</p>}
+                  {item.status === 'error' && <p className="mt-1 text-red-700">Tải lên thất bại</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {error && <p className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+    </div>
+  );
+}
+
+export default function ImageUploadField(props) {
+  return props.multiple
+    ? <MultipleImageUploadField {...props} />
+    : <SingleImageUploadField {...props} />;
 }

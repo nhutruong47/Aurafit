@@ -74,6 +74,12 @@ public class Costume extends BaseEntity {
     @org.hibernate.annotations.Formula("(SELECT COUNT(i.id) FROM costume_items i WHERE i.costume_id = id AND i.status = 'AVAILABLE')")
     private int availableItemCount;
 
+    @org.hibernate.annotations.Formula("(SELECT COALESCE(AVG(r.rating), 0.0) FROM reviews r WHERE r.costume_id = id AND r.status = 'VISIBLE')")
+    private Double averageRating;
+
+    @org.hibernate.annotations.Formula("(SELECT COUNT(r.id) FROM reviews r WHERE r.costume_id = id AND r.status = 'VISIBLE')")
+    private Long reviewCount;
+
     @Transient
     public String getPrimaryImageUrl() {
         if (images == null || images.isEmpty()) {

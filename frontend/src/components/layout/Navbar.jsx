@@ -33,9 +33,14 @@ export default function Navbar({
         <div className="flex items-center gap-10">
           <button
             onClick={() => onNavigate('home')}
-            className="font-serif text-[28px] uppercase tracking-[0.2em] text-black"
+            className="flex items-center"
+            aria-label="Về trang chủ AuraFit"
           >
-            AuraFit
+            <img
+              src="/LogoAF.png"
+              alt="AuraFit"
+              className="h-16 w-auto object-contain"
+            />
           </button>
 
           <nav className="hidden gap-8 md:flex">
@@ -63,6 +68,21 @@ export default function Navbar({
             aria-label="Tìm kiếm"
           >
             <span className="material-symbols-outlined">search</span>
+          </button>
+          <button
+            onClick={() => {
+              onNavigate('chat', null, { state: { startNewChatAt: Date.now() } });
+              setMobileMenuOpen(false);
+            }}
+            className={`${iconButtonClass} ${currentPage === 'chat' ? 'text-[#99854e]' : ''}`}
+            aria-label="Trò chuyện với AuraFit Stylist"
+          >
+            <span
+              className="material-symbols-outlined"
+              style={currentPage === 'chat' ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              forum
+            </span>
           </button>
           <button
             onClick={() => goPage('checkout')}

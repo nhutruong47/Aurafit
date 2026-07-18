@@ -9,6 +9,7 @@ export const pagePathMap = {
   payment: '/payment',
   success: '/success',
   orders: '/orders',
+  chat: '/chat',
   adminDashboard: '/admin',
   staffDashboard: '/staff',
   yearbook: '/yearbook',

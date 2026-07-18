@@ -22,6 +22,8 @@ public record CostumeDTO(
         List<String> imageUrls,
         CostumeStatus status,
         int availableItemCount,
+        Double averageRating,
+        Long reviewCount,
         CategoryDTO category,
 
         CostumeMetadataDTO metadata,
@@ -50,6 +52,8 @@ public record CostumeDTO(
                 costume.getAllImageUrls(),
                 costume.getStatus(),
                 availableCount,
+                normalizeAverageRating(costume.getAverageRating()),
+                costume.getReviewCount() == null ? 0L : costume.getReviewCount(),
                 CategoryDTO.fromEntity(costume.getCategory()),
                 CostumeMetadataDTO.fromEntity(costume.getMetadata()),
                 List.of(),
@@ -76,6 +80,8 @@ public record CostumeDTO(
                 costume.getAllImageUrls(),
                 costume.getStatus(),
                 (int) pooledCount,
+                normalizeAverageRating(costume.getAverageRating()),
+                costume.getReviewCount() == null ? 0L : costume.getReviewCount(),
                 CategoryDTO.fromEntity(costume.getCategory()),
                 CostumeMetadataDTO.fromEntity(costume.getMetadata()),
                 costume.getItems() == null ? List.of() :
@@ -88,5 +94,12 @@ public record CostumeDTO(
     
     public static CostumeDTO fromEntity(Costume costume) {
         return fromEntity(costume, List.of());
+    }
+
+    private static double normalizeAverageRating(Double averageRating) {
+        if (averageRating == null) {
+            return 0.0;
+        }
+        return Math.round(averageRating * 10.0) / 10.0;
     }
 }
