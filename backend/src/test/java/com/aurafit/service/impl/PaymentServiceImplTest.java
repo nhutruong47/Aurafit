@@ -53,11 +53,17 @@ class PaymentServiceImplTest {
         // Arrange
         SePayWebhookRequest request = new SePayWebhookRequest(
                 "Sepay",
-                new BigDecimal("650000"), // Amount includes shipping fee
+                new BigDecimal("650000"), // transferAmount
+                null, // amount
                 "ARF123",
                 "FT123456",
                 VA_ACCOUNT,
-                1L
+                1L,
+                null, // fromAccount
+                null, // fromBank
+                null, // toAccount
+                null, // transactionDate
+                null  // status
         );
 
         RentalOrder order = new RentalOrder();
@@ -91,11 +97,17 @@ class PaymentServiceImplTest {
         // Arrange
         SePayWebhookRequest request = new SePayWebhookRequest(
                 "Sepay",
-                new BigDecimal("600000"), // User forgot shipping fee
+                new BigDecimal("600000"), // transferAmount - User forgot shipping fee
+                null, // amount
                 "ARF123",
                 "FT123456",
                 VA_ACCOUNT,
-                1L
+                1L,
+                null, // fromAccount
+                null, // fromBank
+                null, // toAccount
+                null, // transactionDate
+                null  // status
         );
 
         RentalOrder order = new RentalOrder();
@@ -118,11 +130,11 @@ class PaymentServiceImplTest {
         });
 
         assertTrue(exception.getMessage().contains("Transfer amount mismatch"));
-        
+
         // Ensure no status updates were made
         assertEquals(PaymentStatus.PENDING, payment.getStatus());
         assertEquals(OrderStatus.PENDING, order.getStatus());
-        
+
         verify(paymentRepository, never()).save(any(Payment.class));
         verify(rentalOrderRepository, never()).save(any(RentalOrder.class));
     }
