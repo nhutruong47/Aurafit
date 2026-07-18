@@ -42,7 +42,7 @@ cloudinary:
 
 app:
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,https://aurafitstore.vercel.app}
   upload:
     image-folder: ${UPLOAD_IMAGE_FOLDER:aurafit}
     max-image-size-bytes: ${UPLOAD_MAX_IMAGE_SIZE_BYTES:5242880}
