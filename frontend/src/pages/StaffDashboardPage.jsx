@@ -22,6 +22,8 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     previewImage,
     isLoading,
     isSubmitting,
+    error,
+    message,
     activeTotals,
     loadOrders,
     openOrder,
@@ -31,6 +33,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     setPreviewImage,
     handleHandoverImageUploaded,
     submitHandover,
+    submitShipping,
     priorityOrders,
   } = useStaffRentalOrders(currentUser);
 
@@ -163,11 +166,17 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               handoverImageUrl={handoverImageUrl}
               note={note}
               isSubmitting={isSubmitting}
+              error={error}
+              message={message}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
               openOrder={openOrder}
+              setMode={setMode}
               setHandoverImageUrl={setHandoverImageUrl}
               setNote={setNote}
               handleHandoverImageUploaded={handleHandoverImageUploaded}
-              submitHandover={submitHandover}
+              submitShipping={submitShipping}
+              setPreviewImage={setPreviewImage}
             />
           )}
           {currentTab === 'pickup' && (
@@ -177,11 +186,17 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               handoverImageUrl={handoverImageUrl}
               note={note}
               isSubmitting={isSubmitting}
+              error={error}
+              message={message}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
               openOrder={openOrder}
+              setMode={setMode}
               setHandoverImageUrl={setHandoverImageUrl}
               setNote={setNote}
               handleHandoverImageUploaded={handleHandoverImageUploaded}
               submitHandover={submitHandover}
+              setPreviewImage={setPreviewImage}
             />
           )}
           {currentTab === 'return' && (

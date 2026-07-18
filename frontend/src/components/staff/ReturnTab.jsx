@@ -38,18 +38,31 @@ export default function ReturnTab({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [lateDays, setLateDays] = useState(0);
 
   // Tự động tính phí trễ dựa trên ngày trả
   useEffect(() => {
     if (activeOrder && actualReturnDate) {
-      const returnDate = new Date(actualReturnDate);
-      const endDate = new Date(activeOrder.rentalEndDate);
-      const startDate = new Date(activeOrder.rentalStartDate);
-      const diffTime = returnDate.getTime() - endDate.getTime();
+      const returnDateStr = actualReturnDate; 
+      const endDateStr = activeOrder.rentalEndDate?.split('T')[0] || returnDateStr;
+      const startDateStr = activeOrder.rentalStartDate?.split('T')[0] || returnDateStr;
+      
+      const rDate = new Date(returnDateStr);
+      rDate.setHours(0, 0, 0, 0);
+      
+      const eDate = new Date(endDateStr);
+      eDate.setHours(0, 0, 0, 0);
+      
+      const sDate = new Date(startDateStr);
+      sDate.setHours(0, 0, 0, 0);
+
+      const diffTime = rDate.getTime() - eDate.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
+      setLateDays(Math.max(0, diffDays));
+
       if (diffDays > 0) {
-        let rentalDurationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        let rentalDurationDays = Math.ceil((eDate.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24));
         if (rentalDurationDays <= 0) rentalDurationDays = 1;
         
         const totalRentalFee = Number(activeOrder.totalRentalFee || activeOrder.totalRentalPrice || 0);
@@ -72,6 +85,7 @@ export default function ReturnTab({
       setReturnImageUrl('');
       setError('');
       setMessage('');
+      setLateDays(0);
     }
   }, [activeOrder?.id]);
 
@@ -82,6 +96,17 @@ export default function ReturnTab({
     if (damageFee < 0 || lateFee < 0) {
       setError('Phí không thể là số âm');
       return;
+    }
+
+    if (activeOrder?.rentalStartDate && actualReturnDate) {
+      const rDate = new Date(actualReturnDate);
+      rDate.setHours(0, 0, 0, 0);
+      const sDate = new Date(activeOrder.rentalStartDate.split('T')[0] || activeOrder.rentalStartDate);
+      sDate.setHours(0, 0, 0, 0);
+      if (rDate.getTime() < sDate.getTime()) {
+        setError('Ngày trả thực tế không được trước ngày lấy (dự kiến).');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -183,6 +208,7 @@ export default function ReturnTab({
                       <input
                         type="date"
                         required
+                        min={activeOrder?.rentalStartDate?.split('T')[0] || ''}
                         className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         value={actualReturnDate}
                         onChange={(e) => setActualReturnDate(e.target.value)}
@@ -206,13 +232,20 @@ export default function ReturnTab({
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Phí phạt trễ (VND)</label>
+                      {lateDays > 0 && (
+                        <p className="mb-1 text-xs font-semibold text-red-600">
+                          Đơn hàng trả trễ {lateDays} ngày. Phí phạt = {lateDays} ngày x 1.5 x (giá thuê/ngày).
+                        </p>
+                      )}
                       <input
                         type="text"
                         className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         value={lateFee ? Number(lateFee).toLocaleString('vi-VN') : ''}
                         onChange={(e) => setLateFee(e.target.value.replace(/\D/g, ''))}
                       />
-                      <p className="mt-1 text-xs text-gray-500">Mặc định tính phí = 1.5x giá thuê/ngày.</p>
+                      {lateDays === 0 && (
+                        <p className="mt-1 text-xs text-gray-500">Mặc định tính phí = 1.5x giá thuê/ngày.</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Phí hư hỏng/thất lạc (VND)</label>

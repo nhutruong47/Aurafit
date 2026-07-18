@@ -6,6 +6,7 @@ import {
   fetchStaffOrders,
   updateHandoverImage,
 } from '../services/rentalOrderService';
+import { adminOrderService } from '../services/adminOrderService';
 import { getUserRoles } from '../utils/roles';
 
 const getHandoverImageUrl = (handover) => (
@@ -376,6 +377,37 @@ export function useStaffRentalOrders(currentUser) {
     }
   };
 
+  const submitShipping = async () => {
+    if (!activeOrder) return;
+    if (isSubmitting) return;
+
+    const submittedImageUrl = (handoverImageUrl || '').trim();
+    if (!submittedImageUrl) {
+      setError('Vui lòng tải ảnh minh chứng đóng gói trước khi giao cho GHN.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+    setMessage('');
+
+    try {
+      await adminOrderService.shipOrder(activeOrder.id);
+      
+      const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
+      setActiveOrder(refreshedOrder);
+      setHandoverImageUrl('');
+      setNote('');
+      setMessage('Đã chuyển trạng thái sang SHIPPING (Giao cho GHN).');
+
+      await loadOrders(activeOrder.id);
+    } catch (submitError) {
+      setError(submitError.message || 'Hệ thống gặp sự cố khi xử lý GHN.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const updateHandoverEvidenceImage = async (handoverType, asset) => {
     if (!activeOrder?.id || updatingHandoverImageType) return;
 
@@ -482,6 +514,7 @@ export function useStaffRentalOrders(currentUser) {
     handleHandoverImageUploaded,
     updateHandoverEvidenceImage,
     submitHandover,
+    submitShipping,
     assessments,
     updateAssessment,
     maxDeposit,
