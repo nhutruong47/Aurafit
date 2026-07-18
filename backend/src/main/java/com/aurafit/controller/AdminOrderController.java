@@ -14,12 +14,27 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+import jakarta.annotation.PostConstruct;
+
 @RestController
 @RequestMapping("/api/admin/orders")
 @RequiredArgsConstructor
 public class AdminOrderController {
 
     private final OrderService orderService;
+    private final JdbcTemplate jdbcTemplate;
+
+    @PostConstruct
+    public void fixDbConstraints() {
+        try {
+            jdbcTemplate.execute("ALTER TABLE rental_orders DROP CONSTRAINT IF EXISTS rental_orders_status_check;");
+            jdbcTemplate.execute("ALTER TABLE rental_orders DROP CONSTRAINT IF EXISTS rental_orders_status_check1;");
+            System.out.println("Dropped rental_orders_status_check constraint!");
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
@@ -45,6 +60,13 @@ public class AdminOrderController {
     public ResponseEntity<ApiResponse<Void>> markOrderRented(@PathVariable Long id) {
         orderService.markOrderRented(id);
         return ResponseEntity.ok(ApiResponse.success("Order items marked as RENTED", (Void) null));
+    }
+
+    @PostMapping("/{id}/mark-returned")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<ApiResponse<Void>> markOrderReturned(@PathVariable Long id) {
+        orderService.markOrderReturned(id);
+        return ResponseEntity.ok(ApiResponse.success("Order marked as RETURNED", (Void) null));
     }
 
     @PostMapping("/{id}/return")

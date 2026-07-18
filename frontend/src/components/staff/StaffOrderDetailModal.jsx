@@ -19,8 +19,14 @@ export default function StaffOrderDetailModal({
 
   const modalPickupInfo = getStaffPickupInfo(activeOrder);
   const showModalPickupInfo = canShowPickupInfo(activeOrder?.status);
-  const modalReturnInfo = getStaffReturnInfo(activeOrder);
-  const showModalReturnInfo = modalReturnInfo.returnedAt || modalReturnInfo.returnedBy || modalReturnInfo.returnNote || modalReturnInfo.returnImages.length > 0;
+  
+  const parseInspectionNote = (note) => {
+    if (!note) return { text: '', imageUrl: '' };
+    const match = note.match(/\[Ảnh minh chứng:\s*(.*?)\]/);
+    const imageUrl = match ? match[1] : '';
+    const text = note.replace(/\[Ảnh minh chứng:\s*.*?\]/, '').trim();
+    return { text, imageUrl };
+  };
 
   const copyToClipboard = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -137,26 +143,28 @@ export default function StaffOrderDetailModal({
 
           {showModalPickupInfo && (
             <section className="mb-6 rounded-lg border border-gray-200 p-4">
-              <h4 className="font-medium text-gray-900 mb-3">Thông tin Pickup</h4>
+              <h4 className="font-medium text-gray-900 mb-3">
+                {activeOrder.deliveryMethod === 'STORE_PICKUP' ? 'Thông tin Pickup (Tại cửa hàng)' : 'Thông tin Đóng gói (GHN)'}
+              </h4>
               <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                 {modalPickupInfo.pickedUpAt && (
                   <div>
-                    <span className="text-gray-500">Thời gian Pickup:</span>
+                    <span className="text-gray-500">Thời gian {activeOrder.deliveryMethod === 'STORE_PICKUP' ? 'Pickup' : 'Đóng gói'}:</span>
                     <p className="mt-1 font-medium">{formatDateTime(modalPickupInfo.pickedUpAt)}</p>
                   </div>
                 )}
                 {modalPickupInfo.pickedUpBy && (
                   <div>
-                    <span className="text-gray-500">Nhân viên Pickup:</span>
+                    <span className="text-gray-500">Nhân viên {activeOrder.deliveryMethod === 'STORE_PICKUP' ? 'Pickup' : 'Đóng gói'}:</span>
                     <p className="mt-1 font-medium">{modalPickupInfo.pickedUpBy}</p>
                   </div>
                 )}
                 <div className="sm:col-span-2">
-                  <span className="text-gray-500">Ghi chú Pickup:</span>
+                  <span className="text-gray-500">Ghi chú {activeOrder.deliveryMethod === 'STORE_PICKUP' ? 'Pickup' : 'Đóng gói'}:</span>
                   <p className="mt-1 font-medium whitespace-pre-line">{modalPickupInfo.pickupNote || 'Chưa có ghi chú'}</p>
                 </div>
                 <div className="sm:col-span-2">
-                  <span className="text-gray-500">Ảnh minh chứng Pickup:</span>
+                  <span className="text-gray-500">Ảnh minh chứng {activeOrder.deliveryMethod === 'STORE_PICKUP' ? 'Pickup' : 'Đóng gói'}:</span>
                   {modalPickupInfo.pickupImages.length > 0 ? (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {modalPickupInfo.pickupImages.map((imageUrl, index) => (
@@ -166,7 +174,7 @@ export default function StaffOrderDetailModal({
                           onClick={() => setPreviewImage(imageUrl)}
                           className="block h-24 w-24 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
                         >
-                          <img src={imageUrl} alt={`Ảnh minh chứng Pickup ${index + 1}`} className="h-full w-full object-cover" />
+                          <img src={imageUrl} alt={`Ảnh minh chứng ${index + 1}`} className="h-full w-full object-cover" />
                         </button>
                       ))}
                     </div>
@@ -177,41 +185,45 @@ export default function StaffOrderDetailModal({
               </div>
             </section>
           )}
-          {showModalReturnInfo && (
-            <section className="mb-6 rounded-lg border border-gray-200 p-4">
-              <h4 className="font-medium text-gray-900 mb-3">Thông tin Return</h4>
+
+          {(activeOrder.status === 'COMPLETED' || activeOrder.status === 'RETURNED') && (
+            <section className="mb-6 rounded-lg border border-gray-200 p-4 bg-gray-50">
+              <h4 className="font-medium text-gray-900 mb-3 text-blue-800">Thông tin Nghiệm thu & Hoàn trả</h4>
               <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
-                {modalReturnInfo.returnedAt && (
+                {activeOrder.actualReturnDate && (
                   <div>
-                    <span className="text-gray-500">Thời gian Return:</span>
-                    <p className="mt-1 font-medium">{formatDateTime(modalReturnInfo.returnedAt)}</p>
+                    <span className="text-gray-500">Ngày trả thực tế:</span>
+                    <p className="mt-1 font-medium">{formatDate(activeOrder.actualReturnDate)}</p>
                   </div>
                 )}
-                {modalReturnInfo.returnedBy && (
-                  <div>
-                    <span className="text-gray-500">Nhân viên Return:</span>
-                    <p className="mt-1 font-medium">{modalReturnInfo.returnedBy}</p>
-                  </div>
-                )}
-                <div className="sm:col-span-2">
-                  <span className="text-gray-500">Ghi chú Return:</span>
-                  <p className="mt-1 font-medium whitespace-pre-line">{modalReturnInfo.returnNote || 'Chưa có ghi chú'}</p>
+                <div>
+                  <span className="text-gray-500">Phí phạt trễ:</span>
+                  <p className={`mt-1 font-medium ${activeOrder.totalLateFee > 0 ? 'text-red-600' : ''}`}>
+                    {formatCurrency(activeOrder.totalLateFee || 0)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Phí hư hỏng/thất lạc:</span>
+                  <p className={`mt-1 font-medium ${activeOrder.totalDamageFee > 0 ? 'text-red-600' : ''}`}>
+                    {formatCurrency(activeOrder.totalDamageFee || 0)}
+                  </p>
                 </div>
                 <div className="sm:col-span-2">
-                  <span className="text-gray-500">Ảnh minh chứng Return:</span>
-                  {modalReturnInfo.returnImages.length > 0 ? (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {modalReturnInfo.returnImages.map((imageUrl, index) => (
-                        <button
-                          key={imageUrl}
-                          type="button"
-                          onClick={() => setPreviewImage(imageUrl)}
-                          className="block h-24 w-24 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
-                        >
-                          <img src={imageUrl} alt={`Ảnh minh chứng Return ${index + 1}`} className="h-full w-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
+                  <span className="text-gray-500">Ghi chú nghiệm thu:</span>
+                  <p className="mt-1 font-medium whitespace-pre-line text-gray-800">
+                    {parseInspectionNote(activeOrder.inspectionNote).text || 'Không có ghi chú'}
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <span className="text-gray-500">Ảnh minh chứng trả hàng:</span>
+                  {parseInspectionNote(activeOrder.inspectionNote).imageUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewImage(parseInspectionNote(activeOrder.inspectionNote).imageUrl)}
+                      className="mt-2 block h-24 w-24 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
+                    >
+                      <img src={parseInspectionNote(activeOrder.inspectionNote).imageUrl} alt="Ảnh minh chứng Return" className="h-full w-full object-cover" />
+                    </button>
                   ) : (
                     <p className="mt-1 font-medium">Không có ảnh minh chứng</p>
                   )}

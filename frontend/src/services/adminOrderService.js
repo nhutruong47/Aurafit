@@ -18,6 +18,11 @@ export const adminOrderService = {
     return response.data;
   },
 
+  markOrderReturned: async (orderId) => {
+    const response = await api.post(`/admin/orders/${orderId}/mark-returned`);
+    return response.data;
+  },
+
   returnOrder: async (orderId) => {
     const response = await api.post(`/admin/orders/${orderId}/return`);
     return response.data;

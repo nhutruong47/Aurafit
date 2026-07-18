@@ -34,6 +34,11 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     handleHandoverImageUploaded,
     submitHandover,
     submitShipping,
+    markOrderRented,
+    handleDeliveryFailed,
+    handleLostPackage,
+    returnOrder,
+    markOrderReturned,
     priorityOrders,
   } = useStaffRentalOrders(currentUser);
 
@@ -64,11 +69,11 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     let filtered = orders;
     
     if (currentTab === 'shipping') {
-      filtered = filtered.filter(o => o.status === 'CONFIRMED' && o.deliveryMethod === 'GHN_DELIVERY');
+      filtered = filtered.filter(o => (o.status === 'CONFIRMED' || o.status === 'SHIPPING') && o.deliveryMethod === 'GHN_DELIVERY');
     } else if (currentTab === 'pickup') {
       filtered = filtered.filter(o => o.status === 'CONFIRMED' && o.deliveryMethod === 'STORE_PICKUP');
     } else if (currentTab === 'return') {
-      filtered = filtered.filter(o => ((o.status === 'RENTED' || o.status === 'PICKED_UP') && o.deliveryMethod === 'STORE_PICKUP') || o.status === 'RETURNING');
+      filtered = filtered.filter(o => ((o.status === 'RENTED' || o.status === 'PICKED_UP') && o.deliveryMethod === 'STORE_PICKUP') || o.status === 'RETURNING' || o.status === 'RETURNED' || (o.status === 'RENTED' && o.deliveryMethod === 'GHN_DELIVERY'));
     } else if (currentTab === 'history') {
       filtered = filtered.filter(o => ['RETURNED', 'CANCELLED', 'COMPLETED', 'DAMAGED', 'LOST'].includes(o.status));
     }
@@ -176,6 +181,9 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               setNote={setNote}
               handleHandoverImageUploaded={handleHandoverImageUploaded}
               submitShipping={submitShipping}
+              markOrderRented={markOrderRented}
+              handleDeliveryFailed={handleDeliveryFailed}
+              handleLostPackage={handleLostPackage}
               setPreviewImage={setPreviewImage}
             />
           )}
@@ -209,6 +217,9 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               setMode={setMode}
               setPreviewImage={setPreviewImage}
               onOrderCompleted={loadOrders}
+              returnOrder={returnOrder}
+              markOrderReturned={markOrderReturned}
+              handleLostPackage={handleLostPackage}
             />
           )}
           {currentTab === 'profile' && (

@@ -33,7 +33,7 @@ export default function CheckoutSummary({
         {deliveryMethod === 'GHN_DELIVERY' && (
           <div className="flex items-center justify-between gap-6">
             <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-current opacity-80">
-              Phí vận chuyển
+              Phí vận chuyển (2 chiều)
             </span>
             <span className="font-medium">
               {isCalculatingFee ? 'Đang tính...' : `+ ${shippingFee.toLocaleString('vi-VN')} đ`}
