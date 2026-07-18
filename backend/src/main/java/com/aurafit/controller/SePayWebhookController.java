@@ -21,8 +21,8 @@ public class SePayWebhookController {
     @PostMapping("/sepay-webhooks")
     @Operation(summary = "Receive SePay Webhook")
     public ResponseEntity<WebhookResponse> handleSePayWebhook(
-            @RequestHeader("Authorization") String authHeader,
-            @Valid @RequestBody SePayWebhookRequest body
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody SePayWebhookRequest body
     ) {
         // SePay sends "Apikey <token>", extract token from header
         String token = (authHeader != null && authHeader.startsWith("Apikey "))
