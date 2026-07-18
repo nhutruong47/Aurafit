@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CatalogProductCard from '../components/catalog/CatalogProductCard';
 import ProductHero from '../components/product/ProductHero';
+import TryOnPanel from '../components/product/TryOnPanel';
 import AlertMessage from '../components/ui/AlertMessage';
 import { fetchCostumeById, fetchRelatedCostumes } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
-import { getCostumeApiCategoryName, toCartItemFromCostume } from '../utils/costumeUtils';
+import {
+  getCostumeApiCategoryName,
+  getCostumeImage,
+  toCartItemFromCostume,
+} from '../utils/costumeUtils';
 
 export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, currentUser }) {
   const { productId } = useParams();
@@ -28,6 +33,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
 
   const [rentalStartDate, setRentalStartDate] = useState(() => getLocalDateString(0));
   const [rentalEndDate, setRentalEndDate] = useState(() => getLocalDateString(1));
+  const tryOnRef = useRef(null);
 
   useEffect(() => {
     if (!productId) {
@@ -200,6 +206,53 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
                 {product.description ||
                   'Trang phục cao cấp mang đến trải nghiệm nổi bật cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu chỉn chu và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
               </p>
+            </div>
+
+            <div className="flex flex-col justify-center gap-3 border border-[#cfc4c5] bg-white p-5">
+              <button
+                type="button"
+                onClick={() => tryOnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="w-full border border-[#99854e] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#99854e] transition-all duration-300 hover:bg-[#99854e] hover:text-white"
+              >
+                AI Virtual Try-On
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate?.('chat', product)}
+                className="w-full border border-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-black hover:text-white"
+              >
+                Chatbot tư vấn
+              </button>
+            </div>
+          </div>
+        )}
+
+        {product && (
+          <div
+            ref={tryOnRef}
+            id="try-on-section"
+            className="mt-6 overflow-hidden border border-[#cfc4c5] bg-white"
+          >
+            <div className="flex items-center gap-3 border-b border-[#eee] px-6 py-4">
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-full text-white"
+                style={{ background: '#99854e' }}
+              >
+                <span className="material-symbols-outlined text-[20px]">apparel</span>
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-[#1A1A1A]">AI Virtual Try-On</h2>
+                <p className="text-xs text-gray-500">
+                  Tải ảnh của bạn để xem trước khi mặc thử trang phục này
+                </p>
+              </div>
+            </div>
+            <div className="p-6">
+              <TryOnPanel
+                productId={product.id}
+                productName={product.name || product.title || 'Costume'}
+                productImageUrl={getCostumeImage(product)}
+              />
             </div>
           </div>
         )}
