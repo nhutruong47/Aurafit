@@ -137,9 +137,14 @@ public class PaymentServiceImpl implements PaymentService {
                         throw new BadRequestException("Transfer amount is required");
                 }
 
+                String transactionCode = webhookBody.code();
+                if (transactionCode == null || transactionCode.isBlank()) {
+                        throw new BadRequestException("Transaction code is required");
+                }
+
                 // 1) Idempotency
-                if (paymentRepository.findFirstByTransactionId(webhookBody.code()).isPresent()) {
-                        log.info("Skipping previously processed SePay transaction: {}", webhookBody.code());
+                if (paymentRepository.findFirstByTransactionId(transactionCode).isPresent()) {
+                        log.info("Skipping previously processed SePay transaction: {}", transactionCode);
                         return;
                 }
 
@@ -158,12 +163,16 @@ public class PaymentServiceImpl implements PaymentService {
                                                         + ", got " + receivingAccount);
                 }
 
-                // 3) Resolve order
-                Matcher matcher = ORDER_ID_PATTERN.matcher(webhookBody.content());
+                // 3) Resolve order from content
+                String content = webhookBody.content();
+                if (content == null || content.isBlank()) {
+                        throw new BadRequestException("Transfer content is required");
+                }
+                Matcher matcher = ORDER_ID_PATTERN.matcher(content);
                 if (!matcher.find()) {
                         log.warn("Rejected SePay webhook without a valid order reference");
                         throw new BadRequestException(
-                                        "No valid order reference found in transfer content: " + webhookBody.content());
+                                        "No valid order reference found in transfer content: " + content);
                 }
                 Long orderId = Long.valueOf(matcher.group(1));
 
@@ -180,7 +189,7 @@ public class PaymentServiceImpl implements PaymentService {
                 }
 
                 payment.setStatus(PaymentStatus.PAID);
-                payment.setTransactionId(webhookBody.code());
+                payment.setTransactionId(transactionCode);
                 paymentRepository.save(payment);
 
                 RentalOrder order = payment.getRentalOrder();
@@ -195,7 +204,7 @@ public class PaymentServiceImpl implements PaymentService {
                                 costumeItemRepository.save(item);
                         }
                 }
-                log.info("Processed SePay transaction {} for order {}", webhookBody.code(), orderId);
+                log.info("Processed SePay transaction {} for order {}", transactionCode, orderId);
         }
 
         @Override

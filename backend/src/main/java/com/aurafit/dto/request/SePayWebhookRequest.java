@@ -6,18 +6,20 @@ import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 
 public record SePayWebhookRequest(
+        // SePay sends various field names, accept both
         String gateway,
 
         @JsonProperty("transfer_amount")
         BigDecimal transferAmount,
 
-        // SePay sends "amount" in some webhooks
+        // SePay also sends "amount" in some webhooks
         BigDecimal amount,
 
         @NotBlank
         String content,
 
         @NotBlank
+        @JsonProperty("code")
         String code,
 
         @JsonProperty("accountNumber")

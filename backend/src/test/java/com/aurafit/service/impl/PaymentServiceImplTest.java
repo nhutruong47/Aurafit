@@ -59,10 +59,10 @@ class PaymentServiceImplTest {
                 "Sepay",
                 new BigDecimal("650000"), // transferAmount
                 null, // amount
-                "ARF123",
-                "FT123456",
-                VA_ACCOUNT,
-                1L,
+                "ARF123", // content
+                "FT123456", // code
+                VA_ACCOUNT, // accountNumber
+                1L, // sePayId
                 null, // fromAccount
                 null, // fromBank
                 null, // toAccount
@@ -103,10 +103,10 @@ class PaymentServiceImplTest {
                 "Sepay",
                 new BigDecimal("600000"), // transferAmount - User forgot shipping fee
                 null, // amount
-                "ARF123",
-                "FT123456",
-                VA_ACCOUNT,
-                1L,
+                "ARF123", // content
+                "FT123456", // code
+                VA_ACCOUNT, // accountNumber
+                1L, // sePayId
                 null, // fromAccount
                 null, // fromBank
                 null, // toAccount
