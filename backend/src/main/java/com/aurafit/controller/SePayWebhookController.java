@@ -1,27 +1,57 @@
+package com.aurafit.controller;
 
+import com.aurafit.dto.request.SePayWebhookRequest;
+import com.aurafit.service.PaymentService;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import org.springframework.context.annotation.Profile;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
+@RestController
+@RequestMapping("/api/public/payment")
+@CrossOrigin(origins = "*", maxAge = 3600)
+public class SePayWebhookController {
 
-//
-package com.aurafit.dto.request;
+    private final PaymentService paymentService;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+    public SePayWebhookController(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
 
     @PostMapping("/sepay-webhooks")
     @Operation(summary = "Receive SePay Webhook")
     public ResponseEntity<WebhookResponse> handleSePayWebhook(
-            @RequestHeader("X-SePay-Auth-Token") String token,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestHeader(value = "X-SePay-Auth-Token", required = false) String sepayToken,
             @Valid @RequestBody SePayWebhookRequest body
     ) {
+        String token = null;
+        if (authHeader != null && authHeader.startsWith("Apikey ")) {
+            token = authHeader.substring(7);
+        } else if (sepayToken != null) {
+            token = sepayToken;
+        } else if (authHeader != null) {
+            token = authHeader;
+        }
         paymentService.processSePayWebhook(body, token);
-        return ResponseEntity.ok(new WebhookResponse(200, "Success"));
+        return ResponseEntity.ok(WebhookResponse.ok());
     }
 
-        public String getContent() {
-                return content != null ? content : "";
-        }
+    @PostMapping("/test-webhook")
+    @Profile("dev")
+    @Operation(summary = "[DEV ONLY] Simulate SePay webhook to test payment flow")
+    public ResponseEntity<WebhookResponse> simulateWebhook(
+            @Valid @RequestBody SePayWebhookRequest body
+    ) {
+        paymentService.processTestWebhook(body);
+        return ResponseEntity.ok(WebhookResponse.ok());
+    }
 
-        public String getCode() {
-                return code != null ? code : "";
+    private record WebhookResponse(boolean success, String message) {
+        public static WebhookResponse ok() {
+            return new WebhookResponse(true, "Success");
         }
+    }
 }
