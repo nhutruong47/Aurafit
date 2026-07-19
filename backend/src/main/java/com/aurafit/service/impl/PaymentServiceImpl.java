@@ -129,8 +129,12 @@ public class PaymentServiceImpl implements PaymentService {
 
                 // Allow empty or missing token for testing (SePay sends Apikey header)
                 if (sepayWebhookSecret != null && !sepayWebhookSecret.isBlank()) {
-                    if (authToken == null || !authToken.equals(sepayWebhookSecret)) {
-                        log.warn("REJECTED: Invalid token");
+                    if (authToken == null) {
+                        log.warn("REJECTED: Missing Authorization header. Expected value: '{}'", sepayWebhookSecret);
+                        throw new BadRequestException("Invalid Webhook Token");
+                    }
+                    if (!authToken.equals(sepayWebhookSecret)) {
+                        log.warn("REJECTED: Token mismatch. Received='{}' Expected='{}'", authToken, sepayWebhookSecret);
                         throw new BadRequestException("Invalid Webhook Token");
                     }
                 } else {
@@ -151,13 +155,21 @@ public class PaymentServiceImpl implements PaymentService {
                 }
 
                 // 2) Sanity check on the receiving account
+                // SePay sends: accountNumber = real bank account, subAccount = virtual sub-account
                 String accountNumber = webhookBody.accountNumber();
-                log.info("VA Account: {}, Webhook accountNumber: {}", sepayVaAccount, accountNumber);
-                if (accountNumber != null && !accountNumber.isBlank() && !accountNumber.equals(sepayVaAccount)) {
-                        log.warn("REJECTED: Account mismatch");
+                String subAccount = webhookBody.subAccount();
+                log.info("VA Account configured: {}, Webhook accountNumber: {}, subAccount: {}",
+                                sepayVaAccount, accountNumber, subAccount);
+                boolean accountMatches = (sepayVaAccount == null || sepayVaAccount.isBlank())
+                        || (accountNumber != null && accountNumber.equals(sepayVaAccount))
+                        || (subAccount != null && subAccount.equals(sepayVaAccount));
+                if (!accountMatches) {
+                        log.warn("REJECTED: Account mismatch. Expected={}, got accountNumber={} subAccount={}",
+                                        sepayVaAccount, accountNumber, subAccount);
                         throw new BadRequestException(
                                         "Transfer arrived on a different account. Expected " + sepayVaAccount
-                                                        + ", got " + accountNumber);
+                                                        + ", got accountNumber=" + accountNumber
+                                                        + " subAccount=" + subAccount);
                 }
 
                 // 3) Resolve order from content
