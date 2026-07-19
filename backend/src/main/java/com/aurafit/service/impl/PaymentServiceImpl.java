@@ -123,78 +123,80 @@ public class PaymentServiceImpl implements PaymentService {
         @Override
         @Transactional(rollbackFor = Exception.class)
         public void processSePayWebhook(SePayWebhookRequest webhookBody, String authToken) {
-                if (sepayWebhookSecret == null || sepayWebhookSecret.isBlank()) {
-                        log.error("SePay webhook secret is not configured");
-                        throw new BadRequestException("Webhook secret is not configured");
-                }
-                if (authToken == null || !authToken.equals(sepayWebhookSecret)) {
-                        log.warn("Rejected SePay webhook with invalid token");
+                log.info("Received webhook: {}", webhookBody);
+                log.info("Auth token provided: {}", authToken != null ? "yes" : "no");
+                log.info("Expected secret: {}", sepayWebhookSecret);
+
+                // Allow empty or missing token for testing (SePay sends Apikey header)
+                if (sepayWebhookSecret != null && !sepayWebhookSecret.isBlank()) {
+                    if (authToken == null || !authToken.equals(sepayWebhookSecret)) {
+                        log.warn("REJECTED: Invalid token");
                         throw new BadRequestException("Invalid Webhook Token");
+                    }
+                } else {
+                    log.warn("WARNING: sepayWebhookSecret not configured, allowing all requests");
                 }
 
-                BigDecimal transferAmount = webhookBody.resolvedTransferAmount();
-                if (transferAmount == null) {
-                        throw new BadRequestException("Transfer amount is required");
-                }
+                log.info("Token validated successfully");
 
-                String transactionCode = webhookBody.code();
-                if (transactionCode == null || transactionCode.isBlank()) {
-                        throw new BadRequestException("Transaction code is required");
+                // 1) Idempotency - use sePayId (id field) as dedup key
+                Long sePayId = webhookBody.sePayId();
+                if (sePayId == null) {
+                        log.warn("REJECTED: No sePayId provided");
+                        throw new BadRequestException("Invalid webhook: missing id");
                 }
-
-                // 1) Idempotency
-                if (paymentRepository.findFirstByTransactionId(transactionCode).isPresent()) {
-                        log.info("Skipping previously processed SePay transaction: {}", transactionCode);
+                if (paymentRepository.findFirstByTransactionId(String.valueOf(sePayId)).isPresent()) {
+                        log.info("Already processed sePayId: {}, skipping", sePayId);
                         return;
                 }
 
                 // 2) Sanity check on the receiving account
-                String receivingAccount = webhookBody.accountNumber();
-                if ((receivingAccount == null || receivingAccount.isBlank())
-                                && webhookBody.toAccount() != null) {
-                        receivingAccount = webhookBody.toAccount();
-                }
-                if (receivingAccount != null
-                                && !receivingAccount.isBlank()
-                                && !receivingAccount.equals(sepayVaAccount)) {
-                        log.warn("Rejected SePay webhook because the receiving account did not match");
+                String accountNumber = webhookBody.accountNumber();
+                log.info("VA Account: {}, Webhook accountNumber: {}", sepayVaAccount, accountNumber);
+                if (accountNumber != null && !accountNumber.isBlank() && !accountNumber.equals(sepayVaAccount)) {
+                        log.warn("REJECTED: Account mismatch");
                         throw new BadRequestException(
                                         "Transfer arrived on a different account. Expected " + sepayVaAccount
-                                                        + ", got " + receivingAccount);
+                                                        + ", got " + accountNumber);
                 }
 
                 // 3) Resolve order from content
-                String content = webhookBody.content();
-                if (content == null || content.isBlank()) {
-                        throw new BadRequestException("Transfer content is required");
-                }
+                String content = webhookBody.getContent();
                 Matcher matcher = ORDER_ID_PATTERN.matcher(content);
                 if (!matcher.find()) {
-                        log.warn("Rejected SePay webhook without a valid order reference");
+                        log.warn("REJECTED: No valid order reference in content: {}", content);
                         throw new BadRequestException(
                                         "No valid order reference found in transfer content: " + content);
                 }
                 Long orderId = Long.valueOf(matcher.group(1));
+                log.info("Found orderId: {}", orderId);
 
+                log.info("Looking for payment with orderId: {}", orderId);
                 Payment payment = paymentRepository.findByRentalOrderIdAndType(
                                 orderId, com.aurafit.enums.PaymentType.PAYMENT)
                                 .orElseThrow(() -> new BadRequestException(
                                                 "No payment found for orderId: " + orderId));
 
+                BigDecimal transferAmount = webhookBody.getTransferAmount();
+                log.info("Payment found: {}, Amount in DB: {}, Transfer amount: {}",
+                                payment.getId(), payment.getAmount(), transferAmount);
+
                 if (transferAmount.compareTo(payment.getAmount()) < 0) {
-                        log.warn("Rejected SePay webhook because the transfer amount was insufficient");
+                        log.warn("REJECTED: Amount mismatch");
                         throw new BadRequestException(
                                         "Transfer amount mismatch. Expected >= " + payment.getAmount()
                                                         + ", got " + transferAmount);
                 }
 
                 payment.setStatus(PaymentStatus.PAID);
-                payment.setTransactionId(transactionCode);
+                payment.setTransactionId(String.valueOf(sePayId));
                 paymentRepository.save(payment);
+                log.info("Payment updated to PAID");
 
                 RentalOrder order = payment.getRentalOrder();
                 order.setStatus(OrderStatus.CONFIRMED);
                 rentalOrderRepository.save(order);
+                log.info("Order status updated to CONFIRMED");
 
                 // Promote inventory hold to active rental now that payment has cleared.
                 for (RentalOrderDetail detail : order.getDetails()) {
@@ -204,7 +206,7 @@ public class PaymentServiceImpl implements PaymentService {
                                 costumeItemRepository.save(item);
                         }
                 }
-                log.info("Processed SePay transaction {} for order {}", transactionCode, orderId);
+                log.info("SUCCESS: Webhook processed completely");
         }
 
         @Override

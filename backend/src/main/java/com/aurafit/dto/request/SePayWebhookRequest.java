@@ -1,33 +1,50 @@
 package com.aurafit.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
 
 import java.math.BigDecimal;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record SePayWebhookRequest(
-        // SePay sends various field names, accept both
+        @JsonProperty("id")
+        Long sePayId,
+
         String gateway,
 
-        @JsonProperty("transfer_amount")
-        BigDecimal transferAmount,
-
-        // SePay also sends "amount" in some webhooks
-        BigDecimal amount,
-
-        @NotBlank
-        String content,
-
-        @NotBlank
-        @JsonProperty("code")
-        String code,
+        @JsonProperty("transactionDate")
+        String transactionDate,
 
         @JsonProperty("accountNumber")
         String accountNumber,
 
-        @JsonProperty("id")
-        Long sePayId,
+        String subAccount,
 
+        // code có thể null - dùng wrapper type
+        @JsonProperty("code")
+        String code,
+
+        String content,
+
+        @JsonProperty("transferType")
+        String transferType,
+
+        String description,
+
+        // transferAmount - SePay gửi camelCase
+        @JsonProperty("transferAmount")
+        BigDecimal transferAmount,
+
+        @JsonProperty("amount")
+        BigDecimal amount,
+
+        @JsonProperty("accumulated")
+        BigDecimal accumulated,
+
+        @JsonProperty("referenceCode")
+        String referenceCode,
+
+        // Legacy fields (không bắt buộc)
         @JsonProperty("from_account")
         String fromAccount,
 
@@ -37,12 +54,19 @@ public record SePayWebhookRequest(
         @JsonProperty("to_account")
         String toAccount,
 
-        @JsonProperty("transaction_date")
-        String transactionDate,
-
         String status
 ) {
-        public BigDecimal resolvedTransferAmount() {
-                return transferAmount != null ? transferAmount : amount;
+        public BigDecimal getTransferAmount() {
+                if (transferAmount != null) return transferAmount;
+                if (amount != null) return amount;
+                return BigDecimal.ZERO;
+        }
+
+        public String getContent() {
+                return content != null ? content : "";
+        }
+
+        public String getCode() {
+                return code != null ? code : "";
         }
 }
