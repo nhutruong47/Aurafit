@@ -41,6 +41,7 @@ import {
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { useDirectOrderStore } from './store/useDirectOrderStore';
 import { useToastStore } from './store/useToastStore';
+import authNotify from './utils/authNotify';
 import { hasUserRole } from './utils/roles';
 
 function CustomerLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
@@ -90,6 +91,7 @@ function AdminLayout({ currentUser }) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogout = () => {
+    authNotify.logoutSuccess(currentUser);
     dispatch(clearCurrentUser());
     localStorage.removeItem('aurafitCurrentUser');
     localStorage.removeItem('accessToken');

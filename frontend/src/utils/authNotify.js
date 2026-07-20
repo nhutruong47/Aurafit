@@ -1,6 +1,7 @@
 import notify from './notify';
 import {
   buildLoginSuccessMessage,
+  buildLogoutSuccessMessage,
   buildRegisterOtpResentMessage,
   buildRegisterOtpSentMessage,
   buildRegisterSuccessMessage,
@@ -10,6 +11,10 @@ import {
 export const authNotify = {
   loginSuccess(user, apiMessage) {
     notify.success(buildLoginSuccessMessage(user, apiMessage));
+  },
+
+  logoutSuccess(user, apiMessage) {
+    notify.success(buildLogoutSuccessMessage(user, apiMessage));
   },
 
   loginError(error) {
