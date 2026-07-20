@@ -6,6 +6,7 @@ import {
   sendChatMessage,
 } from '../../services/stylistService';
 import StylistAvatar from './StylistAvatar';
+import StylistMessageBubble from './StylistMessageBubble';
 import StylistProductCards from './StylistProductCards';
 
 const NETWORK_ERROR_MESSAGE = 'Không thể kết nối, vui lòng kiểm tra mạng và thử lại';
@@ -113,9 +114,9 @@ export default function StylistChatWidget() {
         <section
           role="dialog"
           aria-label="Trợ lý thời trang AuraFit"
-          className="mb-3 flex h-[min(62dvh,29rem)] w-[calc(100vw-2rem)] max-w-[22rem] flex-col overflow-hidden border border-[#cfc4c5] bg-[#f9f9f9] shadow-2xl sm:mb-4 sm:h-[30rem]"
+          className="mb-3 flex h-[min(62dvh,29rem)] w-[calc(100vw-2rem)] max-w-[22rem] flex-col overflow-hidden rounded-2xl border border-[#cfc4c5] bg-[#f9f9f9] shadow-[0_22px_60px_rgba(25,22,17,0.22)] sm:mb-4 sm:h-[30rem]"
         >
-          <header className="flex items-center justify-between bg-[#111111] px-4 py-3 text-white">
+          <header className="flex items-center justify-between bg-gradient-to-r from-[#171613] to-[#2b2519] px-4 py-3 text-white">
             <div className="flex items-center gap-3">
               <StylistAvatar className="h-9 w-9 border-2 border-[#99854e] bg-white" />
               <div>
@@ -140,51 +141,29 @@ export default function StylistChatWidget() {
             aria-live="polite"
           >
             {messages.length === 0 && (
-              <div className="border border-[#e4ddd2] bg-white p-4 text-sm leading-6 text-[#5f5e5e]">
+              <div className="rounded-xl border border-[#e4ddd2] bg-[#fffdf8] p-4 text-sm leading-6 text-[#5f5e5e] shadow-sm">
                 Xin chào! Hãy cho mình biết dịp sử dụng, phong cách, màu sắc hoặc ngân sách để được gợi ý trang phục phù hợp nhé.
               </div>
             )}
 
             {messages.map((message) => {
               const isUser = message.role === 'user';
-              const isRateLimitWarning =
-                message.isError && message.errorType === 'RATE_LIMIT_EXCEEDED';
 
               return (
                 <div
                   key={message.id}
-                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-[fadeIn_220ms_ease-out]`}
                 >
-                  <div
-                    className={`max-w-[88%] px-3.5 py-2.5 text-sm leading-6 ${
-                      isUser
-                        ? 'bg-[#111111] text-white'
-                        : isRateLimitWarning
-                          ? 'border border-amber-300 bg-amber-50 text-amber-800'
-                          : message.isError
-                          ? 'border border-red-200 bg-red-50 text-red-700'
-                          : 'border border-[#e4ddd2] bg-white text-[#333333]'
-                    }`}
-                  >
-                    {isRateLimitWarning ? (
-                      <div className="flex items-start gap-2">
-                        <span
-                          className="material-symbols-outlined mt-0.5 text-[18px]"
-                          aria-hidden="true"
-                        >
-                          schedule
-                        </span>
-                        <p className="whitespace-pre-wrap">{message.text}</p>
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap">{message.text}</p>
-                    )}
-                  </div>
+                  <StylistMessageBubble message={message} compact />
 
-                  <StylistProductCards
-                    costumes={message.recommendedCostumes}
-                    onSelect={handleCostumeSelect}
-                  />
+                  {!isUser && (
+                    <div className="w-[calc(100%_-_2.375rem)] self-end">
+                      <StylistProductCards
+                        costumes={message.recommendedCostumes}
+                        onSelect={handleCostumeSelect}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -209,13 +188,13 @@ export default function StylistChatWidget() {
               onChange={(event) => setInputValue(event.target.value)}
               placeholder="Bạn đang tìm trang phục gì?"
               disabled={isSending}
-              className="min-w-0 flex-1 border border-[#cfc4c5] bg-white px-3 py-2.5 text-sm outline-none transition placeholder:text-[#999999] focus:border-[#99854e] disabled:bg-[#f3f3f3]"
+              className="min-w-0 flex-1 rounded-full border border-[#cfc4c5] bg-white px-4 py-2.5 text-sm outline-none transition placeholder:text-[#999999] focus:border-[#99854e] focus:ring-2 focus:ring-[#99854e]/15 disabled:bg-[#f3f3f3]"
               aria-label="Tin nhắn cho trợ lý thời trang"
             />
             <button
               type="submit"
               disabled={isSending || !inputValue.trim()}
-              className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#99854e] text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-[#d4cec2]"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#99854e] text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:bg-[#d4cec2] disabled:shadow-none"
               aria-label="Gửi tin nhắn"
             >
               <span className="material-symbols-outlined text-[20px]">send</span>

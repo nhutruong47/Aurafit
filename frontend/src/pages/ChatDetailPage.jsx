@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import StylistAvatar from '../components/common/StylistAvatar';
+import StylistMessageBubble from '../components/common/StylistMessageBubble';
 import StylistProductCards from '../components/common/StylistProductCards';
 import {
   createStylistSessionId,
@@ -434,7 +435,7 @@ export default function ChatDetailPage({ currentUser }) {
             )}
 
             {!isDetailLoading && !detailError && messages.length === 0 && (
-              <div className="mx-auto mt-10 max-w-xl border border-[#e4ddd2] bg-white px-6 py-8 text-center shadow-sm">
+              <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-[#e4ddd2] bg-[#fffdf8] px-6 py-8 text-center shadow-[0_10px_32px_rgba(61,50,31,0.08)]">
                 <StylistAvatar className="mx-auto h-16 w-16 border-2 border-[#99854e] bg-white" />
                 <h3 className="mt-3 font-serif text-2xl text-black">Bạn đang tìm trang phục gì?</h3>
                 <p className="mt-3 text-sm leading-6 text-[#666666]">
@@ -445,33 +446,21 @@ export default function ChatDetailPage({ currentUser }) {
 
             {!isDetailLoading && messages.map((message, index) => {
               const isUser = String(message.role).toUpperCase() === 'USER';
-              const isRateLimitWarning =
-                message.isError && message.errorType === 'RATE_LIMIT_EXCEEDED';
 
               return (
                 <div
                   key={message.id ?? `${message.role}-${index}`}
-                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-[fadeIn_220ms_ease-out]`}
                 >
-                  <div
-                    className={`max-w-[88%] px-4 py-3 text-sm leading-6 sm:max-w-[75%] ${
-                      isUser
-                        ? 'bg-[#111111] text-white'
-                        : isRateLimitWarning
-                          ? 'border border-amber-300 bg-amber-50 text-amber-800'
-                          : message.isError
-                            ? 'border border-red-200 bg-red-50 text-red-700'
-                            : 'border border-[#e4ddd2] bg-white text-[#333333] shadow-sm'
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                  </div>
+                  <StylistMessageBubble message={message} />
 
                   {!isUser && (
-                    <StylistProductCards
-                      costumes={message.recommendedCostumes}
-                      onSelect={handleCostumeSelect}
-                    />
+                    <div className="w-full pl-[2.625rem] sm:max-w-[82%]">
+                      <StylistProductCards
+                        costumes={message.recommendedCostumes}
+                        onSelect={handleCostumeSelect}
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -498,13 +487,13 @@ export default function ChatDetailPage({ currentUser }) {
               onChange={(event) => setInputValue(event.target.value)}
               placeholder="Bạn đang tìm trang phục gì?"
               disabled={isSending || isDetailLoading}
-              className="min-w-0 flex-1 border border-[#cfc4c5] bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#999999] focus:border-[#99854e] disabled:bg-[#f3f3f3]"
+              className="min-w-0 flex-1 rounded-full border border-[#cfc4c5] bg-white px-5 py-3 text-sm outline-none transition placeholder:text-[#999999] focus:border-[#99854e] focus:ring-2 focus:ring-[#99854e]/15 disabled:bg-[#f3f3f3]"
               aria-label="Tin nhắn cho trợ lý thời trang"
             />
             <button
               type="submit"
               disabled={isSending || isDetailLoading || !inputValue.trim()}
-              className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#99854e] text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-[#d4cec2]"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#99854e] text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:bg-[#d4cec2] disabled:shadow-none"
               aria-label="Gửi tin nhắn"
             >
               <span className="material-symbols-outlined text-[21px]">send</span>

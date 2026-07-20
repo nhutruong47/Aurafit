@@ -76,3 +76,27 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+
+.stylist-product-scrollbar {
+  scrollbar-color: #a38b52 #eee9e0;
+  scrollbar-width: thin;
+}
+
+.stylist-product-scrollbar::-webkit-scrollbar {
+  height: 7px;
+}
+
+.stylist-product-scrollbar::-webkit-scrollbar-track {
+  background: #eee9e0;
+  border-radius: 999px;
+}
+
+.stylist-product-scrollbar::-webkit-scrollbar-thumb {
+  background: #a38b52;
+  border: 1px solid #eee9e0;
+  border-radius: 999px;
+}
+
+.stylist-product-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #806c3d;
+}
