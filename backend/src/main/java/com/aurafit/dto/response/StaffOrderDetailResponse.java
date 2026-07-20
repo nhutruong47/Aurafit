@@ -34,7 +34,8 @@ public record StaffOrderDetailResponse(
         com.aurafit.enums.DeliveryMethod deliveryMethod,
         BigDecimal totalLateFee,
         BigDecimal totalDamageFee,
-        String inspectionNote
+        String inspectionNote,
+        Boolean hasPendingRefund
 ) {
     public record CustomerInfo(
             String bankName,
@@ -90,6 +91,10 @@ public record StaffOrderDetailResponse(
                 .add(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO)
                 .subtract(order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO);
 
+        boolean hasPendingRefund = order.getPayments().stream()
+                .anyMatch(p -> p.getType() == com.aurafit.enums.PaymentType.REFUND
+                        && p.getStatus() == com.aurafit.enums.PaymentStatus.PENDING);
+
         return new StaffOrderDetailResponse(
                 order.getId(),
                 order.getUser().getFullName(),
@@ -118,7 +123,8 @@ public record StaffOrderDetailResponse(
                 order.getDeliveryMethod(),
                 order.getTotalLateFee(),
                 order.getTotalDamageFee(),
-                order.getInspectionNote()
+                order.getInspectionNote(),
+                hasPendingRefund
         );
     }
 }
