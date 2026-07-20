@@ -83,11 +83,10 @@ export default function PickupTab({
                 <div><span className="text-gray-500">Điện thoại:</span> <span className="font-medium ml-1">{activeOrder.customerPhone}</span></div>
                 <div><span className="text-gray-500">Ngày tạo đơn:</span> <span className="font-medium ml-1">{formatDateTime(activeOrder.createdAt)}</span></div>
                 <div><span className="text-gray-500">Giao hàng:</span> <span className="font-medium ml-1">{activeOrder.deliveryMethod === 'GHN_DELIVERY' ? 'Giao hàng GHN' : 'Nhận tại cửa hàng'}</span></div>
-                <div className="col-span-2"><span className="text-gray-500">Địa chỉ giao hàng:</span> <span className="font-medium ml-1">{activeOrder.deliveryAddress || 'Nhận tại cửa hàng'}</span></div>
+                <div className="col-span-2"><span className="text-gray-500">{activeOrder.deliveryMethod === 'GHN_DELIVERY' ? 'Địa chỉ giao hàng:' : 'Địa chỉ khách hàng:'}</span> <span className="font-medium ml-1">{activeOrder.deliveryAddress || 'Nhận tại cửa hàng'}</span></div>
                 <div><span className="text-gray-500">Ngày lấy dự kiến:</span> <span className="font-medium ml-1">{formatDate(activeOrder.rentalStartDate)}</span></div>
                 <div><span className="text-gray-500">Ngày trả dự kiến:</span> <span className="font-medium ml-1">{formatDate(activeOrder.rentalEndDate)}</span></div>
                 <div><span className="text-gray-500">Tổng cọc:</span> <span className="font-medium text-blue-600 ml-1">{formatCurrency(activeOrder.totalDeposit)}</span></div>
-                <div className="col-span-2"><span className="text-gray-500">Địa chỉ giao hàng:</span> <span className="font-medium ml-1">{activeOrder.deliveryAddress || 'Nhận tại cửa hàng'}</span></div>
               </div>
             </div>
 

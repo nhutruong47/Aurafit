@@ -176,7 +176,11 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
                 <div className="space-y-2 text-sm">
                   <p><span className="font-medium">Người nhận:</span> {order.receiverName}</p>
                   <p><span className="font-medium">Số điện thoại:</span> {order.receiverPhone}</p>
-                  <p><span className="font-medium">Địa chỉ:</span> {order.deliveryAddress}</p>
+                  {order.deliveryMethod === 'STORE_PICKUP' ? (
+                    <p><span className="font-medium">Địa chỉ cửa hàng:</span> 102/9/12 100 Bình Thới</p>
+                  ) : (
+                    <p><span className="font-medium">Địa chỉ nhận hàng:</span> {order.deliveryAddress}</p>
+                  )}
                   <p><span className="font-medium">Phương thức:</span> {order.deliveryMethod === 'STORE_PICKUP' ? 'Lấy tại cửa hàng' : 'Giao hàng tận nơi'}</p>
                 </div>
               </div>

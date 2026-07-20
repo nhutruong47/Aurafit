@@ -27,11 +27,23 @@ export const mapOrderStatus = (status) => {
   }
 };
 
-const formatMoment = (value, fallbackLabel) => {
+const formatMoment = (value, fallbackLabel, isDateOnly = false) => {
   if (!value) return fallbackLabel;
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return fallbackLabel;
+
+  // Treat as date-only if explicitly requested or if it's exactly midnight UTC
+  const isMidnight = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+  const hideTime = isDateOnly || isMidnight || (typeof value === 'string' && value.includes('T00:00:00'));
+
+  if (hideTime) {
+    return date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
 
   return date.toLocaleString('vi-VN', {
     day: '2-digit',
