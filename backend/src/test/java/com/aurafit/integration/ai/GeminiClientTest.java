@@ -1,5 +1,6 @@
 package com.aurafit.integration.ai;
 
+import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.AiErrorType;
 import com.aurafit.exception.AiProviderException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -231,6 +232,20 @@ class GeminiClientTest {
         );
 
         assertEquals("gemini-3.5-flash", ReflectionTestUtils.getField(client, "model"));
+    }
+
+    @Test
+    void resolveMaxOutputTokens_shouldAllowCompleteAnalystInsight() {
+        GeminiClient client = clientReturning(HttpStatus.OK, "{}");
+
+        Integer maxOutputTokens = ReflectionTestUtils.invokeMethod(
+                client,
+                "resolveMaxOutputTokens",
+                AiCallType.INSIGHT,
+                false
+        );
+
+        assertEquals(1_000, maxOutputTokens);
     }
 
     private GeminiClient clientReturning(HttpStatus status, String responseBody) {

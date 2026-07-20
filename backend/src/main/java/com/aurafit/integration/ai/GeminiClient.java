@@ -39,7 +39,7 @@ public class GeminiClient {
     private static final String UNKNOWN_ERROR_MESSAGE = "Có lỗi xảy ra, vui lòng thử lại";
     private static final int INTENT_MAX_OUTPUT_TOKENS = 300;
     private static final int RESPONSE_MAX_OUTPUT_TOKENS = 400;
-    private static final int INSIGHT_MAX_OUTPUT_TOKENS = 500;
+    private static final int INSIGHT_MAX_OUTPUT_TOKENS = 1_000;
 
     private final WebClient webClient;
     private final String apiKey;

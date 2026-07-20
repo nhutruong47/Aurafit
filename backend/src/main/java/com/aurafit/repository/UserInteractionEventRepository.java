@@ -24,13 +24,13 @@ public interface UserInteractionEventRepository extends JpaRepository<UserIntera
             """)
     int attachSessionToUser(@Param("sessionId") String sessionId, @Param("user") User user);
 
-    @Query("""
-            SELECT e.eventType, COUNT(e)
-            FROM UserInteractionEvent e
-            WHERE e.createdAt >= :periodStart
-              AND e.createdAt < :periodEnd
-            GROUP BY e.eventType
-            """)
+    @Query(value = """
+            SELECT event_type, COUNT(*)
+            FROM user_interaction_events
+            WHERE created_at >= :periodStart
+              AND created_at < :periodEnd
+            GROUP BY event_type
+            """, nativeQuery = true)
     List<Object[]> countByEventTypeForPeriod(
             @Param("periodStart") LocalDateTime periodStart,
             @Param("periodEnd") LocalDateTime periodEnd

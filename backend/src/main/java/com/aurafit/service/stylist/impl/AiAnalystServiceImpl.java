@@ -199,8 +199,26 @@ public class AiAnalystServiceImpl implements AiAnalystService {
         }
 
         userInteractionEventRepository.countByEventTypeForPeriod(periodStart, periodEnd)
-                .forEach(row -> counts.put((InteractionEventType) row[0], (Long) row[1]));
+                .forEach(row -> putKnownInteractionCount(counts, row));
         return counts;
+    }
+
+    private void putKnownInteractionCount(
+            Map<InteractionEventType, Long> counts,
+            Object[] aggregateRow
+    ) {
+        if (aggregateRow == null || aggregateRow.length < 2 || !(aggregateRow[1] instanceof Number count)) {
+            return;
+        }
+
+        String rawEventType = aggregateRow[0] instanceof InteractionEventType eventType
+                ? eventType.name()
+                : String.valueOf(aggregateRow[0]);
+        try {
+            counts.put(InteractionEventType.valueOf(rawEventType), count.longValue());
+        } catch (IllegalArgumentException ignored) {
+            // Legacy interaction types are intentionally excluded from current analytics.
+        }
     }
 
     private InteractionCategoryMetrics aggregateInteractionCategories(
