@@ -90,6 +90,20 @@ export default function StaffOrderDetailModal({
                 <span className="text-gray-500 whitespace-nowrap">Trạng thái:</span> 
                 <StatusBadge status={activeOrder.status} label={getDetailStatusLabel(activeOrder.status)} />
               </p>
+              {activeOrder.updatedAt && (
+                <p className="flex justify-between items-start gap-4">
+                  <span className="text-gray-500 whitespace-nowrap">
+                    {activeOrder.status === 'CANCELLED' ? 'Ngày hủy:' : 
+                     activeOrder.status === 'COMPLETED' ? 'Ngày hoàn thành:' :
+                     activeOrder.status === 'RENTING' ? 'Ngày bắt đầu thuê:' :
+                     activeOrder.status === 'DELIVERING' ? 'Ngày giao hàng:' :
+                     activeOrder.status === 'WAITING_RETURN' ? 'Ngày chờ trả:' :
+                     activeOrder.status === 'PENDING' ? 'Cập nhật:' :
+                     'Cập nhật lần cuối:'}
+                  </span> 
+                  <span className="font-medium text-gray-900 text-right">{formatDateTime(activeOrder.updatedAt)}</span>
+                </p>
+              )}
             </div>
             <div className="space-y-3 border-t lg:border-t-0 lg:border-l border-gray-200 lg:pl-6 pt-4 lg:pt-0">
               <h4 className="font-semibold text-gray-800 border-b pb-2 mb-3">Thông tin Tài chính</h4>
