@@ -178,6 +178,12 @@ export const buildLoginSuccessMessage = (user, apiMessage) => {
   return apiMessage || 'Đăng nhập thành công.';
 };
 
+export const buildLogoutSuccessMessage = (user, apiMessage) => {
+  const name = user?.fullName?.trim();
+  if (name) return `Đăng xuất thành công. Hẹn gặp lại, ${name}!`;
+  return apiMessage || 'Đăng xuất thành công.';
+};
+
 export const buildRegisterOtpSentMessage = (email, apiMessage) => {
   if (apiMessage && !apiMessage.toLowerCase().includes('thành công')) {
     return `Gửi OTP thành công: ${apiMessage}`;

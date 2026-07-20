@@ -72,7 +72,7 @@ function TrackingCodeLink({ label, code }) {
 }
 
 export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, currentUser }) {
-  const statusInfo = mapOrderStatus(order.status);
+  const statusInfo = mapOrderStatus(order.status, order);
   const timeline = getOrderTimeline(order);
   const navigate = useNavigate();
   const setPendingOrderId = useCheckoutStore((state) => state.setPendingOrderId);

@@ -201,19 +201,31 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
       const isVariantChanged = item.costumeItemId !== matchedItem.id;
       const isDatesChanged = item.rentalStartDate !== formattedStartDate || item.rentalEndDate !== formattedEndDate;
 
-      if (item.cartItemId) {
-        if (isVariantChanged) {
+      if (item.cartItemIds && item.cartItemIds.length > 0) {
+        const isQuantityChanged = item.quantity !== editQuantity;
+        
+        // If anything changed, the safest and most robust way in a flat SKU cart system
+        // is to delete all existing rows for this variant group and re-add them
+        // with the new variant, dates, and total quantity.
+        if (isVariantChanged || isDatesChanged || isQuantityChanged) {
+          await Promise.all(item.cartItemIds.map(id => removeCartItem(id)));
+          await addItemToCart({
+            costumeItemId: matchedItem.id,
+            rentalStartDate: formattedStartDate,
+            rentalEndDate: formattedEndDate,
+            quantity: editQuantity
+          });
+        }
+      } else if (item.cartItemId) {
+        // Fallback for flat non-grouped items
+        const isQuantityChanged = item.quantity !== editQuantity;
+        if (isVariantChanged || isDatesChanged || isQuantityChanged) {
           await removeCartItem(item.cartItemId);
           await addItemToCart({
             costumeItemId: matchedItem.id,
             rentalStartDate: formattedStartDate,
             rentalEndDate: formattedEndDate,
-            quantity: 1
-          });
-        } else if (isDatesChanged) {
-          await updateCartItem(item.cartItemId, {
-            rentalStartDate: formattedStartDate,
-            rentalEndDate: formattedEndDate
+            quantity: editQuantity
           });
         }
       }

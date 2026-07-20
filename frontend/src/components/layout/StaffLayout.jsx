@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { clearCurrentUser } from '../../store/authSlice';
 import { useAppDispatch } from '../../store/hooks';
+import authNotify from '../../utils/authNotify';
 import ToastContainer from '../ui/ToastContainer';
 
 export default function StaffLayout({ currentUser }) {
@@ -16,6 +17,7 @@ export default function StaffLayout({ currentUser }) {
   }
 
   const handleLogout = () => {
+    authNotify.logoutSuccess(currentUser);
     dispatch(clearCurrentUser());
     localStorage.removeItem('aurafitCurrentUser');
     localStorage.removeItem('accessToken');

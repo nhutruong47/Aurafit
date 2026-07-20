@@ -1,6 +1,6 @@
 export const getOrderCode = (id) => `RO-${String(id).padStart(4, '0')}`;
 
-export const mapOrderStatus = (status) => {
+export const mapOrderStatus = (status, order = null) => {
   switch (status) {
     case 'PENDING':
       return { text: 'Chờ thanh toán', color: 'text-[#a15c00]' };
@@ -21,6 +21,12 @@ export const mapOrderStatus = (status) => {
     case 'COMPLETED':
       return { text: 'Hoàn thành', color: 'text-[#087b3f]' };
     case 'CANCELLED':
+      if (order && order.hasPendingRefund) {
+        return { text: 'Đã hủy - Chờ hoàn tiền', color: 'text-orange-500' };
+      }
+      if (order && !order.hasPendingRefund && order.totalRefundedAmount > 0) {
+        return { text: 'Đã hủy - Đã hoàn tiền', color: 'text-[#087b3f]' };
+      }
       return { text: 'Đã hủy', color: 'text-gray-400' };
     default:
       return { text: status || 'Đang cập nhật', color: 'text-gray-500' };
@@ -30,12 +36,19 @@ export const mapOrderStatus = (status) => {
 const formatMoment = (value, fallbackLabel, isDateOnly = false) => {
   if (!value) return fallbackLabel;
 
-  const date = new Date(value);
+  let dateValue = value;
+  // Handle Jackson array serialization [year, month, day, hour, minute, second]
+  if (Array.isArray(value)) {
+    const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+    dateValue = new Date(year, month - 1, day, hour, minute, second).toISOString();
+  }
+
+  const date = new Date(dateValue);
   if (Number.isNaN(date.getTime())) return fallbackLabel;
 
   // Treat as date-only if explicitly requested or if it's exactly midnight UTC
   const isMidnight = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
-  const hideTime = isDateOnly || isMidnight || (typeof value === 'string' && value.includes('T00:00:00'));
+  const hideTime = isDateOnly || isMidnight || (typeof dateValue === 'string' && dateValue.includes('T00:00:00'));
 
   if (hideTime) {
     return date.toLocaleString('vi-VN', {
@@ -112,7 +125,7 @@ export const getOrderTimeline = (order) => {
         current: false,
       },
       {
-        status: 'Đơn đã hủy',
+        status: order?.hasPendingRefund ? 'Đã hủy - Chờ hoàn tiền' : 'Đơn đã hủy',
         date: formatMoment(order?.createdAt, 'Đã hủy'),
         icon: 'cancel',
         completed: true,

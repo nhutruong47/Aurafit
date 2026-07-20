@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { getUserRoles } from '../../utils/roles';
 import { updateProfile, changePassword } from '../../services/userService';
 import { useToastStore } from '../../store/useToastStore';
+import authNotify from '../../utils/authNotify';
 import SearchableSelect from '../common/SearchableSelect';
 
 function ProfileField({ label, value }) {
@@ -272,6 +273,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
               <button
                 type="button"
                 onClick={() => {
+                  authNotify.logoutSuccess(currentUser);
                   onAuthChange?.(null);
                   onNavigate?.('account');
                 }}

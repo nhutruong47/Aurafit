@@ -5,14 +5,24 @@ import { StatusBadge } from './StaffDashboardShared';
 import { adminOrderService } from '../../services/adminOrderService';
 import RefundDepositModal from './RefundDepositModal';
 import { uploadImage } from '../../services/uploadService';
+import { useToastStore } from '../../store/useToastStore';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
 };
 
+const parseDateString = (value) => {
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+    return new Date(year, month - 1, day, hour, minute, second);
+  }
+  return new Date(value);
+};
+
 const formatDate = (dateString) => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString('vi-VN', {
+  return parseDateString(dateString).toLocaleDateString('vi-VN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -21,7 +31,7 @@ const formatDate = (dateString) => {
 
 const formatDateTime = (dateString) => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleString('vi-VN', {
+  return parseDateString(dateString).toLocaleString('vi-VN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -44,12 +54,18 @@ export default function ReturnTab({
   markOrderReturned,
   handleLostPackage
 }) {
-  const [activeSubTab, setActiveSubTab] = useState('PENDING'); // PENDING, IN_TRANSIT, PENDING_REFUND
+  const [activeSubTab, setActiveSubTab] = useState('PENDING'); // PENDING, IN_TRANSIT, PENDING_REFUND, CANCELLED_REFUND
   const displayedOrders = filteredOrders.filter(o => {
     if (activeSubTab === 'PENDING') return o.status === 'RENTED';
     if (activeSubTab === 'IN_TRANSIT') return o.status === 'RETURNING' || o.status === 'RETURNED';
     if (activeSubTab === 'PENDING_REFUND') return o.status === 'PENDING_REFUND';
+    if (activeSubTab === 'CANCELLED_REFUND') return o.status === 'CANCELLED' && o.hasPendingRefund;
     return false;
+  }).sort((a, b) => {
+    if (activeSubTab === 'CANCELLED_REFUND') {
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    }
+    return 0;
   });
   
   const isOrderValidForTab = activeOrder && displayedOrders.some(o => o.id === activeOrder.id);
@@ -188,12 +204,30 @@ export default function ReturnTab({
   const handleRefundComplete = async (receiptImageUrl, reportedInvalid) => {
     setShowRefundModal(false);
     if (reportedInvalid) {
-      // It was already reported via reportInvalidBank API, just refresh
       if (onOrderCompleted) {
         onOrderCompleted(activeOrder.id);
       }
     } else if (receiptImageUrl) {
-      await proceedCompleteOrder(receiptImageUrl);
+      if (activeOrder?.status === 'CANCELLED') {
+        setIsSubmitting(true);
+        setError('');
+        try {
+          await adminOrderService.completeOrder(activeOrder.id, {
+            damageFee: 0,
+            lateFee: 0,
+            inspectionNote: `[Hoàn tiền hủy đơn: ${receiptImageUrl}]`,
+            actualReturnDate: new Date().toISOString().split('T')[0]
+          });
+          useToastStore.getState().addToast('Đã hoàn tiền đơn hủy thành công!', 'success');
+          if (onOrderCompleted) onOrderCompleted(activeOrder.id);
+        } catch (err) {
+          useToastStore.getState().addToast(err.response?.data?.message || err.message || 'Có lỗi xảy ra', 'error');
+        } finally {
+          setIsSubmitting(false);
+        }
+      } else {
+        await proceedCompleteOrder(receiptImageUrl);
+      }
     }
   };
 
@@ -415,7 +449,7 @@ export default function ReturnTab({
               Cần thu hồi
             </button>
             <button
-              onClick={() => setActiveSubTab('IN_TRANSIT')}
+              onClick={() => { setActiveSubTab('IN_TRANSIT'); openOrder(null); }}
               className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
                 activeSubTab === 'IN_TRANSIT' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
               }`}
@@ -423,12 +457,20 @@ export default function ReturnTab({
               Đang hoàn về
             </button>
             <button
-              onClick={() => setActiveSubTab('PENDING_REFUND')}
+              onClick={() => { setActiveSubTab('PENDING_REFUND'); openOrder(null); }}
               className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
                 activeSubTab === 'PENDING_REFUND' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
               }`}
             >
               Chờ giải ngân
+            </button>
+            <button
+              onClick={() => { setActiveSubTab('CANCELLED_REFUND'); openOrder(null); }}
+              className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
+                activeSubTab === 'CANCELLED_REFUND' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
+              }`}
+            >
+              Đơn hủy
             </button>
           </div>
           <div className="relative">
@@ -447,7 +489,7 @@ export default function ReturnTab({
             <div className="p-6 text-center text-sm text-gray-500">
               {activeSubTab === 'PENDING' ? 'Không có đơn hàng cần thu hồi.' : 
                activeSubTab === 'IN_TRANSIT' ? 'Không có đơn hàng đang hoàn về.' : 
-               'Không có đơn giải ngân.'}
+               activeSubTab === 'PENDING_REFUND' ? 'Không có đơn giải ngân.' : 'Không có đơn hủy chờ hoàn tiền.'}
             </div>
           ) : (
             displayedOrders.map(order => (
@@ -464,7 +506,11 @@ export default function ReturnTab({
                   <StatusBadge status={order.status} />
                 </div>
                 <div className="text-sm text-gray-600 truncate">{order.customerName}</div>
-                <div className="text-xs text-gray-400 mt-1">{formatDate(order.rentalStartDate)}</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {order.status === 'CANCELLED' 
+                    ? `Ngày hủy: ${formatDateTime(order.updatedAt)}` 
+                    : formatDate(order.rentalStartDate)}
+                </div>
               </button>
             ))
           )}
@@ -472,8 +518,8 @@ export default function ReturnTab({
       </div>
       
       <div className="flex-1 flex flex-col gap-4 overflow-auto">
-        {error && <AlertMessage text={error} />}
-        {message && <AlertMessage tone="success" text={message} />}
+        {error && <AlertMessage type="error" text={error} />}
+        {message && <AlertMessage type="success" text={message} />}
         
         {!isOrderValidForTab ? (
           <div className="flex-1 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 text-gray-500">
@@ -489,14 +535,47 @@ export default function ReturnTab({
                 <div><span className="text-gray-500">Ngày tạo đơn:</span> <span className="font-medium ml-1">{formatDateTime(activeOrder.createdAt)}</span></div>
                 <div><span className="text-gray-500">Giao hàng:</span> <span className="font-medium ml-1">{activeOrder.deliveryMethod === 'GHN_DELIVERY' ? 'Giao hàng GHN' : 'Nhận tại cửa hàng'}</span></div>
                 <div className="col-span-2"><span className="text-gray-500">Địa chỉ giao hàng:</span> <span className="font-medium ml-1">{activeOrder.deliveryAddress || 'Nhận tại cửa hàng'}</span></div>
-                <div><span className="text-gray-500">Ngày lấy dự kiến:</span> <span className="font-medium ml-1">{formatDate(activeOrder.rentalStartDate)}</span></div>
-                <div><span className="text-gray-500">Ngày trả dự kiến:</span> <span className="font-medium ml-1">{formatDate(activeOrder.rentalEndDate)}</span></div>
+                {activeOrder.status === 'CANCELLED' ? (
+                  <div className="col-span-2"><span className="text-gray-500">Ngày hủy:</span> <span className="font-medium ml-1">{formatDateTime(activeOrder.updatedAt)}</span></div>
+                ) : (
+                  <>
+                    <div><span className="text-gray-500">Ngày lấy dự kiến:</span> <span className="font-medium ml-1">{formatDate(activeOrder.rentalStartDate)}</span></div>
+                    <div><span className="text-gray-500">Ngày trả dự kiến:</span> <span className="font-medium ml-1">{formatDate(activeOrder.rentalEndDate)}</span></div>
+                  </>
+                )}
                 <div><span className="text-gray-500">Tiền thuê:</span> <span className="font-medium text-gray-900 ml-1">{formatCurrency(activeOrder.totalRentalPrice || activeOrder.totalRentalFee)}</span></div>
                 <div><span className="text-gray-500">Tổng cọc:</span> <span className="font-medium text-blue-600 ml-1">{formatCurrency(activeOrder.totalDeposit)}</span></div>
-                <div className="col-span-2"><span className="text-gray-500">Địa chỉ giao hàng:</span> <span className="font-medium ml-1">{activeOrder.deliveryAddress || 'Nhận tại cửa hàng'}</span></div>
               </div>
             </div>
 
+            {activeOrder.status === 'CANCELLED' ? (
+              <div className="bg-white rounded-none md:rounded-sm border border-[#d7d2c8] shadow-sm p-6 mb-4 flex flex-col">
+                <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Hoàn tiền đơn hủy</h3>
+                <p className="text-gray-600 text-sm mb-4">Đơn hàng này đã bị hủy. Vui lòng hoàn lại toàn bộ số tiền khách đã thanh toán.</p>
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-md mb-6">
+                  <div className="flex justify-between font-semibold text-lg text-blue-800">
+                    <span>Số tiền cần hoàn:</span>
+                    <span>{formatCurrency((activeOrder.totalRentalFee || 0) + (activeOrder.totalDeposit || 0))}</span>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowRefundModal(true)}
+                    className="py-2.5 px-6 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors"
+                  >
+                    HOÀN TIỀN QUA VIETQR
+                  </button>
+                </div>
+                {showRefundModal && (
+                  <RefundDepositModal 
+                    order={activeOrder} 
+                    refundAmount={(activeOrder.totalRentalFee || 0) + (activeOrder.totalDeposit || 0)}
+                    onClose={() => setShowRefundModal(false)}
+                    onComplete={handleRefundComplete}
+                  />
+                )}
+              </div>
+            ) : (
             <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#d7d2c8] flex flex-col">
               {activeSubTab === 'PENDING' ? (
                 activeOrder.deliveryMethod === 'STORE_PICKUP' ? renderInspectionForm() :
@@ -560,6 +639,7 @@ export default function ReturnTab({
                 )
               )}
             </div>
+            )}
           </>
         )}
       </div>
