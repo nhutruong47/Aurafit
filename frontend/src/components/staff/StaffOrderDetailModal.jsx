@@ -272,7 +272,11 @@ export default function StaffOrderDetailModal({
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <StatusBadge status={detail.returnStatus || 'PENDING'} label={getDetailStatusLabel(detail.returnStatus || 'PENDING')} />
+                    {activeOrder.status === 'CANCELLED' ? (
+                      <StatusBadge status="CANCELLED" label="Đã hủy" />
+                    ) : (
+                      <StatusBadge status={detail.returnStatus || 'NOT_RETURNED'} label={getDetailStatusLabel(detail.returnStatus || 'NOT_RETURNED')} />
+                    )}
                   </div>
                 </div>
                 {/* Các loại phí phát sinh / hoàn tiền nếu có */}

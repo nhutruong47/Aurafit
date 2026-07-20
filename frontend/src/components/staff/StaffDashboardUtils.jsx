@@ -123,7 +123,7 @@ export const StatusBadge = ({ status, label }) => {
     RETURNED: 'border border-green-200 bg-green-50 text-green-700',
     COMPLETED: 'border border-green-200 bg-green-50 text-green-700',
     CANCELLED: 'border border-[#d7d2c8] bg-[#f4f4f2] text-[#171717]',
-    NOT_RETURNED: 'border border-[#d7d2c8] bg-[#f4f4f2] text-[#171717]',
+    NOT_RETURNED: 'border border-orange-200 bg-orange-50 text-orange-700',
     RETURNED_GOOD: 'border border-green-200 bg-green-50 text-green-700',
     DAMAGED: 'border border-orange-200 bg-orange-50 text-orange-700',
     LOST: 'border border-red-200 bg-red-50 text-red-700',
