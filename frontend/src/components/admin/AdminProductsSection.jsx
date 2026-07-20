@@ -6,9 +6,7 @@ import { Panel } from './AdminDashboardShared';
 import Pagination from './Pagination';
 
 export default function AdminProductsSection({
-  products,
   categories,
-  isAdmin = false,
   filteredProducts,
   productForm,
   editingProductId,

@@ -36,10 +36,8 @@ import {
   selectCartItems,
   setCartItems,
   updateCartItemDates,
-  updateCartQuantity,
 } from './store/cartSlice';
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { useDirectOrderStore } from './store/useDirectOrderStore';
 import { useToastStore } from './store/useToastStore';
 import authNotify from './utils/authNotify';
 import { hasUserRole } from './utils/roles';
@@ -81,14 +79,14 @@ function CustomerLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
 }
 
 function AdminLayout({ currentUser }) {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const [profileOpen, setProfileOpen] = useState(false);
+
   // Only ADMIN can access this layout
   if (!currentUser || currentUser.role !== 'ADMIN') {
     return <Navigate to="/" replace />;
   }
-
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogout = () => {
     authNotify.logoutSuccess(currentUser);
@@ -254,13 +252,6 @@ function App() {
       handleNavigate('checkout', null, { state: { autoSelectId: item.id } });
     },
     [currentUser, handleNavigate, addToast, handleAddToCart]
-  );
-
-  const handleUpdateCartQuantity = useCallback(
-    (cartId, quantity) => {
-      dispatch(updateCartQuantity({ cartId, quantity }));
-    },
-    [dispatch]
   );
 
   const handleRemoveFromCart = useCallback(

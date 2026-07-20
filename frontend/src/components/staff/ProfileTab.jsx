@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import AlertMessage from '../ui/AlertMessage';
 import { changePassword } from '../../services/userService';
 

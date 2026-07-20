@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCostumeItems } from '../../services/costumeService';
-import { updateCartItemVariant, setCartItems } from '../../store/cartSlice';
+import { setCartItems } from '../../store/cartSlice';
 import { useToastStore } from '../../store/useToastStore';
-import { updateCartItem, removeCartItem, addItemToCart, fetchCart } from '../../services/cartService';
+import { removeCartItem, addItemToCart, fetchCart } from '../../services/cartService';
 
 export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
   const dispatch = useDispatch();
@@ -249,7 +249,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
   return (
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onMouseDown={(e) => { if (e.target === e.currentTarget && !isSaving) onClose(); }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget && !isUpdating) onClose(); }}
     >
       {/* Backdrop */}
       <div

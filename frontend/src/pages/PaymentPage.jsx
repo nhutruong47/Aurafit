@@ -6,7 +6,7 @@ import { fetchOrderDetail } from '../services/rentalOrderService';
 import { createPayment, getPaymentStatus, testWebhookPayment } from '../services/paymentService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 import { formatCurrency } from '../utils/formatCurrency';
-import { fallbackProductImage } from '../utils/productMapper';
+import { fallbackCostumeImage as fallbackProductImage } from '../utils/costumeUtils';
 import { useToastStore } from '../store/useToastStore';
 
 const PAYMENT_STATUS_POLL_MS = 10000;

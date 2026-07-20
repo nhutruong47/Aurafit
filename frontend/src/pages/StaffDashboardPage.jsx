@@ -28,7 +28,6 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
     loadOrders,
     openOrder,
     setMode,
-    setHandoverImageUrl,
     setHandoverImageFile,
     handoverImageFile,
     setNote,
@@ -179,7 +178,6 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               setSearchQuery={setSearchQuery}
               openOrder={openOrder}
               setMode={setMode}
-              setHandoverImageUrl={setHandoverImageUrl}
               setHandoverImageFile={setHandoverImageFile}
               handoverImageFile={handoverImageFile}
               setNote={setNote}
@@ -204,7 +202,6 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
               setSearchQuery={setSearchQuery}
               openOrder={openOrder}
               setMode={setMode}
-              setHandoverImageUrl={setHandoverImageUrl}
               setHandoverImageFile={setHandoverImageFile}
               handoverImageFile={handoverImageFile}
               setNote={setNote}

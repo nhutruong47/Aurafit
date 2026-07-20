@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { adminOrderService } from '../../services/adminOrderService';
 
 const InspectionModal = ({ order, isOpen, onClose, onSuccess }) => {

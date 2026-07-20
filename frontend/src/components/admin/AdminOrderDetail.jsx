@@ -30,13 +30,6 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
     };
   }, [isOpen, onClose]);
 
-  // Click outside to close
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   if (!isOpen || !order) return null;
 
   const renderActionButtons = () => {

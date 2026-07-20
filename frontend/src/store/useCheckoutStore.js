@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { saveJson, loadJson } from './browserStorage';
 
-export const useCheckoutStore = create((set, get) => ({
+export const useCheckoutStore = create((set) => ({
   pendingOrderId: null,
 
   hydratePendingOrderId: () => {

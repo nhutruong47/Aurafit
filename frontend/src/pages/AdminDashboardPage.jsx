@@ -27,7 +27,6 @@ export default function AdminDashboardPage({ currentUser }) {
     setPage: setProductPage,
     isAdmin,
     canManageProducts,
-    products,
     categories: publicCategories,
     filteredProducts,
     productForm,
@@ -170,9 +169,7 @@ export default function AdminDashboardPage({ currentUser }) {
           {activeTab === 'revenue' && isAdmin && <AdminRevenueSection />}
           {activeTab === 'products' && (
             <AdminProductsSection
-              products={products}
               categories={publicCategories}
-              isAdmin={isAdmin}
               filteredProducts={filteredProducts}
               productForm={productForm}
               editingProductId={editingProductId}

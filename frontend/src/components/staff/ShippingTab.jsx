@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import AlertMessage from '../ui/AlertMessage';
 import ImageUploadField from '../ui/ImageUploadField';
 import { StatusBadge } from './StaffDashboardShared';
 import { formatDateTime, getDetailStatusLabel } from './StaffDashboardUtils';
-import OrderSummaryCard from '../orders/OrderSummaryCard';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
@@ -31,7 +30,6 @@ export default function ShippingTab({
   setSearchQuery,
   openOrder,
   setMode,
-  setHandoverImageUrl,
   setHandoverImageFile,
   setNote,
   handleHandoverImageUploaded,

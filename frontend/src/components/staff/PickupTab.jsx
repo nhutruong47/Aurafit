@@ -1,4 +1,3 @@
-import React from 'react';
 import AlertMessage from '../ui/AlertMessage';
 import ImageUploadField from '../ui/ImageUploadField';
 import { StatusBadge } from './StaffDashboardShared';
@@ -17,7 +16,6 @@ export default function PickupTab({
   setSearchQuery,
   openOrder,
   setMode,
-  setHandoverImageUrl,
   setHandoverImageFile,
   setNote,
   handleHandoverImageUploaded,

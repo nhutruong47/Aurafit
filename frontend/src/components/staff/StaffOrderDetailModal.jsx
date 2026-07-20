@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   formatDate, 
   formatDateTime, 
@@ -6,7 +5,6 @@ import {
   getDetailStatusLabel, 
   canShowPickupInfo, 
   getStaffPickupInfo, 
-  getStaffReturnInfo, 
   StatusBadge 
 } from './StaffDashboardUtils';
 

@@ -1,10 +1,8 @@
 // Rental Item Card — Luxury Editorial horizontal layout with inline qty controls.
 // "Chỉnh sửa" link opens the CartItemEditModal for full variant/date editing.
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { updateCartQuantity } from '../../store/cartSlice';
-import { useToastStore } from '../../store/useToastStore';
 import CartItemEditModal from './CartItemEditModal';
 
 export default function RentalItemCard({
@@ -16,8 +14,6 @@ export default function RentalItemCard({
   onToggleCheck,
   onRemoveFromCart,
 }) {
-  const dispatch = useDispatch();
-  const addToast = useToastStore((s) => s.addToast);
   const cartItems = useSelector((state) => state.cart.items);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -34,17 +30,6 @@ export default function RentalItemCard({
     })
     .reduce((sum, ci) => sum + (ci.quantity || 1), 0);
   const effectiveStock = Math.max(0, availableStock - inCartQtyOthers);
-
-  const handleQtyChange = (delta) => {
-    const currentQty = item.quantity || 1;
-    const newQty = currentQty + delta;
-    if (newQty < 1) return;
-    if (delta > 0 && newQty > effectiveStock && effectiveStock > 0) {
-      addToast('Vượt quá số lượng tồn kho khả dụng', 'error');
-      return;
-    }
-    dispatch(updateCartQuantity({ cartId: item.cartId, quantity: newQty }));
-  };
 
   const imageElement = (
     <img

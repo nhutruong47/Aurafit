@@ -113,7 +113,7 @@ export function useStaffRentalOrders(currentUser) {
           imageUrl: getHandoverImageUrl(handover) || fallbackImageUrl,
         }))
       : [{
-          rentalOrderDetailId: Number(selectedDetailId),
+          rentalOrderDetailId: payload?.assessments?.[0]?.rentalOrderDetailId ?? null,
           staffUserName: currentUser?.fullName || currentUser?.name || 'Nhân viên',
           handoverType: fallbackType,
           imageUrl: fallbackImageUrl,
@@ -400,8 +400,6 @@ export function useStaffRentalOrders(currentUser) {
         finalImageUrl = asset?.secureUrl || asset?.secure_url || asset?.imageUrl || asset?.image_url || asset?.url || '';
         setHandoverImageUrl(finalImageUrl);
       }
-      const submittedImageUrl = (finalImageUrl || '').trim();
-
       await adminOrderService.shipOrder(activeOrder.id);
       
       const refreshedOrder = applyConfirmedHandoverFallback(await fetchStaffOrder(activeOrder.id));
@@ -609,7 +607,6 @@ export function useStaffRentalOrders(currentUser) {
     loadOrders,
     openOrder,
     setMode,
-    setHandoverImageUrl,
     setHandoverImageFile,
     handoverImageFile,
     setNote,
@@ -623,7 +620,6 @@ export function useStaffRentalOrders(currentUser) {
     markOrderReturned,
     updateHandoverEvidenceImage,
     submitHandover,
-    submitShipping,
     assessments,
     updateAssessment,
     maxDeposit,

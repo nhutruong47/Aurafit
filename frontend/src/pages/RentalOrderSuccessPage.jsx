@@ -3,12 +3,12 @@ import OrderSuccessHero from '../components/order-success/OrderSuccessHero';
 import OrderSelectionSection from '../components/order-success/OrderSelectionSection';
 import OrderSuccessSidebar from '../components/order-success/OrderSuccessSidebar';
 import OrderSuccessStorySection from '../components/order-success/OrderSuccessStorySection';
-import { storyLinks } from '../components/order-success/orderSuccessData';
 import { fetchOrderDetail } from '../services/rentalOrderService';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 
 const fallbackItemImage =
   'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=85';
+const storyLinks = ['Instagram', 'Bộ ảnh'];
 
 const formatDateRange = (start, end) => {
   if (!start || !end) return 'Ngày thuê đang cập nhật';
@@ -22,14 +22,12 @@ const formatDateRange = (start, end) => {
 
 export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
   const { pendingOrderId, clearPendingOrderId, hydratePendingOrderId } = useCheckoutStore();
-  const [isInitialized, setIsInitialized] = useState(false);
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     hydratePendingOrderId();
-    setIsInitialized(true);
   }, [hydratePendingOrderId]);
 
   useEffect(() => {

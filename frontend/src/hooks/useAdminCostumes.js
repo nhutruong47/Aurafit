@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchCategoryTree, flattenCategoryTree } from '../services/catalogService';
 import { createCostume, fetchAdminCostumes, updateCostume } from '../services/costumeService';
 import { useToastStore } from '../store/useToastStore';
@@ -246,7 +246,6 @@ export function useAdminCostumes(currentUser) {
     isLoading,
     isAdmin,
     canManageProducts,
-    products,
     categories,
     filteredProducts,
     productForm,

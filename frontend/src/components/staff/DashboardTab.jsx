@@ -1,4 +1,3 @@
-import React from 'react';
 import { formatDate, StatusBadge } from './StaffDashboardUtils';
 
 export default function DashboardTab({ 
