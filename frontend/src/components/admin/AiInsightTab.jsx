@@ -3,6 +3,7 @@ import {
   fetchAiInsights,
   triggerAiInsightGeneration,
 } from '../../services/aiInsightService';
+import AiRichText from '../common/AiRichText';
 import { Panel } from './AdminDashboardShared';
 
 const formatPeriodDate = (value) => {
@@ -92,7 +93,7 @@ export default function AiInsightTab() {
           type="button"
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="flex items-center gap-2 bg-black px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777] sm:px-5"
+          className="flex items-center gap-2 rounded-full bg-[#1d1b16] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#8a7442] hover:shadow-md disabled:cursor-not-allowed disabled:translate-y-0 disabled:bg-[#aaa49a] disabled:shadow-none sm:px-5"
         >
           <span className={`material-symbols-outlined text-[18px] ${isGenerating ? 'animate-spin' : ''}`}>
             {isGenerating ? 'progress_activity' : 'auto_awesome'}
@@ -101,18 +102,19 @@ export default function AiInsightTab() {
         </button>
       }
     >
-      <div className="mb-6 border-l-2 border-[#7f7041] bg-[#f5f2eb] px-4 py-3 text-sm leading-6 text-[#5f5e5e]">
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-[#e3d8bc] bg-gradient-to-r from-[#fbf7ed] to-[#f7f3ea] px-4 py-4 text-sm leading-6 text-[#5f5849]">
+        <span className="material-symbols-outlined mt-0.5 text-[21px] text-[#9b8248]">lightbulb</span>
         AI tổng hợp dữ liệu hội thoại và hành vi trong 7 ngày hoàn chỉnh gần nhất để nhận diện xu hướng, sau đó đề xuất hành động cho cửa hàng.
       </div>
 
       {message && (
-        <p className="mb-5 border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+        <p className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 shadow-sm">
           {message}
         </p>
       )}
 
       {error && (
-        <p className="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
           {error}
         </p>
       )}
@@ -125,7 +127,7 @@ export default function AiInsightTab() {
           <p className="text-sm text-[#5f5e5e]">Đang tải các phân tích gần nhất...</p>
         </div>
       ) : insights.length === 0 ? (
-        <div className="flex min-h-72 flex-col items-center justify-center border border-dashed border-[#cfc7ba] bg-[#fafaf8] px-6 text-center">
+        <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[#cfc7ba] bg-[#fafaf8] px-6 text-center">
           <span className="material-symbols-outlined text-[48px] text-[#b7aa8a]">insights</span>
           <h3 className="mt-4 font-serif text-2xl italic text-black">Chưa có phân tích AI</h3>
           <p className="mt-3 max-w-lg text-sm leading-6 text-[#5f5e5e]">
@@ -140,12 +142,15 @@ export default function AiInsightTab() {
             return (
               <article
                 key={insight.id}
-                className={`relative border bg-white p-5 sm:p-6 ${
+                className={`relative overflow-hidden rounded-2xl border bg-white p-5 sm:p-6 ${
                   isLatest
-                    ? 'border-[#7f7041] shadow-[0_8px_24px_rgba(127,112,65,0.12)]'
-                    : 'border-[#d7d2c8]'
+                    ? 'border-[#b49a5d] shadow-[0_12px_34px_rgba(101,83,43,0.13)]'
+                    : 'border-[#ded8ce] shadow-[0_5px_18px_rgba(46,39,27,0.05)]'
                 }`}
               >
+                {isLatest && (
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#765f2d] via-[#c6a962] to-[#765f2d]" />
+                )}
                 <div className="flex flex-col gap-3 border-b border-[#ebe7df] pb-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -156,7 +161,7 @@ export default function AiInsightTab() {
                         {formatPeriodDate(insight.periodStart)} – {formatPeriodDate(insight.periodEnd)}
                       </h3>
                       {isLatest && (
-                        <span className="border border-[#c9b982] bg-[#fbf7e8] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#7f7041]">
+                        <span className="rounded-full border border-[#c9b982] bg-[#fbf7e8] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#7f7041]">
                           Mới nhất
                         </span>
                       )}
@@ -165,13 +170,16 @@ export default function AiInsightTab() {
                       Tạo lúc {formatCreatedAt(insight.createdAt)}
                     </p>
                   </div>
-                  <span className="w-fit border border-[#d7d2c8] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#5f5e5e]">
+                  <span className="w-fit rounded-full border border-[#d7d2c8] bg-[#faf9f6] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#5f5e5e]">
                     Xu hướng tuần
                   </span>
                 </div>
 
-                <div className="mt-5 whitespace-pre-line text-sm leading-7 text-[#333333]">
-                  {insight.content}
+                <div className="mt-5 grid gap-4 sm:grid-cols-[2.5rem_minmax(0,1fr)]">
+                  <div className="hidden h-10 w-10 items-center justify-center rounded-full bg-[#f3eddf] text-[#8a7442] sm:flex">
+                    <span className="material-symbols-outlined text-[21px]">analytics</span>
+                  </div>
+                  <AiRichText content={insight.content} variant="analyst" />
                 </div>
               </article>
             );
