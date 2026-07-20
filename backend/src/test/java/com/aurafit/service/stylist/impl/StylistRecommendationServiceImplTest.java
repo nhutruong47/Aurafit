@@ -1,9 +1,14 @@
 package com.aurafit.service.stylist.impl;
 
+import com.aurafit.dto.request.StylistFilterCriteria;
 import com.aurafit.dto.response.ChatMessageResponse;
+import com.aurafit.entity.Category;
 import com.aurafit.entity.ChatMessage;
 import com.aurafit.entity.ChatSession;
+import com.aurafit.entity.Costume;
+import com.aurafit.entity.CostumeMetadata;
 import com.aurafit.entity.User;
+import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.ChatMessageRole;
 import com.aurafit.enums.AiErrorType;
 import com.aurafit.exception.AiProviderException;
@@ -22,9 +27,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -55,6 +63,8 @@ class StylistRecommendationServiceImplTest {
     @Mock
     private StylistIntentService stylistIntentService;
     @Mock
+    private StylistCategoryResolver stylistCategoryResolver;
+    @Mock
     private GeminiClient geminiClient;
 
     private StylistRecommendationServiceImpl service;
@@ -67,9 +77,12 @@ class StylistRecommendationServiceImplTest {
                 costumeRepository,
                 userRepository,
                 stylistIntentService,
+                stylistCategoryResolver,
                 geminiClient,
                 new ObjectMapper()
         );
+        lenient().when(stylistCategoryResolver.resolve(any(), any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -235,6 +248,156 @@ class StylistRecommendationServiceImplTest {
         );
 
         verifyNoInteractions(chatMessageRepository, stylistIntentService, geminiClient, costumeRepository);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void handleUserMessage_shouldUseRelaxedCandidatesWhenStrictFiltersReturnNoResults() {
+        ChatSession session = ChatSession.builder().id(6L).sessionId("session-relaxed").build();
+        StylistFilterCriteria extractedCriteria = new StylistFilterCriteria(
+                "su-kien",
+                null,
+                "dạ hội",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+        StylistFilterCriteria resolvedCriteria = new StylistFilterCriteria(
+                "su-kien/da-hoi",
+                null,
+                "dạ hội",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+        Costume costume = costume(15L, "Váy dạ hội đỏ ruby", "Đỏ ruby", "Gala", "váy dạ hội");
+
+        stubActiveSession(session);
+        when(stylistIntentService.extractIntent(any(), any())).thenReturn(extractedCriteria);
+        when(stylistCategoryResolver.resolve(extractedCriteria, "tôi muốn đi dạ hội"))
+                .thenReturn(resolvedCriteria);
+        when(costumeRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty(), new PageImpl<>(List.of(costume)));
+        when(geminiClient.generateText(eq(AiCallType.RESPONSE_GENERATION), any(), any()))
+                .thenReturn("Mẫu váy này phù hợp với buổi dạ hội.\nRECOMMENDED_IDS: 15");
+        when(costumeRepository.findByIdWithItems(15L)).thenReturn(Optional.of(costume));
+
+        ChatMessageResponse response = service.handleUserMessage(
+                "session-relaxed",
+                null,
+                "tôi muốn đi dạ hội"
+        );
+
+        assertEquals(false, response.hasError());
+        assertEquals(List.of(15L), response.recommendedCostumes().stream().map(item -> item.id()).toList());
+        verify(costumeRepository, times(2)).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void handleUserMessage_shouldSendOnlyPreviousUserMessagesAsIntentHistory() {
+        ChatSession session = ChatSession.builder().id(7L).sessionId("session-history").build();
+        ChatMessage newestAssistantError = message(40L, session, ChatMessageRole.ASSISTANT, "Không tìm thấy");
+        ChatMessage newestUser = message(39L, session, ChatMessageRole.USER, "Tìm đồ Noel");
+        ChatMessage olderAssistant = message(38L, session, ChatMessageRole.ASSISTANT, "Gợi ý Noel");
+        ChatMessage olderUser = message(37L, session, ChatMessageRole.USER, "Tìm đồ lễ hội");
+
+        when(chatSessionRepository.findBySessionId("session-history")).thenReturn(Optional.of(session));
+        when(chatMessageRepository
+                .countByChatSessionAndRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        eq(session),
+                        eq(ChatMessageRole.USER),
+                        any(LocalDateTime.class),
+                        any(LocalDateTime.class)
+                ))
+                .thenReturn(2L);
+        when(chatMessageRepository.findFirstByChatSessionAndRoleOrderByCreatedAtDesc(
+                session,
+                ChatMessageRole.USER
+        )).thenReturn(Optional.of(newestUser));
+        when(chatMessageRepository.findByChatSessionOrderByCreatedAtDesc(eq(session), any(Pageable.class)))
+                .thenReturn(List.of(newestAssistantError, newestUser, olderAssistant, olderUser));
+        when(chatMessageRepository.save(any(ChatMessage.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(stylistIntentService.extractIntent(any(), any())).thenReturn(StylistFilterCriteria.empty());
+        when(costumeRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        service.handleUserMessage("session-history", null, "có vest đen không");
+
+        @SuppressWarnings("rawtypes")
+        ArgumentCaptor<List> historyCaptor = ArgumentCaptor.forClass(List.class);
+        verify(stylistIntentService).extractIntent(eq("có vest đen không"), historyCaptor.capture());
+        @SuppressWarnings("unchecked")
+        List<ChatMessage> capturedHistory = historyCaptor.getValue();
+        assertEquals(List.of(37L, 39L), capturedHistory.stream().map(ChatMessage::getId).toList());
+    }
+
+    private void stubActiveSession(ChatSession session) {
+        when(chatSessionRepository.findBySessionId(session.getSessionId())).thenReturn(Optional.of(session));
+        when(chatMessageRepository
+                .countByChatSessionAndRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        eq(session),
+                        eq(ChatMessageRole.USER),
+                        any(LocalDateTime.class),
+                        any(LocalDateTime.class)
+                ))
+                .thenReturn(0L);
+        when(chatMessageRepository.findFirstByChatSessionAndRoleOrderByCreatedAtDesc(
+                session,
+                ChatMessageRole.USER
+        )).thenReturn(Optional.empty());
+        when(chatMessageRepository.findByChatSessionOrderByCreatedAtDesc(eq(session), any(Pageable.class)))
+                .thenReturn(List.of());
+        when(chatMessageRepository.save(any(ChatMessage.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private Costume costume(Long id, String name, String color, String occasion, String... tags) {
+        Category category = Category.builder()
+                .id(20L)
+                .name("Đầm dạ hội")
+                .slug("dam-da-hoi")
+                .path("su-kien/da-hoi/dam-da-hoi")
+                .isActive(true)
+                .build();
+        Costume costume = Costume.builder()
+                .id(id)
+                .name(name)
+                .rentalPrice(BigDecimal.valueOf(400_000))
+                .depositPrice(BigDecimal.valueOf(1_000_000))
+                .status(com.aurafit.enums.CostumeStatus.ACTIVE)
+                .category(category)
+                .build();
+        CostumeMetadata metadata = CostumeMetadata.builder()
+                .costume(costume)
+                .style("Dạ hội sang trọng")
+                .occasion(occasion)
+                .season("Quanh năm")
+                .color(color)
+                .tags(List.of(tags))
+                .build();
+        costume.setMetadata(metadata);
+        return costume;
+    }
+
+    private ChatMessage message(
+            Long id,
+            ChatSession session,
+            ChatMessageRole role,
+            String content
+    ) {
+        return ChatMessage.builder()
+                .id(id)
+                .chatSession(session)
+                .role(role)
+                .content(content)
+                .build();
     }
 
     private User user(Long id, String email) {

@@ -14,7 +14,9 @@ spring:
     active: dev
 
   config:
-    import: optional:file:.env[.properties]
+    import:
+      - optional:file:backend/.env[.properties]
+      - optional:file:.env[.properties]
 
   servlet:
     multipart:
@@ -76,6 +78,13 @@ ai:
   reasoning-circuit-window-minutes: ${AI_REASONING_CIRCUIT_WINDOW_MINUTES:5}
   reasoning-circuit-cooldown-minutes: ${AI_REASONING_CIRCUIT_COOLDOWN_MINUTES:10}
   reasoning-circuit-minimum-calls: ${AI_REASONING_CIRCUIT_MINIMUM_CALLS:10}
+
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-3.5-flash}
+    base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+    timeout-ms: ${GEMINI_TIMEOUT_MS:15000}
+    thinking-budget: ${GEMINI_THINKING_BUDGET:0}
 
 
 ghn:

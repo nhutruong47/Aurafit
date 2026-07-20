@@ -39,7 +39,10 @@ public class StylistIntentServiceImpl implements StylistIntentService {
             }
 
             category phải là category path dạng slug tiếng Việt không dấu, ví dụ "su-kien" hoặc "cosplay".
+            Nếu không chắc category path tồn tại trong AuraFit thì để null, không tự tạo path mới.
             Chỉ điền thông tin có thể xác định rõ từ lời người dùng và ngữ cảnh gần nhất.
+            Chỉ kế thừa field từ lịch sử khi tin hiện tại thực sự là câu hỏi nối tiếp.
+            Nếu tin hiện tại đã nêu rõ sản phẩm hoặc nhu cầu mới, không mang occasion, color, style hay tags cũ sang.
             Field nào không xác định được thì bắt buộc để null. Không được suy đoán hoặc bịa dữ liệu.
             Giá tiền dùng số VND, không kèm ký hiệu hoặc dấu phân cách.
 
@@ -62,39 +65,30 @@ public class StylistIntentServiceImpl implements StylistIntentService {
 
     @Override
     public StylistFilterCriteria extractIntent(String userMessage, List<ChatMessage> recentHistory) {
+        String userPrompt = buildUserPrompt(userMessage, limitHistory(recentHistory));
         String rawJson = geminiClient.generateJson(
                 AiCallType.INTENT_EXTRACTION,
                 SYSTEM_PROMPT,
-                buildUserPrompt(userMessage, limitHistory(recentHistory))
+                userPrompt
         );
 
         try {
-            if (rawJson != null) {
-                rawJson = rawJson.trim();
-                if (rawJson.startsWith("```json")) {
-                    rawJson = rawJson.substring(7);
-                } else if (rawJson.startsWith("```")) {
-                    rawJson = rawJson.substring(3);
-                }
-                if (rawJson.endsWith("```")) {
-                    rawJson = rawJson.substring(0, rawJson.length() - 3);
-                }
-                rawJson = rawJson.trim();
-            }
-            com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(rawJson);
-            if (rootNode.has("intent") && rootNode.has("entities")) {
-                com.fasterxml.jackson.databind.JsonNode entities = rootNode.get("entities");
-                String category = entities.has("product_category") ? entities.get("product_category").asText(null) : null;
-                String color = entities.has("color") ? entities.get("color").asText(null) : null;
-                String gender = entities.has("gender") ? entities.get("gender").asText(null) : null;
-                String style = entities.has("style") ? entities.get("style").asText(null) : null;
-                return new StylistFilterCriteria(category, style, null, null, color, gender, null, null, null);
-            }
-            return objectMapper.treeToValue(rootNode, StylistFilterCriteria.class);
+            return parseIntent(rawJson);
+        } catch (JsonProcessingException | IllegalArgumentException exception) {
+            log.warn("Gemini returned malformed intent JSON; retrying once responseBody={}", rawJson);
+        }
+
+        String retryRawJson = geminiClient.generateJson(
+                AiCallType.INTENT_EXTRACTION,
+                SYSTEM_PROMPT,
+                userPrompt + "\nHãy trả lại đúng một JSON object hợp lệ theo schema, không thêm nội dung khác."
+        );
+        try {
+            return parseIntent(retryRawJson);
         } catch (JsonProcessingException | IllegalArgumentException exception) {
             log.error(
-                    "Failed to parse Gemini intent response responseBody={}",
-                    rawJson,
+                    "Failed to parse Gemini intent response after retry responseBody={}",
+                    retryRawJson,
                     exception
             );
             throw new AiProviderException(
@@ -104,6 +98,39 @@ public class StylistIntentServiceImpl implements StylistIntentService {
                     exception
             );
         }
+    }
+
+    private StylistFilterCriteria parseIntent(String rawJson) throws JsonProcessingException {
+        String normalizedJson = stripMarkdownFence(rawJson);
+        com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(normalizedJson);
+        if (rootNode == null || !rootNode.isObject()) {
+            throw new IllegalArgumentException("Intent response must be a JSON object.");
+        }
+        if (rootNode.has("intent") && rootNode.has("entities")) {
+            com.fasterxml.jackson.databind.JsonNode entities = rootNode.get("entities");
+            String category = entities.has("product_category") ? entities.get("product_category").asText(null) : null;
+            String color = entities.has("color") ? entities.get("color").asText(null) : null;
+            String gender = entities.has("gender") ? entities.get("gender").asText(null) : null;
+            String style = entities.has("style") ? entities.get("style").asText(null) : null;
+            return new StylistFilterCriteria(category, style, null, null, color, gender, null, null, null);
+        }
+        return objectMapper.treeToValue(rootNode, StylistFilterCriteria.class);
+    }
+
+    private String stripMarkdownFence(String rawJson) {
+        if (rawJson == null) {
+            return null;
+        }
+        String normalizedJson = rawJson.trim();
+        if (normalizedJson.startsWith("```json")) {
+            normalizedJson = normalizedJson.substring(7);
+        } else if (normalizedJson.startsWith("```")) {
+            normalizedJson = normalizedJson.substring(3);
+        }
+        if (normalizedJson.endsWith("```")) {
+            normalizedJson = normalizedJson.substring(0, normalizedJson.length() - 3);
+        }
+        return normalizedJson.trim();
     }
 
     private List<ChatMessage> limitHistory(List<ChatMessage> recentHistory) {

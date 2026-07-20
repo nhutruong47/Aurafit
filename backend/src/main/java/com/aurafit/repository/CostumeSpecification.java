@@ -87,6 +87,60 @@ public final class CostumeSpecification {
         };
     }
 
+    public static Specification<Costume> buildRelaxed(
+            StylistFilterCriteria criteria,
+            List<String> searchTerms
+    ) {
+        StylistFilterCriteria safeCriteria = criteria == null ? StylistFilterCriteria.empty() : criteria;
+        List<String> normalizedTerms = normalizeValues(searchTerms);
+
+        Specification<Costume> relaxedSpecification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            Join<Costume, Category> categoryJoin = categoryJoin(root);
+
+            if (StringUtils.hasText(safeCriteria.category())) {
+                String categoryPath = normalize(safeCriteria.category());
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.equal(criteriaBuilder.lower(categoryJoin.get("path")), categoryPath),
+                        criteriaBuilder.like(criteriaBuilder.lower(categoryJoin.get("path")), categoryPath + "/%")
+                ));
+            }
+
+            if (safeCriteria.minBudget() != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("rentalPrice"), safeCriteria.minBudget()));
+            }
+            if (safeCriteria.maxBudget() != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("rentalPrice"), safeCriteria.maxBudget()));
+            }
+
+            if (!normalizedTerms.isEmpty()) {
+                Join<Costume, CostumeMetadata> metadataJoin = root.join("metadata", JoinType.LEFT);
+                Join<CostumeMetadata, String> tagsJoin = metadataJoin.join("tags", JoinType.LEFT);
+                List<Predicate> searchPredicates = new ArrayList<>();
+
+                for (String term : normalizedTerms) {
+                    String pattern = "%" + term + "%";
+                    searchPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), pattern));
+                    searchPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(categoryJoin.get("name")), pattern));
+                    searchPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(categoryJoin.get("path")), pattern));
+                    searchPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(metadataJoin.get("style")), pattern));
+                    searchPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(metadataJoin.get("occasion")), pattern));
+                    searchPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(metadataJoin.get("season")), pattern));
+                    searchPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(metadataJoin.get("color")), pattern));
+                    searchPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(metadataJoin.get("gender")), pattern));
+                    searchPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(tagsJoin), pattern));
+                }
+
+                predicates.add(criteriaBuilder.or(searchPredicates.toArray(Predicate[]::new)));
+                query.distinct(true);
+            }
+
+            return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
+        };
+
+        return Specification.where(activeAndCategoryActive()).and(relaxedSpecification);
+    }
+
     public static Specification<Costume> inCategoryIds(List<Long> categoryIds) {
         List<Long> safeCategoryIds = normalizeIds(categoryIds);
         if (safeCategoryIds.isEmpty()) {

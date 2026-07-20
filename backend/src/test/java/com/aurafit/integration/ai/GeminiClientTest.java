@@ -7,9 +7,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
+
+import java.net.ConnectException;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -86,6 +91,21 @@ class GeminiClientTest {
     }
 
     @Test
+    void generateText_shouldMapInvalidProviderRequestToInvalidResponse() {
+        GeminiClient client = clientReturning(
+                HttpStatus.BAD_REQUEST,
+                "{\"error\":{\"message\":\"unexpected model name format\"}}"
+        );
+
+        AiProviderException exception = assertThrows(
+                AiProviderException.class,
+                () -> client.generateText("system", "user")
+        );
+
+        assertEquals(AiErrorType.INVALID_RESPONSE, exception.getErrorType());
+    }
+
+    @Test
     void generateText_shouldMapProvider5xxToProviderUnavailable() {
         GeminiClient client = clientReturning(
                 HttpStatus.SERVICE_UNAVAILABLE,
@@ -110,6 +130,7 @@ class GeminiClientTest {
                 "test-model",
                 "https://gemini.test",
                 10,
+                0,
                 new ObjectMapper()
         );
 
@@ -137,6 +158,81 @@ class GeminiClientTest {
         assertEquals(AiErrorType.INVALID_RESPONSE, exception.getErrorType());
     }
 
+    @Test
+    void generateText_shouldMapConnectionFailureToProviderUnavailable() {
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> Mono.error(new WebClientRequestException(
+                        new ConnectException("connection refused"),
+                        request.method(),
+                        request.url(),
+                        request.headers()
+                )));
+        GeminiClient client = new GeminiClient(
+                builder,
+                "test-key",
+                "test-model",
+                "https://gemini.test",
+                1_000,
+                0,
+                new ObjectMapper()
+        );
+
+        AiProviderException exception = assertThrows(
+                AiProviderException.class,
+                () -> client.generateText("system", "user")
+        );
+
+        assertEquals(AiErrorType.PROVIDER_UNAVAILABLE, exception.getErrorType());
+    }
+
+    @Test
+    void generateText_shouldRejectTruncatedMaxTokensResponse() {
+        GeminiClient client = clientReturning(
+                HttpStatus.OK,
+                "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"partial\"}]},\"finishReason\":\"MAX_TOKENS\"}]}"
+        );
+
+        AiProviderException exception = assertThrows(
+                AiProviderException.class,
+                () -> client.generateText("system", "user")
+        );
+
+        assertEquals(AiErrorType.INVALID_RESPONSE, exception.getErrorType());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void buildRequestBody_shouldApplyConfiguredThinkingBudget() {
+        GeminiClient client = clientReturning(HttpStatus.OK, "{}");
+
+        Map<String, Object> requestBody = ReflectionTestUtils.invokeMethod(
+                client,
+                "buildRequestBody",
+                "system",
+                "user",
+                true,
+                300
+        );
+        Map<String, Object> generationConfig = (Map<String, Object>) requestBody.get("generationConfig");
+
+        assertEquals(Map.of("thinkingBudget", 0), generationConfig.get("thinkingConfig"));
+    }
+
+    @Test
+    void constructor_shouldRemoveWhitespaceFromModelName() {
+        GeminiClient client = new GeminiClient(
+                WebClient.builder(),
+                "test-key",
+                "gemini-3   .5-flash",
+                "https://gemini.test",
+                1_000,
+                0,
+                new ObjectMapper()
+        );
+
+        assertEquals("gemini-3.5-flash", ReflectionTestUtils.getField(client, "model"));
+    }
+
     private GeminiClient clientReturning(HttpStatus status, String responseBody) {
         WebClient.Builder builder = WebClient.builder()
                 .exchangeFunction(request -> Mono.just(ClientResponse.create(status)
@@ -150,6 +246,7 @@ class GeminiClientTest {
                 "test-model",
                 "https://gemini.test",
                 1_000,
+                0,
                 new ObjectMapper()
         );
     }
