@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.Duration;
@@ -38,26 +39,34 @@ public class GeminiClient {
     private static final String UNKNOWN_ERROR_MESSAGE = "Có lỗi xảy ra, vui lòng thử lại";
     private static final int INTENT_MAX_OUTPUT_TOKENS = 300;
     private static final int RESPONSE_MAX_OUTPUT_TOKENS = 400;
-    private static final int INSIGHT_MAX_OUTPUT_TOKENS = 500;
+    private static final int INSIGHT_MAX_OUTPUT_TOKENS = 1_000;
 
     private final WebClient webClient;
     private final String apiKey;
     private final String model;
     private final Duration timeout;
+    private final int thinkingBudget;
     private final ObjectMapper objectMapper;
 
     public GeminiClient(
             WebClient.Builder webClientBuilder,
             @Value("${ai.gemini.api-key:}") String apiKey,
-            @Value("${ai.gemini.model:gemini-2.0-flash}") String model,
+            @Value("${ai.gemini.model:gemini-3.5-flash}") String model,
             @Value("${ai.gemini.base-url:https://generativelanguage.googleapis.com/v1beta}") String baseUrl,
             @Value("${ai.gemini.timeout-ms:15000}") long timeoutMs,
+            @Value("${ai.gemini.thinking-budget:0}") int thinkingBudget,
             ObjectMapper objectMapper
     ) {
-        this.webClient = webClientBuilder.baseUrl(baseUrl).build();
-        this.apiKey = apiKey;
-        this.model = model;
+        String resolvedBaseUrl = StringUtils.hasText(baseUrl)
+                ? baseUrl.trim()
+                : "https://generativelanguage.googleapis.com/v1beta";
+        this.webClient = webClientBuilder.baseUrl(resolvedBaseUrl).build();
+        this.apiKey = apiKey == null ? "" : apiKey.trim();
+        this.model = StringUtils.hasText(model)
+                ? model.replaceAll("\\s+", "")
+                : "gemini-3.5-flash";
         this.timeout = Duration.ofMillis(timeoutMs);
+        this.thinkingBudget = thinkingBudget;
         this.objectMapper = objectMapper;
     }
 
@@ -196,6 +205,9 @@ public class GeminiClient {
         } else if (statusCode >= 500 && statusCode < 600) {
             errorType = AiErrorType.PROVIDER_UNAVAILABLE;
             userFriendlyMessage = PROVIDER_UNAVAILABLE_MESSAGE;
+        } else if (statusCode == 400 || statusCode == 422) {
+            errorType = AiErrorType.INVALID_RESPONSE;
+            userFriendlyMessage = INVALID_RESPONSE_MESSAGE;
         } else {
             errorType = AiErrorType.UNKNOWN;
             userFriendlyMessage = UNKNOWN_ERROR_MESSAGE;
@@ -225,6 +237,15 @@ public class GeminiClient {
                     AiErrorType.TIMEOUT,
                     exception.getMessage(),
                     TIMEOUT_MESSAGE,
+                    exception
+            );
+        }
+
+        if (hasCause(exception, WebClientRequestException.class)) {
+            return new AiProviderException(
+                    AiErrorType.PROVIDER_UNAVAILABLE,
+                    exception.getMessage(),
+                    PROVIDER_UNAVAILABLE_MESSAGE,
                     exception
             );
         }
@@ -295,6 +316,9 @@ public class GeminiClient {
 
         Map<String, Object> generationConfig = new LinkedHashMap<>();
         generationConfig.put("maxOutputTokens", maxOutputTokens);
+        if (thinkingBudget >= 0) {
+            generationConfig.put("thinkingConfig", Map.of("thinkingBudget", thinkingBudget));
+        }
         if (jsonResponse) {
             generationConfig.put("responseMimeType", MediaType.APPLICATION_JSON_VALUE);
         }
@@ -330,18 +354,46 @@ public class GeminiClient {
     }
 
     private String extractResponseText(JsonNode response) {
-        JsonNode textNode = response == null
-                ? null
-                : response.path("candidates").path(0).path("content").path("parts").path(0).path("text");
-
-        if (textNode == null || textNode.isMissingNode() || !textNode.isTextual()) {
+        JsonNode candidate = response == null ? null : response.path("candidates").path(0);
+        if (candidate == null || candidate.isMissingNode()) {
             throw new AiProviderException(
                     AiErrorType.INVALID_RESPONSE,
-                    "Gemini response does not contain candidates[0].content.parts[0].text.",
+                    "Gemini response does not contain candidates[0].",
                     INVALID_RESPONSE_MESSAGE
             );
         }
 
-        return textNode.asText();
+        String finishReason = candidate.path("finishReason").asText("");
+        if ("MAX_TOKENS".equalsIgnoreCase(finishReason)) {
+            throw new AiProviderException(
+                    AiErrorType.INVALID_RESPONSE,
+                    "Gemini response reached the maximum output token limit.",
+                    INVALID_RESPONSE_MESSAGE
+            );
+        }
+
+        JsonNode parts = candidate.path("content").path("parts");
+        StringBuilder output = new StringBuilder();
+        if (parts.isArray()) {
+            parts.forEach(part -> {
+                JsonNode textNode = part.path("text");
+                if (!part.path("thought").asBoolean(false) && textNode.isTextual()) {
+                    if (!output.isEmpty()) {
+                        output.append('\n');
+                    }
+                    output.append(textNode.asText());
+                }
+            });
+        }
+
+        if (output.isEmpty()) {
+            throw new AiProviderException(
+                    AiErrorType.INVALID_RESPONSE,
+                    "Gemini response does not contain a non-thinking text part.",
+                    INVALID_RESPONSE_MESSAGE
+            );
+        }
+
+        return output.toString();
     }
 }

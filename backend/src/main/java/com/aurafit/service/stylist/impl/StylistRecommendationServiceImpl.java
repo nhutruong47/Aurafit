@@ -28,8 +28,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -44,8 +46,11 @@ import java.util.stream.Collectors;
 public class StylistRecommendationServiceImpl implements StylistRecommendationService {
 
     private static final int HISTORY_LIMIT = 3;
+    private static final int HISTORY_FETCH_LIMIT = HISTORY_LIMIT * 2;
     private static final int RECOMMENDATION_LIMIT = 12;
+    private static final int RELAXED_CANDIDATE_POOL_SIZE = 60;
     private static final int DAILY_USER_MESSAGE_LIMIT = 20;
+    private static final int MIN_SEARCH_TOKEN_LENGTH = 3;
     private static final String NO_RESULTS_REPLY = "Xin lỗi, hiện chưa tìm thấy sản phẩm phù hợp với yêu cầu, bạn có thể mô tả cụ thể hơn không?";
     private static final String DAILY_LIMIT_REPLY = "Bạn đã đạt giới hạn tư vấn hôm nay, vui lòng quay lại vào ngày mai";
     private static final Pattern RECOMMENDED_IDS_PATTERN = Pattern.compile(
@@ -66,6 +71,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     private final CostumeRepository costumeRepository;
     private final UserRepository userRepository;
     private final StylistIntentService stylistIntentService;
+    private final StylistCategoryResolver stylistCategoryResolver;
     private final GeminiClient geminiClient;
     private final ObjectMapper objectMapper;
 
@@ -75,6 +81,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             CostumeRepository costumeRepository,
             UserRepository userRepository,
             StylistIntentService stylistIntentService,
+            StylistCategoryResolver stylistCategoryResolver,
             GeminiClient geminiClient,
             ObjectMapper objectMapper
     ) {
@@ -83,6 +90,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         this.costumeRepository = costumeRepository;
         this.userRepository = userRepository;
         this.stylistIntentService = stylistIntentService;
+        this.stylistCategoryResolver = stylistCategoryResolver;
         this.geminiClient = geminiClient;
         this.objectMapper = objectMapper;
     }
@@ -99,6 +107,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         ChatMessage previousUserMessage = chatMessageRepository
                 .findFirstByChatSessionAndRoleOrderByCreatedAtDesc(chatSession, ChatMessageRole.USER)
                 .orElse(null);
+        List<ChatMessage> recentHistory = getRecentHistory(chatSession);
 
         ChatMessage savedUserMessage = chatMessageRepository.save(ChatMessage.builder()
                 .chatSession(chatSession)
@@ -107,20 +116,19 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                 .build());
 
         try {
-            List<ChatMessage> recentHistory = getRecentHistory(chatSession);
-            IntentResult intentResult = resolveIntent(userMessage, recentHistory, previousUserMessage);
-            StylistFilterCriteria criteria = intentResult.criteria();
-            savedUserMessage.setIntentJson(intentResult.intentJson());
+            StylistFilterCriteria extractedCriteria = resolveIntent(
+                    userMessage,
+                    recentHistory,
+                    previousUserMessage
+            );
+            StylistFilterCriteria criteria = stylistCategoryResolver.resolve(
+                    extractedCriteria,
+                    userMessage
+            );
+            savedUserMessage.setIntentJson(serializeCriteria(criteria));
             chatMessageRepository.save(savedUserMessage);
 
-            List<Costume> candidates = costumeRepository.findAll(
-                    CostumeSpecification.build(criteria),
-                    PageRequest.of(
-                            0,
-                            RECOMMENDATION_LIMIT,
-                            Sort.by(Sort.Direction.DESC, "availableItemCount")
-                    )
-            ).getContent();
+            List<Costume> candidates = findCandidates(criteria, userMessage);
 
             if (candidates.isEmpty()) {
                 saveAssistantMessage(chatSession, NO_RESULTS_REPLY, null);
@@ -191,18 +199,16 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         return userMessageCount >= DAILY_USER_MESSAGE_LIMIT;
     }
 
-    private IntentResult resolveIntent(
+    private StylistFilterCriteria resolveIntent(
             String userMessage,
             List<ChatMessage> recentHistory,
             ChatMessage previousUserMessage
     ) {
         if (canReusePreviousIntent(userMessage, previousUserMessage)) {
-            String cachedIntentJson = previousUserMessage.getIntentJson();
-            return new IntentResult(deserializeCriteria(cachedIntentJson), cachedIntentJson);
+            return deserializeCriteria(previousUserMessage.getIntentJson());
         }
 
-        StylistFilterCriteria criteria = stylistIntentService.extractIntent(userMessage, recentHistory);
-        return new IntentResult(criteria, serializeCriteria(criteria));
+        return stylistIntentService.extractIntent(userMessage, recentHistory);
     }
 
     private boolean canReusePreviousIntent(String userMessage, ChatMessage previousUserMessage) {
@@ -254,11 +260,171 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         List<ChatMessage> recentMessages = new ArrayList<>(
                 chatMessageRepository.findByChatSessionOrderByCreatedAtDesc(
                         chatSession,
-                        PageRequest.of(0, HISTORY_LIMIT)
+                        PageRequest.of(0, HISTORY_FETCH_LIMIT)
                 )
+                        .stream()
+                        .filter(message -> message.getRole() == ChatMessageRole.USER)
+                        .limit(HISTORY_LIMIT)
+                        .toList()
         );
         Collections.reverse(recentMessages);
         return recentMessages;
+    }
+
+    private List<Costume> findCandidates(StylistFilterCriteria criteria, String userMessage) {
+        List<Costume> strictCandidates = costumeRepository.findAll(
+                CostumeSpecification.build(criteria),
+                recommendationPage(RECOMMENDATION_LIMIT)
+        ).getContent();
+        if (!strictCandidates.isEmpty()) {
+            return strictCandidates;
+        }
+
+        List<String> searchTerms = buildSearchTerms(criteria, userMessage);
+        List<Costume> relaxedCandidates = costumeRepository.findAll(
+                CostumeSpecification.buildRelaxed(criteria, searchTerms),
+                recommendationPage(RELAXED_CANDIDATE_POOL_SIZE)
+        ).getContent();
+
+        if (relaxedCandidates.isEmpty() && StringUtils.hasText(criteria.category())) {
+            StylistFilterCriteria categoryAndBudgetOnly = new StylistFilterCriteria(
+                    criteria.category(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    criteria.minBudget(),
+                    criteria.maxBudget()
+            );
+            relaxedCandidates = costumeRepository.findAll(
+                    CostumeSpecification.build(categoryAndBudgetOnly),
+                    recommendationPage(RELAXED_CANDIDATE_POOL_SIZE)
+            ).getContent();
+        }
+
+        return rankCandidates(relaxedCandidates, searchTerms);
+    }
+
+    private PageRequest recommendationPage(int size) {
+        return PageRequest.of(
+                0,
+                size,
+                Sort.by(Sort.Direction.DESC, "availableItemCount")
+        );
+    }
+
+    private List<String> buildSearchTerms(StylistFilterCriteria criteria, String userMessage) {
+        LinkedHashSet<String> searchTerms = new LinkedHashSet<>();
+        addSearchTerms(searchTerms, userMessage);
+        addSearchTerms(searchTerms, criteria.style());
+        addSearchTerms(searchTerms, criteria.occasion());
+        addSearchTerms(searchTerms, criteria.season());
+        addSearchTerms(searchTerms, criteria.color());
+        addSearchTerms(searchTerms, criteria.gender());
+        if (criteria.tags() != null) {
+            criteria.tags().forEach(tag -> addSearchTerms(searchTerms, tag));
+        }
+        return List.copyOf(searchTerms);
+    }
+
+    private void addSearchTerms(LinkedHashSet<String> searchTerms, String value) {
+        if (!StringUtils.hasText(value)) {
+            return;
+        }
+
+        String normalizedValue = value.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+        if (normalizedValue.length() >= MIN_SEARCH_TOKEN_LENGTH) {
+            searchTerms.add(normalizedValue);
+        }
+
+        String asciiValue = normalizeSearchText(value);
+        if (asciiValue.length() >= MIN_SEARCH_TOKEN_LENGTH) {
+            searchTerms.add(asciiValue.replace(' ', '-'));
+        }
+
+        for (String token : normalizedValue.split("[^\\p{L}\\p{N}]+")) {
+            if (token.length() >= MIN_SEARCH_TOKEN_LENGTH) {
+                searchTerms.add(token);
+            }
+        }
+    }
+
+    private List<Costume> rankCandidates(List<Costume> candidates, List<String> searchTerms) {
+        if (candidates == null || candidates.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> normalizedTerms = searchTerms.stream()
+                .map(this::normalizeSearchText)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+
+        return candidates.stream()
+                .sorted(Comparator.comparingInt(
+                                (Costume costume) -> relevanceScore(costume, normalizedTerms)
+                        )
+                        .reversed()
+                        .thenComparing(Comparator.comparingInt(Costume::getAvailableItemCount).reversed())
+                        .thenComparing(Costume::getId))
+                .limit(RECOMMENDATION_LIMIT)
+                .toList();
+    }
+
+    private int relevanceScore(Costume costume, List<String> searchTerms) {
+        CostumeMetadata metadata = costume.getMetadata();
+        String name = normalizeSearchText(costume.getName());
+        String category = costume.getCategory() == null
+                ? ""
+                : normalizeSearchText(costume.getCategory().getName() + " " + costume.getCategory().getPath());
+        String style = metadata == null ? "" : normalizeSearchText(metadata.getStyle());
+        String occasion = metadata == null ? "" : normalizeSearchText(metadata.getOccasion());
+        String season = metadata == null ? "" : normalizeSearchText(metadata.getSeason());
+        String color = metadata == null ? "" : normalizeSearchText(metadata.getColor());
+        String gender = metadata == null ? "" : normalizeSearchText(metadata.getGender());
+        String tags = metadata == null || metadata.getTags() == null
+                ? ""
+                : normalizeSearchText(String.join(" ", metadata.getTags()));
+
+        int score = 0;
+        for (String term : searchTerms) {
+            if (name.contains(term)) {
+                score += 8;
+            }
+            if (category.contains(term)) {
+                score += 6;
+            }
+            if (tags.contains(term)) {
+                score += 5;
+            }
+            if (color.contains(term)) {
+                score += 4;
+            }
+            if (style.contains(term) || occasion.contains(term)) {
+                score += 3;
+            }
+            if (season.contains(term) || gender.contains(term)) {
+                score += 2;
+            }
+        }
+        return score;
+    }
+
+    private String normalizeSearchText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return Normalizer.normalize(
+                        value.replace('Đ', 'D').replace('đ', 'd'),
+                        Normalizer.Form.NFD
+                )
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", " ")
+                .trim()
+                .replaceAll("\\s+", " ");
     }
 
     private String serializeCriteria(StylistFilterCriteria criteria) {
@@ -280,8 +446,18 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             prompt.append("ID: ").append(costume.getId())
                     .append(" | Tên: ").append(costume.getName())
                     .append(" | Giá thuê: ").append(costume.getRentalPrice())
+                    .append(" | Category: ").append(costume.getCategory().getName())
                     .append(" | Style: ").append(metadata != null ? metadata.getStyle() : "không có")
                     .append(" | Occasion: ").append(metadata != null ? metadata.getOccasion() : "không có")
+                    .append(" | Season: ").append(metadata != null ? metadata.getSeason() : "không có")
+                    .append(" | Color: ").append(metadata != null ? metadata.getColor() : "không có")
+                    .append(" | Gender: ").append(metadata != null ? metadata.getGender() : "không có")
+                    .append(" | Tags: ").append(metadata != null && metadata.getTags() != null
+                            ? String.join(", ", metadata.getTags())
+                            : "không có")
+                    .append(" | Size: ").append(metadata != null ? metadata.getSize() : "không có")
+                    .append(" | Material: ").append(metadata != null ? metadata.getMaterial() : "không có")
+                    .append(" | Fit note: ").append(metadata != null ? metadata.getFitNote() : "không có")
                     .append('\n');
         });
 
@@ -324,6 +500,4 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     private record ParsedRecommendation(String replyText, List<Long> costumeIds) {
     }
 
-    private record IntentResult(StylistFilterCriteria criteria, String intentJson) {
-    }
 }

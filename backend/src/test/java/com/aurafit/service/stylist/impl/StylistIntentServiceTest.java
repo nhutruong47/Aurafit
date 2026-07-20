@@ -1,5 +1,6 @@
 package com.aurafit.service.stylist.impl;
 
+import com.aurafit.dto.request.StylistFilterCriteria;
 import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.AiErrorType;
 import com.aurafit.exception.AiProviderException;
@@ -14,9 +15,36 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class StylistIntentServiceTest {
+
+    @Test
+    void extractIntent_shouldRetryOnceWhenFirstResponseIsMalformed() {
+        GeminiClient geminiClient = mock(GeminiClient.class);
+        when(geminiClient.generateJson(
+                eq(AiCallType.INTENT_EXTRACTION),
+                anyString(),
+                anyString()
+        )).thenReturn(
+                "not-json",
+                "{\"category\":null,\"style\":null,\"occasion\":\"dạ hội\","
+                        + "\"season\":null,\"color\":null,\"gender\":null,\"tags\":null,"
+                        + "\"minBudget\":null,\"maxBudget\":null}"
+        );
+        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper());
+
+        StylistFilterCriteria result = service.extractIntent("Tôi muốn đi dạ hội", List.of());
+
+        assertEquals("dạ hội", result.occasion());
+        verify(geminiClient, times(2)).generateJson(
+                eq(AiCallType.INTENT_EXTRACTION),
+                anyString(),
+                anyString()
+        );
+    }
 
     @Test
     void extractIntent_shouldMapMalformedModelOutputToInvalidResponse() {
