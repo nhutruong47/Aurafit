@@ -77,7 +77,7 @@ export default function StaffOrderDetailModal({
               </p>
               <div className="bg-white border border-gray-100 rounded p-3 mt-2 text-sm">
                 <p className="font-medium text-gray-700 mb-1">
-                  Địa chỉ nhận hàng:
+                  {(activeOrder.deliveryMethod === 'GHN_DELIVERY' || activeOrder.deliveryMethod === 'GHN') ? 'Địa chỉ nhận hàng:' : 'Địa chỉ khách hàng:'}
                 </p>
                 <p className="text-gray-600">
                   {activeOrder.receiverName || activeOrder.customerName} - {activeOrder.receiverPhone || activeOrder.customerPhone}

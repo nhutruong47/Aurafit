@@ -258,6 +258,12 @@ export function useStaffRentalOrders(currentUser) {
     setError('');
     setMessage('');
 
+    if (!orderId) {
+      setActiveOrder(null);
+      setAssessments({});
+      return;
+    }
+
     try {
       const order = applyConfirmedHandoverFallback(await fetchStaffOrder(orderId));
       setActiveOrder(order);
