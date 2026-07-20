@@ -24,12 +24,21 @@ export default function RentalOrdersPage({ currentUser, onNavigate }) {
     setIsCancelModalOpen(true);
   };
 
-  const handleConfirmCancel = async (reason) => {
+    const handleConfirmCancel = async (reason) => {
     if (!orderToCancel) return;
     setIsCancelling(true);
     try {
-      await cancelOrder(orderToCancel, reason);
-      addToast('Đã hủy đơn hàng thành công.');
+      const result = await cancelOrder(orderToCancel, reason);
+      const count = result?.consecutiveCancelCount || 0;
+      
+      if (count >= 3) {
+        addToast('Tài khoản của bạn đã bị vô hiệu hóa do tỷ lệ hủy đơn bất thường. Vui lòng liên hệ bộ phận CSKH.', 'error');
+      } else if (count === 2) {
+        addToast('Cảnh báo: Bạn đã hủy đơn 2 lần liên tiếp. Lần tiếp theo tài khoản sẽ bị vô hiệu hóa!', 'warning');
+      } else {
+        addToast('Đã hủy đơn hàng thành công.');
+      }
+      
       loadOrders();
       setIsCancelModalOpen(false);
       setOrderToCancel(null);

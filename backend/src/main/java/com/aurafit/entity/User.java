@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_user_role_id", columnList = "role, id")
 })
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class User extends BaseEntity {
 
     @Id
@@ -55,4 +56,11 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private UserStatus status = UserStatus.ACTIVE;
+
+    @Column(name = "consecutive_cancel_count")
+    private Integer consecutiveCancelCount = 0;
+
+    public Integer getConsecutiveCancelCount() {
+        return consecutiveCancelCount != null ? consecutiveCancelCount : 0;
+    }
 }

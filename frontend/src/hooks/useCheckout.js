@@ -194,6 +194,13 @@ export function useCheckout({
       onNavigate?.('payment');
     } catch (error) {
       const errorMsg = error.message || '';
+      
+      if (errorMsg.includes('bị vô hiệu hóa') || errorMsg.includes('hủy đơn bất thường')) {
+        addToast('Tài khoản của bạn đã bị vô hiệu hóa do tỷ lệ hủy đơn bất thường. Vui lòng liên hệ bộ phận CSKH.', 'error');
+        onNavigate?.('home');
+        return;
+      }
+
       const skuMatch = errorMsg.match(/\[SKU:\s*(.*?)\]/);
       if (skuMatch && skuMatch[1]) {
         setSubmitError(`Sản phẩm [SKU: ${skuMatch[1]}] đã hết hàng hoặc không khả dụng. Vui lòng bỏ chọn sản phẩm này.`);

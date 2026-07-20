@@ -109,25 +109,21 @@ export default function RentalItemCard({
           <div className="mt-2 flex items-center gap-3">
             <div className="flex h-8 items-center border border-[#cfc4c5]">
               <button
-                onClick={() => handleQtyChange(-1)}
-                disabled={(item.quantity || 1) <= 1}
-                className={`flex h-full w-8 items-center justify-center transition ${
-                  (item.quantity || 1) <= 1 ? 'cursor-not-allowed text-[#ccc]' : 'text-black hover:bg-[#f9f9f9]'
-                }`}
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex h-full w-8 items-center justify-center text-black hover:bg-[#f9f9f9] transition"
               >
                 <span className="material-symbols-outlined text-[14px]">remove</span>
               </button>
-              <span className="flex h-full w-9 items-center justify-center border-x border-[#cfc4c5] text-xs font-medium">
+              <span 
+                className="flex h-full w-9 items-center justify-center border-x border-[#cfc4c5] text-xs font-medium cursor-pointer hover:bg-gray-50"
+                onClick={() => setIsEditModalOpen(true)}
+                title="Sửa số lượng"
+              >
                 {item.quantity || 1}
               </span>
               <button
-                onClick={() => handleQtyChange(1)}
-                disabled={effectiveStock > 0 && (item.quantity || 1) >= effectiveStock}
-                className={`flex h-full w-8 items-center justify-center transition ${
-                  effectiveStock > 0 && (item.quantity || 1) >= effectiveStock
-                    ? 'cursor-not-allowed bg-gray-50 text-[#ccc]'
-                    : 'text-black hover:bg-[#f9f9f9]'
-                }`}
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex h-full w-8 items-center justify-center text-black hover:bg-[#f9f9f9] transition"
               >
                 <span className="material-symbols-outlined text-[14px]">add</span>
               </button>

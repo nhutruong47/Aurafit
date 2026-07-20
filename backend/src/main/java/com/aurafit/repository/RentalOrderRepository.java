@@ -107,7 +107,7 @@ public interface RentalOrderRepository extends JpaRepository<RentalOrder, Long> 
     Optional<RentalOrder> findByIdWithDetailsAndCostumes(@Param("orderId") Long orderId);
 
     @Query("""
-            SELECT ro FROM RentalOrder ro
+            SELECT DISTINCT ro FROM RentalOrder ro
             LEFT JOIN FETCH ro.user
             LEFT JOIN FETCH ro.details rd
             LEFT JOIN FETCH rd.costumeItem ci

@@ -30,7 +30,10 @@ public record OrderResponse(
         String ghnReturnOrderCode,
         BigDecimal totalLateFee,
         BigDecimal totalDamageFee,
-        BigDecimal totalRefundedAmount
+        BigDecimal totalRefundedAmount,
+        Integer consecutiveCancelCount,
+        Boolean hasPendingRefund,
+        LocalDateTime updatedAt
 ) {
     public record OrderDetailResponse(
             Long id,
@@ -66,6 +69,9 @@ public record OrderResponse(
                 .add(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO)
                 .subtract(order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO);
 
+        boolean hasPendingRefund = order.getPayments().stream()
+                .anyMatch(p -> "REFUND".equals(p.getType().name()) && "PENDING".equals(p.getStatus().name()));
+
         return new OrderResponse(
                 order.getId(),
                 order.getUser().getId(),
@@ -87,7 +93,10 @@ public record OrderResponse(
                 order.getGhnReturnOrderCode(),
                 order.getTotalLateFee(),
                 order.getTotalDamageFee(),
-                order.getTotalRefundedAmount()
+                order.getTotalRefundedAmount(),
+                order.getUser().getConsecutiveCancelCount(),
+                hasPendingRefund,
+                order.getUpdatedAt()
         );
     }
 }

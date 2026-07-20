@@ -93,6 +93,10 @@ public class OrderServiceImpl implements OrderService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
+        if (user.getStatus() == com.aurafit.enums.UserStatus.BLOCKED) {
+            throw new BadRequestException("Tài khoản của bạn đã bị vô hiệu hóa do tỷ lệ hủy đơn bất thường. Vui lòng liên hệ bộ phận CSKH.");
+        }
+
         // ── Step 3: Accumulation buckets ───────────────────────────────────────
         BigDecimal totalRentalPrice = BigDecimal.ZERO;
         BigDecimal totalDeposit = BigDecimal.ZERO;
@@ -373,14 +377,22 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getStatus() != com.aurafit.enums.OrderStatus.RETURNED && 
             order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING && 
-            order.getStatus() != com.aurafit.enums.OrderStatus.RENTED) {
-            throw new BadRequestException("Order must be RETURNED, RETURNING or RENTED to complete");
+            order.getStatus() != com.aurafit.enums.OrderStatus.RENTED &&
+            order.getStatus() != com.aurafit.enums.OrderStatus.PENDING_REFUND &&
+            order.getStatus() != com.aurafit.enums.OrderStatus.CANCELLED) {
+            throw new BadRequestException("Order must be RETURNED, RETURNING, RENTED, PENDING_REFUND or CANCELLED to complete");
         }
 
-        order.setStatus(com.aurafit.enums.OrderStatus.COMPLETED);
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.CANCELLED) {
+            order.setStatus(com.aurafit.enums.OrderStatus.COMPLETED);
+        }
 
         java.time.LocalDate actualReturnDate = request.getActualReturnDate() != null ? request.getActualReturnDate() : java.time.LocalDate.now();
-        long lateDays = java.time.temporal.ChronoUnit.DAYS.between(order.getRentalEndDate().toLocalDate(), actualReturnDate);
+        
+        long lateDays = 0;
+        if (order.getRentalEndDate() != null) {
+            lateDays = java.time.temporal.ChronoUnit.DAYS.between(order.getRentalEndDate().toLocalDate(), actualReturnDate);
+        }
         
         BigDecimal lateFee = BigDecimal.ZERO;
         String inspectionNote = request.getInspectionNote() != null ? request.getInspectionNote() : "";
@@ -408,7 +420,13 @@ public class OrderServiceImpl implements OrderService {
 
         BigDecimal damageFee = request.getDamageFee() != null ? request.getDamageFee() : BigDecimal.ZERO;
         
-        BigDecimal refundAmount = order.getTotalDeposit().subtract(damageFee).subtract(lateFee);
+        BigDecimal refundAmount;
+        if (order.getStatus() == com.aurafit.enums.OrderStatus.CANCELLED) {
+            refundAmount = order.getTotalDeposit().add(order.getTotalRentalPrice());
+        } else {
+            refundAmount = order.getTotalDeposit().subtract(damageFee).subtract(lateFee);
+        }
+        
         if (refundAmount.compareTo(BigDecimal.ZERO) < 0) {
             refundAmount = BigDecimal.ZERO;
         }
@@ -417,6 +435,11 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalLateFee(lateFee);
         order.setInspectionNote(inspectionNote);
         order.setTotalRefundedAmount(refundAmount);
+        
+        // Update payments to PAID if there is a REFUND pending payment
+        order.getPayments().stream()
+             .filter(p -> p.getType() == com.aurafit.enums.PaymentType.REFUND && p.getStatus() == com.aurafit.enums.PaymentStatus.PENDING)
+             .forEach(p -> p.setStatus(com.aurafit.enums.PaymentStatus.PAID));
         
         // Update items to AVAILABLE or MAINTENANCE
         for (RentalOrderDetail detail : order.getDetails()) {
@@ -520,10 +543,20 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public List<StaffOrderDetailResponse> getAllOrdersForStaff() {
-        return rentalOrderRepository.findAllOrdersForStaff()
+        List<RentalOrder> orders = rentalOrderRepository.findAllOrdersForStaff();
+        if (orders.isEmpty()) return List.of();
+
+        List<Long> orderIds = orders.stream().map(RentalOrder::getId).toList();
+        
+        java.util.Map<Long, List<HandoverRecord>> handoversMap = handoverRecordRepository.findByOrderIdIn(orderIds)
                 .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        h -> h.getRentalOrderDetail().getRentalOrder().getId()
+                ));
+
+        return orders.stream()
                 .map(order -> {
-                    List<HandoverRecord> handovers = handoverRecordRepository.findByOrderId(order.getId());
+                    List<HandoverRecord> handovers = handoversMap.getOrDefault(order.getId(), List.of());
                     return StaffOrderDetailResponse.fromEntity(order, handovers);
                 })
                 .toList();
@@ -614,6 +647,13 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelReason(cancelReason);
         rentalOrderRepository.save(order);
 
+        User user = order.getUser();
+        user.setConsecutiveCancelCount(user.getConsecutiveCancelCount() + 1);
+        if (user.getConsecutiveCancelCount() >= 3) {
+            user.setStatus(com.aurafit.enums.UserStatus.BLOCKED);
+        }
+        userRepository.save(user);
+
         return OrderResponse.fromEntity(order);
     }
 
@@ -635,6 +675,12 @@ public class OrderServiceImpl implements OrderService {
 
         order.setStatus(com.aurafit.enums.OrderStatus.RENTED);
         rentalOrderRepository.save(order);
+
+        User customer = order.getUser();
+        if (customer.getConsecutiveCancelCount() > 0) {
+            customer.setConsecutiveCancelCount(0);
+            userRepository.save(customer);
+        }
 
         List<HandoverRecord> records = new ArrayList<>();
         for (RentalOrderDetail detail : order.getDetails()) {

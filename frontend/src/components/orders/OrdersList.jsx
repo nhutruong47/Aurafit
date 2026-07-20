@@ -10,7 +10,7 @@ export default function OrdersList({ orders, selectedOrderId, onSelectOrder }) {
       <h2 className="mb-6 text-[12px] font-semibold uppercase tracking-[0.2em]">Tất cả đơn hàng</h2>
       <div className="space-y-4">
         {orders.map((order) => {
-          const statusInfo = mapOrderStatus(order.status);
+          const statusInfo = mapOrderStatus(order.status, order);
 
           return (
             <div
