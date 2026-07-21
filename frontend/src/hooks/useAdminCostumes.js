@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { fetchCategoryTree, flattenCategoryTree } from '../services/catalogService';
-import { createCostume, fetchAdminCostumes, updateCostume } from '../services/costumeService';
+import {
+  createCostume,
+  fetchAdminCostumes,
+  fetchCostumeEnrichment,
+  runAllCostumeEnrichment,
+  runCostumeEnrichment,
+  updateCostume,
+} from '../services/costumeService';
 import { useToastStore } from '../store/useToastStore';
 import { hasUserRole } from '../utils/roles';
 
@@ -71,6 +78,11 @@ export function useAdminCostumes(currentUser) {
   const [productError, setProductError] = useState('');
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRunningEnrichmentBatch, setIsRunningEnrichmentBatch] = useState(false);
+  const [enrichmentBatchResult, setEnrichmentBatchResult] = useState(null);
+  const [productEnrichment, setProductEnrichment] = useState(null);
+  const [isLoadingProductEnrichment, setIsLoadingProductEnrichment] = useState(false);
+  const [isEnrichingProduct, setIsEnrichingProduct] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -123,6 +135,79 @@ export function useAdminCostumes(currentUser) {
     setPage(0);
   }, [productSearch, productStatusFilter, productCategoryFilter]);
 
+  const loadProductEnrichment = async (costumeId) => {
+    if (!isAdmin || !costumeId) {
+      setProductEnrichment(null);
+      return null;
+    }
+
+    setIsLoadingProductEnrichment(true);
+    setProductEnrichment(null);
+    try {
+      const enrichment = await fetchCostumeEnrichment(costumeId);
+      setProductEnrichment(enrichment);
+      return enrichment;
+    } catch {
+      useToastStore.getState().addToast(
+        'Không thể tải thông tin AI đã bổ sung cho sản phẩm. Vui lòng thử lại.',
+        'error'
+      );
+      return null;
+    } finally {
+      setIsLoadingProductEnrichment(false);
+    }
+  };
+
+  const enrichAllProducts = async () => {
+    if (!isAdmin || isRunningEnrichmentBatch) return null;
+
+    setIsRunningEnrichmentBatch(true);
+    setEnrichmentBatchResult(null);
+    try {
+      const result = await runAllCostumeEnrichment();
+      setEnrichmentBatchResult(result);
+      useToastStore.getState().addToast(
+        `Đã cập nhật thông tin AI cho ${result.successCount}/${result.processedCount} sản phẩm.`,
+        result.failureCount > 0 ? 'warning' : 'success'
+      );
+      return result;
+    } catch {
+      useToastStore.getState().addToast(
+        'Không thể cập nhật thông tin AI cho toàn bộ sản phẩm. Vui lòng kiểm tra kết nối và thử lại.',
+        'error'
+      );
+      return null;
+    } finally {
+      setIsRunningEnrichmentBatch(false);
+    }
+  };
+
+  const enrichProduct = async (costumeId) => {
+    if (!isAdmin || !costumeId || isEnrichingProduct) return null;
+
+    setIsEnrichingProduct(true);
+    try {
+      const enrichment = await runCostumeEnrichment(costumeId);
+      setProductEnrichment(enrichment);
+      const embeddingReady = enrichment?.embedding?.status === 'READY';
+      useToastStore.getState().addToast(
+        embeddingReady
+          ? 'AI đã bổ sung thông tin hỗ trợ tư vấn và tìm kiếm cho sản phẩm.'
+          : 'Thông tin hỗ trợ tư vấn đã được cập nhật, nhưng dữ liệu tìm kiếm chưa sẵn sàng.',
+        embeddingReady ? 'success' : 'warning'
+      );
+      return enrichment;
+    } catch {
+      useToastStore.getState().addToast(
+        'Không thể bổ sung thông tin AI cho sản phẩm. Vui lòng kiểm tra kết nối và thử lại.',
+        'error'
+      );
+      return null;
+    } finally {
+      setIsEnrichingProduct(false);
+    }
+  };
+
   const handleProductFieldChange = (event) => {
     const { name, value, type, checked } = event.target;
     setProductForm((currentForm) => {
@@ -174,6 +259,7 @@ export function useAdminCostumes(currentUser) {
     });
     setProductMessage('');
     setProductError('');
+    loadProductEnrichment(product.id);
   };
 
   const resetProductForm = () => {
@@ -184,6 +270,8 @@ export function useAdminCostumes(currentUser) {
     });
     setProductMessage('');
     setProductError('');
+    setProductEnrichment(null);
+    setIsLoadingProductEnrichment(false);
   };
 
   const submitProduct = async () => {
@@ -256,6 +344,11 @@ export function useAdminCostumes(currentUser) {
     productMessage,
     productError,
     isSavingProduct,
+    isRunningEnrichmentBatch,
+    enrichmentBatchResult,
+    productEnrichment,
+    isLoadingProductEnrichment,
+    isEnrichingProduct,
     setProductSearch,
     setProductCategoryFilter,
     setProductStatusFilter,
@@ -264,5 +357,7 @@ export function useAdminCostumes(currentUser) {
     hydrateProductForm,
     resetProductForm,
     submitProduct,
+    enrichAllProducts,
+    enrichProduct,
   };
 }

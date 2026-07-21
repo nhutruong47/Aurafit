@@ -3,8 +3,10 @@ package com.aurafit.repository;
 import com.aurafit.dto.request.StylistFilterCriteria;
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
+import com.aurafit.entity.CostumeItem;
 import com.aurafit.entity.CostumeMetadata;
 import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.ItemStatus;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -74,7 +76,9 @@ public final class CostumeSpecification {
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         };
 
-        return Specification.where(activeAndCategoryActive()).and(criteriaSpecification);
+        return Specification.where(activeAndCategoryActive())
+                .and(hasAvailableStock())
+                .and(criteriaSpecification);
     }
 
     public static Specification<Costume> activeAndCategoryActive() {
@@ -84,6 +88,14 @@ public final class CostumeSpecification {
                     criteriaBuilder.equal(root.get("status"), CostumeStatus.ACTIVE),
                     criteriaBuilder.isTrue(categoryJoin.get("isActive"))
             );
+        };
+    }
+
+    private static Specification<Costume> hasAvailableStock() {
+        return (root, query, criteriaBuilder) -> {
+            Join<Costume, CostumeItem> itemJoin = root.join("items", JoinType.INNER);
+            query.distinct(true);
+            return criteriaBuilder.equal(itemJoin.get("status"), ItemStatus.AVAILABLE);
         };
     }
 
@@ -138,7 +150,9 @@ public final class CostumeSpecification {
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         };
 
-        return Specification.where(activeAndCategoryActive()).and(relaxedSpecification);
+        return Specification.where(activeAndCategoryActive())
+                .and(hasAvailableStock())
+                .and(relaxedSpecification);
     }
 
     public static Specification<Costume> inCategoryIds(List<Long> categoryIds) {

@@ -37,6 +37,11 @@ export default function AdminDashboardPage({ currentUser }) {
     productMessage,
     productError,
     isSavingProduct,
+    isRunningEnrichmentBatch,
+    enrichmentBatchResult,
+    productEnrichment,
+    isLoadingProductEnrichment,
+    isEnrichingProduct,
     setProductSearch,
     setProductCategoryFilter,
     setProductStatusFilter,
@@ -45,6 +50,8 @@ export default function AdminDashboardPage({ currentUser }) {
     hydrateProductForm,
     resetProductForm,
     submitProduct,
+    enrichAllProducts,
+    enrichProduct,
   } = useAdminCostumes(currentUser);
 
   const {
@@ -170,6 +177,7 @@ export default function AdminDashboardPage({ currentUser }) {
           {activeTab === 'products' && (
             <AdminProductsSection
               categories={publicCategories}
+              isAdmin={isAdmin}
               filteredProducts={filteredProducts}
               productForm={productForm}
               editingProductId={editingProductId}
@@ -179,6 +187,11 @@ export default function AdminDashboardPage({ currentUser }) {
               productMessage={productMessage}
               productError={productError}
               isSavingProduct={isSavingProduct}
+              isRunningEnrichmentBatch={isRunningEnrichmentBatch}
+              enrichmentBatchResult={enrichmentBatchResult}
+              productEnrichment={productEnrichment}
+              isLoadingProductEnrichment={isLoadingProductEnrichment}
+              isEnrichingProduct={isEnrichingProduct}
               onProductSearchChange={setProductSearch}
               onProductCategoryFilterChange={setProductCategoryFilter}
               onProductStatusFilterChange={setProductStatusFilter}
@@ -187,6 +200,8 @@ export default function AdminDashboardPage({ currentUser }) {
               onEditProduct={hydrateProductForm}
               onResetProductForm={resetProductForm}
               onSubmitProduct={handleSubmitProduct}
+              onRunAllEnrichment={enrichAllProducts}
+              onEnrichProduct={enrichProduct}
               page={productPage}
               totalPages={productTotalPages}
               totalElements={productTotalElements}

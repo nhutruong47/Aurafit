@@ -7,9 +7,14 @@ import com.aurafit.entity.ChatMessage;
 import com.aurafit.entity.ChatSession;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.CostumeMetadata;
+import com.aurafit.entity.ProductAiMetadata;
+import com.aurafit.entity.ProductEmbedding;
 import com.aurafit.entity.User;
 import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.ChatMessageRole;
+import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.ItemStatus;
+import com.aurafit.enums.ProductEmbeddingStatus;
 import com.aurafit.exception.AiProviderException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.integration.ai.GeminiClient;
@@ -17,11 +22,15 @@ import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.CostumeSpecification;
+import com.aurafit.repository.ProductAiMetadataRepository;
+import com.aurafit.repository.ProductEmbeddingRepository;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.service.stylist.StylistIntentService;
 import com.aurafit.service.stylist.StylistRecommendationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -35,6 +44,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -43,14 +53,19 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class StylistRecommendationServiceImpl implements StylistRecommendationService {
 
-    private static final int HISTORY_LIMIT = 3;
-    private static final int HISTORY_FETCH_LIMIT = HISTORY_LIMIT * 2;
+    private static final int RECENT_CONVERSATION_TURN_LIMIT = 3;
+    private static final int RECENT_CONVERSATION_MESSAGE_LIMIT = RECENT_CONVERSATION_TURN_LIMIT * 2;
+    private static final int CONTEXT_MESSAGE_MAX_LENGTH = 500;
     private static final int RECOMMENDATION_LIMIT = 12;
     private static final int RELAXED_CANDIDATE_POOL_SIZE = 60;
     private static final int DAILY_USER_MESSAGE_LIMIT = 20;
     private static final int MIN_SEARCH_TOKEN_LENGTH = 3;
+    private static final int DESCRIPTION_MAX_LENGTH = 150;
+    private static final int ENRICHED_TAGS_PER_FIELD_LIMIT = 4;
+    private static final int ENRICHED_TAG_FIELD_MAX_LENGTH = 60;
     private static final String NO_RESULTS_REPLY = "Xin lỗi, hiện chưa tìm thấy sản phẩm phù hợp với yêu cầu, bạn có thể mô tả cụ thể hơn không?";
     private static final String DAILY_LIMIT_REPLY = "Bạn đã đạt giới hạn tư vấn hôm nay, vui lòng quay lại vào ngày mai";
     private static final Pattern RECOMMENDED_IDS_PATTERN = Pattern.compile(
@@ -62,6 +77,8 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             Chỉ được gợi ý trong danh sách sản phẩm được cung cấp, không được bịa sản phẩm ngoài danh sách.
             Trả lời bằng tiếng Việt, giọng văn tư vấn thời trang thân thiện, ngắn gọn dưới 150 từ.
             Chỉ nhắc đến những sản phẩm thực sự phù hợp với yêu cầu khách hàng.
+            Dùng ngữ cảnh hội thoại gần nhất để hiểu các câu hỏi nối tiếp, thay đổi hoặc so sánh với gợi ý trước đó.
+            Nếu yêu cầu hiện tại mâu thuẫn với lịch sử, luôn ưu tiên yêu cầu hiện tại.
             Dòng cuối bắt buộc có đúng định dạng RECOMMENDED_IDS: 1,5,9 và chỉ chứa ID từ danh sách được cung cấp.
             Không giải thích dòng RECOMMENDED_IDS và không đặt nội dung nào sau dòng đó.
             """;
@@ -69,30 +86,42 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final CostumeRepository costumeRepository;
+    private final ProductAiMetadataRepository productAiMetadataRepository;
+    private final ProductEmbeddingRepository productEmbeddingRepository;
     private final UserRepository userRepository;
     private final StylistIntentService stylistIntentService;
+    private final MetadataTagResolver metadataTagResolver;
     private final StylistCategoryResolver stylistCategoryResolver;
     private final GeminiClient geminiClient;
     private final ObjectMapper objectMapper;
+    private final String embeddingModel;
 
     public StylistRecommendationServiceImpl(
             ChatSessionRepository chatSessionRepository,
             ChatMessageRepository chatMessageRepository,
             CostumeRepository costumeRepository,
+            ProductAiMetadataRepository productAiMetadataRepository,
+            ProductEmbeddingRepository productEmbeddingRepository,
             UserRepository userRepository,
             StylistIntentService stylistIntentService,
+            MetadataTagResolver metadataTagResolver,
             StylistCategoryResolver stylistCategoryResolver,
             GeminiClient geminiClient,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            @Value("${ai.embedding-model:}") String embeddingModel
     ) {
         this.chatSessionRepository = chatSessionRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.costumeRepository = costumeRepository;
+        this.productAiMetadataRepository = productAiMetadataRepository;
+        this.productEmbeddingRepository = productEmbeddingRepository;
         this.userRepository = userRepository;
         this.stylistIntentService = stylistIntentService;
+        this.metadataTagResolver = metadataTagResolver;
         this.stylistCategoryResolver = stylistCategoryResolver;
         this.geminiClient = geminiClient;
         this.objectMapper = objectMapper;
+        this.embeddingModel = embeddingModel == null ? "" : embeddingModel.trim();
     }
 
     @Override
@@ -121,8 +150,9 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                     recentHistory,
                     previousUserMessage
             );
+            StylistFilterCriteria normalizedCriteria = metadataTagResolver.resolve(extractedCriteria);
             StylistFilterCriteria criteria = stylistCategoryResolver.resolve(
-                    extractedCriteria,
+                    normalizedCriteria,
                     userMessage
             );
             savedUserMessage.setIntentJson(serializeCriteria(criteria));
@@ -138,7 +168,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             String rawReply = geminiClient.generateText(
                     AiCallType.RESPONSE_GENERATION,
                     RECOMMENDATION_SYSTEM_PROMPT,
-                    buildRecommendationPrompt(userMessage, candidates)
+                    buildRecommendationPrompt(userMessage, recentHistory, candidates)
             );
 
             ParsedRecommendation parsedRecommendation = parseRecommendation(rawReply, candidates);
@@ -153,6 +183,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             List<CatalogCostumeDTO> recommendedCostumes = parsedRecommendation.costumeIds().stream()
                     .map(costumeRepository::findByIdWithItems)
                     .flatMap(java.util.Optional::stream)
+                    .filter(this::isEligibleStylistCostume)
                     .map(CatalogCostumeDTO::fromEntity)
                     .toList();
 
@@ -260,11 +291,12 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         List<ChatMessage> recentMessages = new ArrayList<>(
                 chatMessageRepository.findByChatSessionOrderByCreatedAtDesc(
                         chatSession,
-                        PageRequest.of(0, HISTORY_FETCH_LIMIT)
+                        PageRequest.of(0, RECENT_CONVERSATION_MESSAGE_LIMIT)
                 )
                         .stream()
-                        .filter(message -> message.getRole() == ChatMessageRole.USER)
-                        .limit(HISTORY_LIMIT)
+                        .filter(message -> message.getRole() == ChatMessageRole.USER
+                                || message.getRole() == ChatMessageRole.ASSISTANT)
+                        .limit(RECENT_CONVERSATION_MESSAGE_LIMIT)
                         .toList()
         );
         Collections.reverse(recentMessages);
@@ -280,6 +312,179 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             return strictCandidates;
         }
 
+        List<Costume> embeddingCandidates = findEmbeddingCandidates(criteria, userMessage);
+        if (!embeddingCandidates.isEmpty()) {
+            return embeddingCandidates;
+        }
+
+        return findLegacyFallbackCandidates(criteria, userMessage);
+    }
+
+    private List<Costume> findEmbeddingCandidates(
+            StylistFilterCriteria criteria,
+            String userMessage
+    ) {
+        int embeddingCallCount = 0;
+        try {
+            List<ProductEmbedding> embeddings = productEmbeddingRepository
+                    .findAllByEligibleCostume(CostumeStatus.ACTIVE, ItemStatus.AVAILABLE);
+            if (embeddings == null || embeddings.isEmpty()) {
+                log.warn(
+                        "Stylist embedding fallback unavailable reason=no_active_available_embeddings "
+                                + "previousFallbackAiCalls=0 currentEmbeddingCalls=0 safetyFallback=java_relevance"
+                );
+                return List.of();
+            }
+            if (!StringUtils.hasText(embeddingModel)) {
+                log.warn(
+                        "Stylist embedding fallback unavailable reason=embedding_model_not_configured "
+                                + "previousFallbackAiCalls=0 currentEmbeddingCalls=0 safetyFallback=java_relevance"
+                );
+                return List.of();
+            }
+
+            embeddingCallCount++;
+            GeminiClient.EmbeddingResult queryEmbedding = geminiClient.embedText(
+                    embeddingModel,
+                    buildEmbeddingQueryText(criteria, userMessage)
+            );
+            float[] queryVector = toFloatArray(queryEmbedding.values());
+            List<ScoredEmbedding> scoredEmbeddings = new ArrayList<>();
+
+            for (ProductEmbedding embedding : embeddings) {
+                if (embedding.getStatus() != ProductEmbeddingStatus.READY) {
+                    log.warn(
+                            "Skipping costume embedding costumeId={} status={} expectedStatus=READY",
+                            embedding.getCostumeId(),
+                            embedding.getStatus()
+                    );
+                    continue;
+                }
+                if (!queryEmbedding.model().equals(embedding.getEmbeddingModel())) {
+                    log.warn(
+                            "Skipping costume embedding costumeId={} reason=model_mismatch queryModel={} productModel={}",
+                            embedding.getCostumeId(),
+                            queryEmbedding.model(),
+                            embedding.getEmbeddingModel()
+                    );
+                    continue;
+                }
+
+                try {
+                    float[] productVector = parseEmbeddingPayload(embedding);
+                    double similarity = CosineSimilarity.calculate(queryVector, productVector);
+                    scoredEmbeddings.add(new ScoredEmbedding(embedding.getCostumeId(), similarity));
+                } catch (Exception exception) {
+                    log.warn(
+                            "Skipping costume embedding costumeId={} reason=invalid_payload message={}",
+                            embedding.getCostumeId(),
+                            exception.getMessage()
+                    );
+                }
+            }
+
+            List<Long> rankedCostumeIds = scoredEmbeddings.stream()
+                    .sorted(Comparator.comparingDouble(ScoredEmbedding::similarity)
+                            .reversed()
+                            .thenComparing(ScoredEmbedding::costumeId))
+                    .limit(RECOMMENDATION_LIMIT)
+                    .map(ScoredEmbedding::costumeId)
+                    .toList();
+            if (rankedCostumeIds.isEmpty()) {
+                log.warn(
+                        "Stylist embedding fallback unavailable reason=no_valid_embeddings "
+                                + "previousFallbackAiCalls=0 currentEmbeddingCalls={} safetyFallback=java_relevance",
+                        embeddingCallCount
+                );
+                return List.of();
+            }
+
+            Map<Long, Costume> costumesById = costumeRepository.findAllByIdWithMetadata(rankedCostumeIds)
+                    .stream()
+                    .filter(this::isEligibleStylistCostume)
+                    .collect(Collectors.toMap(Costume::getId, costume -> costume));
+            List<Costume> rankedCostumes = rankedCostumeIds.stream()
+                    .map(costumesById::get)
+                    .filter(Objects::nonNull)
+                    .toList();
+            log.info(
+                    "Stylist embedding fallback completed previousFallbackAiCalls=0 currentEmbeddingCalls={} "
+                            + "loadedEmbeddings={} validEmbeddings={} selectedCandidates={}",
+                    embeddingCallCount,
+                    embeddings.size(),
+                    scoredEmbeddings.size(),
+                    rankedCostumes.size()
+            );
+            return rankedCostumes;
+        } catch (Exception exception) {
+            log.warn(
+                    "Stylist embedding fallback failed errorType={} message={} previousFallbackAiCalls=0 "
+                            + "currentEmbeddingCalls={} safetyFallback=java_relevance",
+                    exception.getClass().getSimpleName(),
+                    exception.getMessage(),
+                    embeddingCallCount
+            );
+            return List.of();
+        }
+    }
+
+    private String buildEmbeddingQueryText(StylistFilterCriteria criteria, String userMessage) {
+        StringBuilder query = new StringBuilder();
+        appendEmbeddingQueryField(query, "Yêu cầu khách hàng", userMessage);
+        appendEmbeddingQueryField(query, "Danh mục", criteria.category());
+        appendEmbeddingQueryField(query, "Phong cách", criteria.style());
+        appendEmbeddingQueryField(query, "Dịp sử dụng", criteria.occasion());
+        appendEmbeddingQueryField(query, "Mùa", criteria.season());
+        appendEmbeddingQueryField(query, "Màu sắc", criteria.color());
+        appendEmbeddingQueryField(query, "Giới tính", criteria.gender());
+        if (criteria.tags() != null && !criteria.tags().isEmpty()) {
+            appendEmbeddingQueryField(query, "Tags", String.join(", ", criteria.tags()));
+        }
+        appendEmbeddingQueryField(query, "Ngân sách tối thiểu", criteria.minBudget());
+        appendEmbeddingQueryField(query, "Ngân sách tối đa", criteria.maxBudget());
+        return query.toString().trim();
+    }
+
+    private void appendEmbeddingQueryField(StringBuilder query, String label, Object value) {
+        if (value != null && StringUtils.hasText(value.toString())) {
+            query.append(label).append(": ").append(value).append('\n');
+        }
+    }
+
+    private float[] toFloatArray(List<Float> values) {
+        if (values == null || values.isEmpty()) {
+            throw new IllegalArgumentException("Gemini query embedding is empty.");
+        }
+        float[] vector = new float[values.size()];
+        for (int index = 0; index < values.size(); index++) {
+            Float value = values.get(index);
+            if (value == null || !Float.isFinite(value)) {
+                throw new IllegalArgumentException("Gemini query embedding contains a non-finite value.");
+            }
+            vector[index] = value;
+        }
+        return vector;
+    }
+
+    private float[] parseEmbeddingPayload(ProductEmbedding embedding) throws JsonProcessingException {
+        float[] vector = objectMapper.readValue(embedding.getEmbeddingPayload(), float[].class);
+        if (vector.length == 0
+                || embedding.getEmbeddingDimension() == null
+                || embedding.getEmbeddingDimension() != vector.length) {
+            throw new IllegalArgumentException("Stored embedding dimension does not match its payload.");
+        }
+        for (float value : vector) {
+            if (!Float.isFinite(value)) {
+                throw new IllegalArgumentException("Stored embedding contains a non-finite value.");
+            }
+        }
+        return vector;
+    }
+
+    private List<Costume> findLegacyFallbackCandidates(
+            StylistFilterCriteria criteria,
+            String userMessage
+    ) {
         List<String> searchTerms = buildSearchTerms(criteria, userMessage);
         List<Costume> relaxedCandidates = costumeRepository.findAll(
                 CostumeSpecification.buildRelaxed(criteria, searchTerms),
@@ -305,6 +510,17 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         }
 
         return rankCandidates(relaxedCandidates, searchTerms);
+    }
+
+    private record ScoredEmbedding(Long costumeId, double similarity) {
+    }
+
+    private boolean isEligibleStylistCostume(Costume costume) {
+        return costume != null
+                && costume.getStatus() == CostumeStatus.ACTIVE
+                && costume.getCategory() != null
+                && Boolean.TRUE.equals(costume.getCategory().getIsActive())
+                && costume.getAvailableItemCount() > 0;
     }
 
     private PageRequest recommendationPage(int size) {
@@ -435,33 +651,207 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         }
     }
 
-    private String buildRecommendationPrompt(String userMessage, List<Costume> candidates) {
-        StringBuilder prompt = new StringBuilder()
-                .append("Yêu cầu khách hàng: ")
+    private String buildRecommendationPrompt(
+            String userMessage,
+            List<ChatMessage> recentHistory,
+            List<Costume> candidates
+    ) {
+        Map<Long, ProductAiMetadata> aiMetadataByCostumeId = loadProductAiMetadata(candidates);
+        StringBuilder prompt = new StringBuilder("Ngữ cảnh hội thoại gần nhất (cũ đến mới):\n");
+        appendConversationContext(prompt, recentHistory);
+        prompt.append("\nYêu cầu hiện tại của khách hàng: ")
                 .append(userMessage)
                 .append("\n\nDanh sách sản phẩm được phép gợi ý:\n");
 
         candidates.forEach(costume -> {
             CostumeMetadata metadata = costume.getMetadata();
+            ProductAiMetadata aiMetadata = aiMetadataByCostumeId.get(costume.getId());
             prompt.append("ID: ").append(costume.getId())
                     .append(" | Tên: ").append(costume.getName())
+                    .append(" | Mô tả: ").append(summarizeDescription(costume.getDescription()))
                     .append(" | Giá thuê: ").append(costume.getRentalPrice())
                     .append(" | Category: ").append(costume.getCategory().getName())
-                    .append(" | Style: ").append(metadata != null ? metadata.getStyle() : "không có")
-                    .append(" | Occasion: ").append(metadata != null ? metadata.getOccasion() : "không có")
-                    .append(" | Season: ").append(metadata != null ? metadata.getSeason() : "không có")
-                    .append(" | Color: ").append(metadata != null ? metadata.getColor() : "không có")
-                    .append(" | Gender: ").append(metadata != null ? metadata.getGender() : "không có")
+                    .append(" | Style tags: ").append(preferredPromptValue(
+                            aiMetadata == null ? null : aiMetadata.getStyleTags(),
+                            metadata == null ? null : metadata.getStyle()
+                    ))
+                    .append(" | Occasion tags: ").append(preferredPromptValue(
+                            aiMetadata == null ? null : aiMetadata.getOccasionTags(),
+                            metadata == null ? null : metadata.getOccasion()
+                    ))
+                    .append(" | Season tags: ").append(preferredPromptValue(
+                            aiMetadata == null ? null : aiMetadata.getSeasonTags(),
+                            metadata == null ? null : metadata.getSeason()
+                    ))
+                    .append(" | Color tags: ").append(preferredPromptValue(
+                            aiMetadata == null ? null : aiMetadata.getColorTags(),
+                            metadata == null ? null : metadata.getColor()
+                    ))
+                    .append(" | Gender tags: ").append(preferredPromptValue(
+                            aiMetadata == null ? null : aiMetadata.getGenderTags(),
+                            metadata == null ? null : metadata.getGender()
+                    ))
                     .append(" | Tags: ").append(metadata != null && metadata.getTags() != null
                             ? String.join(", ", metadata.getTags())
                             : "không có")
-                    .append(" | Size: ").append(metadata != null ? metadata.getSize() : "không có")
-                    .append(" | Material: ").append(metadata != null ? metadata.getMaterial() : "không có")
-                    .append(" | Fit note: ").append(metadata != null ? metadata.getFitNote() : "không có")
-                    .append('\n');
+                    .append(" | Size tags: ").append(preferredPromptValue(
+                            aiMetadata == null ? null : aiMetadata.getSizeTags(),
+                            metadata == null ? null : metadata.getSize()
+                    ))
+                    .append(" | Material tags: ").append(preferredPromptValue(
+                            aiMetadata == null ? null : aiMetadata.getMaterialTags(),
+                            metadata == null ? null : metadata.getMaterial()
+                    ))
+                    .append(" | Fit tags: ").append(preferredPromptValue(
+                            aiMetadata == null ? null : aiMetadata.getFitTags(),
+                            metadata == null ? null : metadata.getFitNote()
+                    ));
+            String trendTags = summarizeEnrichedTags(
+                    aiMetadata == null ? null : aiMetadata.getTrendTags()
+            );
+            if (StringUtils.hasText(trendTags)) {
+                prompt.append(" | Trend tags: ").append(trendTags);
+            }
+            prompt.append('\n');
         });
 
-        return prompt.toString();
+        String completedPrompt = prompt.toString();
+        log.info(
+                "Stylist candidate prompt built candidateCount={} promptChars={} estimatedInputTokens={} "
+                        + "descriptionMaxChars={} enrichedTagFieldMaxChars={}",
+                candidates.size(),
+                completedPrompt.length(),
+                estimateInputTokens(completedPrompt),
+                DESCRIPTION_MAX_LENGTH,
+                ENRICHED_TAG_FIELD_MAX_LENGTH
+        );
+        return completedPrompt;
+    }
+
+    private void appendConversationContext(StringBuilder prompt, List<ChatMessage> recentHistory) {
+        if (recentHistory == null || recentHistory.isEmpty()) {
+            prompt.append("(không có)\n");
+            return;
+        }
+
+        recentHistory.forEach(message -> {
+            String speaker = message.getRole() == ChatMessageRole.USER ? "Khách hàng" : "Stylist";
+            prompt.append(speaker)
+                    .append(": ")
+                    .append(summarizeContextMessage(message.getContent()));
+            if (message.getRole() == ChatMessageRole.ASSISTANT
+                    && StringUtils.hasText(message.getRecommendedCostumeIds())) {
+                prompt.append(" [ID sản phẩm đã gợi ý: ")
+                        .append(message.getRecommendedCostumeIds().trim())
+                        .append(']');
+            }
+            prompt.append('\n');
+        });
+    }
+
+    private String summarizeContextMessage(String content) {
+        if (!StringUtils.hasText(content)) {
+            return "(trống)";
+        }
+        String normalized = content.trim().replaceAll("\\s+", " ");
+        if (normalized.length() <= CONTEXT_MESSAGE_MAX_LENGTH) {
+            return normalized;
+        }
+        return normalized.substring(0, CONTEXT_MESSAGE_MAX_LENGTH - 3).trim() + "...";
+    }
+
+    private Map<Long, ProductAiMetadata> loadProductAiMetadata(List<Costume> candidates) {
+        List<Long> costumeIds = candidates.stream()
+                .map(Costume::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (costumeIds.isEmpty()) {
+            return Map.of();
+        }
+
+        try {
+            return productAiMetadataRepository.findAllByCostumeIdIn(costumeIds)
+                    .stream()
+                    .collect(Collectors.toMap(
+                            ProductAiMetadata::getCostumeId,
+                            aiMetadata -> aiMetadata,
+                            (left, right) -> left
+                    ));
+        } catch (Exception exception) {
+            log.warn(
+                    "Unable to load enriched product metadata for Stylist prompt; using raw costume metadata "
+                            + "candidateCount={} errorType={} message={}",
+                    candidates.size(),
+                    exception.getClass().getSimpleName(),
+                    exception.getMessage()
+            );
+            return Map.of();
+        }
+    }
+
+    private String preferredPromptValue(List<String> enrichedTags, String rawFallback) {
+        String enrichedValue = summarizeEnrichedTags(enrichedTags);
+        if (StringUtils.hasText(enrichedValue)) {
+            return enrichedValue;
+        }
+        return StringUtils.hasText(rawFallback) ? rawFallback : "không có";
+    }
+
+    private String summarizeEnrichedTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder summary = new StringBuilder();
+        List<String> distinctTags = tags.stream()
+                .filter(StringUtils::hasText)
+                .map(tag -> tag.trim().replaceAll("\\s+", " "))
+                .distinct()
+                .limit(ENRICHED_TAGS_PER_FIELD_LIMIT)
+                .toList();
+        for (String tag : distinctTags) {
+            String separator = summary.isEmpty() ? "" : ", ";
+            String nextValue = separator + tag;
+            int nextLength = summary.toString().codePointCount(0, summary.length())
+                    + nextValue.codePointCount(0, nextValue.length());
+            if (nextLength > ENRICHED_TAG_FIELD_MAX_LENGTH) {
+                if (summary.isEmpty()) {
+                    return truncateText(tag, ENRICHED_TAG_FIELD_MAX_LENGTH);
+                }
+                break;
+            }
+            summary.append(nextValue);
+        }
+        return summary.toString();
+    }
+
+    private int estimateInputTokens(String value) {
+        return value == null || value.isEmpty() ? 0 : (value.length() + 3) / 4;
+    }
+
+    private String summarizeDescription(String description) {
+        if (!StringUtils.hasText(description)) {
+            return "không có";
+        }
+
+        String normalizedDescription = description.trim().replaceAll("\\s+", " ");
+        int characterCount = normalizedDescription.codePointCount(0, normalizedDescription.length());
+        if (characterCount <= DESCRIPTION_MAX_LENGTH) {
+            return normalizedDescription;
+        }
+
+        return truncateText(normalizedDescription, DESCRIPTION_MAX_LENGTH);
+    }
+
+    private String truncateText(String value, int maxLength) {
+        int characterCount = value.codePointCount(0, value.length());
+        if (characterCount <= maxLength) {
+            return value;
+        }
+        int contentLength = maxLength - 3;
+        int endIndex = value.offsetByCodePoints(0, contentLength);
+        return value.substring(0, endIndex).trim() + "...";
     }
 
     private ParsedRecommendation parseRecommendation(String rawReply, List<Costume> candidates) {

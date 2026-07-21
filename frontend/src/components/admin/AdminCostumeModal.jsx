@@ -4,10 +4,12 @@ import ImageGalleryUploadField from '../ui/ImageGalleryUploadField';
 import SearchableSelect from '../ui/SearchableSelect';
 import { useToastStore } from '../../store/useToastStore';
 import { useAdminCostumeItems } from '../../hooks/useAdminCostumeItems';
+import AdminCostumeAiMetadataPanel from './AdminCostumeAiMetadataPanel';
 
 const TABS = [
   { key: 'general', label: 'Thông tin chung', icon: 'info' },
   { key: 'inventory', label: 'Phân loại kho', icon: 'inventory_2' },
+  { key: 'ai', label: 'Hỗ trợ tư vấn AI', icon: 'auto_awesome' },
 ];
 
 const STATUS_OPTIONS = [
@@ -24,6 +26,7 @@ export default function AdminCostumeModal({
   isOpen,
   onClose,
   title,
+  isAdmin,
   editingProductId,
   productForm,
   onProductFieldChange,
@@ -32,6 +35,10 @@ export default function AdminCostumeModal({
   isSavingProduct,
   productMessage,
   productError,
+  productEnrichment,
+  isLoadingProductEnrichment,
+  isEnrichingProduct,
+  onEnrichProduct,
   categories,
 }) {
   const backdropRef = useRef(null);
@@ -152,8 +159,8 @@ export default function AdminCostumeModal({
 
         {/* Tabs */}
         <div className="flex border-b border-[#d7d2c8]">
-          {TABS.map((tab) => {
-            const isDisabled = tab.key === 'inventory' && !editingProductId;
+          {TABS.filter((tab) => tab.key !== 'ai' || isAdmin).map((tab) => {
+            const isDisabled = (tab.key === 'inventory' || tab.key === 'ai') && !editingProductId;
             return (
               <button
                 key={tab.key}
@@ -239,9 +246,9 @@ export default function AdminCostumeModal({
                   {/* Metadata section */}
                   <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
                     <div className="mb-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Metadata sản phẩm</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Đặc điểm sản phẩm</p>
                       <p className="mt-1 text-xs text-[#5f5e5e]">
-                        Các trường style, occasion, season, color, tags là bắt buộc cho thông tin catalog sản phẩm.
+                        Phong cách, dịp sử dụng, mùa, màu sắc và từ khóa là các thông tin cần thiết để tư vấn sản phẩm.
                       </p>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
@@ -466,6 +473,16 @@ export default function AdminCostumeModal({
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'ai' && isAdmin && editingProductId && (
+            <AdminCostumeAiMetadataPanel
+              costumeId={editingProductId}
+              enrichment={productEnrichment}
+              isLoading={isLoadingProductEnrichment}
+              isEnriching={isEnrichingProduct}
+              onEnrich={onEnrichProduct}
+            />
           )}
         </div>
       </div>

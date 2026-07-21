@@ -185,6 +185,37 @@ export const updateCostume = async (id, costumeData) =>
     'Không thể cập nhật sản phẩm.'
   );
 
+// --- Costume AI Enrichment Admin API ---
+
+export const runAllCostumeEnrichment = async () =>
+  requestJson(
+    {
+      url: '/admin/costumes/enrichment/run',
+      method: 'POST',
+      // The existing backend batch is synchronous and intentionally rate-limited.
+      timeout: 0,
+    },
+    'Không thể cập nhật thông tin AI cho toàn bộ sản phẩm.'
+  );
+
+export const fetchCostumeEnrichment = async (costumeId) =>
+  requestJson(
+    {
+      url: `/admin/costumes/${encodeURIComponent(costumeId)}/enrichment`,
+      method: 'GET',
+    },
+    'Không thể tải thông tin AI đã bổ sung cho sản phẩm.'
+  );
+
+export const runCostumeEnrichment = async (costumeId) =>
+  requestJson(
+    {
+      url: `/admin/costumes/${encodeURIComponent(costumeId)}/enrichment/run`,
+      method: 'POST',
+    },
+    'Không thể bổ sung thông tin AI cho sản phẩm.'
+  );
+
 // --- CostumeItem Admin API ---
 
 export const fetchAdminCostumeItems = async (costumeId) =>

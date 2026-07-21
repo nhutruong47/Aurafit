@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import reactor.core.publisher.Mono;
 
 import java.net.ConnectException;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -211,12 +212,50 @@ class GeminiClientTest {
                 "buildRequestBody",
                 "system",
                 "user",
+                AiCallType.INTENT_EXTRACTION,
                 true,
                 300
         );
         Map<String, Object> generationConfig = (Map<String, Object>) requestBody.get("generationConfig");
 
         assertEquals(Map.of("thinkingBudget", 0), generationConfig.get("thinkingConfig"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void buildRequestBody_shouldRequireMetadataEnrichmentJsonSchema() {
+        GeminiClient client = clientReturning(HttpStatus.OK, "{}");
+
+        Map<String, Object> requestBody = ReflectionTestUtils.invokeMethod(
+                client,
+                "buildRequestBody",
+                "system",
+                "user",
+                AiCallType.METADATA_ENRICHMENT,
+                true,
+                1_000
+        );
+        Map<String, Object> generationConfig = (Map<String, Object>) requestBody.get("generationConfig");
+        Map<String, Object> schema = (Map<String, Object>) generationConfig.get("responseJsonSchema");
+        Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+        Map<String, Object> colorTags = (Map<String, Object>) properties.get("color_tags_json");
+
+        assertEquals(MediaType.APPLICATION_JSON_VALUE, generationConfig.get("responseMimeType"));
+        assertEquals("object", schema.get("type"));
+        assertEquals(false, schema.get("additionalProperties"));
+        assertEquals(9, properties.size());
+        assertEquals(6, colorTags.get("maxItems"));
+        assertEquals(List.of(
+                "color_tags_json",
+                "fit_tags_json",
+                "gender_tags_json",
+                "material_tags_json",
+                "occasion_tags_json",
+                "season_tags_json",
+                "size_tags_json",
+                "style_tags_json",
+                "trend_tags_json"
+        ), schema.get("required"));
     }
 
     @Test
@@ -246,6 +285,33 @@ class GeminiClientTest {
         );
 
         assertEquals(1_000, maxOutputTokens);
+    }
+
+    @Test
+    void resolveMaxOutputTokens_shouldAllowCompleteMetadataEnrichmentJson() {
+        GeminiClient client = clientReturning(HttpStatus.OK, "{}");
+
+        Integer maxOutputTokens = ReflectionTestUtils.invokeMethod(
+                client,
+                "resolveMaxOutputTokens",
+                AiCallType.METADATA_ENRICHMENT,
+                true
+        );
+
+        assertEquals(1_000, maxOutputTokens);
+    }
+
+    @Test
+    void embedText_shouldParseVectorAndNormalizeConfiguredModel() {
+        GeminiClient client = clientReturning(
+                HttpStatus.OK,
+                "{\"embedding\":{\"values\":[0.1,-0.2,0.3]}}"
+        );
+
+        GeminiClient.EmbeddingResult result = client.embedText(" models/text-embedding-test ", "sample product");
+
+        assertEquals("text-embedding-test", result.model());
+        assertEquals(List.of(0.1f, -0.2f, 0.3f), result.values());
     }
 
     private GeminiClient clientReturning(HttpStatus status, String responseBody) {
