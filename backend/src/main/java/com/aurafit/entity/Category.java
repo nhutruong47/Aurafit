@@ -57,13 +57,13 @@ public class Category extends BaseEntity {
 
     @NotBlank(message = "Slug danh mục không được để trống")
     @Size(max = 120, message = "Slug danh mục không được vượt quá 120 ký tự")
-    @Column(nullable = false, length = 120)
-    private String slug;
+    @Column(nullable = false, length = 120, columnDefinition = "VARCHAR(120) DEFAULT ''")
+    private String slug = "";
 
     @NotBlank(message = "Đường dẫn danh mục không được để trống")
     @Size(max = 500, message = "Đường dẫn danh mục không được vượt quá 500 ký tự")
-    @Column(nullable = false, length = 500)
-    private String path;
+    @Column(nullable = false, length = 500, columnDefinition = "VARCHAR(500) DEFAULT ''")
+    private String path = "";
 
     @Size(max = 1000, message = "Mô tả danh mục không được vượt quá 1000 ký tự")
     @Column(columnDefinition = "TEXT")

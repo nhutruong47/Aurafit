@@ -26,7 +26,7 @@ export default function HomeTrendingSection({
         </div>
 
         {error ? (
-          <div className="border border-[#e4c9c7] bg-[#fff6f5] px-5 py-4 text-sm text-[#a94442]">{error}</div>
+          <div className="border border-[#e4c9c7] bg-[#fff6f5] px-5 py-4 text-sm text-[#a94442] break-words whitespace-pre-wrap">{error}</div>
         ) : isLoading ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { calculateDurationMultiplier } from '../checkout/checkoutData';
 import {
   fallbackCostumeImage,
   getCostumeDepositPriceValue,
@@ -235,11 +236,10 @@ export default function ProductHero({
                     key={`${imageUrl}-${index}`}
                     type="button"
                     onClick={() => setSelectedImageUrl(imageUrl)}
-                    className={`h-20 w-16 flex-none overflow-hidden border-2 bg-white transition ${
-                      isSelected
-                        ? 'border-black'
-                        : 'border-transparent opacity-70 hover:border-[#99854e] hover:opacity-100'
-                    }`}
+                    className={`h-20 w-16 flex-none overflow-hidden border-2 bg-white transition ${isSelected
+                      ? 'border-black'
+                      : 'border-transparent opacity-70 hover:border-[#99854e] hover:opacity-100'
+                      }`}
                     aria-label={`Xem ảnh sản phẩm ${index + 1}`}
                     aria-pressed={isSelected}
                   >
@@ -279,7 +279,14 @@ export default function ProductHero({
             <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">
               Giá thuê
             </span>
-            <span className="font-serif text-xl text-black">{formatCurrency(rentalPriceValue)}</span>
+            <div className="flex items-baseline">
+              <span className="font-serif text-xl text-black">{formatCurrency(rentalPriceValue)}</span>
+              <span className="text-sm font-normal text-gray-500 lowercase ml-1">/ ngày</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-2 flex flex-col space-y-1">
+              <span>• Thuê 1-2 ngày: Hệ số {calculateDurationMultiplier(2).toFixed(1)}x (Giá gốc)</span>
+              <span>• Từ 3 ngày trở lên: +{(calculateDurationMultiplier(3) - calculateDurationMultiplier(2)).toFixed(1)}x mỗi ngày</span>
+            </div>
           </div>
           <div>
             <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">
@@ -304,13 +311,12 @@ export default function ProductHero({
                     key={size || '__freesize__'}
                     onClick={() => handleSizeChange(size)}
                     disabled={!available}
-                    className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${
-                      isSelected
-                        ? 'border-black bg-black text-white'
-                        : available
-                          ? 'border-[#cfc4c5] bg-white text-black hover:border-black'
-                          : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
-                    }`}
+                    className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${isSelected
+                      ? 'border-black bg-black text-white'
+                      : available
+                        ? 'border-[#cfc4c5] bg-white text-black hover:border-black'
+                        : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
+                      }`}
                   >
                     {size || 'Freesize'}
                   </button>
@@ -338,13 +344,12 @@ export default function ProductHero({
                     key={color || '__default__'}
                     onClick={() => handleColorChange(color)}
                     disabled={!available}
-                    className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${
-                      isSelected
-                        ? 'border-[#99854e] bg-[#99854e] text-white'
-                        : available
-                          ? 'border-[#cfc4c5] bg-white text-black hover:border-[#99854e]'
-                          : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
-                    }`}
+                    className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${isSelected
+                      ? 'border-[#99854e] bg-[#99854e] text-white'
+                      : available
+                        ? 'border-[#cfc4c5] bg-white text-black hover:border-[#99854e]'
+                        : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
+                      }`}
                   >
                     {color || 'Mặc định'}
                   </button>
@@ -373,11 +378,10 @@ export default function ProductHero({
                 <button
                   onClick={() => setQuantity((current) => Math.min(effectiveStock, current + 1))}
                   disabled={quantity >= effectiveStock}
-                  className={`flex h-full w-8 items-center justify-center transition ${
-                    quantity >= effectiveStock
-                      ? 'cursor-not-allowed bg-gray-50 text-gray-400'
-                      : 'text-black hover:bg-[#f9f9f9] hover:text-[#99854e]'
-                  }`}
+                  className={`flex h-full w-8 items-center justify-center transition ${quantity >= effectiveStock
+                    ? 'cursor-not-allowed bg-gray-50 text-gray-400'
+                    : 'text-black hover:bg-[#f9f9f9] hover:text-[#99854e]'
+                    }`}
                 >
                   <span className="material-symbols-outlined text-[12px]">add</span>
                 </button>
@@ -386,11 +390,10 @@ export default function ProductHero({
 
             <div className="flex flex-col items-end gap-1">
               <span
-                className={`inline-block border px-2 py-1 text-[9px] font-semibold uppercase tracking-wider ${
-                  isVariantAvailable
-                    ? 'border-green-200 bg-green-50 text-green-700'
-                    : 'border-red-200 bg-red-50 text-red-700'
-                }`}
+                className={`inline-block border px-2 py-1 text-[9px] font-semibold uppercase tracking-wider ${isVariantAvailable
+                  ? 'border-green-200 bg-green-50 text-green-700'
+                  : 'border-red-200 bg-red-50 text-red-700'
+                  }`}
               >
                 {isVariantAvailable ? `Có thể đặt ${effectiveStock} sp` : 'Hết hàng'}
               </span>
@@ -464,11 +467,10 @@ export default function ProductHero({
                 setQuantity(1);
               }
             }}
-            className={`w-full border border-black py-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
-              !isVariantAvailable || isLoading || isAddingToCart
-                ? 'cursor-not-allowed border-[#eeeeee] bg-[#eeeeee] text-[#999999]'
-                : 'text-black hover:bg-black hover:text-white'
-            }`}
+            className={`w-full border border-black py-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${!isVariantAvailable || isLoading || isAddingToCart
+              ? 'cursor-not-allowed border-[#eeeeee] bg-[#eeeeee] text-[#999999]'
+              : 'text-black hover:bg-black hover:text-white'
+              }`}
           >
             {isAddingToCart
               ? 'Đang thêm...'
@@ -481,11 +483,10 @@ export default function ProductHero({
           <button
             disabled={!canRentNow || !isVariantAvailable || isAddingToCart}
             onClick={handleRentNow}
-            className={`w-full py-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
-              canRentNow && isVariantAvailable && !isAddingToCart
-                ? 'bg-[#99854e] text-white hover:bg-black'
-                : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
-            }`}
+            className={`w-full py-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${canRentNow && isVariantAvailable && !isAddingToCart
+              ? 'bg-[#99854e] text-white hover:bg-black'
+              : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
+              }`}
           >
             Thuê ngay{' '}
             {!canRentNow && !isAddingToCart && isVariantAvailable && (

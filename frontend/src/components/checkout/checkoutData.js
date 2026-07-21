@@ -5,7 +5,7 @@ import { fallbackCostumeImage } from '../../utils/costumeUtils';
  * Tiered Duration Multiplier (mirrors PricingEngineService.java)
  * Days 1-2: 1.0x, Day 3: 1.2x, Day 4: 1.4x, etc.
  */
-function calculateDurationMultiplier(days) {
+export function calculateDurationMultiplier(days) {
   if (days <= 2) return 1.0;
   return 1.0 + (days - 2) * 0.2;
 }
