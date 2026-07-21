@@ -7,6 +7,7 @@ import com.aurafit.enums.OrderStatus;
 import com.aurafit.enums.ReturnStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,8 +25,6 @@ public record StaffOrderDetailResponse(
         BigDecimal totalDeposit,
         BigDecimal shippingFee,
         BigDecimal finalAmount,
-        LocalDateTime rentalStartDate,
-        LocalDateTime rentalEndDate,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         List<StaffOrderItemResponse> details,
@@ -59,7 +58,9 @@ public record StaffOrderDetailResponse(
             int rentalDays,
             BigDecimal lateFee,
             BigDecimal damageFee,
-            BigDecimal refundedAmount
+            BigDecimal refundedAmount,
+            LocalDate rentalStartDate,
+            LocalDate rentalEndDate
     ) {}
 
     public static StaffOrderDetailResponse fromEntity(RentalOrder order, List<HandoverRecord> handovers) {
@@ -79,7 +80,9 @@ public record StaffOrderDetailResponse(
                         d.getRentalDays(),
                         d.getLateFee(),
                         d.getDamageFee(),
-                        d.getRefundedAmount()
+                        d.getRefundedAmount(),
+                        d.getRentalStartDate(),
+                        d.getRentalEndDate()
                 ))
                 .toList();
 
@@ -114,8 +117,6 @@ public record StaffOrderDetailResponse(
                 order.getTotalDeposit(),
                 order.getShippingFee(),
                 finalAmount,
-                order.getRentalStartDate(),
-                order.getRentalEndDate(),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 items,

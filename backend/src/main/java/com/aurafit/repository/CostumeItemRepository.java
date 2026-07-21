@@ -74,4 +74,30 @@ public interface CostumeItemRepository extends JpaRepository<CostumeItem, Long> 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT ci FROM CostumeItem ci WHERE ci.costume.id = :costumeId AND ci.size = :size AND ci.color = :color AND ci.status = :status")
     List<CostumeItem> findAvailableItemsForUpdate(@Param("costumeId") Long costumeId, @Param("size") String size, @Param("color") String color, @Param("status") ItemStatus status, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Advanced Interval Scheduling with Buffer Days.
+     * Finds items where status != MAINTENANCE/LOST and ID is NOT IN overlapping active orders.
+     */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ci FROM CostumeItem ci " +
+           "WHERE ci.costume.id = :costumeId " +
+           "  AND ci.size = :size " +
+           "  AND ci.color = :color " +
+           "  AND ci.status IN (com.aurafit.enums.ItemStatus.AVAILABLE, com.aurafit.enums.ItemStatus.RESERVED, com.aurafit.enums.ItemStatus.RENTED) " +
+           "  AND ci.id NOT IN (" +
+           "      SELECT d.costumeItem.id FROM RentalOrderDetail d " +
+           "      JOIN d.rentalOrder ro " +
+           "      WHERE ro.status IN (com.aurafit.enums.OrderStatus.PENDING, com.aurafit.enums.OrderStatus.CONFIRMED, com.aurafit.enums.OrderStatus.SHIPPING, com.aurafit.enums.OrderStatus.RENTED, com.aurafit.enums.OrderStatus.RETURNING) " +
+           "        AND d.costumeItem.costume.id = :costumeId " +
+           "        AND d.rentalStartDate <= :bufferedReqEnd " +
+           "        AND d.rentalEndDate >= :bufferedReqStart " +
+           "  )")
+    List<CostumeItem> findAvailableItemsWithBufferForUpdate(
+            @Param("costumeId") Long costumeId,
+            @Param("size") String size,
+            @Param("color") String color,
+            @Param("bufferedReqStart") java.time.LocalDate bufferedReqStart,
+            @Param("bufferedReqEnd") java.time.LocalDate bufferedReqEnd,
+            org.springframework.data.domain.Pageable pageable);
 }

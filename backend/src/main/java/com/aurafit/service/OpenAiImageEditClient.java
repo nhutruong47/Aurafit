@@ -73,14 +73,7 @@ public class OpenAiImageEditClient {
             throw new BadRequestException("Thiếu ảnh của bạn");
         }
 
-        // Mock fallback if using Gemini API key or explicit 'mock'
-        if (apiKey.startsWith("AQ.") || "mock".equalsIgnoreCase(apiKey)) {
-            log.warn("Mocking Virtual Try-On because OpenAI API key starts with Gemini format or is 'mock'.");
-            if (StringUtils.hasText(garmentImageUrl)) {
-                return garmentImageUrl;
-            }
-            return "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000";
-        }
+
 
         Optional<NamedImage> garmentImage = fetchGarmentImage(garmentImageUrl);
         String garmentDesc = StringUtils.hasText(productName)

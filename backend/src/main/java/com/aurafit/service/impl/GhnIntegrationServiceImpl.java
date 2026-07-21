@@ -33,6 +33,12 @@ public class GhnIntegrationServiceImpl implements GhnIntegrationService {
     @Value("${ghn.shop.id:}")
     private String shopId;
 
+    @Value("${ghn.store.district-id:1444}")
+    private Integer storeDistrictId;
+
+    @Value("${ghn.store.ward-code:20308}")
+    private String storeWardCode;
+
     private final RestTemplate restTemplate;
 
     public GhnIntegrationServiceImpl() {
@@ -207,8 +213,8 @@ public class GhnIntegrationServiceImpl implements GhnIntegrationService {
         body.put("to_name", "AuraFit Store");
         body.put("to_phone", "0987654321"); // Store phone
         body.put("to_address", "Địa chỉ cửa hàng AuraFit"); // Store address
-        body.put("to_ward_code", "20308"); // Mock ward
-        body.put("to_district_id", 1444); // Mock district
+        body.put("to_ward_code", storeWardCode);
+        body.put("to_district_id", storeDistrictId);
         body.put("weight", weight);
         body.put("service_type_id", 2);
         

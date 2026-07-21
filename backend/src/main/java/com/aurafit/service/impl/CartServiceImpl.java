@@ -89,15 +89,28 @@ public class CartServiceImpl implements CartService {
         }
 
         // Fetch exactly `newQty` available items that are NOT already in the cart
-        List<CostumeItem> itemsToAdd = costumeItemRepository.findAvailableItemsForUpdate(
-                referenceItem.getCostume().getId(), referenceItem.getSize(), referenceItem.getColor(), ItemStatus.AVAILABLE,
-                org.springframework.data.domain.PageRequest.of(0, (int) (existingQty + newQty))
-        ).stream().filter(item -> !cartItemRepository.existsByCartIdAndCostumeItemId(cart.getId(), item.getId()))
-          .limit(newQty)
-          .toList();
+        List<CostumeItem> itemsToAdd;
+        if (request.rentalStartDate() != null && request.rentalEndDate() != null) {
+            java.time.LocalDate bufferedReqStart = request.rentalStartDate().minusDays(2);
+            java.time.LocalDate bufferedReqEnd = request.rentalEndDate().plusDays(2);
+            itemsToAdd = costumeItemRepository.findAvailableItemsWithBufferForUpdate(
+                    referenceItem.getCostume().getId(), referenceItem.getSize(), referenceItem.getColor(),
+                    bufferedReqStart, bufferedReqEnd,
+                    org.springframework.data.domain.PageRequest.of(0, (int) (existingQty + newQty))
+            ).stream().filter(item -> !cartItemRepository.existsByCartIdAndCostumeItemId(cart.getId(), item.getId()))
+              .limit(newQty)
+              .toList();
+        } else {
+            itemsToAdd = costumeItemRepository.findAvailableItemsForUpdate(
+                    referenceItem.getCostume().getId(), referenceItem.getSize(), referenceItem.getColor(), ItemStatus.AVAILABLE,
+                    org.springframework.data.domain.PageRequest.of(0, (int) (existingQty + newQty))
+            ).stream().filter(item -> !cartItemRepository.existsByCartIdAndCostumeItemId(cart.getId(), item.getId()))
+              .limit(newQty)
+              .toList();
+        }
 
         if (itemsToAdd.size() < newQty) {
-            throw new BadRequestException("Không đủ sản phẩm trống để thêm vào giỏ hàng. Bạn đã có " + existingQty + " sản phẩm này trong giỏ.");
+            throw new BadRequestException("Không đủ sản phẩm trống để thêm vào giỏ hàng. Bạn đã có " + existingQty + " sản phẩm này trong giỏ hoặc bị trùng ngày thuê.");
         }
 
         // 5. Calculate pricing via Tiered Pricing Engine

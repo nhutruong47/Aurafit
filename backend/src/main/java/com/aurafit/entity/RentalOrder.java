@@ -36,11 +36,7 @@ public class RentalOrder extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "rental_start_date", nullable = false)
-    private LocalDateTime rentalStartDate;
 
-    @Column(name = "rental_end_date", nullable = false)
-    private LocalDateTime rentalEndDate;
 
     @Column(name = "receiver_name", nullable = false)
     private String receiverName;
@@ -50,6 +46,12 @@ public class RentalOrder extends BaseEntity {
 
     @Column(name = "delivery_address", nullable = false, columnDefinition = "TEXT")
     private String deliveryAddress;
+
+    @Column(name = "district_id")
+    private Integer districtId;
+
+    @Column(name = "ward_code")
+    private String wardCode;
 
     @Column(name = "total_rental_price", nullable = false)
     private BigDecimal totalRentalPrice;

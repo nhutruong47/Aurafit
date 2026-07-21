@@ -2,7 +2,7 @@ export default function CatalogSortBar({ sortBy, sortDir, onSortChange }) {
   const isActive = (checkSortBy, checkSortDir) => sortBy === checkSortBy && sortDir === checkSortDir;
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-3 bg-[#f5f5f5] p-3 shadow-sm">
+    <div className="mb-6 flex flex-wrap items-center gap-4 border border-[#cfc4c5] bg-white p-4">
       <span className="text-sm text-[#5f5e5e]">Sắp xếp theo</span>
       
       <button

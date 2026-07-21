@@ -123,13 +123,16 @@ public class OrderServiceImpl implements OrderService {
             String color = representativeItem.getColor();
 
             // ── 4b. Stock availability check and dynamic allocation ─────────────────
-            List<CostumeItem> availableItems = costumeItemRepository.findAvailableItemsForUpdate(
-                    costume.getId(), size, color, ItemStatus.AVAILABLE, org.springframework.data.domain.PageRequest.of(0, item.quantity())
+            java.time.LocalDate bufferedReqStart = item.rentalStartDate().minusDays(2);
+            java.time.LocalDate bufferedReqEnd = item.rentalEndDate().plusDays(2);
+
+            List<CostumeItem> availableItems = costumeItemRepository.findAvailableItemsWithBufferForUpdate(
+                    costume.getId(), size, color, bufferedReqStart, bufferedReqEnd, org.springframework.data.domain.PageRequest.of(0, item.quantity())
             );
 
             if (availableItems.size() < item.quantity()) {
                 throw new BadRequestException(
-                        "Chỉ còn " + availableItems.size() + " sản phẩm khả dụng cho mẫu này (Size: " + size + (color != null ? ", Màu: " + color : "") + ")."
+                        "Chỉ còn " + availableItems.size() + " sản phẩm khả dụng cho mẫu này (Size: " + size + (color != null ? ", Màu: " + color : "") + ") trong khoảng thời gian đã chọn."
                 );
             }
 
@@ -164,29 +167,20 @@ public class OrderServiceImpl implements OrderService {
             totalRentalPrice = totalRentalPrice.add(subtotalRental);
             totalDeposit = totalDeposit.add(subtotalDeposit);
 
-            // Track the global rental window across all items
-            LocalDateTime itemStart = item.rentalStartDate().atStartOfDay();
-            LocalDateTime itemEnd = item.rentalEndDate().atTime(LocalTime.MAX);
-            if (orderStartDate == null || itemStart.isBefore(orderStartDate)) {
-                orderStartDate = itemStart;
-            }
-            if (orderEndDate == null || itemEnd.isAfter(orderEndDate)) {
-                orderEndDate = itemEnd;
-            }
-
             // ── 4g. Accumulate for each physical item ──────────────────────────
             BigDecimal singleItemRentalFee = pricingEngineService.calculateItemRentalFee(pricePerDay, (int) rentalDays, 1);
             BigDecimal singleItemDeposit = pricingEngineService.calculateItemDeposit(retailValue, singleItemRentalFee, 1);
             
             for (CostumeItem allocatedItem : availableItems) {
-                // Hold the inventory for the pending order; only flip to RENTED after payment.
-                allocatedItem.setStatus(ItemStatus.RESERVED);
-                costumeItemRepository.save(allocatedItem);
+                // We no longer lock inventory via ItemStatus.RESERVED.
+                // The lock is now implicitly held by the overlapping RentalOrderDetail dates.
 
                 RentalOrderDetail detail = RentalOrderDetail.builder()
                         .costumeItem(allocatedItem)
                         .pricePerDay(pricePerDay)
                         .rentalDays((int) rentalDays)
+                        .rentalStartDate(item.rentalStartDate())
+                        .rentalEndDate(item.rentalEndDate())
                         .subtotal(singleItemRentalFee)
                         .deposit(singleItemDeposit)
                         .price(pricingEngineService.calculateTotal(singleItemRentalFee, singleItemDeposit))
@@ -205,14 +199,14 @@ public class OrderServiceImpl implements OrderService {
                 .receiverName(request.receiverName())
                 .receiverPhone(request.receiverPhone())
                 .deliveryAddress(request.deliveryAddress())
+                .districtId(request.districtId())
+                .wardCode(request.wardCode())
                 .deliveryMethod(request.deliveryMethod())
                 .shippingFee(shippingFee)
                 .totalRentalPrice(totalRentalPrice)
                 .totalDeposit(totalDeposit)
                 .discountAmount(BigDecimal.ZERO)
                 .totalPrice(finalTotalPrice)
-                .rentalStartDate(orderStartDate)
-                .rentalEndDate(orderEndDate)
                 .details(orderDetails)
                 .status(com.aurafit.enums.OrderStatus.PENDING)
                 .build();
@@ -289,9 +283,11 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Order must be CONFIRMED to ship");
         }
 
-        // Mock destination district/ward for sandbox as DB doesn't store them
-        int toDistrictId = 1444; 
-        String toWardCode = "20308";
+        if (order.getDistrictId() == null || order.getWardCode() == null) {
+            throw new BadRequestException("Order does not have a valid district ID or ward code for shipping.");
+        }
+        int toDistrictId = order.getDistrictId();
+        String toWardCode = order.getWardCode();
         int totalWeight = 1000 * order.getDetails().size();
 
         String ghnCode = ghnIntegrationService.createForwardOrder(
@@ -349,8 +345,11 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Order must be RENTED to return");
         }
 
-        int fromDistrictId = 1444; 
-        String fromWardCode = "20308";
+        if (order.getDistrictId() == null || order.getWardCode() == null) {
+            throw new BadRequestException("Order does not have a valid district ID or ward code for return shipping.");
+        }
+        int fromDistrictId = order.getDistrictId(); 
+        String fromWardCode = order.getWardCode();
         int totalWeight = 1000 * order.getDetails().size();
 
         String ghnCode = ghnIntegrationService.createReturnOrder(
@@ -389,9 +388,19 @@ public class OrderServiceImpl implements OrderService {
 
         java.time.LocalDate actualReturnDate = request.getActualReturnDate() != null ? request.getActualReturnDate() : java.time.LocalDate.now();
         
+        java.time.LocalDate maxRentalEndDate = order.getDetails().stream()
+                .map(RentalOrderDetail::getRentalEndDate)
+                .max(java.time.LocalDate::compareTo)
+                .orElse(null);
+                
+        java.time.LocalDate minRentalStartDate = order.getDetails().stream()
+                .map(RentalOrderDetail::getRentalStartDate)
+                .min(java.time.LocalDate::compareTo)
+                .orElse(null);
+
         long lateDays = 0;
-        if (order.getRentalEndDate() != null) {
-            lateDays = java.time.temporal.ChronoUnit.DAYS.between(order.getRentalEndDate().toLocalDate(), actualReturnDate);
+        if (maxRentalEndDate != null) {
+            lateDays = java.time.temporal.ChronoUnit.DAYS.between(maxRentalEndDate, actualReturnDate);
         }
         
         BigDecimal lateFee = BigDecimal.ZERO;
@@ -401,7 +410,10 @@ public class OrderServiceImpl implements OrderService {
             if (request.getLateFee() != null) {
                 lateFee = request.getLateFee(); // Manual override
             } else {
-                long rentalDays = java.time.temporal.ChronoUnit.DAYS.between(order.getRentalStartDate().toLocalDate(), order.getRentalEndDate().toLocalDate());
+                long rentalDays = 1;
+                if (minRentalStartDate != null && maxRentalEndDate != null) {
+                    rentalDays = java.time.temporal.ChronoUnit.DAYS.between(minRentalStartDate, maxRentalEndDate);
+                }
                 if (rentalDays <= 0) rentalDays = 1;
                 
                 BigDecimal dailyRentalRate = order.getTotalRentalPrice().divide(BigDecimal.valueOf(rentalDays), 0, java.math.RoundingMode.HALF_UP);
@@ -591,8 +603,16 @@ public class OrderServiceImpl implements OrderService {
                 .map(detail -> detail.getCostumeItem() != null ? detail.getCostumeItem().getSku() : null)
                 .filter(sku -> sku != null && !sku.isBlank())
                 .toList());
-        metadata.put("rentalStartDate", order.getRentalStartDate() != null ? order.getRentalStartDate().toLocalDate().toString() : null);
-        metadata.put("rentalEndDate", order.getRentalEndDate() != null ? order.getRentalEndDate().toLocalDate().toString() : null);
+        java.time.LocalDate minRentalStartDate = order.getDetails().stream()
+                .map(RentalOrderDetail::getRentalStartDate)
+                .min(java.time.LocalDate::compareTo)
+                .orElse(null);
+        java.time.LocalDate maxRentalEndDate = order.getDetails().stream()
+                .map(RentalOrderDetail::getRentalEndDate)
+                .max(java.time.LocalDate::compareTo)
+                .orElse(null);
+        metadata.put("rentalStartDate", minRentalStartDate != null ? minRentalStartDate.toString() : null);
+        metadata.put("rentalEndDate", maxRentalEndDate != null ? maxRentalEndDate.toString() : null);
 
         interactionEventRecorderService.record(
                 user,

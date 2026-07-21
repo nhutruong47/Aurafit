@@ -175,6 +175,8 @@ export function useCheckout({
         receiverName: deliveryInfo.receiverName,
         receiverPhone: deliveryInfo.receiverPhone,
         deliveryAddress: finalAddress,
+        districtId: deliveryMethod === 'STORE_PICKUP' ? null : Number(selectedDistrictId),
+        wardCode: deliveryMethod === 'STORE_PICKUP' ? null : selectedWardCode,
         deliveryMethod,
         shippingFee: deliveryMethod === 'GHN_DELIVERY' ? shippingFee : 0,
         items: itemsToOrder.map((item) => ({

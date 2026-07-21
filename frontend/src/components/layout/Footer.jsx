@@ -3,17 +3,17 @@ const footerColumns = [
   {
     title: 'Công ty',
     links: [
-      { label: 'Giới thiệu', page: 'home' },
-      { label: 'Bền vững', page: 'home' },
-      { label: 'Điều khoản', page: 'care' },
+      { label: 'Giới thiệu', page: 'about' },
+      { label: 'Điều khoản', page: 'policy' },
+      { label: 'Chính sách thuê', page: 'policy' },
     ],
   },
   {
     title: 'Hỗ trợ khách hàng',
     links: [
-      { label: 'Liên hệ', page: 'care', section: 'stylists' },
-      { label: 'FAQ', page: 'care' },
-      { label: 'Giao nhận', page: 'care', section: 'shipping' },
+      { label: 'Liên hệ', page: 'about' },
+      { label: 'FAQ', page: 'policy' },
+      { label: 'Giao nhận', page: 'policy' },
     ],
   },
 ];

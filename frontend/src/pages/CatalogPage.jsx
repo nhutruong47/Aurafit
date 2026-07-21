@@ -162,7 +162,7 @@ export default function CatalogPage({ onNavigate }) {
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
           <h1 className="mb-4 font-serif text-4xl font-normal italic text-black sm:text-5xl">Bộ sưu tập trang phục</h1>
           <p className="max-w-2xl text-lg leading-8 text-[#5f5e5e]">
-            Danh mục và sản phẩm trên trang này được lấy trực tiếp từ database qua category tree API và costume catalog API của backend.
+            Khám phá bộ sưu tập trang phục cao cấp, đa dạng phong cách, giúp bạn tỏa sáng trong mọi khoảnh khắc.
           </p>
         </div>
 
@@ -211,7 +211,7 @@ export default function CatalogPage({ onNavigate }) {
               </p>
               {(error || categoryError) && (
                 <p className="mt-2 text-sm text-red-600">
-                  Chưa kết nối được backend/database. Vui lòng chạy BE ở port 8080 rồi tải lại trang.
+                  Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại sau.
                 </p>
               )}
             </div>

@@ -17,11 +17,10 @@ export default function Navbar({
   };
 
   const navLinks = [
+    { label: 'Trang chủ', page: 'home', action: () => goPage('home') },
     { label: 'Bộ sưu tập', page: 'catalog', action: () => goPage('catalog') },
-    { label: 'Cosplay', page: 'cosplay', action: () => goPage('cosplay') },
-    { label: 'Sự kiện', page: 'events', action: () => goPage('events') },
-    { label: 'Truyền thống', page: 'traditional', action: () => goPage('traditional') },
-    { label: 'Yearbook', page: 'yearbook', action: () => goPage('yearbook') },
+    { label: 'Giới thiệu', page: 'about', action: () => goPage('about') },
+    { label: 'Chính sách thuê', page: 'policy', action: () => goPage('policy') },
   ];
 
   const iconButtonClass =

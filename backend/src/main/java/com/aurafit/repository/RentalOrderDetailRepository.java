@@ -27,13 +27,13 @@ public interface RentalOrderDetailRepository extends JpaRepository<RentalOrderDe
             JOIN rd.rentalOrder ro
             WHERE rd.costumeItem.id IN :costumeItemIds
               AND ro.status <> :cancelledStatus
-              AND ro.rentalStartDate <= :requestedEnd
-              AND ro.rentalEndDate >= :requestedStart
+              AND rd.rentalStartDate <= :requestedEnd
+              AND rd.rentalEndDate >= :requestedStart
             """)
     List<Long> findBookedCostumeItemIdsForPeriod(
             @Param("costumeItemIds") Collection<Long> costumeItemIds,
-            @Param("requestedStart") LocalDateTime requestedStart,
-            @Param("requestedEnd") LocalDateTime requestedEnd,
+            @Param("requestedStart") java.time.LocalDate requestedStart,
+            @Param("requestedEnd") java.time.LocalDate requestedEnd,
             @Param("cancelledStatus") OrderStatus cancelledStatus
     );
 

@@ -21,6 +21,7 @@ import StaffDashboardPage from './pages/StaffDashboardPage';
 import TraditionalPage from './pages/TraditionalPage';
 import UserAccountPage from './pages/UserAccountPage';
 import YearbookPage from './pages/YearbookPage';
+import PolicyPage from './pages/PolicyPage';
 import StaffLayout from './components/layout/StaffLayout';
 import { getCurrentPageFromPath, useLegacyNavigate, useSearchNavigation } from './routing/navigation';
 import { addItemToCart as addItemToCartApi, fetchCart, removeCartItem as removeCartItemApi, updateCartItem as updateCartItemApi } from './services/cartService';
@@ -360,6 +361,7 @@ function App() {
           element={<CostumeDetailPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} onRentNow={handleRentNow} />}
         />
         <Route path="/success" element={<RentalOrderSuccessPage cartItems={cartItems} onNavigate={handleNavigate} />} />
+        <Route path="/policy" element={<PolicyPage />} />
       </Route>
 
       {/* Staff layout: no Navbar, no cart, internal dashboard UI */}

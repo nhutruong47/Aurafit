@@ -89,6 +89,10 @@ export default function RentalItemCard({
             {item.size ? `Size ${item.size}` : 'Freesize'}
             {item.color ? ` · ${item.color}` : ''}
           </p>
+          
+          <p className="mt-0.5 text-xs font-medium text-black">
+            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.unitPrice || 0)} / ngày
+          </p>
 
           {/* Inline Quantity Control */}
           <div className="mt-2 flex items-center gap-3">

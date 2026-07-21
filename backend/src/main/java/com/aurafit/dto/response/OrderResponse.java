@@ -6,6 +6,7 @@ import com.aurafit.enums.DeliveryMethod;
 import com.aurafit.enums.OrderStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,8 +23,6 @@ public record OrderResponse(
         BigDecimal discountAmount,
         BigDecimal finalAmount,
         OrderStatus status,
-        LocalDateTime rentalStartDate,
-        LocalDateTime rentalEndDate,
         LocalDateTime createdAt,
         List<OrderDetailResponse> details,
         String ghnOrderCode,
@@ -45,7 +44,9 @@ public record OrderResponse(
             BigDecimal pricePerDay,
             int rentalDays,
             BigDecimal subtotal,
-            String returnStatus
+            String returnStatus,
+            LocalDate rentalStartDate,
+            LocalDate rentalEndDate
     ) {}
 
     public static OrderResponse fromEntity(RentalOrder order) {
@@ -60,7 +61,9 @@ public record OrderResponse(
                         d.getPricePerDay(),
                         d.getRentalDays(),
                         d.getSubtotal(),
-                        d.getReturnStatus().name()
+                        d.getReturnStatus().name(),
+                        d.getRentalStartDate(),
+                        d.getRentalEndDate()
                 ))
                 .toList();
 
@@ -85,8 +88,6 @@ public record OrderResponse(
                 order.getDiscountAmount(),
                 finalAmount,
                 order.getStatus(),
-                order.getRentalStartDate(),
-                order.getRentalEndDate(),
                 order.getCreatedAt(),
                 details,
                 order.getGhnOrderCode(),

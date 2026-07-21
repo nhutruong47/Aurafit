@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -39,6 +40,12 @@ public class RentalOrderDetail extends BaseEntity {
 
     @Column(name = "rental_days", nullable = false)
     private int rentalDays;
+
+    @Column(name = "rental_start_date")
+    private LocalDate rentalStartDate;
+
+    @Column(name = "rental_end_date")
+    private LocalDate rentalEndDate;
 
     @Column(nullable = false)
     private BigDecimal subtotal;

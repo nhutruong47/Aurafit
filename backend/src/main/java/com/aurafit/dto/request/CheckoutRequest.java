@@ -30,6 +30,10 @@ public record CheckoutRequest(
         @NotBlank(message = "deliveryAddress is required")
         String deliveryAddress,
 
+        Integer districtId,
+
+        String wardCode,
+
         DeliveryMethod deliveryMethod,
 
         BigDecimal shippingFee,
