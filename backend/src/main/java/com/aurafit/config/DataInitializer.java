@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Profile({ "dev", "seed" })
+@Order(1)
 @RequiredArgsConstructor
 @Slf4j
 public class DataInitializer implements CommandLineRunner {
@@ -139,6 +141,15 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         return indexedSeeds;
+    }
+
+    static boolean isSeedLeafCategoryPath(String path) {
+        if (!CATEGORY_TREE_SEEDS_BY_PATH.containsKey(path)) {
+            return false;
+        }
+        String childPathPrefix = path + "/";
+        return CATEGORY_TREE_SEEDS_BY_PATH.keySet().stream()
+                .noneMatch(candidate -> candidate.startsWith(childPathPrefix));
     }
 
     private static List<CategoryTreeSeed> buildCategoryTreeSeeds() {

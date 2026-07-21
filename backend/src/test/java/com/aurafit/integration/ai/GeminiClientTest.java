@@ -212,12 +212,50 @@ class GeminiClientTest {
                 "buildRequestBody",
                 "system",
                 "user",
+                AiCallType.INTENT_EXTRACTION,
                 true,
                 300
         );
         Map<String, Object> generationConfig = (Map<String, Object>) requestBody.get("generationConfig");
 
         assertEquals(Map.of("thinkingBudget", 0), generationConfig.get("thinkingConfig"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void buildRequestBody_shouldRequireMetadataEnrichmentJsonSchema() {
+        GeminiClient client = clientReturning(HttpStatus.OK, "{}");
+
+        Map<String, Object> requestBody = ReflectionTestUtils.invokeMethod(
+                client,
+                "buildRequestBody",
+                "system",
+                "user",
+                AiCallType.METADATA_ENRICHMENT,
+                true,
+                1_000
+        );
+        Map<String, Object> generationConfig = (Map<String, Object>) requestBody.get("generationConfig");
+        Map<String, Object> schema = (Map<String, Object>) generationConfig.get("responseJsonSchema");
+        Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+        Map<String, Object> colorTags = (Map<String, Object>) properties.get("color_tags_json");
+
+        assertEquals(MediaType.APPLICATION_JSON_VALUE, generationConfig.get("responseMimeType"));
+        assertEquals("object", schema.get("type"));
+        assertEquals(false, schema.get("additionalProperties"));
+        assertEquals(9, properties.size());
+        assertEquals(6, colorTags.get("maxItems"));
+        assertEquals(List.of(
+                "color_tags_json",
+                "fit_tags_json",
+                "gender_tags_json",
+                "material_tags_json",
+                "occasion_tags_json",
+                "season_tags_json",
+                "size_tags_json",
+                "style_tags_json",
+                "trend_tags_json"
+        ), schema.get("required"));
     }
 
     @Test

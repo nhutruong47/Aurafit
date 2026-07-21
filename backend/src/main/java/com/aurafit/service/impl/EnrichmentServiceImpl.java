@@ -63,7 +63,7 @@ public class EnrichmentServiceImpl implements EnrichmentService {
               "style_tags_json": array<string>,
               "trend_tags_json": array<string>
             }
-            Mỗi mảng phải chứa tag chữ thường, ngắn gọn, không trùng, được chuẩn hoá và mở rộng bằng từ đồng nghĩa tiếng Việt/tiếng Anh phù hợp.
+            Mỗi mảng chứa tối đa 6 tag chữ thường, ngắn gọn, không trùng, được chuẩn hoá và mở rộng bằng từ đồng nghĩa tiếng Việt/tiếng Anh phù hợp.
             Ví dụ màu "đỏ" có thể mở rộng thành ["đỏ", "red", "màu đỏ", "đỏ tươi"].
             Không suy diễn thuộc tính trái với dữ liệu sản phẩm. Nếu không đủ dữ liệu cho một nhóm thì trả về mảng rỗng.
             """;
@@ -206,8 +206,22 @@ public class EnrichmentServiceImpl implements EnrichmentService {
         } catch (AiProviderException exception) {
             throw exception;
         } catch (JsonProcessingException | IllegalArgumentException exception) {
+            log.warn(
+                    "Invalid Gemini metadata enrichment JSON responseChars={} responsePreview={} parseError={}",
+                    rawJson == null ? 0 : rawJson.length(),
+                    responsePreview(rawJson),
+                    exception.getMessage()
+            );
             throw invalidMetadataResponse("Gemini returned malformed enrichment JSON.", exception);
         }
+    }
+
+    private String responsePreview(String rawJson) {
+        if (rawJson == null) {
+            return "null";
+        }
+        String singleLine = rawJson.replaceAll("[\\r\\n]+", " ").trim();
+        return singleLine.length() <= 500 ? singleLine : singleLine.substring(0, 500) + "...";
     }
 
     private List<String> readTags(JsonNode root, String fieldName) {

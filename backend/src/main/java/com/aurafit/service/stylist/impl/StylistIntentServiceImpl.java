@@ -4,6 +4,7 @@ import com.aurafit.dto.request.StylistFilterCriteria;
 import com.aurafit.entity.ChatMessage;
 import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.AiErrorType;
+import com.aurafit.enums.ChatMessageRole;
 import com.aurafit.exception.AiProviderException;
 import com.aurafit.integration.ai.GeminiClient;
 import com.aurafit.service.stylist.StylistIntentService;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,7 +23,8 @@ import java.util.List;
 @Slf4j
 public class StylistIntentServiceImpl implements StylistIntentService {
 
-    private static final int MAX_HISTORY_MESSAGES = 3;
+    private static final int MAX_HISTORY_MESSAGES = 6;
+    private static final int HISTORY_MESSAGE_MAX_LENGTH = 500;
 
     private static final String SYSTEM_PROMPT = """
             Bạn là bộ trích xuất ý định cho stylist thời trang AuraFit.
@@ -149,21 +152,42 @@ public class StylistIntentServiceImpl implements StylistIntentService {
     }
 
     private String buildUserPrompt(String userMessage, List<ChatMessage> recentHistory) {
-        StringBuilder prompt = new StringBuilder("Ngữ cảnh tối đa 3 tin nhắn gần nhất:\n");
+        StringBuilder prompt = new StringBuilder("Ngữ cảnh 3 lượt hội thoại gần nhất, theo thứ tự cũ đến mới:\n");
 
         if (recentHistory.isEmpty()) {
             prompt.append("(không có)\n");
         } else {
-            recentHistory.forEach(message -> prompt
-                    .append(message.getRole().name())
-                    .append(": ")
-                    .append(message.getContent())
-                    .append('\n'));
+            recentHistory.forEach(message -> {
+                String speaker = message.getRole() == ChatMessageRole.USER
+                        ? "Khách hàng"
+                        : "Stylist";
+                prompt.append(speaker)
+                        .append(": ")
+                        .append(summarizeHistoryMessage(message.getContent()));
+                if (message.getRole() == ChatMessageRole.ASSISTANT
+                        && StringUtils.hasText(message.getRecommendedCostumeIds())) {
+                    prompt.append(" [ID sản phẩm đã gợi ý: ")
+                            .append(message.getRecommendedCostumeIds().trim())
+                            .append(']');
+                }
+                prompt.append('\n');
+            });
         }
 
         return prompt
                 .append("Tin nhắn cần phân tích:\n")
                 .append(userMessage)
                 .toString();
+    }
+
+    private String summarizeHistoryMessage(String content) {
+        if (!StringUtils.hasText(content)) {
+            return "(trống)";
+        }
+        String normalized = content.trim().replaceAll("\\s+", " ");
+        if (normalized.length() <= HISTORY_MESSAGE_MAX_LENGTH) {
+            return normalized;
+        }
+        return normalized.substring(0, HISTORY_MESSAGE_MAX_LENGTH - 3).trim() + "...";
     }
 }

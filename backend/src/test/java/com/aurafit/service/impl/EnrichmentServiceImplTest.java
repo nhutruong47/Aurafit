@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -113,6 +114,20 @@ class EnrichmentServiceImplTest {
         assertTrue(prompt.contains("Lụa"));
         assertTrue(prompt.contains("Ôm nhẹ phần eo"));
         assertTrue(prompt.contains("luxury"));
+    }
+
+    @Test
+    void enrichMetadata_shouldRejectMalformedJsonWithoutPersistingMetadata() {
+        when(geminiClient.generateJson(eq(AiCallType.METADATA_ENRICHMENT), anyString(), anyString()))
+                .thenReturn("{\"color_tags_json\":[\"đỏ\"]]");
+
+        AiProviderException exception = assertThrows(
+                AiProviderException.class,
+                () -> service.enrichMetadata(costume(), null)
+        );
+
+        assertEquals(AiErrorType.INVALID_RESPONSE, exception.getErrorType());
+        verify(productAiMetadataRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test

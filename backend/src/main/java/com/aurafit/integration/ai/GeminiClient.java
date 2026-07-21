@@ -41,6 +41,18 @@ public class GeminiClient {
     private static final int RESPONSE_MAX_OUTPUT_TOKENS = 400;
     private static final int INSIGHT_MAX_OUTPUT_TOKENS = 1_000;
     private static final int METADATA_ENRICHMENT_MAX_OUTPUT_TOKENS = 1_000;
+    private static final int METADATA_TAGS_PER_GROUP_LIMIT = 6;
+    private static final List<String> METADATA_ENRICHMENT_TAG_KEYS = List.of(
+            "color_tags_json",
+            "fit_tags_json",
+            "gender_tags_json",
+            "material_tags_json",
+            "occasion_tags_json",
+            "season_tags_json",
+            "size_tags_json",
+            "style_tags_json",
+            "trend_tags_json"
+    );
 
     private final WebClient webClient;
     private final String apiKey;
@@ -227,7 +239,13 @@ public class GeminiClient {
                             .queryParam("key", apiKey)
                             .build(model))
                     .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(buildRequestBody(systemPrompt, userPrompt, jsonResponse, maxOutputTokens))
+                    .bodyValue(buildRequestBody(
+                            systemPrompt,
+                            userPrompt,
+                            resolvedCallType,
+                            jsonResponse,
+                            maxOutputTokens
+                    ))
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(timeout)
@@ -399,6 +417,7 @@ public class GeminiClient {
     private Map<String, Object> buildRequestBody(
             String systemPrompt,
             String userPrompt,
+            AiCallType callType,
             boolean jsonResponse,
             int maxOutputTokens
     ) {
@@ -423,9 +442,31 @@ public class GeminiClient {
         if (jsonResponse) {
             generationConfig.put("responseMimeType", MediaType.APPLICATION_JSON_VALUE);
         }
+        if (callType == AiCallType.METADATA_ENRICHMENT) {
+            generationConfig.put("responseJsonSchema", buildMetadataEnrichmentResponseSchema());
+        }
         requestBody.put("generationConfig", generationConfig);
 
         return requestBody;
+    }
+
+    private Map<String, Object> buildMetadataEnrichmentResponseSchema() {
+        Map<String, Object> properties = new LinkedHashMap<>();
+        for (String key : METADATA_ENRICHMENT_TAG_KEYS) {
+            properties.put(key, Map.of(
+                    "type", "array",
+                    "items", Map.of("type", "string"),
+                    "maxItems", METADATA_TAGS_PER_GROUP_LIMIT
+            ));
+        }
+
+        Map<String, Object> schema = new LinkedHashMap<>();
+        schema.put("type", "object");
+        schema.put("properties", properties);
+        schema.put("required", METADATA_ENRICHMENT_TAG_KEYS);
+        schema.put("additionalProperties", false);
+        schema.put("propertyOrdering", METADATA_ENRICHMENT_TAG_KEYS);
+        return schema;
     }
 
     private Map<String, Object> buildEmbeddingRequestBody(String embeddingModel, String text) {
