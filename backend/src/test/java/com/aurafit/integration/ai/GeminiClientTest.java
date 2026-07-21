@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import reactor.core.publisher.Mono;
 
 import java.net.ConnectException;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -246,6 +247,33 @@ class GeminiClientTest {
         );
 
         assertEquals(1_000, maxOutputTokens);
+    }
+
+    @Test
+    void resolveMaxOutputTokens_shouldAllowCompleteMetadataEnrichmentJson() {
+        GeminiClient client = clientReturning(HttpStatus.OK, "{}");
+
+        Integer maxOutputTokens = ReflectionTestUtils.invokeMethod(
+                client,
+                "resolveMaxOutputTokens",
+                AiCallType.METADATA_ENRICHMENT,
+                true
+        );
+
+        assertEquals(1_000, maxOutputTokens);
+    }
+
+    @Test
+    void embedText_shouldParseVectorAndNormalizeConfiguredModel() {
+        GeminiClient client = clientReturning(
+                HttpStatus.OK,
+                "{\"embedding\":{\"values\":[0.1,-0.2,0.3]}}"
+        );
+
+        GeminiClient.EmbeddingResult result = client.embedText(" models/text-embedding-test ", "sample product");
+
+        assertEquals("text-embedding-test", result.model());
+        assertEquals(List.of(0.1f, -0.2f, 0.3f), result.values());
     }
 
     private GeminiClient clientReturning(HttpStatus status, String responseBody) {

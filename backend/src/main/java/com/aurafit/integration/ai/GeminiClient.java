@@ -40,6 +40,7 @@ public class GeminiClient {
     private static final int INTENT_MAX_OUTPUT_TOKENS = 300;
     private static final int RESPONSE_MAX_OUTPUT_TOKENS = 400;
     private static final int INSIGHT_MAX_OUTPUT_TOKENS = 1_000;
+    private static final int METADATA_ENRICHMENT_MAX_OUTPUT_TOKENS = 1_000;
 
     private final WebClient webClient;
     private final String apiKey;
@@ -84,6 +85,106 @@ public class GeminiClient {
 
     public String generateText(AiCallType callType, String systemPrompt, String userPrompt) {
         return generate(callType, systemPrompt, userPrompt, false);
+    }
+
+    public EmbeddingResult embedText(String embeddingModel, String text) {
+        String resolvedModel = normalizeEmbeddingModel(embeddingModel);
+        String resolvedText = text == null ? "" : text.trim();
+        int inputCharacters = characterCount(resolvedText);
+        int estimatedInputTokens = estimateTokens(resolvedText);
+
+        if (!StringUtils.hasText(apiKey)) {
+            throw new AiProviderException(
+                    AiErrorType.AUTH_ERROR,
+                    "Gemini API key is not configured.",
+                    AUTH_ERROR_MESSAGE
+            );
+        }
+        if (!StringUtils.hasText(resolvedModel)) {
+            throw new AiProviderException(
+                    AiErrorType.INVALID_RESPONSE,
+                    "Gemini embedding model is not configured.",
+                    INVALID_RESPONSE_MESSAGE
+            );
+        }
+        if (!StringUtils.hasText(resolvedText)) {
+            throw new AiProviderException(
+                    AiErrorType.INVALID_RESPONSE,
+                    "Embedding input text must not be blank.",
+                    INVALID_RESPONSE_MESSAGE
+            );
+        }
+
+        long startedAt = System.nanoTime();
+        String responseBody = null;
+        try {
+            responseBody = webClient.post()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/models/{model}:embedContent")
+                            .queryParam("key", apiKey)
+                            .build(resolvedModel))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(buildEmbeddingRequestBody(resolvedModel, resolvedText))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(timeout)
+                    .block();
+
+            JsonNode response = StringUtils.hasText(responseBody)
+                    ? objectMapper.readTree(responseBody)
+                    : null;
+            List<Float> values = extractEmbeddingValues(response);
+            log.info(
+                    "Gemini embedding completed model={} inputChars={} estimatedInputTokens={} dimension={} durationMs={}",
+                    resolvedModel,
+                    inputCharacters,
+                    estimatedInputTokens,
+                    values.size(),
+                    elapsedMillis(startedAt)
+            );
+            return new EmbeddingResult(resolvedModel, values);
+        } catch (WebClientResponseException exception) {
+            AiProviderException mappedException = mapHttpException(exception);
+            logFailure(
+                    AiCallType.EMBEDDING,
+                    inputCharacters,
+                    estimatedInputTokens,
+                    0,
+                    startedAt,
+                    exception.getStatusCode().value(),
+                    exception.getResponseBodyAsString(),
+                    mappedException.getErrorType(),
+                    exception
+            );
+            throw mappedException;
+        } catch (AiProviderException exception) {
+            logFailure(
+                    AiCallType.EMBEDDING,
+                    inputCharacters,
+                    estimatedInputTokens,
+                    0,
+                    startedAt,
+                    null,
+                    responseBody,
+                    exception.getErrorType(),
+                    exception
+            );
+            throw exception;
+        } catch (Exception exception) {
+            AiProviderException mappedException = mapNonHttpException(exception);
+            logFailure(
+                    AiCallType.EMBEDDING,
+                    inputCharacters,
+                    estimatedInputTokens,
+                    0,
+                    startedAt,
+                    null,
+                    responseBody,
+                    mappedException.getErrorType(),
+                    exception
+            );
+            throw mappedException;
+        }
     }
 
     private String generate(
@@ -327,7 +428,19 @@ public class GeminiClient {
         return requestBody;
     }
 
+    private Map<String, Object> buildEmbeddingRequestBody(String embeddingModel, String text) {
+        return Map.of(
+                "model", "models/" + embeddingModel,
+                "content", Map.of(
+                        "parts", List.of(Map.of("text", text))
+                )
+        );
+    }
+
     private int resolveMaxOutputTokens(AiCallType callType, boolean jsonResponse) {
+        if (callType == AiCallType.METADATA_ENRICHMENT) {
+            return METADATA_ENRICHMENT_MAX_OUTPUT_TOKENS;
+        }
         if (jsonResponse || callType == AiCallType.INTENT_EXTRACTION) {
             return INTENT_MAX_OUTPUT_TOKENS;
         }
@@ -335,6 +448,15 @@ public class GeminiClient {
             return INSIGHT_MAX_OUTPUT_TOKENS;
         }
         return RESPONSE_MAX_OUTPUT_TOKENS;
+    }
+
+    private String normalizeEmbeddingModel(String embeddingModel) {
+        if (!StringUtils.hasText(embeddingModel)) {
+            return "";
+        }
+        return embeddingModel.trim()
+                .replaceAll("\\s+", "")
+                .replaceFirst("^models/", "");
     }
 
     private int estimateTokens(String... values) {
@@ -395,5 +517,35 @@ public class GeminiClient {
         }
 
         return output.toString();
+    }
+
+    private List<Float> extractEmbeddingValues(JsonNode response) {
+        JsonNode values = response == null ? null : response.path("embedding").path("values");
+        if (values == null || !values.isArray()) {
+            values = response == null ? null : response.path("embeddings").path(0).path("values");
+        }
+        if (values == null || !values.isArray() || values.isEmpty()) {
+            throw new AiProviderException(
+                    AiErrorType.INVALID_RESPONSE,
+                    "Gemini embedding response does not contain embedding values.",
+                    INVALID_RESPONSE_MESSAGE
+            );
+        }
+
+        java.util.ArrayList<Float> result = new java.util.ArrayList<>(values.size());
+        values.forEach(value -> {
+            if (!value.isNumber()) {
+                throw new AiProviderException(
+                        AiErrorType.INVALID_RESPONSE,
+                        "Gemini embedding response contains a non-numeric value.",
+                        INVALID_RESPONSE_MESSAGE
+                );
+            }
+            result.add(value.floatValue());
+        });
+        return List.copyOf(result);
+    }
+
+    public record EmbeddingResult(String model, List<Float> values) {
     }
 }

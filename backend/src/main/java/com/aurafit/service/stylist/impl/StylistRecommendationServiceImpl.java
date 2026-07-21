@@ -51,6 +51,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     private static final int RELAXED_CANDIDATE_POOL_SIZE = 60;
     private static final int DAILY_USER_MESSAGE_LIMIT = 20;
     private static final int MIN_SEARCH_TOKEN_LENGTH = 3;
+    private static final int DESCRIPTION_MAX_LENGTH = 150;
     private static final String NO_RESULTS_REPLY = "Xin lỗi, hiện chưa tìm thấy sản phẩm phù hợp với yêu cầu, bạn có thể mô tả cụ thể hơn không?";
     private static final String DAILY_LIMIT_REPLY = "Bạn đã đạt giới hạn tư vấn hôm nay, vui lòng quay lại vào ngày mai";
     private static final Pattern RECOMMENDED_IDS_PATTERN = Pattern.compile(
@@ -445,6 +446,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             CostumeMetadata metadata = costume.getMetadata();
             prompt.append("ID: ").append(costume.getId())
                     .append(" | Tên: ").append(costume.getName())
+                    .append(" | Mô tả: ").append(summarizeDescription(costume.getDescription()))
                     .append(" | Giá thuê: ").append(costume.getRentalPrice())
                     .append(" | Category: ").append(costume.getCategory().getName())
                     .append(" | Style: ").append(metadata != null ? metadata.getStyle() : "không có")
@@ -462,6 +464,22 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         });
 
         return prompt.toString();
+    }
+
+    private String summarizeDescription(String description) {
+        if (!StringUtils.hasText(description)) {
+            return "không có";
+        }
+
+        String normalizedDescription = description.trim().replaceAll("\\s+", " ");
+        int characterCount = normalizedDescription.codePointCount(0, normalizedDescription.length());
+        if (characterCount <= DESCRIPTION_MAX_LENGTH) {
+            return normalizedDescription;
+        }
+
+        int contentLength = DESCRIPTION_MAX_LENGTH - 3;
+        int endIndex = normalizedDescription.offsetByCodePoints(0, contentLength);
+        return normalizedDescription.substring(0, endIndex).trim() + "...";
     }
 
     private ParsedRecommendation parseRecommendation(String rawReply, List<Costume> candidates) {
