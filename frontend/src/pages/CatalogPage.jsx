@@ -161,7 +161,7 @@ export default function CatalogPage({ onNavigate }) {
   return (
     <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8 xl:px-0">
       <div className="w-full xl:grid xl:grid-cols-[minmax(120px,1fr)_minmax(0,1440px)_minmax(120px,1fr)] xl:items-stretch" data-event-page-grid="catalog">
-        <aside className="hidden min-h-0 self-stretch xl:block" aria-label="Sự kiện nổi bật bên trái">
+        <aside className="hidden min-h-0 self-stretch xl:block xl:px-4" aria-label="Sự kiện nổi bật bên trái">
           {leftEvent && <EventSideBanner side="left" event={leftEvent} />}
         </aside>
 
@@ -250,7 +250,7 @@ export default function CatalogPage({ onNavigate }) {
           </div>
         </div>
 
-        <aside className="hidden min-h-0 self-stretch xl:block" aria-label="Sự kiện nổi bật bên phải">
+        <aside className="hidden min-h-0 self-stretch xl:block xl:px-4" aria-label="Sự kiện nổi bật bên phải">
           {rightEvent && <EventSideBanner side="right" event={rightEvent} />}
         </aside>
       </div>

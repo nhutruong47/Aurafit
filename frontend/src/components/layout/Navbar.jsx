@@ -25,10 +25,10 @@ export default function Navbar({
   ];
 
   const iconButtonClass =
-    'flex h-11 w-11 items-center justify-center transition hover:text-[#99854e] focus:outline-none focus:ring-2 focus:ring-[#99854e]/30';
+    'flex h-11 w-11 items-center justify-center text-[#f4ecdc] transition hover:text-[#eadcae] focus:outline-none focus:ring-2 focus:ring-[#eadcae]/40';
 
   return (
-    <header className="sticky top-0 z-50 h-20 w-full border-b border-[#cfc4c5] bg-[#f9f9f9]">
+    <header className="sticky top-0 z-50 h-20 w-full border-b border-[#7f7041]/70 bg-[#473a33] shadow-[0_4px_18px_rgba(41,34,29,0.16)]">
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-5 md:px-20">
         <div className="flex items-center gap-10">
           <button
@@ -48,8 +48,8 @@ export default function Navbar({
               <button
                 key={link.label}
                 onClick={link.action}
-                className={`text-[12px] font-semibold uppercase tracking-[0.15em] transition hover:text-[#99854e] ${
-                  link.page === currentPage ? 'text-[#99854e]' : 'text-[#5f5e5e]'
+                className={`text-[12px] font-semibold uppercase tracking-[0.15em] transition hover:text-[#eadcae] ${
+                  link.page === currentPage ? 'text-[#eadcae]' : 'text-[#f4ecdc]/80'
                 }`}
               >
                 {link.label}
@@ -64,7 +64,7 @@ export default function Navbar({
               onSearchOpen?.();
               setMobileMenuOpen(false);
             }}
-            className={`${iconButtonClass} ${currentPage === 'catalog' ? 'text-[#99854e]' : ''}`}
+            className={`${iconButtonClass} ${currentPage === 'catalog' ? 'text-[#eadcae]' : ''}`}
             aria-label="Tìm kiếm"
           >
             <span className="material-symbols-outlined">search</span>
@@ -74,7 +74,7 @@ export default function Navbar({
               onNavigate('chat', null, { state: { startNewChatAt: Date.now() } });
               setMobileMenuOpen(false);
             }}
-            className={`${iconButtonClass} ${currentPage === 'chat' ? 'text-[#99854e]' : ''}`}
+            className={`${iconButtonClass} ${currentPage === 'chat' ? 'text-[#eadcae]' : ''}`}
             aria-label="Trò chuyện với AuraFit Stylist"
           >
             <span
@@ -86,21 +86,21 @@ export default function Navbar({
           </button>
           <button
             onClick={() => goPage('checkout')}
-            className={`${iconButtonClass} group relative ${currentPage === 'checkout' ? 'text-[#99854e]' : ''}`}
+            className={`${iconButtonClass} group relative ${currentPage === 'checkout' ? 'text-[#eadcae]' : ''}`}
             aria-label="Giỏ hàng"
           >
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
               shopping_bag
             </span>
             {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#99854e] text-[10px] text-white">
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#c9ae68] text-[10px] font-semibold text-[#302721] ring-2 ring-[#473a33]">
                 {cartCount}
               </span>
             )}
           </button>
           <button
             onClick={() => goPage('orders')}
-            className={`${iconButtonClass} ${currentPage === 'orders' ? 'text-[#99854e]' : ''}`}
+            className={`${iconButtonClass} ${currentPage === 'orders' ? 'text-[#eadcae]' : ''}`}
             aria-label="Đơn hàng"
           >
             <span
@@ -113,7 +113,7 @@ export default function Navbar({
           {isAdmin && (
             <button
               onClick={() => goPage('adminDashboard')}
-              className={`${iconButtonClass} hidden md:flex ${currentPage === 'adminDashboard' ? 'text-[#99854e]' : ''}`}
+              className={`${iconButtonClass} hidden md:flex ${currentPage === 'adminDashboard' ? 'text-[#eadcae]' : ''}`}
               aria-label="Bảng điều khiển Admin"
               title="Bảng điều khiển Admin"
             >
@@ -125,7 +125,7 @@ export default function Navbar({
           {isStaff && (
             <button
               onClick={() => goPage('staffDashboard')}
-              className={`${iconButtonClass} hidden md:flex ${currentPage === 'staffDashboard' ? 'text-[#99854e]' : ''}`}
+              className={`${iconButtonClass} hidden md:flex ${currentPage === 'staffDashboard' ? 'text-[#eadcae]' : ''}`}
               aria-label="Bàn giao nhân viên"
               title="Bàn giao nhân viên"
             >
@@ -139,7 +139,7 @@ export default function Navbar({
           )}
           <button
             onClick={() => goPage('account')}
-            className={`${iconButtonClass} hidden md:flex ${currentPage === 'account' ? 'text-[#99854e]' : ''}`}
+            className={`${iconButtonClass} hidden md:flex ${currentPage === 'account' ? 'text-[#eadcae]' : ''}`}
             aria-label="Tài khoản"
           >
             <span
@@ -151,7 +151,7 @@ export default function Navbar({
           </button>
           <button
             onClick={() => setMobileMenuOpen((open) => !open)}
-            className="md:hidden"
+            className="flex h-11 w-11 items-center justify-center text-[#f4ecdc] transition hover:text-[#eadcae] md:hidden"
             aria-label="Mở menu di động"
           >
             <span className="material-symbols-outlined">{mobileMenuOpen ? 'close' : 'menu'}</span>
@@ -160,14 +160,14 @@ export default function Navbar({
       </div>
 
       {mobileMenuOpen && (
-        <div className="border-t border-[#cfc4c5] bg-[#f9f9f9] px-5 py-4 md:hidden">
+        <div className="border-t border-[#7f7041]/70 bg-[#473a33] px-5 py-4 shadow-lg md:hidden">
           <div className="flex flex-col gap-1">
             {navLinks.map((link) => (
               <button
                 key={link.label}
                 onClick={link.action}
                 className={`py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] ${
-                  link.page === currentPage ? 'text-[#99854e]' : 'text-[#5f5e5e]'
+                  link.page === currentPage ? 'text-[#eadcae]' : 'text-[#f4ecdc]/80'
                 }`}
               >
                 {link.label}
@@ -176,7 +176,7 @@ export default function Navbar({
             {isAdmin && (
               <button
                 onClick={() => goPage('adminDashboard')}
-                className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#99854e]"
+                className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#eadcae]"
               >
                 Admin
               </button>
@@ -184,14 +184,14 @@ export default function Navbar({
             {isStaff && (
               <button
                 onClick={() => goPage('staffDashboard')}
-                className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e]"
+                className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#f4ecdc]/80"
               >
                 Nhân viên
               </button>
             )}
             <button
               onClick={() => goPage('account')}
-              className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#5f5e5e]"
+              className="py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] text-[#f4ecdc]/80"
             >
               Tài khoản
             </button>

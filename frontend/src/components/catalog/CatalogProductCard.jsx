@@ -25,7 +25,7 @@ export default function CatalogProductCard({ costume, product, onNavigate }) {
   const finalPrice = getCostumeFinalPriceValue(item);
 
   return (
-    <article className="group flex flex-col overflow-hidden border border-[#cfc4c5] bg-white transition-all duration-500 hover:border-[#99854e]/50">
+    <article className="group flex flex-col overflow-hidden rounded-lg border border-[#cfc4c5] bg-white shadow-sm transition-all duration-500 hover:border-[#99854e]/50">
       <div onClick={() => onNavigate?.('productDetail', item)} className="relative h-64 cursor-pointer overflow-hidden">
         <img
           src={getCostumeImage(item)}

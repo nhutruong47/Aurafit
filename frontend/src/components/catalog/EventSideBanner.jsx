@@ -32,22 +32,23 @@ export default function EventSideBanner({ side, event }) {
         state={{ event }}
         aria-label={`Xem sự kiện ${event.name}`}
         data-event-banner-card={side}
-        className="group sticky top-24 flex h-[calc(100vh-7rem)] max-h-full w-full max-w-[420px] overflow-hidden border border-[#c9bb98] bg-[#29261f] shadow-[0_16px_38px_rgba(44,37,24,0.18)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(44,37,24,0.24)]"
+        className="group sticky top-24 flex h-[calc(100vh-7rem)] max-h-full w-full max-w-[420px] overflow-hidden rounded-lg border border-[#c9bb98] bg-[#29261f] shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md"
       >
         <div className="absolute inset-0 bg-gradient-to-b from-[#9b8248] via-[#6f5e35] to-[#211f1a]" />
         {event.sideBannerImageUrl && (
           <img
             src={event.sideBannerImageUrl}
             alt=""
-            className="absolute inset-0 block h-full w-full object-cover object-center transition duration-500 group-hover:scale-105"
+            className="absolute inset-0 block h-full w-full object-contain object-top"
             onError={(imageEvent) => {
               imageEvent.currentTarget.style.display = 'none';
             }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/20 to-black/90" />
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-b from-transparent via-black/55 to-black/90" />
 
-        <div className={`relative flex h-full w-full flex-col justify-end p-4 text-white ${alignmentClass}`}>
+        <div className={`relative flex h-full w-full flex-col justify-end p-4 pt-6 text-white ${alignmentClass}`}>
           <span
             className={`mb-auto inline-flex w-fit px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] shadow-sm ${
               event.isOngoing
