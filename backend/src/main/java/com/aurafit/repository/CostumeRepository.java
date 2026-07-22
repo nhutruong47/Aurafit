@@ -117,10 +117,42 @@ public interface CostumeRepository extends JpaRepository<Costume, Long>, JpaSpec
     @Query("""
             SELECT DISTINCT c
             FROM Costume c
+            LEFT JOIN FETCH c.metadata metadata
+            LEFT JOIN FETCH metadata.tags
+            WHERE c.status = :status
+            ORDER BY c.id
+            """)
+    List<Costume> findAllByStatusWithMetadataAndTags(@Param("status") CostumeStatus status);
+
+    @Query("""
+            SELECT DISTINCT c
+            FROM Costume c
             JOIN FETCH c.category
             LEFT JOIN FETCH c.items
             WHERE c.id IN :ids
             """)
     List<Costume> findAllByIdWithItems(@Param("ids") List<Long> ids);
+
+    @Query("""
+            SELECT DISTINCT costume
+            FROM Costume costume
+            JOIN FETCH costume.category category
+            WHERE costume.status = :status
+              AND category.isActive = true
+              AND EXISTS (
+                    SELECT demandCategory.id
+                    FROM Category demandCategory
+                    WHERE demandCategory.id IN :categoryIds
+                      AND (
+                            category.id = demandCategory.id
+                            OR category.path LIKE CONCAT(demandCategory.path, '/%')
+                      )
+              )
+            ORDER BY costume.id ASC
+            """)
+    List<Costume> findAllActiveByDemandCategoryIds(
+            @Param("categoryIds") List<Long> categoryIds,
+            @Param("status") CostumeStatus status
+    );
 
 }

@@ -5,10 +5,12 @@ import CatalogFilterSidebar from '../components/catalog/CatalogFilterSidebar';
 import CatalogProductCard from '../components/catalog/CatalogProductCard';
 import CatalogSearchBar from '../components/catalog/CatalogSearchBar';
 import CatalogSortBar from '../components/catalog/CatalogSortBar';
+import EventSideBanner from '../components/catalog/EventSideBanner';
 import ShopPagination from '../components/shop/ShopPagination';
 import EmptyState from '../components/ui/EmptyState';
 import { useCatalogCategories } from '../hooks/useCatalogCategories';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
+import { useFeaturedEvents } from '../hooks/useFeaturedEvents';
 import { logUserInteraction } from '../services/interactionsService';
 import { buildAncestorPaths, buildSelectedCategoryState } from '../utils/catalogCategory';
 import { getCostumeTags } from '../utils/costumeUtils';
@@ -21,6 +23,7 @@ export default function CatalogPage({ onNavigate }) {
   const [searchParams] = useSearchParams();
   const [sortBy, setSortBy] = useState('id');
   const [sortDir, setSortDir] = useState('desc');
+  const { leftEvent, rightEvent } = useFeaturedEvents(2);
 
   const initialCategoryPath = useMemo(
     () => searchParams.get('categoryPath') || location.state?.categoryPath || null,
@@ -156,90 +159,101 @@ export default function CatalogPage({ onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1440px]">
-        <div className="mb-10">
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
-          <h1 className="mb-4 font-serif text-4xl font-normal italic text-black sm:text-5xl">Bộ sưu tập trang phục</h1>
-          <p className="max-w-2xl text-lg leading-8 text-[#5f5e5e]">
-            Khám phá bộ sưu tập trang phục cao cấp, đa dạng phong cách, giúp bạn tỏa sáng trong mọi khoảnh khắc.
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8 xl:px-0">
+      <div className="w-full xl:grid xl:grid-cols-[minmax(120px,1fr)_minmax(0,1440px)_minmax(120px,1fr)] xl:items-stretch" data-event-page-grid="catalog">
+        <aside className="hidden min-h-0 self-stretch xl:block xl:px-4" aria-label="Sự kiện nổi bật bên trái">
+          {leftEvent && <EventSideBanner side="left" event={leftEvent} />}
+        </aside>
 
-        <div className="flex flex-col gap-8 lg:flex-row">
-          <CatalogFilterSidebar
-            categoryTree={categoryTree}
-            availableTags={availableTags}
-            selectedFilter={selectedFilter}
-            expandedPaths={expandedPaths}
-            isMobileFilterOpen={isMobileFilterOpen}
-            onSetMobileFilterOpen={setIsMobileFilterOpen}
-            onClearFilters={clearFilters}
-            onApplyFilter={applyFilter}
-            onToggleCategory={toggleCategory}
-          />
+        <div className="mx-auto w-full min-w-0 max-w-[1440px] xl:mx-0" data-event-page-content="catalog">
+          <div className="mb-10">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
+            <h1 className="mb-4 font-serif text-4xl font-normal italic text-black sm:text-5xl">Bộ sưu tập trang phục</h1>
+            <p className="max-w-2xl text-lg leading-8 text-[#5f5e5e]">
+              Khám phá bộ sưu tập trang phục cao cấp, đa dạng phong cách, giúp bạn tỏa sáng trong mọi khoảnh khắc.
+            </p>
+          </div>
 
-          <div className="flex-1">
-            <CatalogSearchBar
-              searchInputRef={searchInputRef}
-              searchTerm={searchTerm}
-              onSearchTermChange={setSearchTerm}
-              onClearSearch={() => setSearchTerm('')}
+          <div className="flex flex-col gap-8 lg:flex-row">
+            <CatalogFilterSidebar
+              categoryTree={categoryTree}
+              availableTags={availableTags}
+              selectedFilter={selectedFilter}
+              expandedPaths={expandedPaths}
+              isMobileFilterOpen={isMobileFilterOpen}
+              onSetMobileFilterOpen={setIsMobileFilterOpen}
+              onClearFilters={clearFilters}
+              onApplyFilter={applyFilter}
+              onToggleCategory={toggleCategory}
             />
 
-            <CatalogSortBar
-              sortBy={sortBy}
-              sortDir={sortDir}
-              onSortChange={(nextSortBy, nextSortDir) => {
-                setSortBy(nextSortBy);
-                setSortDir(nextSortDir);
-              }}
-            />
+            <div className="flex-1">
+              <CatalogSearchBar
+                searchInputRef={searchInputRef}
+                searchTerm={searchTerm}
+                onSearchTermChange={setSearchTerm}
+                onClearSearch={() => setSearchTerm('')}
+              />
 
-            <CatalogActiveFilters selectedFilter={selectedFilter} />
+              <CatalogSortBar
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSortChange={(nextSortBy, nextSortDir) => {
+                  setSortBy(nextSortBy);
+                  setSortDir(nextSortDir);
+                }}
+              />
 
-            <div className="mb-6">
-              <p className="text-sm text-[#5f5e5e]">
-                {isLoading || isLoadingCategories ? (
-                  'Đang tải sản phẩm từ database...'
-                ) : (
-                  <>
-                    Đang hiển thị <span className="font-medium text-black">{displayedCostumes.length}</span> /{' '}
-                    <span className="font-medium text-black">{displayedTotal}</span> trang phục
-                  </>
-                )}
-              </p>
-              {(error || categoryError) && (
-                <p className="mt-2 text-sm text-red-600">
-                  Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại sau.
+              <CatalogActiveFilters selectedFilter={selectedFilter} />
+
+              <div className="mb-6">
+                <p className="text-sm text-[#5f5e5e]">
+                  {isLoading || isLoadingCategories ? (
+                    'Đang tải sản phẩm từ database...'
+                  ) : (
+                    <>
+                      Đang hiển thị <span className="font-medium text-black">{displayedCostumes.length}</span> /{' '}
+                      <span className="font-medium text-black">{displayedTotal}</span> trang phục
+                    </>
+                  )}
                 </p>
+                {(error || categoryError) && (
+                  <p className="mt-2 text-sm text-red-600">
+                    Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại sau.
+                    Chưa kết nối được backend/database. Vui lòng chạy BE ở port 8080 rồi tải lại trang.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {displayedCostumes.map((costume) => (
+                  <CatalogProductCard key={costume.id} costume={costume} onNavigate={onNavigate} />
+                ))}
+              </div>
+
+              {displayedTotal === 0 && !isLoading && !isLoadingCategories && (
+                <EmptyState
+                  className="py-20"
+                  icon="search_off"
+                  title="Không tìm thấy trang phục"
+                  message="Thử chọn danh mục khác hoặc xóa bộ lọc để xem thêm dữ liệu thật từ database."
+                  actionLabel="Xóa tất cả bộ lọc"
+                  onAction={clearFilters}
+                />
+              )}
+
+              {displayedTotalPages > 1 && !isLoading && !isLoadingCategories && !selectedFilter.tag && (
+                <div className="mt-12">
+                  <ShopPagination currentPage={activePage} totalPages={displayedTotalPages} onPageChange={setActivePage} />
+                </div>
               )}
             </div>
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {displayedCostumes.map((costume) => (
-                <CatalogProductCard key={costume.id} costume={costume} onNavigate={onNavigate} />
-              ))}
-            </div>
-
-            {displayedTotal === 0 && !isLoading && !isLoadingCategories && (
-              <EmptyState
-                className="py-20"
-                icon="search_off"
-                title="Không tìm thấy trang phục"
-                message="Thử chọn danh mục khác hoặc xóa bộ lọc để xem thêm dữ liệu thật từ database."
-                actionLabel="Xóa tất cả bộ lọc"
-                onAction={clearFilters}
-              />
-            )}
-
-            {displayedTotalPages > 1 && !isLoading && !isLoadingCategories && !selectedFilter.tag && (
-              <div className="mt-12">
-                <ShopPagination currentPage={activePage} totalPages={displayedTotalPages} onPageChange={setActivePage} />
-              </div>
-            )}
           </div>
         </div>
+
+        <aside className="hidden min-h-0 self-stretch xl:block xl:px-4" aria-label="Sự kiện nổi bật bên phải">
+          {rightEvent && <EventSideBanner side="right" event={rightEvent} />}
+        </aside>
       </div>
     </div>
   );

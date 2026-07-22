@@ -27,6 +27,8 @@ import com.aurafit.enums.CartStatus;
 import com.aurafit.dto.response.InventorySummaryDTO;
 import com.aurafit.service.CostumeMetadataService;
 import com.aurafit.service.CostumeService;
+import com.aurafit.service.EventPricingService;
+import com.aurafit.service.EventPricingService.ActiveEventOffer;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Collections;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -60,6 +63,7 @@ public class CostumeServiceImpl implements CostumeService {
     private final InventoryRepository inventoryRepository;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final EventPricingService eventPricingService;
 
     public CostumeServiceImpl(CostumeRepository costumeRepository,
                               CategoryRepository categoryRepository,
@@ -67,7 +71,8 @@ public class CostumeServiceImpl implements CostumeService {
                               CostumeMetadataService costumeMetadataService,
                               InventoryRepository inventoryRepository,
                               CartRepository cartRepository,
-                              CartItemRepository cartItemRepository) {
+                              CartItemRepository cartItemRepository,
+                              EventPricingService eventPricingService) {
         this.costumeRepository = costumeRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
@@ -75,6 +80,7 @@ public class CostumeServiceImpl implements CostumeService {
         this.inventoryRepository = inventoryRepository;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
+        this.eventPricingService = eventPricingService;
     }
 
     @Override
@@ -191,10 +197,11 @@ public class CostumeServiceImpl implements CostumeService {
                 pageable
         );
 
-        return PaginatedResponse.from(
-                page,
-                CatalogCostumeDTO::fromEntity
-        );
+        Map<Long, ActiveEventOffer> offersByCostumeId = loadActiveEventOffers(page.getContent());
+        return PaginatedResponse.from(page, costume -> toCatalogCostumeDTO(
+                costume,
+                offersByCostumeId.get(costume.getId())
+        ));
     }
 
     @Override
@@ -214,7 +221,20 @@ public class CostumeServiceImpl implements CostumeService {
             }
         }
 
-        return CostumeDTO.fromEntity(costume, inventorySummary);
+        ActiveEventOffer activeOffer = eventPricingService.findActiveOffers(
+                List.of(costume.getId()),
+                LocalDateTime.now()
+        ).get(costume.getId());
+
+        return activeOffer == null
+                ? CostumeDTO.fromEntity(costume, inventorySummary)
+                : CostumeDTO.fromEntity(
+                        costume,
+                        inventorySummary,
+                        activeOffer.discountPercent(),
+                        activeOffer.finalPrice(),
+                        activeOffer.eventName()
+                );
     }
 
     @Override
@@ -251,6 +271,28 @@ public class CostumeServiceImpl implements CostumeService {
         }
 
         return category.getPath();
+    }
+
+    private Map<Long, ActiveEventOffer> loadActiveEventOffers(List<Costume> costumes) {
+        if (costumes == null || costumes.isEmpty()) {
+            return Map.of();
+        }
+        return eventPricingService.findActiveOffers(
+                costumes.stream().map(Costume::getId).toList(),
+                LocalDateTime.now()
+        );
+    }
+
+    private CatalogCostumeDTO toCatalogCostumeDTO(Costume costume, ActiveEventOffer activeOffer) {
+        if (activeOffer == null) {
+            return CatalogCostumeDTO.fromEntity(costume);
+        }
+        return CatalogCostumeDTO.fromEntity(
+                costume,
+                activeOffer.discountPercent(),
+                activeOffer.finalPrice(),
+                activeOffer.eventName()
+        );
     }
 
     private String resolveSortField(String sortBy) {

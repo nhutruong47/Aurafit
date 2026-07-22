@@ -5,14 +5,17 @@ import { calculateDurationMultiplier } from '../checkout/checkoutData';
 import {
   fallbackCostumeImage,
   getCostumeDepositPriceValue,
+  getCostumeDiscountPercentValue,
   getCostumeDisplayCategory,
   getCostumeImages,
+  getCostumeFinalPriceValue,
   getCostumeInventorySummary,
   getCostumeItems,
   getCostumeRentalPriceValue,
   getCostumeReservedCount,
   getCostumeSubcategory,
   getCostumeTag,
+  hasCostumeDiscount,
   isCostumeAvailable,
   toCartItemFromCostume,
 } from '../../utils/costumeUtils';
@@ -52,6 +55,9 @@ export default function ProductHero({
   const tag = getCostumeTag(product);
   const rentalPriceValue = getCostumeRentalPriceValue(product);
   const depositPriceValue = getCostumeDepositPriceValue(product);
+  const discounted = hasCostumeDiscount(product);
+  const discountPercent = getCostumeDiscountPercentValue(product);
+  const finalPriceValue = getCostumeFinalPriceValue(product);
 
   const allUniqueSizes = useMemo(
     () => [...new Set(availableItems.map((item) => item.size || ''))],
@@ -279,10 +285,17 @@ export default function ProductHero({
             <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">
               Giá thuê
             </span>
-            <div className="flex items-baseline">
-              <span className="font-serif text-xl text-black">{formatCurrency(rentalPriceValue)}</span>
-              <span className="text-sm font-normal text-gray-500 lowercase ml-1">/ ngày</span>
-            </div>
+            {discounted ? (
+              <div className="space-y-1">
+                <span className="block text-xs text-[#777777] line-through">{formatCurrency(rentalPriceValue)} / ngày</span>
+                <span className="block font-serif text-xl text-[#7f7041]">{formatCurrency(finalPriceValue)} / ngày</span>
+              </div>
+            ) : (
+              <div className="flex items-baseline">
+                <span className="font-serif text-xl text-black">{formatCurrency(rentalPriceValue)}</span>
+                <span className="text-sm font-normal text-gray-500 lowercase ml-1">/ ngày</span>
+              </div>
+            )}
             <div className="text-xs text-gray-500 mt-2 flex flex-col space-y-1">
               <span>• Thuê 1-2 ngày: Hệ số {calculateDurationMultiplier(2).toFixed(1)}x (Giá gốc)</span>
               <span>• Từ 3 ngày trở lên: +{(calculateDurationMultiplier(3) - calculateDurationMultiplier(2)).toFixed(1)}x mỗi ngày</span>
@@ -295,6 +308,12 @@ export default function ProductHero({
             <span className="font-serif text-xl text-[#99854e]">{formatCurrency(depositPriceValue)}</span>
           </div>
         </div>
+
+        {discounted && (
+          <div className="mb-3 inline-flex w-fit border border-[#c8b378] bg-[#fbf7e8] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#7f7041]">
+            {product.eventName ? `${product.eventName} · ` : ''}Giảm {discountPercent}%
+          </div>
+        )}
 
         {allUniqueSizes.length > 0 && !(allUniqueSizes.length === 1 && allUniqueSizes[0] === '') && (
           <div className="mb-3">

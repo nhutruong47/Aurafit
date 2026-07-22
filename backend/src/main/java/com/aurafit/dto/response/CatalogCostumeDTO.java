@@ -11,6 +11,9 @@ public record CatalogCostumeDTO(
         String slug,
         BigDecimal rentalPrice,
         BigDecimal depositPrice,
+        BigDecimal discountPercent,
+        BigDecimal finalPrice,
+        String eventName,
         String imageUrl,
         String categoryName,
         boolean isAvailable
@@ -42,9 +45,34 @@ public record CatalogCostumeDTO(
                 costume.getSlug(),
                 costume.getRentalPrice(),
                 costume.getDepositPrice(),
+                null,
+                null,
+                null,
                 costume.getPrimaryImageUrl(),
                 costume.getCategory().getName(),
                 isAvailable
+        );
+    }
+
+    public static CatalogCostumeDTO fromEntity(
+            Costume costume,
+            BigDecimal discountPercent,
+            BigDecimal finalPrice,
+            String eventName
+    ) {
+        CatalogCostumeDTO base = fromEntity(costume);
+        return new CatalogCostumeDTO(
+                base.id(),
+                base.name(),
+                base.slug(),
+                base.rentalPrice(),
+                base.depositPrice(),
+                discountPercent,
+                finalPrice,
+                eventName,
+                base.imageUrl(),
+                base.categoryName(),
+                base.isAvailable()
         );
     }
 }

@@ -65,6 +65,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/costumes/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/clubs/**").permitAll()
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/events/active",
+                    "/api/events/upcoming-and-active"
+                ).permitAll()
                 .requestMatchers("/api/stylist/**").permitAll()
                 .requestMatchers("/api/admin/analytics/**").hasAnyRole("ADMIN", "STAFF")
                 // Swagger UI & OpenAPI docs

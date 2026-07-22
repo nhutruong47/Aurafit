@@ -7,6 +7,7 @@ import Pagination from './Pagination';
 
 export default function AdminProductsSection({
   categories,
+  isAdmin,
   filteredProducts,
   productForm,
   editingProductId,
@@ -16,6 +17,11 @@ export default function AdminProductsSection({
   productMessage,
   productError,
   isSavingProduct,
+  isRunningEnrichmentBatch,
+  enrichmentBatchResult,
+  productEnrichment,
+  isLoadingProductEnrichment,
+  isEnrichingProduct,
   onProductSearchChange,
   onProductCategoryFilterChange,
   onProductStatusFilterChange,
@@ -24,6 +30,8 @@ export default function AdminProductsSection({
   onEditProduct,
   onResetProductForm,
   onSubmitProduct,
+  onRunAllEnrichment,
+  onEnrichProduct,
   page,
   totalPages,
   totalElements,
@@ -54,21 +62,57 @@ export default function AdminProductsSection({
     }
   };
 
+  const handleRunAllEnrichment = async () => {
+    const confirmed = window.confirm(
+      'AI sẽ bổ sung thông tin hỗ trợ tư vấn cho tất cả sản phẩm đang hiển thị. Quá trình này có thể mất nhiều thời gian. Bạn có chắc muốn tiếp tục?'
+    );
+    if (confirmed) {
+      await onRunAllEnrichment();
+    }
+  };
+
   return (
     <>
       {/* Full-width data view */}
       <Panel
         title="Quản lý sản phẩm"
         action={
-          <button
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            Đăng sản phẩm
-          </button>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={handleRunAllEnrichment}
+                disabled={isRunningEnrichmentBatch}
+                className="flex items-center gap-2 border border-[#7f7041] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6d6037] transition hover:bg-[#7f7041] hover:text-white disabled:cursor-wait disabled:opacity-60"
+              >
+                <span className={`material-symbols-outlined text-[17px] ${isRunningEnrichmentBatch ? 'animate-spin' : ''}`}>
+                  {isRunningEnrichmentBatch ? 'progress_activity' : 'auto_awesome'}
+                </span>
+                {isRunningEnrichmentBatch ? 'AI đang xử lý...' : 'Cập nhật thông tin AI'}
+              </button>
+            )}
+            <button
+              onClick={handleOpenCreate}
+              className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Đăng sản phẩm
+            </button>
+          </div>
         }
       >
+        {enrichmentBatchResult && (
+          <div className={`mb-5 border px-4 py-3 text-sm ${
+            enrichmentBatchResult.failureCount > 0
+              ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
+              : 'border-green-200 bg-green-50 text-green-700'
+          }`}>
+            Đã cập nhật: {enrichmentBatchResult.successCount}/{enrichmentBatchResult.processedCount} sản phẩm thành công
+            {enrichmentBatchResult.failureCount > 0 && (
+              <> · Lỗi: {enrichmentBatchResult.failedCostumeIds.join(', ')}</>
+            )}
+          </div>
+        )}
         {/* Filter bar */}
         <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_200px_160px]">
           <label className="relative block">
@@ -78,7 +122,7 @@ export default function AdminProductsSection({
             <input
               value={productSearch}
               onChange={(event) => onProductSearchChange(event.target.value)}
-              placeholder="Tìm theo tên, mô tả, metadata..."
+              placeholder="Tìm theo tên, mô tả, đặc điểm..."
               className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
             />
           </label>
@@ -119,7 +163,7 @@ export default function AdminProductsSection({
                     <th className="px-4 py-3">Danh mục</th>
                     <th className="px-4 py-3">Giá thuê</th>
                     <th className="px-4 py-3 w-[80px] text-center">Kho</th>
-                    <th className="px-4 py-3">Metadata</th>
+                    <th className="px-4 py-3">Đặc điểm</th>
                     <th className="px-4 py-3 w-[100px]">Trạng thái</th>
                     <th className="px-4 py-3 w-[80px] text-right">Sửa</th>
                   </tr>
@@ -205,6 +249,7 @@ export default function AdminProductsSection({
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         title={editingProductId ? 'Sửa sản phẩm' : 'Đăng sản phẩm mới'}
+        isAdmin={isAdmin}
         editingProductId={editingProductId}
         productForm={productForm}
         onProductFieldChange={onProductFieldChange}
@@ -213,6 +258,10 @@ export default function AdminProductsSection({
         isSavingProduct={isSavingProduct}
         productMessage={productMessage}
         productError={productError}
+        productEnrichment={productEnrichment}
+        isLoadingProductEnrichment={isLoadingProductEnrichment}
+        isEnrichingProduct={isEnrichingProduct}
+        onEnrichProduct={onEnrichProduct}
         categories={categories}
       />
     </>

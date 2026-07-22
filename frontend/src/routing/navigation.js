@@ -29,6 +29,10 @@ export function getCurrentPageFromPath(pathname) {
     return 'productDetail';
   }
 
+  if (pathname.startsWith('/events/')) {
+    return 'events';
+  }
+
   if (pathname === '/direct-rental') {
     return 'directRental';
   }

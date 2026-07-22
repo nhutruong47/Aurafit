@@ -12,6 +12,7 @@ import CosplayPage from './pages/CosplayPage';
 import CostumeDetailPage from './pages/CostumeDetailPage';
 import CustomerCarePage from './pages/CustomerCarePage';
 import EventsPage from './pages/EventsPage';
+import EventDetailPlaceholderPage from './pages/EventDetailPlaceholderPage';
 import HomePage from './pages/HomePage';
 import PaymentPage from './pages/PaymentPage';
 import RentalOrderCheckoutPage from './pages/RentalOrderCheckoutPage';
@@ -353,6 +354,7 @@ function App() {
         <Route path="/yearbook" element={<YearbookPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/cosplay" element={<CosplayPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/events" element={<EventsPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/events/:eventSlug" element={<EventDetailPlaceholderPage />} />
         <Route path="/traditional" element={<TraditionalPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
         <Route path="/care" element={<CustomerCarePage onNavigate={handleNavigate} />} />
         <Route path="/account" element={<UserAccountPage currentUser={currentUser} onAuthChange={handleAuthChange} onNavigate={handleNavigate} />} />
