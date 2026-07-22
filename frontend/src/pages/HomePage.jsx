@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HomeCategoryMosaic from '../components/home/HomeCategoryMosaic';
+import HomeActiveEventsSection from '../components/home/HomeActiveEventsSection';
 import HomeFeaturedSection from '../components/home/HomeFeaturedSection';
 import HomeHero from '../components/home/HomeHero';
 import HomeInsiderSection from '../components/home/HomeInsiderSection';
@@ -7,6 +8,7 @@ import HomeServicesSection from '../components/home/HomeServicesSection';
 import HomeStyleSlider from '../components/home/HomeStyleSlider';
 import HomeTrendingSection from '../components/home/HomeTrendingSection';
 import HomeTrustSection from '../components/home/HomeTrustSection';
+import { useActiveEvents } from '../hooks/useActiveEvents';
 import { useCatalogCostumes } from '../hooks/useCatalogCostumes';
 import { fetchRecommendedForYou, fetchSeasonalCostumes } from '../services/costumeService';
 import { getCostumeRootCategory } from '../utils/costumeUtils';
@@ -35,6 +37,11 @@ export default function HomePage({ onNavigate, onAddToCart }) {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [isRecommendedLoading, setIsRecommendedLoading] = useState(false);
   const [recommendedError, setRecommendedError] = useState('');
+  const {
+    events: activeEvents,
+    isLoading: isActiveEventsLoading,
+    error: activeEventsError,
+  } = useActiveEvents(3);
 
   const products = useMemo(
     () => ({
@@ -146,6 +153,11 @@ export default function HomePage({ onNavigate, onAddToCart }) {
     <div className="bg-[#f9f9f9] text-[#1a1c1c]">
       <HomeHero onNavigate={onNavigate} />
       <HomeServicesSection />
+      <HomeActiveEventsSection
+        events={activeEvents}
+        isLoading={isActiveEventsLoading}
+        error={activeEventsError}
+      />
       <HomeFeaturedSection
         activeTab={activeTab}
         isLoading={isLoading}
