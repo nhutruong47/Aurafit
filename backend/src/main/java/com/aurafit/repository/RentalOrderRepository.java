@@ -14,6 +14,8 @@ import java.util.Optional;
 
 public interface RentalOrderRepository extends JpaRepository<RentalOrder, Long> {
 
+    List<RentalOrder> findBySessionId(String sessionId);
+
     Optional<RentalOrder> findByGhnOrderCode(String ghnOrderCode);
 
     Optional<RentalOrder> findByGhnReturnOrderCode(String ghnReturnOrderCode);

@@ -48,4 +48,17 @@ public interface RentalOrderDetailRepository extends JpaRepository<RentalOrderDe
             ORDER BY SUM(d.rentalDays) DESC
             """)
     List<com.aurafit.dto.response.TopCostumeDTO> findTopCostumes(Pageable pageable);
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END FROM RentalOrderDetail d " +
+           "JOIN d.rentalOrder ro " +
+           "WHERE d.costumeItem.id = :costumeItemId " +
+           "  AND ro.id <> :excludeOrderId " +
+           "  AND ro.status IN (com.aurafit.enums.OrderStatus.PENDING, com.aurafit.enums.OrderStatus.CONFIRMED, com.aurafit.enums.OrderStatus.SHIPPING, com.aurafit.enums.OrderStatus.RENTED, com.aurafit.enums.OrderStatus.RETURNING) " +
+           "  AND d.rentalStartDate <= :bufferedReqEnd " +
+           "  AND d.rentalEndDate >= :bufferedReqStart")
+    boolean existsOverlappingBookingForCostumeItem(
+            @Param("costumeItemId") Long costumeItemId,
+            @Param("excludeOrderId") Long excludeOrderId,
+            @Param("bufferedReqStart") java.time.LocalDate bufferedReqStart,
+            @Param("bufferedReqEnd") java.time.LocalDate bufferedReqEnd
+    );
 }

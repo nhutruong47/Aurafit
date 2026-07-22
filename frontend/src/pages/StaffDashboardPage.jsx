@@ -237,6 +237,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
           activeOrder={activeOrder} 
           setIsModalOpen={setIsModalOpen} 
           setPreviewImage={setPreviewImage} 
+          onReload={loadOrders}
         />
       )}
 

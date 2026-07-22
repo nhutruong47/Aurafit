@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -86,18 +87,31 @@ public class PaymentServiceImpl implements PaymentService {
                                                         + order.getStatus());
                 }
 
-                BigDecimal amountPayable = order.getTotalRentalPrice()
-                                .add(order.getTotalDeposit())
-                                .subtract(order.getDiscountAmount())
-                                .add(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO);
+                BigDecimal amountPayable = BigDecimal.ZERO;
+                List<RentalOrder> sessionOrders = order.getSessionId() != null ? rentalOrderRepository.findBySessionId(order.getSessionId()) : null;
+                if (sessionOrders != null && !sessionOrders.isEmpty()) {
+                        for (RentalOrder o : sessionOrders) {
+                                amountPayable = amountPayable
+                                                .add(o.getTotalRentalPrice())
+                                                .add(o.getTotalDeposit())
+                                                .subtract(o.getDiscountAmount())
+                                                .add(o.getShippingFee() != null ? o.getShippingFee() : BigDecimal.ZERO);
+                        }
+                } else {
+                        amountPayable = order.getTotalRentalPrice()
+                                        .add(order.getTotalDeposit())
+                                        .subtract(order.getDiscountAmount())
+                                        .add(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO);
+                }
 
+                final BigDecimal finalAmountPayable = amountPayable;
                 Payment payment = paymentRepository.findByRentalOrderIdAndStatusAndType(
                                 Long.valueOf(request.orderId()), PaymentStatus.PENDING,
                                 com.aurafit.enums.PaymentType.PAYMENT)
                                 .orElseGet(() -> {
                                         Payment newPayment = Payment.builder()
                                                         .rentalOrder(order)
-                                                        .amount(amountPayable)
+                                                        .amount(finalAmountPayable)
                                                         .method(PaymentMethod.BANKING)
                                                         .type(com.aurafit.enums.PaymentType.PAYMENT)
                                                         .status(PaymentStatus.PENDING)
@@ -205,19 +219,27 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentRepository.save(payment);
                 log.info("Payment updated to PAID");
 
-                RentalOrder order = payment.getRentalOrder();
-                order.setStatus(OrderStatus.CONFIRMED);
-                rentalOrderRepository.save(order);
-                log.info("Order status updated to CONFIRMED");
+                RentalOrder mainOrder = payment.getRentalOrder();
+                List<RentalOrder> ordersToConfirm = new java.util.ArrayList<>();
+                List<RentalOrder> sessionOrders = mainOrder.getSessionId() != null ? rentalOrderRepository.findBySessionId(mainOrder.getSessionId()) : null;
+                if (sessionOrders != null && !sessionOrders.isEmpty()) {
+                        ordersToConfirm.addAll(sessionOrders);
+                } else {
+                        ordersToConfirm.add(mainOrder);
+                }
 
-                // Promote inventory hold to active rental now that payment has cleared.
-                for (RentalOrderDetail detail : order.getDetails()) {
-                        CostumeItem item = detail.getCostumeItem();
-                        if (item != null && item.getStatus() == ItemStatus.RESERVED) {
-                                item.setStatus(ItemStatus.RENTED);
-                                costumeItemRepository.save(item);
+                for (RentalOrder o : ordersToConfirm) {
+                        o.setStatus(OrderStatus.CONFIRMED);
+                        rentalOrderRepository.save(o);
+                        for (RentalOrderDetail detail : o.getDetails()) {
+                                CostumeItem item = detail.getCostumeItem();
+                                if (item != null && item.getStatus() == ItemStatus.RESERVED) {
+                                        item.setStatus(ItemStatus.RENTED);
+                                        costumeItemRepository.save(item);
+                                }
                         }
                 }
+                log.info("Order status updated to CONFIRMED");
                 log.info("SUCCESS: Webhook processed completely");
         }
 
@@ -244,16 +266,24 @@ public class PaymentServiceImpl implements PaymentService {
                 payment.setTransactionId(webhookBody.code());
                 paymentRepository.save(payment);
 
-                RentalOrder order = payment.getRentalOrder();
-                order.setStatus(OrderStatus.CONFIRMED);
-                rentalOrderRepository.save(order);
+                RentalOrder mainOrder = payment.getRentalOrder();
+                List<RentalOrder> ordersToConfirm = new java.util.ArrayList<>();
+                List<RentalOrder> sessionOrders = mainOrder.getSessionId() != null ? rentalOrderRepository.findBySessionId(mainOrder.getSessionId()) : null;
+                if (sessionOrders != null && !sessionOrders.isEmpty()) {
+                        ordersToConfirm.addAll(sessionOrders);
+                } else {
+                        ordersToConfirm.add(mainOrder);
+                }
 
-                // Mirror the real webhook: flip the held inventory to RENTED on test path too.
-                for (RentalOrderDetail detail : order.getDetails()) {
-                        CostumeItem item = detail.getCostumeItem();
-                        if (item != null && item.getStatus() == ItemStatus.RESERVED) {
-                                item.setStatus(ItemStatus.RENTED);
-                                costumeItemRepository.save(item);
+                for (RentalOrder o : ordersToConfirm) {
+                        o.setStatus(OrderStatus.CONFIRMED);
+                        rentalOrderRepository.save(o);
+                        for (RentalOrderDetail detail : o.getDetails()) {
+                                CostumeItem item = detail.getCostumeItem();
+                                if (item != null && item.getStatus() == ItemStatus.RESERVED) {
+                                        item.setStatus(ItemStatus.RENTED);
+                                        costumeItemRepository.save(item);
+                                }
                         }
                 }
         }

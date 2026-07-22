@@ -161,7 +161,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       rentalSubtotal: Number(order?.totalRentalPrice || 0),
       deliveryFee: Number(order?.shippingFee || 0),
       refundableDeposit: Number(order?.totalDeposit || 0),
-      orderTotal: Number(order?.finalAmount || 0),
+      orderTotal: Number(useCheckoutStore.getState().pendingSessionAmount || order?.finalAmount || 0),
     }),
     [order]
   );

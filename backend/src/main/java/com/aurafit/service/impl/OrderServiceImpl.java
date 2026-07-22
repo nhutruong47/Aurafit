@@ -2,6 +2,7 @@ package com.aurafit.service.impl;
 
 import com.aurafit.dto.request.CheckoutItemRequest;
 import com.aurafit.dto.request.CheckoutRequest;
+import com.aurafit.dto.response.CheckoutSessionResponse;
 import com.aurafit.dto.response.OrderResponse;
 import com.aurafit.dto.response.OrderSummaryResponse;
 import com.aurafit.dto.response.StaffOrderDetailResponse;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -47,6 +49,7 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentRepository paymentRepository;
     private final PricingEngineService pricingEngineService;
     private final com.aurafit.service.GhnIntegrationService ghnIntegrationService;
+    private final PromotionRepository promotionRepository;
 
     public OrderServiceImpl(RentalOrderRepository rentalOrderRepository,
                             CartRepository cartRepository,
@@ -58,7 +61,8 @@ public class OrderServiceImpl implements OrderService {
                             RentalOrderDetailRepository rentalOrderDetailRepository,
                             PaymentRepository paymentRepository,
                             PricingEngineService pricingEngineService,
-                            com.aurafit.service.GhnIntegrationService ghnIntegrationService) {
+                            com.aurafit.service.GhnIntegrationService ghnIntegrationService,
+                            PromotionRepository promotionRepository) {
         this.rentalOrderRepository = rentalOrderRepository;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
@@ -70,6 +74,7 @@ public class OrderServiceImpl implements OrderService {
         this.paymentRepository = paymentRepository;
         this.pricingEngineService = pricingEngineService;
         this.ghnIntegrationService = ghnIntegrationService;
+        this.promotionRepository = promotionRepository;
     }
 
     /**
@@ -81,15 +86,13 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public OrderResponse placeOrder(Long userId, CheckoutRequest request) {
+    public CheckoutSessionResponse placeOrder(Long userId, CheckoutRequest request) {
 
-        // ── Step 1: Validate item list is present and non-empty ─────────────────
         List<CheckoutItemRequest> items = request.items();
         if (items == null || items.isEmpty()) {
             throw new BadRequestException("Danh sách sản phẩm thanh toán không được để trống.");
         }
 
-        // ── Step 2: Load authenticated user (fail-fast) ────────────────────────
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
@@ -97,129 +100,117 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Tài khoản của bạn đã bị vô hiệu hóa do tỷ lệ hủy đơn bất thường. Vui lòng liên hệ bộ phận CSKH.");
         }
 
-        // ── Step 3: Accumulation buckets ───────────────────────────────────────
-        BigDecimal totalRentalPrice = BigDecimal.ZERO;
-        BigDecimal totalDeposit = BigDecimal.ZERO;
-        LocalDateTime orderStartDate = null;
-        LocalDateTime orderEndDate = null;
-        List<RentalOrderDetail> orderDetails = new ArrayList<>();
+        Map<String, List<CheckoutItemRequest>> groupedItems = items.stream()
+                .collect(Collectors.groupingBy(item -> item.rentalStartDate().toString() + "_" + item.rentalEndDate().toString()));
 
-        // Collect all SKUs successfully processed so we can clean up the cart later
-        Set<String> orderedSkus = items.stream()
-                .map(CheckoutItemRequest::sku)
-                .collect(Collectors.toSet());
+        BigDecimal sessionTotalAmount = BigDecimal.ZERO;
+        List<OrderResponse> splitOrderResponses = new ArrayList<>();
+        Set<String> orderedSkus = new java.util.HashSet<>();
+        
+        BigDecimal splitShippingFee = BigDecimal.ZERO;
+        if (request.shippingFee() != null && !groupedItems.isEmpty()) {
+            splitShippingFee = request.shippingFee().divide(new BigDecimal(groupedItems.size()), 0, java.math.RoundingMode.HALF_UP);
+        }
+        String checkoutSessionId = java.util.UUID.randomUUID().toString();
 
-        // ── Step 4: Process each item in the request list ─────────────────────
-        for (CheckoutItemRequest item : items) {
-
-            // ── 4a. Locate physical CostumeItem by SKU and lock it ───────────────
-            CostumeItem representativeItem = costumeItemRepository.findBySku(item.sku())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "CostumeItem", "sku", item.sku()
-                    ));
-
-            Costume costume = representativeItem.getCostume();
-            String size = representativeItem.getSize();
-            String color = representativeItem.getColor();
-
-            // ── 4b. Stock availability check and dynamic allocation ─────────────────
-            java.time.LocalDate bufferedReqStart = item.rentalStartDate().minusDays(2);
-            java.time.LocalDate bufferedReqEnd = item.rentalEndDate().plusDays(2);
-
-            List<CostumeItem> availableItems = costumeItemRepository.findAvailableItemsWithBufferForUpdate(
-                    costume.getId(), size, color, bufferedReqStart, bufferedReqEnd, org.springframework.data.domain.PageRequest.of(0, item.quantity())
-            );
-
-            if (availableItems.size() < item.quantity()) {
-                throw new BadRequestException(
-                        "Chỉ còn " + availableItems.size() + " sản phẩm khả dụng cho mẫu này (Size: " + size + (color != null ? ", Màu: " + color : "") + ") trong khoảng thời gian đã chọn."
-                );
-            }
-
-            // ── 4c. Validate rental date window ────────────────────────────────
-            if (!item.rentalEndDate().isAfter(item.rentalStartDate())) {
-                throw new BadRequestException(
-                        "Ngày trả (rentalEndDate) của sản phẩm [SKU: " + item.sku()
-                        + "] phai sau ngay nhan (rentalStartDate)."
-                );
-            }
-
-            // ── 4d. Calculate rental duration in days ───────────────────────────
-            long rentalDays = ChronoUnit.DAYS.between(
-                    item.rentalStartDate(),
-                    item.rentalEndDate()
-            );
-            if (rentalDays <= 0) {
-                throw new BadRequestException(
-                        "Số ngày thuê phải lớn hơn 0 đối với sản phẩm [SKU: " + item.sku() + "]."
-                );
-            }
-
-            // ── 4e. Pull financial data from parent Costume ─────────────────────
-            BigDecimal pricePerDay = costume.getRentalPrice();
-            BigDecimal retailValue = costume.getDepositPrice(); // depositPrice = retail value
-
-            // Use Tiered Pricing Engine for consistency with Cart
-            BigDecimal subtotalRental = pricingEngineService.calculateItemRentalFee(pricePerDay, (int) rentalDays, item.quantity());
-            BigDecimal subtotalDeposit = pricingEngineService.calculateItemDeposit(retailValue, subtotalRental, item.quantity());
-
-            // ── 4f. Accumulate into order totals ────────────────────────────────
-            totalRentalPrice = totalRentalPrice.add(subtotalRental);
-            totalDeposit = totalDeposit.add(subtotalDeposit);
-
-            // ── 4g. Accumulate for each physical item ──────────────────────────
-            BigDecimal singleItemRentalFee = pricingEngineService.calculateItemRentalFee(pricePerDay, (int) rentalDays, 1);
-            BigDecimal singleItemDeposit = pricingEngineService.calculateItemDeposit(retailValue, singleItemRentalFee, 1);
+        for (Map.Entry<String, List<CheckoutItemRequest>> entry : groupedItems.entrySet()) {
+            List<CheckoutItemRequest> groupItems = entry.getValue();
             
-            for (CostumeItem allocatedItem : availableItems) {
-                // We no longer lock inventory via ItemStatus.RESERVED.
-                // The lock is now implicitly held by the overlapping RentalOrderDetail dates.
+            BigDecimal totalRentalPrice = BigDecimal.ZERO;
+            BigDecimal totalDeposit = BigDecimal.ZERO;
+            List<RentalOrderDetail> orderDetails = new ArrayList<>();
 
-                RentalOrderDetail detail = RentalOrderDetail.builder()
-                        .costumeItem(allocatedItem)
-                        .pricePerDay(pricePerDay)
-                        .rentalDays((int) rentalDays)
-                        .rentalStartDate(item.rentalStartDate())
-                        .rentalEndDate(item.rentalEndDate())
-                        .subtotal(singleItemRentalFee)
-                        .deposit(singleItemDeposit)
-                        .price(pricingEngineService.calculateTotal(singleItemRentalFee, singleItemDeposit))
-                        .returnStatus(ReturnStatus.NOT_RETURNED)
-                        .build();
-                orderDetails.add(detail);
+            for (CheckoutItemRequest item : groupItems) {
+                orderedSkus.add(item.sku());
+
+                CostumeItem representativeItem = costumeItemRepository.findBySku(item.sku())
+                        .orElseThrow(() -> new ResourceNotFoundException("CostumeItem", "sku", item.sku()));
+
+                Costume costume = representativeItem.getCostume();
+                String size = representativeItem.getSize();
+                String color = representativeItem.getColor();
+
+                java.time.LocalDate bufferedReqStart = item.rentalStartDate().minusDays(2);
+                java.time.LocalDate bufferedReqEnd = item.rentalEndDate().plusDays(2);
+
+                List<CostumeItem> availableItems = costumeItemRepository.findAvailableItemsWithBufferForUpdate(
+                        costume.getId(), size, color, bufferedReqStart, bufferedReqEnd, org.springframework.data.domain.PageRequest.of(0, item.quantity())
+                );
+
+                if (availableItems.size() < item.quantity()) {
+                    throw new BadRequestException("Chỉ còn " + availableItems.size() + " sản phẩm khả dụng cho mẫu này (Size: " + size + (color != null ? ", Màu: " + color : "") + ") trong khoảng thời gian đã chọn.");
+                }
+
+                if (!item.rentalEndDate().isAfter(item.rentalStartDate())) {
+                    throw new BadRequestException("Ngày trả của sản phẩm [SKU: " + item.sku() + "] phai sau ngay nhan.");
+                }
+
+                long rentalDays = ChronoUnit.DAYS.between(item.rentalStartDate(), item.rentalEndDate());
+                if (rentalDays <= 0) {
+                    throw new BadRequestException("Số ngày thuê phải lớn hơn 0.");
+                }
+
+                BigDecimal pricePerDay = costume.getRentalPrice();
+                BigDecimal retailValue = costume.getDepositPrice();
+
+                BigDecimal subtotalRental = pricingEngineService.calculateItemRentalFee(pricePerDay, (int) rentalDays, item.quantity());
+                BigDecimal subtotalDeposit = pricingEngineService.calculateItemDeposit(retailValue, subtotalRental, item.quantity());
+
+                totalRentalPrice = totalRentalPrice.add(subtotalRental);
+                totalDeposit = totalDeposit.add(subtotalDeposit);
+
+                BigDecimal singleItemRentalFee = pricingEngineService.calculateItemRentalFee(pricePerDay, (int) rentalDays, 1);
+                BigDecimal singleItemDeposit = pricingEngineService.calculateItemDeposit(retailValue, singleItemRentalFee, 1);
+                
+                for (CostumeItem allocatedItem : availableItems) {
+                    RentalOrderDetail detail = RentalOrderDetail.builder()
+                            .costumeItem(allocatedItem)
+                            .pricePerDay(pricePerDay)
+                            .rentalDays((int) rentalDays)
+                            .rentalStartDate(item.rentalStartDate())
+                            .rentalEndDate(item.rentalEndDate())
+                            .subtotal(singleItemRentalFee)
+                            .deposit(singleItemDeposit)
+                            .price(pricingEngineService.calculateTotal(singleItemRentalFee, singleItemDeposit))
+                            .returnStatus(ReturnStatus.NOT_RETURNED)
+                            .build();
+                    orderDetails.add(detail);
+                }
             }
+
+            BigDecimal finalTotalPrice = totalRentalPrice.add(totalDeposit).add(splitShippingFee);
+            sessionTotalAmount = sessionTotalAmount.add(finalTotalPrice);
+
+            RentalOrder order = RentalOrder.builder()
+                    .user(user)
+                    .sessionId(checkoutSessionId)
+                    .receiverName(request.receiverName())
+                    .receiverPhone(request.receiverPhone())
+                    .deliveryAddress(request.deliveryAddress())
+                    .districtId(request.districtId())
+                    .wardCode(request.wardCode())
+                    .deliveryMethod(request.deliveryMethod())
+                    .shippingFee(splitShippingFee)
+                    .totalRentalPrice(totalRentalPrice)
+                    .totalDeposit(totalDeposit)
+                    .discountAmount(BigDecimal.ZERO)
+                    .totalPrice(finalTotalPrice)
+                    .details(orderDetails)
+                    .status(com.aurafit.enums.OrderStatus.PENDING)
+                    .build();
+
+            for (RentalOrderDetail detail : orderDetails) {
+                detail.setRentalOrder(order);
+            }
+
+            RentalOrder savedOrder = rentalOrderRepository.save(order);
+            
+            RentalOrder responseOrder = rentalOrderRepository.findByIdWithDetailsAndCostumes(savedOrder.getId()).orElse(savedOrder);
+            recordRentEvent(user, responseOrder, orderDetails);
+            
+            splitOrderResponses.add(OrderResponse.fromEntity(responseOrder));
         }
 
-        // ── Step 5: Create and persist RentalOrder ──────────────────────────────
-        BigDecimal shippingFee = request.shippingFee() != null ? request.shippingFee() : BigDecimal.ZERO;
-        BigDecimal finalTotalPrice = totalRentalPrice.add(totalDeposit).add(shippingFee);
-
-        RentalOrder order = RentalOrder.builder()
-                .user(user)
-                .receiverName(request.receiverName())
-                .receiverPhone(request.receiverPhone())
-                .deliveryAddress(request.deliveryAddress())
-                .districtId(request.districtId())
-                .wardCode(request.wardCode())
-                .deliveryMethod(request.deliveryMethod())
-                .shippingFee(shippingFee)
-                .totalRentalPrice(totalRentalPrice)
-                .totalDeposit(totalDeposit)
-                .discountAmount(BigDecimal.ZERO)
-                .totalPrice(finalTotalPrice)
-                .details(orderDetails)
-                .status(com.aurafit.enums.OrderStatus.PENDING)
-                .build();
-
-        // Attach each detail to the order before persisting (cascade = ALL)
-        for (RentalOrderDetail detail : orderDetails) {
-            detail.setRentalOrder(order);
-        }
-
-        RentalOrder savedOrder = rentalOrderRepository.save(order);
-
-        // ── Step 6: Smart cart cleanup ─────────────────────────────────────────
-        // Only remove from cart the SKUs that were just ordered.
         cartRepository.findByUserIdAndStatus(userId, CartStatus.ACTIVE)
                 .ifPresent(cart -> {
                     List<CartItem> cartItemsToDelete = cart.getItems().stream()
@@ -230,14 +221,102 @@ public class OrderServiceImpl implements OrderService {
                     }
                 });
 
-        // ── Step 7: Re-fetch with full graph for response DTO ───────────────────
-        RentalOrder responseOrder = rentalOrderRepository
-                .findByIdWithDetailsAndCostumes(savedOrder.getId())
-                .orElse(savedOrder);
+        return CheckoutSessionResponse.builder()
+                .sessionTotalAmount(sessionTotalAmount)
+                .orders(splitOrderResponses)
+                .build();
+    }
 
-        recordRentEvent(user, responseOrder, orderDetails);
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse extendRentalOrder(Long orderId, LocalDate newEndDate) {
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("RentalOrder", "id", orderId));
 
-        return OrderResponse.fromEntity(responseOrder);
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.RENTED && order.getStatus() != com.aurafit.enums.OrderStatus.CONFIRMED) {
+            throw new BadRequestException("Chỉ có thể gia hạn khi đơn hàng đang ở trạng thái CONFIRMED hoặc RENTED.");
+        }
+
+        BigDecimal additionalFee = BigDecimal.ZERO;
+
+        for (RentalOrderDetail detail : order.getDetails()) {
+            if (!newEndDate.isAfter(detail.getRentalEndDate())) {
+                continue;
+            }
+            
+            java.time.LocalDate bufferedReqStart = detail.getRentalEndDate();
+            java.time.LocalDate bufferedReqEnd = newEndDate.plusDays(2);
+            
+            boolean isBooked = rentalOrderDetailRepository.existsOverlappingBookingForCostumeItem(
+                    detail.getCostumeItem().getId(),
+                    order.getId(),
+                    bufferedReqStart,
+                    bufferedReqEnd
+            );
+            
+            if (isBooked) {
+                throw new BadRequestException("Sản phẩm [SKU: " + detail.getCostumeItem().getSku() + "] đã được khách hàng khác đặt trước trong khoảng thời gian gia hạn.");
+            }
+            
+            long extraDays = ChronoUnit.DAYS.between(detail.getRentalEndDate(), newEndDate);
+            BigDecimal extraFee = detail.getPricePerDay().multiply(BigDecimal.valueOf(extraDays));
+            
+            detail.setRentalEndDate(newEndDate);
+            detail.setRentalDays(detail.getRentalDays() + (int) extraDays);
+            detail.setSubtotal(detail.getSubtotal().add(extraFee));
+            detail.setPrice(detail.getPrice().add(extraFee));
+            
+            additionalFee = additionalFee.add(extraFee);
+        }
+        
+        if (additionalFee.compareTo(BigDecimal.ZERO) > 0) {
+            order.setExtensionFee(order.getExtensionFee().add(additionalFee));
+            order.setTotalRentalPrice(order.getTotalRentalPrice().add(additionalFee));
+            order.setTotalPrice(order.getTotalPrice().add(additionalFee));
+            
+            order.setTotalDeposit(order.getTotalDeposit().subtract(additionalFee));
+        }
+
+        RentalOrder savedOrder = rentalOrderRepository.save(order);
+        return OrderResponse.fromEntity(savedOrder);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse compensateOrder(Long orderId, String reason) {
+        RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("RentalOrder", "id", orderId));
+
+        if (order.getStatus() == com.aurafit.enums.OrderStatus.CANCELLED || order.getStatus() == com.aurafit.enums.OrderStatus.COMPLETED) {
+            throw new BadRequestException("Không thể bồi thường cho đơn hàng đã Hủy hoặc Hoàn thành.");
+        }
+
+        order.setStatus(com.aurafit.enums.OrderStatus.CANCELLED);
+        order.setTotalRefundedAmount(order.getTotalPrice());
+        
+        String compensationNote = "Order cancelled due to incident: " + reason + ". Compensated full refund.";
+        
+        String promoCode = "COMP50-" + java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        Promotion promotion = Promotion.builder()
+                .code(promoCode)
+                .discountPercent(50)
+                .maxDiscount(BigDecimal.valueOf(500000))
+                .expiryDate(LocalDateTime.now().plusDays(30))
+                .user(order.getUser())
+                .build();
+        
+        promotionRepository.save(promotion);
+        
+        compensationNote += " Issued 50% discount code: " + promoCode;
+        
+        if (order.getInspectionNote() != null) {
+            order.setInspectionNote(order.getInspectionNote() + "\n" + compensationNote);
+        } else {
+            order.setInspectionNote(compensationNote);
+        }
+
+        RentalOrder savedOrder = rentalOrderRepository.save(order);
+        return OrderResponse.fromEntity(savedOrder);
     }
 
     @Override

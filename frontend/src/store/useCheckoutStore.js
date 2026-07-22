@@ -3,20 +3,24 @@ import { saveJson, loadJson } from './browserStorage';
 
 export const useCheckoutStore = create((set) => ({
   pendingOrderId: null,
+  pendingSessionAmount: null,
 
   hydratePendingOrderId: () => {
-    const stored = loadJson('aurafitPendingOrderId', null);
-    set({ pendingOrderId: stored });
-    return stored;
+    const storedId = loadJson('aurafitPendingOrderId', null);
+    const storedAmount = loadJson('aurafitPendingSessionAmount', null);
+    set({ pendingOrderId: storedId, pendingSessionAmount: storedAmount });
+    return storedId;
   },
 
-  setPendingOrderId: (orderId) => {
+  setPendingOrderId: (orderId, amount = null) => {
     saveJson('aurafitPendingOrderId', orderId);
-    set({ pendingOrderId: orderId });
+    saveJson('aurafitPendingSessionAmount', amount);
+    set({ pendingOrderId: orderId, pendingSessionAmount: amount });
   },
 
   clearPendingOrderId: () => {
     saveJson('aurafitPendingOrderId', null);
-    set({ pendingOrderId: null });
+    saveJson('aurafitPendingSessionAmount', null);
+    set({ pendingOrderId: null, pendingSessionAmount: null });
   },
 }));

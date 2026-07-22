@@ -5,6 +5,7 @@ import com.aurafit.dto.request.HandoverImageUpdateRequest;
 import com.aurafit.dto.request.PickupRequestDTO;
 import com.aurafit.dto.request.ReturnRequestDTO;
 import com.aurafit.dto.response.ApiResponse;
+import com.aurafit.dto.response.CheckoutSessionResponse;
 import com.aurafit.dto.response.HandoverRecordDTO;
 import com.aurafit.dto.response.OrderResponse;
 import com.aurafit.dto.response.OrderSummaryResponse;
@@ -43,14 +44,23 @@ public class OrderController {
 
     @PostMapping
     @Operation(summary = "Place a new rental order")
-    public ResponseEntity<ApiResponse<OrderResponse>> placeOrder(
+    public ResponseEntity<ApiResponse<CheckoutSessionResponse>> placeOrder(
             Authentication authentication,
             @Valid @RequestBody CheckoutRequest request
     ) {
         Long userId = extractUserId(authentication);
-        OrderResponse response = orderService.placeOrder(userId, request);
+        CheckoutSessionResponse response = orderService.placeOrder(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Order placed successfully.", response, HttpStatus.CREATED));
+    }
+
+    @PostMapping("/{orderId}/extend")
+    @Operation(summary = "Extend rental period for an order")
+    public ResponseEntity<ApiResponse<OrderResponse>> extendRentalOrder(
+            @PathVariable Long orderId,
+            @RequestParam java.time.LocalDate newEndDate
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Order extended successfully.", orderService.extendRentalOrder(orderId, newEndDate)));
     }
 
     @GetMapping
@@ -84,6 +94,16 @@ public class OrderController {
     @Operation(summary = "Get full staff view of a specific order")
     public ResponseEntity<ApiResponse<StaffOrderDetailResponse>> getStaffOrderDetail(@PathVariable Long orderId) {
         return ResponseEntity.ok(ApiResponse.success("Staff order detail retrieved.", orderService.getOrderDetail(orderId)));
+    }
+
+    @PostMapping("/{orderId}/compensate")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @Operation(summary = "Cancel an order and compensate the customer")
+    public ResponseEntity<ApiResponse<OrderResponse>> compensateOrder(
+            @PathVariable Long orderId,
+            @RequestParam String reason
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Order cancelled and compensated.", orderService.compensateOrder(orderId, reason)));
     }
 
     @PostMapping("/{orderId}/pickup-handovers")

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { 
   formatDate, 
   formatDateTime, 
@@ -7,12 +8,19 @@ import {
   getStaffPickupInfo, 
   StatusBadge 
 } from './StaffDashboardUtils';
+import { useToastStore } from '../../store/useToastStore';
+import { compensateRentalOrder } from '../../services/rentalOrderService';
 
 export default function StaffOrderDetailModal({ 
   activeOrder, 
   setIsModalOpen, 
-  setPreviewImage 
+  setPreviewImage,
+  onReload
 }) {
+  const [showCompensateConfirm, setShowCompensateConfirm] = useState(false);
+  const [isCompensating, setIsCompensating] = useState(false);
+  const addToast = useToastStore((s) => s.addToast);
+
   if (!activeOrder) return null;
 
   const modalPickupInfo = getStaffPickupInfo(activeOrder);
@@ -31,6 +39,22 @@ export default function StaffOrderDetailModal({
     window.alert(`Đã copy mã vận đơn ${type}`);
   };
 
+  const handleCompensate = async () => {
+    try {
+      setIsCompensating(true);
+      await compensateRentalOrder(activeOrder.id);
+      addToast('Đã hủy và gửi mã đền bù cho khách');
+      setShowCompensateConfirm(false);
+      setIsModalOpen(false);
+      if (onReload) onReload();
+    } catch (err) {
+      console.error(err);
+      addToast('Lỗi khi đền bù đơn hàng.');
+    } finally {
+      setIsCompensating(false);
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -43,10 +67,38 @@ export default function StaffOrderDetailModal({
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-        <div className="p-6 overflow-y-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-sm mb-6 bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
-            <div className="space-y-3">
-              <h4 className="font-semibold text-gray-800 border-b pb-2 mb-3">Thông tin Đơn hàng</h4>
+        {showCompensateConfirm ? (
+          <div className="p-6">
+            <div className="bg-red-50 border border-red-200 p-4 rounded-md text-red-800">
+              <p className="font-bold mb-2 flex items-center gap-2">
+                <span className="material-symbols-outlined">warning</span> Cảnh báo Đền bù
+              </p>
+              <p>Hành động này sẽ hủy đơn hàng và tự động sinh ra mã giảm giá đền bù 50% cho khách hàng. Bạn có chắc chắn?</p>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button 
+                onClick={() => setShowCompensateConfirm(false)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                disabled={isCompensating}
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={handleCompensate}
+                className="px-4 py-2 bg-red-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-red-700 transition flex items-center gap-2"
+                disabled={isCompensating}
+              >
+                {isCompensating ? <span className="material-symbols-outlined animate-spin text-sm">refresh</span> : null}
+                Xác nhận Đền bù
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="p-6 overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-sm mb-6 bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-800 border-b pb-2 mb-3">Thông tin Đơn hàng</h4>
               <p className="flex justify-between items-start gap-4">
                 <span className="text-gray-500 whitespace-nowrap">Khách hàng:</span> 
                 <span className="font-medium text-gray-900 text-right">{activeOrder.customerName} - {activeOrder.customerPhone}</span>
@@ -292,10 +344,20 @@ export default function StaffOrderDetailModal({
           </div>
         </div>
         <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-lg">
+          {(activeOrder.status === 'PENDING' || activeOrder.status === 'CONFIRMED') && (
+            <button 
+              onClick={() => setShowCompensateConfirm(true)}
+              className="px-4 py-2 bg-red-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-red-700 transition"
+            >
+              Hủy & Đền bù
+            </button>
+          )}
           <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
             Đóng
           </button>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

@@ -100,6 +100,13 @@ public class RentalOrder extends BaseEntity {
     @Builder.Default
     private BigDecimal totalRefundedAmount = BigDecimal.ZERO;
 
+    @Column(name = "extension_fee")
+    @Builder.Default
+    private BigDecimal extensionFee = BigDecimal.ZERO;
+
+    @Column(name = "session_id", length = 36)
+    private String sessionId;
+
     @Column(name = "inspection_note", columnDefinition = "TEXT")
     private String inspectionNote;
 

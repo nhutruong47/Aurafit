@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useCheckoutStore } from '../../store/useCheckoutStore';
+import { useState } from 'react';
 import { getOrderCode, getOrderTimeline, mapOrderStatus } from './orderUtils';
 import OrderTimeline from './OrderTimeline';
 import OrderSummaryCard from './OrderSummaryCard';
 import CustomerOrderDetailSkeleton from './CustomerOrderDetailSkeleton';
+import RentalExtensionModal from './RentalExtensionModal';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { useToastStore } from '../../store/useToastStore';
 
@@ -71,7 +73,8 @@ function TrackingCodeLink({ label, code }) {
   );
 }
 
-export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, currentUser }) {
+export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, currentUser, onReload }) {
+  const [isExtensionModalOpen, setIsExtensionModalOpen] = useState(false);
   const statusInfo = mapOrderStatus(order.status, order);
   const timeline = getOrderTimeline(order);
   const navigate = useNavigate();
@@ -96,43 +99,52 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
   const totalPenalty = lateFee + damageFee;
 
   return (
-    <div className="sticky top-28 border border-[#cfc4c5] bg-white p-8 md:p-10">
-      <div className="mb-8 flex items-baseline justify-between border-b border-[#cfc4c5] pb-6">
-        <h2 className="font-serif text-3xl font-normal">Chi tiết: {getOrderCode(order.id)}</h2>
-        <div className="flex items-center gap-4">
-          {(order.status === 'PENDING' || order.status === 'CONFIRMED') && onCancel && (
-            <button onClick={() => onCancel(order.id)} className="text-[10px] font-bold uppercase tracking-wider text-red-600 transition hover:text-red-800">
-              Hủy đơn
-            </button>
-          )}
-          {order.status === 'PENDING' && (
+    <>
+      <div className="sticky top-28 border border-[#cfc4c5] bg-white p-8 md:p-10">
+        <div className="mb-8 flex items-baseline justify-between border-b border-[#cfc4c5] pb-6">
+          <h2 className="font-serif text-3xl font-normal">Chi tiết: {getOrderCode(order.id)}</h2>
+          <div className="flex items-center gap-4">
+            {(order.status === 'RENTED' || order.status === 'CONFIRMED') && (
+              <button 
+                onClick={() => setIsExtensionModalOpen(true)} 
+                className="text-[10px] font-bold uppercase tracking-wider text-black border-b border-black hover:text-[#99854e] hover:border-[#99854e] transition"
+              >
+                Gia hạn thuê
+              </button>
+            )}
+            {(order.status === 'PENDING' || order.status === 'CONFIRMED') && onCancel && (
+              <button onClick={() => onCancel(order.id)} className="text-[10px] font-bold uppercase tracking-wider text-red-600 transition hover:text-red-800">
+                Hủy đơn
+              </button>
+            )}
+            {order.status === 'PENDING' && (
+              <button 
+                onClick={handlePayNow}
+                className="bg-black px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#99854e]"
+              >
+                Thanh toán ngay
+              </button>
+            )}
+            <span className={`text-[12px] font-bold uppercase tracking-[0.2em] ${statusInfo.color}`}>
+              {statusInfo.text}
+            </span>
+          </div>
+        </div>
+        
+        {(order.status === 'RENTED' || order.status === 'RETURNING' || order.status === 'PENDING_REFUND') && (!currentUser?.bankName || !currentUser?.bankAccountNumber || !currentUser?.bankAccountName) && (
+          <div className="mb-8 border border-yellow-300 bg-yellow-50 p-4 rounded-md">
+            <p className="text-sm font-medium text-yellow-800 flex items-center gap-2">
+              <span className="material-symbols-outlined">lightbulb</span>
+              💡 Cập nhật Thông tin Ngân hàng ngay để AuraFit hoàn cọc siêu tốc cho bạn nhé!
+            </p>
             <button 
-              onClick={handlePayNow}
-              className="bg-black px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#99854e]"
+              onClick={() => navigate('/account')}
+              className="mt-3 text-xs font-bold uppercase tracking-wider text-yellow-900 underline hover:text-yellow-700"
             >
-              Thanh toán ngay
+              Cập nhật ngay
             </button>
-          )}
-          <span className={`text-[12px] font-bold uppercase tracking-[0.2em] ${statusInfo.color}`}>
-            {statusInfo.text}
-          </span>
-        </div>
-      </div>
-      
-      {(order.status === 'RENTED' || order.status === 'RETURNING' || order.status === 'PENDING_REFUND') && (!currentUser?.bankName || !currentUser?.bankAccountNumber || !currentUser?.bankAccountName) && (
-        <div className="mb-8 border border-yellow-300 bg-yellow-50 p-4 rounded-md">
-          <p className="text-sm font-medium text-yellow-800 flex items-center gap-2">
-            <span className="material-symbols-outlined">lightbulb</span>
-            💡 Cập nhật Thông tin Ngân hàng ngay để AuraFit hoàn cọc siêu tốc cho bạn nhé!
-          </p>
-          <button 
-            onClick={() => navigate('/account')}
-            className="mt-3 text-xs font-bold uppercase tracking-wider text-yellow-900 underline hover:text-yellow-700"
-          >
-            Cập nhật ngay
-          </button>
-        </div>
-      )}
+          </div>
+        )}
 
       <div
         className={`transition-opacity duration-300 ${isDetailLoading ? 'opacity-40' : 'opacity-100'}`}
@@ -253,6 +265,13 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
           </>
         )}
       </div>
+      <RentalExtensionModal
+        isOpen={isExtensionModalOpen}
+        onClose={() => setIsExtensionModalOpen(false)}
+        order={order}
+        onSuccess={onReload}
+      />
     </div>
+    </>
   );
 }

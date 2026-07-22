@@ -187,12 +187,15 @@ export function useCheckout({
         })),
       });
 
-      setPendingOrderId(orderResponse.id);
+      const primaryOrderId = orderResponse.orders && orderResponse.orders.length > 0 ? orderResponse.orders[0].id : orderResponse.id;
+      const sessionAmount = orderResponse.sessionTotalAmount || orderResponse.finalAmount;
+
+      setPendingOrderId(primaryOrderId, sessionAmount);
 
       const remainingCartItems = cartItems.filter(item => !selectedCartItemIds.has(item.cartId || item.id || item.costumeItemId));
       dispatch(setCartItems(remainingCartItems));
 
-      onCheckoutSuccess?.(orderResponse.id);
+      onCheckoutSuccess?.(primaryOrderId);
       onNavigate?.('payment');
     } catch (error) {
       const errorMsg = error.message || '';

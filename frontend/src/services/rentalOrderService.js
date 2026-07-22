@@ -98,6 +98,16 @@ export const fetchStaffOrders = async () => {
   return Array.isArray(payload) ? payload.map(normalizeStaffOrder) : [];
 };
 
+export const extendRentalOrder = async (orderId, newEndDate) => {
+  return requestJson(
+    {
+      url: `/orders/${encodeURIComponent(orderId)}/extend?newEndDate=${encodeURIComponent(newEndDate)}`,
+      method: 'POST',
+    },
+    'Không thể gia hạn đơn hàng.'
+  );
+};
+
 export const fetchStaffOrder = async (orderId) => {
   const payload = await requestJson(
     { url: `/orders/${encodeURIComponent(orderId)}/management`, method: 'GET' },
@@ -135,3 +145,13 @@ export const updateHandoverImage = async (orderId, handoverType, imageUrl) =>
     },
     'Không thể cập nhật ảnh minh chứng.'
   );
+
+export const compensateRentalOrder = async (orderId) => {
+  return requestJson(
+    {
+      url: `/orders/${encodeURIComponent(orderId)}/compensate`,
+      method: 'POST',
+    },
+    'Không thể đền bù đơn hàng.'
+  );
+};
