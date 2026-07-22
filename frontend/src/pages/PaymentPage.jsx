@@ -19,7 +19,7 @@ const statusLabels = {
 };
 
 export default function PaymentPage({ cartItems = [], onNavigate }) {
-  const { pendingOrderId, pendingOrderIds, hydratePendingOrderId } = useCheckoutStore();
+  const { pendingOrderId, pendingOrderIds, pendingSessionAmount, hydratePendingOrderId } = useCheckoutStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const [order, setOrder] = useState(null);
@@ -181,7 +181,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       const rentalSubtotal = orders.reduce((sum, o) => sum + Number(o.totalRentalPrice || 0), 0);
       const deliveryFee = orders.reduce((sum, o) => sum + Number(o.shippingFee || 0), 0);
       const refundableDeposit = orders.reduce((sum, o) => sum + Number(o.totalDeposit || 0), 0);
-      const orderTotal = Number(useCheckoutStore.getState().pendingSessionAmount || orders.reduce((sum, o) => sum + Number(o.finalAmount || 0), 0));
+      const orderTotal = Number(pendingSessionAmount || orders.reduce((sum, o) => sum + Number(o.finalAmount || 0), 0));
       return { rentalSubtotal, deliveryFee, refundableDeposit, orderTotal };
     }
     return {
@@ -190,7 +190,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       refundableDeposit: 0,
       orderTotal: 0,
     };
-  }, [orders]);
+  }, [orders, pendingSessionAmount]);
 
   const handleCompletePayment = async () => {
     if (!pendingOrderId) {
@@ -245,6 +245,8 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
   const statusLabel = statusLabels[paymentStatus] || statusLabels[paymentStatus] || paymentStatus;
 
   // Show redirect prompt if no pendingOrderId after hydration
+  console.log("Session Orders:", orders, "Session Amount:", summary.orderTotal);
+
   if (isInitialized && !pendingOrderId) {
     return (
       <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
