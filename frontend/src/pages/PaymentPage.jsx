@@ -19,10 +19,11 @@ const statusLabels = {
 };
 
 export default function PaymentPage({ cartItems = [], onNavigate }) {
-  const { pendingOrderId, hydratePendingOrderId } = useCheckoutStore();
+  const { pendingOrderId, pendingOrderIds, hydratePendingOrderId } = useCheckoutStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const [order, setOrder] = useState(null);
+  const [orders, setOrders] = useState([]);
   const [isLoadingOrder, setIsLoadingOrder] = useState(false);
   const [paymentInit, setPaymentInit] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null);
@@ -40,10 +41,11 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
     setIsInitialized(true);
   }, [hydratePendingOrderId]);
 
-  // Load order detail
+  // Load order details
   useEffect(() => {
-    if (!pendingOrderId) {
+    if (!pendingOrderId || !pendingOrderIds || pendingOrderIds.length === 0) {
       setOrder(null);
+      setOrders([]);
       setPaymentInit(null);
       setPaymentStatus(null);
       setIsLoadingOrder(false);
@@ -57,11 +59,14 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
     setPaymentInit(null);
     setPaymentStatus(null);
 
-    fetchOrderDetail(pendingOrderId)
-      .then((orderData) => {
+    Promise.all(pendingOrderIds.map(id => fetchOrderDetail(id)))
+      .then((orderDataArray) => {
         if (!isMounted) return;
-        setOrder(orderData || null);
-        setPaymentStatus(orderData?.status || null);
+        const validOrders = orderDataArray.filter(Boolean);
+        setOrders(validOrders);
+        const primaryOrder = validOrders.find(o => o.id === pendingOrderId) || validOrders[0];
+        setOrder(primaryOrder || null);
+        setPaymentStatus(primaryOrder?.status || null);
       })
       .catch((error) => {
         if (!isMounted) return;
@@ -74,7 +79,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
     return () => {
       isMounted = false;
     };
-  }, [pendingOrderId]);
+  }, [pendingOrderId, pendingOrderIds]);
 
   const clearPolling = () => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -144,27 +149,48 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
   }, [paymentInit, pendingOrderId, onNavigate, order]);
 
   const items = useMemo(() => {
-    if (order?.details?.length) {
-      return order.details.map((detail) => ({
-        id: detail.id,
-        name: detail.costumeName || 'Trang phục AuraFit',
-        meta: [detail.skuCode || detail.sku, detail.size, detail.color].filter(Boolean).join(' • ') || 'Sản phẩm thuê',
-        price: formatCurrency(detail.subtotal || detail.rentalPrice || 0),
-        image: fallbackProductImage,
-      }));
+    if (orders?.length > 0) {
+      const allDetails = orders.flatMap(o => o.details || []);
+      const hasMultipleTimeframes = orders.length > 1 && new Set(orders.map(o => `${o.rentalStartDate}_${o.rentalEndDate}`)).size > 1;
+      
+      const formatDate = (value) => {
+        if (!value) return '';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('vi-VN');
+      };
+
+      return allDetails.map((detail) => {
+        const datesStr = hasMultipleTimeframes && detail.rentalStartDate && detail.rentalEndDate 
+          ? `${formatDate(detail.rentalStartDate)} - ${formatDate(detail.rentalEndDate)}` 
+          : null;
+          
+        return {
+          id: detail.id,
+          name: detail.costumeName || 'Trang phục AuraFit',
+          meta: [detail.skuCode || detail.sku, detail.size, detail.color, datesStr].filter(Boolean).join(' • ') || 'Sản phẩm thuê',
+          price: formatCurrency(detail.subtotal || detail.rentalPrice || 0),
+          image: fallbackProductImage,
+        };
+      });
     }
     return cartItems;
-  }, [cartItems, order]);
+  }, [cartItems, orders]);
 
-  const summary = useMemo(
-    () => ({
-      rentalSubtotal: Number(order?.totalRentalPrice || 0),
-      deliveryFee: Number(order?.shippingFee || 0),
-      refundableDeposit: Number(order?.totalDeposit || 0),
-      orderTotal: Number(useCheckoutStore.getState().pendingSessionAmount || order?.finalAmount || 0),
-    }),
-    [order]
-  );
+  const summary = useMemo(() => {
+    if (orders?.length > 0) {
+      const rentalSubtotal = orders.reduce((sum, o) => sum + Number(o.totalRentalPrice || 0), 0);
+      const deliveryFee = orders.reduce((sum, o) => sum + Number(o.shippingFee || 0), 0);
+      const refundableDeposit = orders.reduce((sum, o) => sum + Number(o.totalDeposit || 0), 0);
+      const orderTotal = Number(useCheckoutStore.getState().pendingSessionAmount || orders.reduce((sum, o) => sum + Number(o.finalAmount || 0), 0));
+      return { rentalSubtotal, deliveryFee, refundableDeposit, orderTotal };
+    }
+    return {
+      rentalSubtotal: 0,
+      deliveryFee: 0,
+      refundableDeposit: 0,
+      orderTotal: 0,
+    };
+  }, [orders]);
 
   const handleCompletePayment = async () => {
     if (!pendingOrderId) {
@@ -252,7 +278,10 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
             Thanh toán đơn thuê
           </p>
           <h1 className="font-serif text-[40px] font-normal italic leading-tight md:text-[64px]">
-            Mã ARF{String(order?.id || pendingOrderId || '----').padStart(4, '0')}
+            {orders.length > 1 
+              ? 'Mã ' + orders.map(o => `ARF${String(o.id).padStart(4, '0')}`).join(', ')
+              : `Mã ARF${String(order?.id || pendingOrderId || '----').padStart(4, '0')}`
+            }
           </h1>
         </header>
 

@@ -110,6 +110,12 @@ public class RentalOrder extends BaseEntity {
     @Column(name = "inspection_note", columnDefinition = "TEXT")
     private String inspectionNote;
 
+    @Column(name = "rental_start_date")
+    private java.time.LocalDate rentalStartDate;
+
+    @Column(name = "rental_end_date")
+    private java.time.LocalDate rentalEndDate;
+
     @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "rentalOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

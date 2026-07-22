@@ -188,9 +188,10 @@ export function useCheckout({
       });
 
       const primaryOrderId = orderResponse.orders && orderResponse.orders.length > 0 ? orderResponse.orders[0].id : orderResponse.id;
+      const orderIds = orderResponse.orders && orderResponse.orders.length > 0 ? orderResponse.orders.map(o => o.id) : [orderResponse.id];
       const sessionAmount = orderResponse.sessionTotalAmount || orderResponse.finalAmount;
 
-      setPendingOrderId(primaryOrderId, sessionAmount);
+      setPendingOrderId(primaryOrderId, sessionAmount, orderIds);
 
       const remainingCartItems = cartItems.filter(item => !selectedCartItemIds.has(item.cartId || item.id || item.costumeItemId));
       dispatch(setCartItems(remainingCartItems));

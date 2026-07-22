@@ -181,6 +181,9 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal finalTotalPrice = totalRentalPrice.add(totalDeposit).add(splitShippingFee);
             sessionTotalAmount = sessionTotalAmount.add(finalTotalPrice);
 
+            java.time.LocalDate groupStartDate = groupItems.isEmpty() ? null : groupItems.get(0).rentalStartDate();
+            java.time.LocalDate groupEndDate = groupItems.isEmpty() ? null : groupItems.get(0).rentalEndDate();
+
             RentalOrder order = RentalOrder.builder()
                     .user(user)
                     .sessionId(checkoutSessionId)
@@ -195,9 +198,15 @@ public class OrderServiceImpl implements OrderService {
                     .totalDeposit(totalDeposit)
                     .discountAmount(BigDecimal.ZERO)
                     .totalPrice(finalTotalPrice)
+                    .rentalStartDate(groupStartDate)
+                    .rentalEndDate(groupEndDate)
                     .details(orderDetails)
                     .status(com.aurafit.enums.OrderStatus.PENDING)
                     .build();
+
+            if (order.getRentalStartDate() == null || order.getRentalEndDate() == null) {
+                throw new IllegalStateException("Rental dates cannot be null before saving");
+            }
 
             for (RentalOrderDetail detail : orderDetails) {
                 detail.setRentalOrder(order);

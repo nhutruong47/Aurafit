@@ -55,8 +55,15 @@ const statusStyles = {
   REFUNDED: { badge: 'bg-[#fce4ec] text-[#880e4f] border-[#880e4f]', label: 'Đã hoàn tiền' },
 };
 
-export default function PaymentFormSections({ order, paymentInit, isPaid, paymentStatus, statusLabel, isCheckingStatus, countdown }) {
+export default function PaymentFormSections({ order, orders, paymentInit, isPaid, paymentStatus, statusLabel, isCheckingStatus, countdown }) {
   const displayOrderId = order?.id || '----';
+  const displayOrderIds = orders?.length > 1 
+    ? orders.map(o => `ARF${String(o.id).padStart(4, '0')}`).join(', ') 
+    : `ARF${String(displayOrderId).padStart(4, '0')}`;
+
+  const hasMultipleTimeframes = orders?.length > 1 && new Set(orders.map(o => `${o.rentalStartDate}_${o.rentalEndDate}`)).size > 1;
+  const totalItems = orders?.length > 0 ? orders.reduce((sum, o) => sum + (o.details?.length || 0), 0) : order?.details?.length || 0;
+
   const style = statusStyles[paymentStatus] || statusStyles.PENDING;
 
   return (
@@ -75,7 +82,7 @@ export default function PaymentFormSections({ order, paymentInit, isPaid, paymen
 
       <CheckoutSection number="02" title="Thông tin đơn thuê" meta="">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <DetailRow label="Mã đơn" value={`ARF${String(displayOrderId).padStart(4, '0')}`} />
+          <DetailRow label="Mã đơn" value={displayOrderIds} />
           <div>
             <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
               Trạng thái hiện tại
@@ -84,10 +91,10 @@ export default function PaymentFormSections({ order, paymentInit, isPaid, paymen
               {isCheckingStatus && !paymentStatus ? 'Đang kiểm tra...' : (statusLabel || style.label)}
             </span>
           </div>
-          <DetailRow label="Thời gian thuê" value={formatDateRange(order?.rentalStartDate, order?.rentalEndDate)} />
+          <DetailRow label="Thời gian thuê" value={hasMultipleTimeframes ? 'Nhiều khung thời gian' : formatDateRange(order?.rentalStartDate, order?.rentalEndDate)} />
           <DetailRow
             label="Số sản phẩm"
-            value={order?.details?.length ? `${order.details.length} sản phẩm` : 'Đang cập nhật'}
+            value={totalItems ? `${totalItems} sản phẩm` : 'Đang cập nhật'}
           />
         </div>
       </CheckoutSection>
@@ -103,7 +110,7 @@ export default function PaymentFormSections({ order, paymentInit, isPaid, paymen
             <div>
               <h3 className="mb-2 font-serif text-3xl italic text-[#2e7d32]">Thanh toán thành công!</h3>
               <p className="text-sm text-[#5f5e5e]">
-                Đơn hàng <strong>ARF{String(displayOrderId).padStart(4, '0')}</strong> đã được thanh toán.
+                Đơn hàng <strong>{displayOrderIds}</strong> đã được thanh toán.
                 AuraFit sẽ liên hệ xác nhận trong thời gian sớm nhất.
               </p>
             </div>
