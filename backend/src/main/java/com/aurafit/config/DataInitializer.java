@@ -22,10 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.LinkedHashMap;
+import java.util.stream.Collectors;
 
 @Component
 @Profile({ "dev", "seed" })
@@ -49,8 +50,82 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         log.info("Starting clean data initialization...");
         seedUsers();
+        seedCategories();
         seedCostumes();
         log.info("Data initialization completed.");
+    }
+
+    private void seedCategories() {
+        log.info("Starting category seed sync.");
+
+        Map<String, Category> categoriesByPath = categoryRepository.findAll().stream()
+                .filter(category -> category.getPath() != null && !category.getPath().isBlank())
+                .collect(Collectors.toMap(
+                        Category::getPath,
+                        category -> category,
+                        (left, right) -> left,
+                        LinkedHashMap::new));
+
+        int seededCategoryCount = syncCategoryTree(CATEGORY_TREE_SEEDS, null, categoriesByPath);
+        int deactivatedCategoryCount = deactivateStaleCategories(categoriesByPath);
+
+        log.info(
+                "Category seed synced: {} categories, {} stale categories deactivated.",
+                seededCategoryCount,
+                deactivatedCategoryCount);
+    }
+
+    private int syncCategoryTree(List<CategoryTreeSeed> seeds, Category parent,
+            Map<String, Category> categoriesByPath) {
+        int count = 0;
+
+        for (int index = 0; index < seeds.size(); index++) {
+            CategoryTreeSeed seed = seeds.get(index);
+            String slug = slugify(seed.name());
+            String path = parent == null ? slug : parent.getPath() + "/" + slug;
+
+            Category category = categoriesByPath.get(path);
+            if (category == null) {
+                category = new Category();
+            }
+
+            category.setName(seed.name());
+            category.setSlug(slug);
+            category.setPath(path);
+            category.setDescription(seed.description());
+            category.setParent(parent);
+            category.setSortOrder(index);
+            category.setIsActive(true);
+
+            Category savedCategory = categoryRepository.save(category);
+            categoriesByPath.put(savedCategory.getPath(), savedCategory);
+
+            count++;
+            count += syncCategoryTree(seed.children(), savedCategory, categoriesByPath);
+        }
+
+        return count;
+    }
+
+    private int deactivateStaleCategories(Map<String, Category> categoriesByPath) {
+        int count = 0;
+
+        for (Category category : categoriesByPath.values()) {
+            String path = category.getPath();
+            if (path == null || path.isBlank() || CATEGORY_TREE_SEEDS_BY_PATH.containsKey(path)) {
+                continue;
+            }
+
+            if (Boolean.FALSE.equals(category.getIsActive())) {
+                continue;
+            }
+
+            category.setIsActive(false);
+            categoryRepository.save(category);
+            count++;
+        }
+
+        return count;
     }
 
     private void seedUsers() {

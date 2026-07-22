@@ -200,28 +200,28 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
                 <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
                   Thanh toán
                 </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tiền thuê:</span>
-                    <span>{formatCurrency(order.totalRentalPrice)}</span>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-[#5f5e5e]">Tiền thuê:</span>
+                    <span className="font-semibold text-black">{formatCurrency(order.totalRentalPrice)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tiền cọc:</span>
-                    <span>{formatCurrency(order.totalDeposit)}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-[#5f5e5e]">Tiền cọc:</span>
+                    <span className="font-semibold text-black">{formatCurrency(order.totalDeposit)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Phí giao hàng:</span>
-                    <span>{formatCurrency(order.shippingFee)}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-[#5f5e5e]">Phí giao hàng:</span>
+                    <span className="font-semibold text-black">{formatCurrency(order.shippingFee)}</span>
                   </div>
                   {order.discountAmount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Giảm giá:</span>
-                      <span>-{formatCurrency(order.discountAmount)}</span>
+                    <div className="flex justify-between items-center text-[#087b3f]">
+                      <span className="font-medium">Giảm giá:</span>
+                      <span className="font-semibold">-{formatCurrency(order.discountAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between font-bold border-t pt-2 mt-2">
-                    <span>Tổng cộng:</span>
-                    <span>{formatCurrency(order.finalAmount)}</span>
+                  <div className="flex justify-between items-center font-bold border-t border-[#cfc4c5] pt-4 mt-2">
+                    <span className="text-[11px] uppercase tracking-wider text-black">Tổng cộng:</span>
+                    <span className="text-base text-black">{formatCurrency(order.finalAmount)}</span>
                   </div>
                 </div>
 
