@@ -5,6 +5,7 @@ import { updateProfile, changePassword } from '../../services/userService';
 import { useToastStore } from '../../store/useToastStore';
 import authNotify from '../../utils/authNotify';
 import SearchableSelect from '../common/SearchableSelect';
+import TryOnHistorySection from './TryOnHistorySection';
 
 function ProfileField({ label, value }) {
   return (
@@ -285,6 +286,8 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
           </div>
         </div>
       </section>
+
+      <TryOnHistorySection />
 
       {showEditProfile && (
         <EditProfileModal

@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -106,7 +107,7 @@ public class TryOnController {
     ) {
         Long userId = resolveRequiredUserId(authentication);
         tryOnService.deleteHistory(userId, id);
-        return ResponseEntity.ok(ApiResponse.success("Đã xóa lịch sử thử đồ", null));
+        return ResponseEntity.ok(ApiResponse.success("Đã xóa lịch sử thử đồ", null, HttpStatus.OK));
     }
 
     private Long resolveOptionalUserId(Authentication authentication) {
