@@ -30,6 +30,22 @@ export const getCostumeImages = (costume) => {
 export const getCostumeRentalPriceValue = (costume) =>
   Number(costume?.rentalPrice ?? costume?.rental_price ?? costume?.priceValue ?? costume?.price ?? 0);
 
+export const getCostumeDiscountPercentValue = (costume) => {
+  const value = Number(costume?.discountPercent ?? costume?.discount_percent);
+  return Number.isFinite(value) && value > 0 && value <= 100 ? value : null;
+};
+
+export const getCostumeFinalPriceValue = (costume) => {
+  const rawValue = costume?.finalPrice ?? costume?.final_price;
+  if (rawValue === null || rawValue === undefined || rawValue === '') return null;
+  const value = Number(rawValue);
+  return Number.isFinite(value) && value >= 0 ? value : null;
+};
+
+export const hasCostumeDiscount = (costume) =>
+  getCostumeDiscountPercentValue(costume) !== null
+  && getCostumeFinalPriceValue(costume) !== null;
+
 export const getCostumeDepositPriceValue = (costume) =>
   Number(costume?.depositPrice ?? costume?.deposit_price ?? costume?.depositValue ?? costume?.deposit ?? 0);
 

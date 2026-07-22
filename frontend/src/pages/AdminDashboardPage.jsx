@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AdminCategoriesSection from '../components/admin/AdminCategoriesSection';
+import AdminEventsSection from '../components/admin/AdminEventsSection';
 import AiInsightTab from '../components/admin/AiInsightTab';
 import AdminOverviewTab from '../components/admin/AdminOverviewTab';
 import AdminOrdersSection from '../components/admin/AdminOrdersSection';
@@ -11,6 +12,7 @@ import AdminSupportSection from '../components/admin/AdminSupportSection';
 import AdminUsersSection from '../components/admin/AdminUsersSection';
 import { useAdminCategories } from '../hooks/useAdminCategories';
 import { useAdminCostumes } from '../hooks/useAdminCostumes';
+import { useAdminEvents } from '../hooks/useAdminEvents';
 import { useAdminUsers } from '../hooks/useAdminUsers';
 
 export default function AdminDashboardPage({ currentUser }) {
@@ -90,6 +92,8 @@ export default function AdminDashboardPage({ currentUser }) {
     changeUserStatus,
   } = useAdminUsers(currentUser);
 
+  const eventManagement = useAdminEvents(currentUser);
+
   const tabs = useMemo(
     () =>
       [
@@ -99,6 +103,7 @@ export default function AdminDashboardPage({ currentUser }) {
         ['products', 'Sản phẩm', 'inventory_2'],
         isAdmin ? ['users', 'Tài khoản', 'manage_accounts'] : null,
         isAdmin ? ['categories', 'Danh mục', 'category'] : null,
+        isAdmin ? ['events', 'Sự kiện', 'event'] : null,
         isAdmin ? ['reviews', 'Đánh giá', 'reviews'] : null,
         isAdmin ? ['support', 'Hỗ trợ', 'support_agent'] : null,
         isAdmin ? ['ai-insights', 'Phân tích AI', 'auto_awesome'] : null,
@@ -247,7 +252,12 @@ export default function AdminDashboardPage({ currentUser }) {
             />
           )}
           {activeTab === 'reviews' && isAdmin && <AdminReviewSection />}
-          {activeTab === 'ai-insights' && isAdmin && <AiInsightTab />}
+          {activeTab === 'events' && isAdmin && (
+            <AdminEventsSection {...eventManagement} />
+          )}
+          {activeTab === 'ai-insights' && isAdmin && (
+            <AiInsightTab eventManagement={eventManagement} />
+          )}
           {activeTab === 'support' && isAdmin && <AdminSupportSection />}
         </main>
       </div>

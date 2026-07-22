@@ -1,12 +1,15 @@
 package com.aurafit.service.stylist.impl;
 
 import com.aurafit.dto.request.StylistFilterCriteria;
+import com.aurafit.dto.response.CatalogCostumeDTO;
 import com.aurafit.dto.response.ChatMessageResponse;
 import com.aurafit.entity.Category;
 import com.aurafit.entity.ChatMessage;
 import com.aurafit.entity.ChatSession;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.CostumeMetadata;
+import com.aurafit.entity.Event;
+import com.aurafit.entity.EventCostume;
 import com.aurafit.entity.ProductAiMetadata;
 import com.aurafit.entity.ProductEmbedding;
 import com.aurafit.entity.User;
@@ -14,6 +17,7 @@ import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.ChatMessageRole;
 import com.aurafit.enums.AiErrorType;
 import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.EventStatus;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.enums.ProductEmbeddingStatus;
 import com.aurafit.exception.AiProviderException;
@@ -22,6 +26,7 @@ import com.aurafit.integration.ai.GeminiClient;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
 import com.aurafit.repository.CostumeRepository;
+import com.aurafit.repository.EventCostumeRepository;
 import com.aurafit.repository.ProductAiMetadataRepository;
 import com.aurafit.repository.ProductEmbeddingRepository;
 import com.aurafit.repository.UserRepository;
@@ -30,6 +35,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -45,6 +52,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,6 +77,8 @@ class StylistRecommendationServiceImplTest {
     @Mock
     private CostumeRepository costumeRepository;
     @Mock
+    private EventCostumeRepository eventCostumeRepository;
+    @Mock
     private ProductAiMetadataRepository productAiMetadataRepository;
     @Mock
     private ProductEmbeddingRepository productEmbeddingRepository;
@@ -90,6 +101,7 @@ class StylistRecommendationServiceImplTest {
                 chatSessionRepository,
                 chatMessageRepository,
                 costumeRepository,
+                eventCostumeRepository,
                 productAiMetadataRepository,
                 productEmbeddingRepository,
                 userRepository,
@@ -429,6 +441,127 @@ class StylistRecommendationServiceImplTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void handleUserMessage_shouldAddActiveEventToPromptDtoAndUseItAsFinalTieBreaker() {
+        ChatSession session = ChatSession.builder().id(11L).sessionId("session-active-event").build();
+        StylistFilterCriteria criteria = new StylistFilterCriteria(
+                null, null, "dạ hội", null, null, null, null, null, null
+        );
+        Costume regularCostume = costume(20L, "Váy dạ hội xanh", "Xanh", "Dạ hội", "thanh lịch");
+        Costume discountedCostume = costume(21L, "Váy dạ hội đỏ", "Đỏ", "Dạ hội", "thanh lịch");
+        Event event = event(
+                30L,
+                "Summer Gala",
+                LocalDateTime.now().minusDays(1),
+                LocalDateTime.now().plusDays(1)
+        );
+        EventCostume assignment = EventCostume.builder()
+                .id(40L)
+                .event(event)
+                .costume(discountedCostume)
+                .discountPercentOverride(new BigDecimal("25"))
+                .build();
+
+        stubActiveSession(session);
+        when(stylistIntentService.extractIntent(any(), any())).thenReturn(criteria);
+        when(costumeRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(regularCostume, discountedCostume)));
+        when(eventCostumeRepository.findActiveEventsForCostumeIds(any(), any(LocalDateTime.class)))
+                .thenReturn(List.of(assignment));
+        when(geminiClient.generateText(eq(AiCallType.RESPONSE_GENERATION), any(), any()))
+                .thenReturn("Mẫu váy đỏ phù hợp và đang có ưu đãi.\nRECOMMENDED_IDS: 21");
+        when(costumeRepository.findByIdWithItems(21L)).thenReturn(Optional.of(discountedCostume));
+
+        ChatMessageResponse response = service.handleUserMessage(
+                "session-active-event",
+                null,
+                "tìm váy đi dạ hội"
+        );
+
+        CatalogCostumeDTO recommendedCostume = response.recommendedCostumes().get(0);
+        assertEquals(new BigDecimal("25"), recommendedCostume.discountPercent());
+        assertEquals(new BigDecimal("300000"), recommendedCostume.finalPrice());
+        assertEquals("Summer Gala", recommendedCostume.eventName());
+
+        ArgumentCaptor<String> systemPromptCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> candidatePromptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(geminiClient).generateText(
+                eq(AiCallType.RESPONSE_GENERATION),
+                systemPromptCaptor.capture(),
+                candidatePromptCaptor.capture()
+        );
+        String candidatePrompt = candidatePromptCaptor.getValue();
+        assertTrue(systemPromptCaptor.getValue().contains(
+                "Nếu sản phẩm phù hợp đang có ưu đãi, hãy nhắc đến ưu đãi đó một cách tự nhiên"
+        ));
+        assertTrue(candidatePrompt.contains("Ưu đãi: Summer Gala giảm 25% (còn 300000đ)"));
+        assertTrue(candidatePrompt.indexOf("ID: 21") < candidatePrompt.indexOf("ID: 20"));
+        @SuppressWarnings("rawtypes")
+        ArgumentCaptor<List> costumeIdsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(eventCostumeRepository, times(2)).findActiveEventsForCostumeIds(
+                costumeIdsCaptor.capture(),
+                any(LocalDateTime.class)
+        );
+        assertEquals(List.of(20L, 21L), costumeIdsCaptor.getAllValues().get(0));
+        assertEquals(List.of(21L), costumeIdsCaptor.getAllValues().get(1));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @SuppressWarnings("unchecked")
+    void handleUserMessage_shouldNotExposeDiscountOutsideEventDateRange(boolean eventHasEnded) {
+        ChatSession session = ChatSession.builder()
+                .id(eventHasEnded ? 12L : 13L)
+                .sessionId(eventHasEnded ? "session-ended-event" : "session-future-event")
+                .build();
+        StylistFilterCriteria criteria = new StylistFilterCriteria(
+                null, null, "dạ hội", null, null, null, null, null, null
+        );
+        Costume costume = costume(22L, "Váy dạ hội tím", "Tím", "Dạ hội", "thanh lịch");
+        LocalDateTime now = LocalDateTime.now();
+        Event event = event(
+                eventHasEnded ? 31L : 32L,
+                eventHasEnded ? "Gala đã kết thúc" : "Gala sắp tới",
+                eventHasEnded ? now.minusDays(2) : now.plusDays(1),
+                eventHasEnded ? now.minusDays(1) : now.plusDays(2)
+        );
+        EventCostume assignment = EventCostume.builder()
+                .id(eventHasEnded ? 41L : 42L)
+                .event(event)
+                .costume(costume)
+                .build();
+
+        stubActiveSession(session);
+        when(stylistIntentService.extractIntent(any(), any())).thenReturn(criteria);
+        when(costumeRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(costume)));
+        when(eventCostumeRepository.findActiveEventsForCostumeIds(any(), any(LocalDateTime.class)))
+                .thenReturn(List.of(assignment));
+        when(geminiClient.generateText(eq(AiCallType.RESPONSE_GENERATION), any(), any()))
+                .thenReturn("Mẫu váy phù hợp.\nRECOMMENDED_IDS: 22");
+        when(costumeRepository.findByIdWithItems(22L)).thenReturn(Optional.of(costume));
+
+        ChatMessageResponse response = service.handleUserMessage(
+                session.getSessionId(),
+                null,
+                "tìm váy đi dạ hội"
+        );
+
+        CatalogCostumeDTO recommendedCostume = response.recommendedCostumes().get(0);
+        assertNull(recommendedCostume.discountPercent());
+        assertNull(recommendedCostume.finalPrice());
+        assertNull(recommendedCostume.eventName());
+
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(geminiClient).generateText(
+                eq(AiCallType.RESPONSE_GENERATION),
+                any(),
+                promptCaptor.capture()
+        );
+        assertFalse(promptCaptor.getValue().contains(" | Ưu đãi:"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void handleUserMessage_shouldRankFallbackCandidatesByEmbeddingWithOneEmbeddingCall() {
         ChatSession session = ChatSession.builder().id(9L).sessionId("session-embedding").build();
         StylistFilterCriteria criteria = new StylistFilterCriteria(
@@ -601,6 +734,22 @@ class StylistRecommendationServiceImplTest {
                 .embeddingModel("text-embedding-test")
                 .embeddingPayload(payload)
                 .status(status)
+                .build();
+    }
+
+    private Event event(
+            Long id,
+            String name,
+            LocalDateTime startDate,
+            LocalDateTime endDate
+    ) {
+        return Event.builder()
+                .id(id)
+                .name(name)
+                .discountPercent(new BigDecimal("20"))
+                .startDate(startDate)
+                .endDate(endDate)
+                .status(EventStatus.ACTIVE)
                 .build();
     }
 

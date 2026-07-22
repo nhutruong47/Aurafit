@@ -30,6 +30,19 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     List<Category> findByParentIdAndIsActiveTrueOrderBySortOrderAsc(Long parentId);
 
+    @Query("""
+            SELECT c
+            FROM Category c
+            WHERE c.isActive = true
+              AND (
+                    LOWER(c.name) IN :identifiers
+                    OR LOWER(c.slug) IN :identifiers
+                    OR LOWER(c.path) IN :identifiers
+              )
+            ORDER BY c.id ASC
+            """)
+    List<Category> findActiveByDemandIdentifiers(@Param("identifiers") List<String> identifiers);
+
     @Query("SELECT c FROM Category c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))")
     Page<Category> searchCategories(@Param("keyword") String keyword, Pageable pageable);
 }

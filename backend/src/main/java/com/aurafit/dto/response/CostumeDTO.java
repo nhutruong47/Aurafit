@@ -18,6 +18,9 @@ public record CostumeDTO(
         String description,
         BigDecimal rentalPrice,
         BigDecimal depositPrice,
+        BigDecimal discountPercent,
+        BigDecimal finalPrice,
+        String eventName,
         String imageUrl,
         List<String> imageUrls,
         CostumeStatus status,
@@ -48,6 +51,9 @@ public record CostumeDTO(
                 costume.getDescription(),
                 costume.getRentalPrice(),
                 costume.getDepositPrice(),
+                null,
+                null,
+                null,
                 costume.getPrimaryImageUrl(),
                 costume.getAllImageUrls(),
                 costume.getStatus(),
@@ -62,6 +68,16 @@ public record CostumeDTO(
     }
 
     public static CostumeDTO fromEntity(Costume costume, List<InventorySummaryDTO> inventorySummary) {
+        return fromEntity(costume, inventorySummary, null, null, null);
+    }
+
+    public static CostumeDTO fromEntity(
+            Costume costume,
+            List<InventorySummaryDTO> inventorySummary,
+            BigDecimal discountPercent,
+            BigDecimal finalPrice,
+            String eventName
+    ) {
         // Pooled count (AVAILABLE + RESERVED) so the storefront shows items that are
         // physically on-hand even when some units are temporarily held by a pending order.
         long pooledCount = costume.getItems() == null ? 0 :
@@ -76,6 +92,9 @@ public record CostumeDTO(
                 costume.getDescription(),
                 costume.getRentalPrice(),
                 costume.getDepositPrice(),
+                discountPercent,
+                finalPrice,
+                eventName,
                 costume.getPrimaryImageUrl(),
                 costume.getAllImageUrls(),
                 costume.getStatus(),

@@ -9,6 +9,8 @@ import com.aurafit.repository.CategoryRepository;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.CostumeSpecification;
 import com.aurafit.service.recommendation.RelatedProductService;
+import com.aurafit.service.EventPricingService;
+import com.aurafit.service.EventPricingService.ActiveEventOffer;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.time.LocalDateTime;
 
 @Service
 @Transactional(readOnly = true)
@@ -35,11 +38,14 @@ public class RelatedProductServiceImpl implements RelatedProductService {
 
     private final CostumeRepository costumeRepository;
     private final CategoryRepository categoryRepository;
+    private final EventPricingService eventPricingService;
 
     public RelatedProductServiceImpl(CostumeRepository costumeRepository,
-                                     CategoryRepository categoryRepository) {
+                                     CategoryRepository categoryRepository,
+                                     EventPricingService eventPricingService) {
         this.costumeRepository = costumeRepository;
         this.categoryRepository = categoryRepository;
+        this.eventPricingService = eventPricingService;
     }
 
     @Override
@@ -91,8 +97,13 @@ public class RelatedProductServiceImpl implements RelatedProductService {
                 .map(ScoredCostume::costume)
                 .toList();
 
-        return loadItemsPreservingOrder(ranked).stream()
-                .map(CatalogCostumeDTO::fromEntity)
+        List<Costume> relatedCostumes = loadItemsPreservingOrder(ranked);
+        Map<Long, ActiveEventOffer> offersByCostumeId = eventPricingService.findActiveOffers(
+                relatedCostumes.stream().map(Costume::getId).toList(),
+                LocalDateTime.now()
+        );
+        return relatedCostumes.stream()
+                .map(costume -> toCatalogCostumeDTO(costume, offersByCostumeId.get(costume.getId())))
                 .toList();
     }
 
@@ -108,6 +119,18 @@ public class RelatedProductServiceImpl implements RelatedProductService {
         }
 
         return new ArrayList<>(categoryIds);
+    }
+
+    private CatalogCostumeDTO toCatalogCostumeDTO(Costume costume, ActiveEventOffer activeOffer) {
+        if (activeOffer == null) {
+            return CatalogCostumeDTO.fromEntity(costume);
+        }
+        return CatalogCostumeDTO.fromEntity(
+                costume,
+                activeOffer.discountPercent(),
+                activeOffer.finalPrice(),
+                activeOffer.eventName()
+        );
     }
 
     private double similarityScore(Costume source, Costume candidate) {

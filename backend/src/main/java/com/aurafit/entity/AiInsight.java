@@ -45,4 +45,7 @@ public class AiInsight extends BaseEntity {
 
     @Column(name = "metrics_snapshot", columnDefinition = "TEXT")
     private String metricsSnapshot;
+
+    @Column(name = "suggested_events_json", columnDefinition = "TEXT")
+    private String suggestedEventsJson;
 }
