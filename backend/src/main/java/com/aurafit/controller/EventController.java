@@ -4,6 +4,7 @@ import com.aurafit.dto.request.EventCostumeAssignRequest;
 import com.aurafit.dto.request.EventCreateRequest;
 import com.aurafit.dto.request.EventUpdateRequest;
 import com.aurafit.dto.response.ApiResponse;
+import com.aurafit.dto.response.EventBannerResponse;
 import com.aurafit.dto.response.EventResponse;
 import com.aurafit.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -125,6 +127,18 @@ public class EventController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy danh sách sự kiện đang hoạt động thành công.",
                 eventService.getActiveEvents()
+        ));
+    }
+
+    @GetMapping("/events/upcoming-and-active")
+    @Operation(summary = "Lấy event đang diễn ra và sắp diễn ra cho banner public")
+    public ResponseEntity<ApiResponse<List<EventBannerResponse>>> getUpcomingAndActiveEvents(
+            @RequestParam(defaultValue = "2")
+            @Positive(message = "Limit phải lớn hơn 0") int limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy danh sách sự kiện nổi bật thành công.",
+                eventService.getUpcomingAndActiveEvents(limit)
         ));
     }
 }

@@ -46,6 +46,9 @@ public class Event extends BaseEntity {
     @Column(name = "banner_image_url", length = 500)
     private String bannerImageUrl;
 
+    @Column(name = "side_banner_image_url", length = 500)
+    private String sideBannerImageUrl;
+
     @Column(name = "discount_percent", nullable = false, precision = 5, scale = 2)
     private BigDecimal discountPercent;
 

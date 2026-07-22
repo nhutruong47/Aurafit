@@ -8,6 +8,7 @@ import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.InventoryRepository;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.service.CostumeMetadataService;
+import com.aurafit.service.EventPricingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +42,8 @@ class CostumeServiceImplSortTest {
     private CartRepository cartRepository;
     @Mock
     private CartItemRepository cartItemRepository;
+    @Mock
+    private EventPricingService eventPricingService;
 
     private CostumeServiceImpl costumeService;
 
@@ -53,7 +56,8 @@ class CostumeServiceImplSortTest {
                 costumeMetadataService,
                 inventoryRepository,
                 cartRepository,
-                cartItemRepository
+                cartItemRepository,
+                eventPricingService
         );
     }
 

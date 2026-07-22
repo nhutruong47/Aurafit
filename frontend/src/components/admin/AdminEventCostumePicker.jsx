@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const normalizeSearchValue = (value) => String(value || '').trim().toLocaleLowerCase('vi-VN');
+const UNCATEGORIZED_FILTER = 'uncategorized';
 
 export default function AdminEventCostumePicker({
   costumes = [],
@@ -11,19 +12,53 @@ export default function AdminEventCostumePicker({
   isLoading = false,
 }) {
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const assignmentsByCostumeId = useMemo(
     () => new Map(assignments.map((assignment) => [Number(assignment.costumeId), assignment])),
     [assignments]
   );
+  const categoryOptions = useMemo(() => {
+    const categoriesById = new Map();
+    let hasUncategorizedCostume = false;
+
+    costumes.forEach((costume) => {
+      if (costume.category?.id != null) {
+        categoriesById.set(String(costume.category.id), costume.category.name);
+      } else {
+        hasUncategorizedCostume = true;
+      }
+    });
+
+    const options = [...categoriesById.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((left, right) => left.name.localeCompare(right.name, 'vi'));
+
+    if (hasUncategorizedCostume) {
+      options.push({ id: UNCATEGORIZED_FILTER, name: 'Chưa có danh mục' });
+    }
+    return options;
+  }, [costumes]);
   const normalizedSearch = normalizeSearchValue(search);
   const filteredCostumes = useMemo(() => {
-    if (!normalizedSearch) return costumes;
-    return costumes.filter((costume) => normalizeSearchValue([
-      costume.name,
-      costume.slug,
-      costume.category?.name,
-    ].join(' ')).includes(normalizedSearch));
-  }, [costumes, normalizedSearch]);
+    return costumes
+      .filter((costume) => {
+        const matchesCategory = categoryFilter === 'all'
+          || (categoryFilter === UNCATEGORIZED_FILTER && costume.category?.id == null)
+          || String(costume.category?.id) === categoryFilter;
+        if (!matchesCategory) return false;
+
+        if (!normalizedSearch) return true;
+        return normalizeSearchValue([
+          costume.name,
+          costume.slug,
+          costume.category?.name,
+        ].join(' ')).includes(normalizedSearch);
+      })
+      .sort((left, right) => (
+        Number(assignmentsByCostumeId.has(Number(right.id)))
+        - Number(assignmentsByCostumeId.has(Number(left.id)))
+      ));
+  }, [assignmentsByCostumeId, categoryFilter, costumes, normalizedSearch]);
 
   const toggleCostume = (costumeId) => {
     const normalizedId = Number(costumeId);
@@ -48,7 +83,7 @@ export default function AdminEventCostumePicker({
 
   return (
     <div className="space-y-4 border border-[#d7d2c8] bg-[#fafaf8] p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">
             Sản phẩm áp dụng
@@ -57,17 +92,30 @@ export default function AdminEventCostumePicker({
             Đã chọn {assignments.length} sản phẩm. Mức giảm riêng để trống sẽ dùng mức giảm chung của event.
           </p>
         </div>
-        <label className="relative block w-full sm:max-w-xs">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
-            search
-          </span>
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Tìm sản phẩm..."
-            className="w-full border border-[#d7d2c8] bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
-          />
-        </label>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+          <label className="relative block w-full">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
+              search
+            </span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Tìm sản phẩm..."
+              className="w-full border border-[#d7d2c8] bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
+            />
+          </label>
+          <select
+            value={categoryFilter}
+            onChange={(event) => setCategoryFilter(event.target.value)}
+            className="w-full border border-[#d7d2c8] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#7f7041]"
+            aria-label="Lọc sản phẩm theo danh mục"
+          >
+            <option value="all">Tất cả danh mục</option>
+            {categoryOptions.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isLoading ? (

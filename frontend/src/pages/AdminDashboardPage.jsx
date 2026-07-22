@@ -255,7 +255,9 @@ export default function AdminDashboardPage({ currentUser }) {
           {activeTab === 'events' && isAdmin && (
             <AdminEventsSection {...eventManagement} />
           )}
-          {activeTab === 'ai-insights' && isAdmin && <AiInsightTab />}
+          {activeTab === 'ai-insights' && isAdmin && (
+            <AiInsightTab eventManagement={eventManagement} />
+          )}
           {activeTab === 'support' && isAdmin && <AdminSupportSection />}
         </main>
       </div>

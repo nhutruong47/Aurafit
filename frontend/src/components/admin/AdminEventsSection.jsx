@@ -43,6 +43,7 @@ export default function AdminEventsSection({
   setStatusFilter,
   handleFieldChange,
   handleBannerChange,
+  handleSideBannerChange,
   handleCostumeAssignmentsChange,
   hydrateEventForm,
   resetEventForm,
@@ -205,6 +206,7 @@ export default function AdminEventsSection({
         error={error}
         onFieldChange={handleFieldChange}
         onBannerChange={handleBannerChange}
+        onSideBannerChange={handleSideBannerChange}
         onCostumeAssignmentsChange={handleCostumeAssignmentsChange}
         onSubmit={submitEvent}
       />

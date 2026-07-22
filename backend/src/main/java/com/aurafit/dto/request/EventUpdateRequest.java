@@ -21,6 +21,9 @@ public record EventUpdateRequest(
         @Size(max = 500, message = "URL banner không được vượt quá 500 ký tự")
         String bannerImageUrl,
 
+        @Size(max = 500, message = "URL banner dọc không được vượt quá 500 ký tự")
+        String sideBannerImageUrl,
+
         @DecimalMin(value = "0", inclusive = false, message = "Phần trăm giảm giá phải lớn hơn 0")
         @DecimalMax(value = "100", message = "Phần trăm giảm giá không được vượt quá 100")
         @Digits(integer = 3, fraction = 2, message = "Phần trăm giảm giá chỉ được có tối đa 2 chữ số thập phân")

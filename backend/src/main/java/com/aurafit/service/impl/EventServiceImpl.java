@@ -3,6 +3,7 @@ package com.aurafit.service.impl;
 import com.aurafit.dto.request.EventCostumeAssignRequest;
 import com.aurafit.dto.request.EventCreateRequest;
 import com.aurafit.dto.request.EventUpdateRequest;
+import com.aurafit.dto.response.EventBannerResponse;
 import com.aurafit.dto.response.EventResponse;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.Event;
@@ -15,6 +16,7 @@ import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.EventCostumeRepository;
 import com.aurafit.repository.EventRepository;
 import com.aurafit.service.EventService;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -65,6 +67,19 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    public List<EventBannerResponse> getUpcomingAndActiveEvents(int limit) {
+        LocalDateTime now = LocalDateTime.now();
+        return eventRepository.findUpcomingAndActiveEvents(
+                        EventStatus.ACTIVE,
+                        now,
+                        PageRequest.of(0, limit)
+                )
+                .stream()
+                .map(event -> EventBannerResponse.fromEntity(event, now))
+                .toList();
+    }
+
+    @Override
     @Transactional
     public EventResponse createEvent(EventCreateRequest request) {
         validateDateRange(request.startDate(), request.endDate());
@@ -82,6 +97,7 @@ public class EventServiceImpl implements EventService {
                 .slug(slug)
                 .description(normalizeNullable(request.description()))
                 .bannerImageUrl(normalizeNullable(request.bannerImageUrl()))
+                .sideBannerImageUrl(normalizeNullable(request.sideBannerImageUrl()))
                 .discountPercent(request.discountPercent())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
@@ -109,6 +125,9 @@ public class EventServiceImpl implements EventService {
         }
         if (request.bannerImageUrl() != null) {
             event.setBannerImageUrl(normalizeNullable(request.bannerImageUrl()));
+        }
+        if (request.sideBannerImageUrl() != null) {
+            event.setSideBannerImageUrl(normalizeNullable(request.sideBannerImageUrl()));
         }
         if (request.discountPercent() != null) {
             validateDiscountPercent(request.discountPercent(), "Phần trăm giảm giá");

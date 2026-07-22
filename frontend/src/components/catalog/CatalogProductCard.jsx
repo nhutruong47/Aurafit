@@ -3,11 +3,14 @@ import {
   fallbackCostumeImage,
   getCostumeApiCategoryName,
   getCostumeDepositPriceValue,
+  getCostumeDiscountPercentValue,
   getCostumeDisplayCategory,
+  getCostumeFinalPriceValue,
   getCostumeImage,
   getCostumeRentalPriceValue,
   getCostumeSubcategory,
   getCostumeTag,
+  hasCostumeDiscount,
   isCostumeAvailable,
 } from '../../utils/costumeUtils';
 
@@ -17,6 +20,9 @@ export default function CatalogProductCard({ costume, product, onNavigate }) {
   const subcategoryLabel = getCostumeSubcategory(item) || getCostumeApiCategoryName(item);
   const available = isCostumeAvailable(item);
   const tag = getCostumeTag(item);
+  const discounted = hasCostumeDiscount(item);
+  const discountPercent = getCostumeDiscountPercentValue(item);
+  const finalPrice = getCostumeFinalPriceValue(item);
 
   return (
     <article className="group flex flex-col overflow-hidden border border-[#cfc4c5] bg-white transition-all duration-500 hover:border-[#99854e]/50">
@@ -75,13 +81,28 @@ export default function CatalogProductCard({ costume, product, onNavigate }) {
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div>
             <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#999999]">Giá thuê</span>
-            <span className="font-serif text-xl text-black">{formatCurrency(getCostumeRentalPriceValue(item))}</span>
+            {discounted ? (
+              <div className="space-y-1">
+                <span className="block text-xs text-[#777777] line-through">
+                  {formatCurrency(getCostumeRentalPriceValue(item))}
+                </span>
+                <span className="block font-serif text-xl text-[#7f7041]">{formatCurrency(finalPrice)}</span>
+              </div>
+            ) : (
+              <span className="font-serif text-xl text-black">{formatCurrency(getCostumeRentalPriceValue(item))}</span>
+            )}
           </div>
           <div>
             <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#999999]">Tiền cọc</span>
             <span className="font-serif text-xl text-black">{formatCurrency(getCostumeDepositPriceValue(item))}</span>
           </div>
         </div>
+
+        {discounted && (
+          <div className="mb-4 inline-flex w-fit border border-[#c8b378] bg-[#fbf7e8] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#7f7041]">
+            {item.eventName ? `${item.eventName} · ` : ''}Giảm {discountPercent}%
+          </div>
+        )}
 
         <div className="mt-auto">
           <button

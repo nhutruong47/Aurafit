@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CatalogProductCard from '../components/catalog/CatalogProductCard';
+import EventSideBanner from '../components/catalog/EventSideBanner';
 import ProductHero from '../components/product/ProductHero';
 import ProductReviewsSection from '../components/product/ProductReviewsSection';
 import TryOnPanel from '../components/product/TryOnPanel';
 import AlertMessage from '../components/ui/AlertMessage';
+import { useFeaturedEvents } from '../hooks/useFeaturedEvents';
 import { fetchCostumeById, fetchRelatedCostumes } from '../services/costumeService';
 import { logUserInteraction } from '../services/interactionsService';
 import { fetchOrderDetail, fetchOrders } from '../services/rentalOrderService';
@@ -93,6 +95,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   const tryOnRef = useRef(null);
   const tryOnBtnRef = useRef(null);
   const chatBtnRef = useRef(null);
+  const { leftEvent, rightEvent } = useFeaturedEvents(2);
 
   useEffect(() => {
     if (!productId) {
@@ -459,8 +462,13 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] px-4 pb-12 pt-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1200px]">
+    <div className="min-h-screen bg-[#f9f9f9] px-4 pb-12 pt-4 sm:px-6 lg:px-8 xl:px-0">
+      <div className="w-full xl:grid xl:grid-cols-[minmax(120px,1fr)_minmax(0,1200px)_minmax(120px,1fr)] xl:items-stretch" data-event-page-grid="costume-detail">
+        <aside className="hidden min-h-0 self-stretch xl:block" aria-label="Sự kiện nổi bật bên trái">
+          {leftEvent && <EventSideBanner side="left" event={leftEvent} />}
+        </aside>
+
+        <div className="mx-auto w-full min-w-0 max-w-[1200px] xl:mx-0" data-event-page-content="costume-detail">
         <button
           onClick={() => navigate(-1)}
           className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:text-black"
@@ -652,6 +660,11 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
             )}
           </section>
         )}
+        </div>
+
+        <aside className="hidden min-h-0 self-stretch xl:block" aria-label="Sự kiện nổi bật bên phải">
+          {rightEvent && <EventSideBanner side="right" event={rightEvent} />}
+        </aside>
       </div>
     </div>
   );

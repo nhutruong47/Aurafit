@@ -2,6 +2,7 @@ package com.aurafit.service.impl;
 
 import com.aurafit.dto.request.EventCostumeAssignRequest;
 import com.aurafit.dto.request.EventCreateRequest;
+import com.aurafit.dto.response.EventBannerResponse;
 import com.aurafit.dto.response.EventResponse;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.Event;
@@ -17,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,8 +26,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,6 +69,7 @@ class EventServiceImplTest {
                 null,
                 null,
                 null,
+                null,
                 startDate,
                 startDate.plusDays(7),
                 null
@@ -91,8 +97,49 @@ class EventServiceImplTest {
         verify(eventRepository).save(eventCaptor.capture());
         assertEquals("Summer Sale 2026", eventCaptor.getValue().getName());
         assertEquals("summer-sale-2026", eventCaptor.getValue().getSlug());
+        assertEquals("https://cdn.example.com/event-wide.jpg", eventCaptor.getValue().getBannerImageUrl());
+        assertEquals("https://cdn.example.com/event-side.jpg", eventCaptor.getValue().getSideBannerImageUrl());
         assertEquals(EventStatus.DRAFT, eventCaptor.getValue().getStatus());
         assertEquals(12L, response.id());
+        assertEquals("https://cdn.example.com/event-wide.jpg", response.bannerImageUrl());
+        assertEquals("https://cdn.example.com/event-side.jpg", response.sideBannerImageUrl());
+    }
+
+    @Test
+    void getUpcomingAndActiveEvents_shouldReturnOngoingFlagAndApplyLimit() {
+        LocalDateTime referenceTime = LocalDateTime.now();
+        Event ongoingEvent = Event.builder()
+                .id(1L)
+                .name("Đang diễn ra")
+                .slug("dang-dien-ra")
+                .sideBannerImageUrl("https://cdn.example.com/ongoing-side.jpg")
+                .discountPercent(new BigDecimal("20"))
+                .startDate(referenceTime.minusDays(1))
+                .endDate(referenceTime.plusDays(1))
+                .status(EventStatus.ACTIVE)
+                .build();
+        Event upcomingEvent = Event.builder()
+                .id(2L)
+                .name("Sắp diễn ra")
+                .slug("sap-dien-ra")
+                .discountPercent(new BigDecimal("15"))
+                .startDate(referenceTime.plusDays(2))
+                .endDate(referenceTime.plusDays(5))
+                .status(EventStatus.ACTIVE)
+                .build();
+
+        when(eventRepository.findUpcomingAndActiveEvents(
+                eq(EventStatus.ACTIVE),
+                any(LocalDateTime.class),
+                eq(PageRequest.of(0, 2))
+        )).thenReturn(List.of(ongoingEvent, upcomingEvent));
+
+        List<EventBannerResponse> responses = eventService.getUpcomingAndActiveEvents(2);
+
+        assertEquals(List.of(1L, 2L), responses.stream().map(EventBannerResponse::id).toList());
+        assertEquals("https://cdn.example.com/ongoing-side.jpg", responses.get(0).sideBannerImageUrl());
+        assertTrue(responses.get(0).isOngoing());
+        assertFalse(responses.get(1).isOngoing());
     }
 
     @Test
@@ -151,7 +198,8 @@ class EventServiceImplTest {
                 " Summer Sale 2026 ",
                 null,
                 "Ưu đãi mùa hè",
-                null,
+                "https://cdn.example.com/event-wide.jpg",
+                "https://cdn.example.com/event-side.jpg",
                 new BigDecimal("20"),
                 startDate,
                 endDate,

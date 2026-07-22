@@ -87,6 +87,9 @@ ai:
     timeout-ms: ${GEMINI_TIMEOUT_MS:15000}
     thinking-budget: ${GEMINI_THINKING_BUDGET:0}
 
+ai-analyst:
+  low-stock-threshold: ${AI_ANALYST_LOW_STOCK_THRESHOLD:3}
+
 
 ghn:
   api:

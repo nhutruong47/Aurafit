@@ -8,6 +8,8 @@ const getUploadAssetUrl = (asset) => (
   asset?.secureUrl || asset?.secure_url || asset?.imageUrl || asset?.image_url || asset?.url || ''
 ).trim();
 
+const EMPTY_UPLOAD_STATE = { isUploading: false, error: '' };
+
 export default function AdminEventModal({
   isOpen,
   onClose,
@@ -19,10 +21,14 @@ export default function AdminEventModal({
   error,
   onFieldChange,
   onBannerChange,
+  onSideBannerChange,
   onCostumeAssignmentsChange,
   onSubmit,
 }) {
-  const [uploadState, setUploadState] = useState({ isUploading: false, error: '' });
+  const [bannerUploadState, setBannerUploadState] = useState(EMPTY_UPLOAD_STATE);
+  const [sideBannerUploadState, setSideBannerUploadState] = useState(EMPTY_UPLOAD_STATE);
+  const isUploading = bannerUploadState.isUploading || sideBannerUploadState.isUploading;
+  const uploadError = bannerUploadState.error || sideBannerUploadState.error;
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -41,12 +47,12 @@ export default function AdminEventModal({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (uploadState.isUploading) {
-      useToastStore.getState().addToast('Vui lòng chờ banner tải lên hoàn tất.', 'error');
+    if (isUploading) {
+      useToastStore.getState().addToast('Vui lòng chờ các ảnh banner tải lên hoàn tất.', 'error');
       return;
     }
-    if (uploadState.error) {
-      useToastStore.getState().addToast(uploadState.error, 'error');
+    if (uploadError) {
+      useToastStore.getState().addToast(uploadError, 'error');
       return;
     }
     const succeeded = await onSubmit();
@@ -83,25 +89,52 @@ export default function AdminEventModal({
           <div className="grid gap-8 px-6 py-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <div className="space-y-5">
               <ImageUploadField
-                key={editingEventId || 'new-event'}
-                label="Banner sự kiện"
+                key={`${editingEventId || 'new-event'}-page-banner`}
+                label="Ảnh banner trang sự kiện"
+                helperText="Không bắt buộc. Khuyến nghị ảnh ngang tỉ lệ 16:9."
                 value={eventForm.bannerImageUrl}
                 autoUpload
                 disabled={isSaving}
-                readyLabel="Banner đã sẵn sàng."
+                readyLabel="Ảnh banner trang sự kiện đã sẵn sàng."
+                previewAspectClassName="aspect-video"
                 onUploaded={(asset) => onBannerChange(getUploadAssetUrl(asset))}
-                onUploadStateChange={setUploadState}
+                onUploadStateChange={setBannerUploadState}
               />
               {eventForm.bannerImageUrl && (
                 <button
                   type="button"
                   onClick={() => onBannerChange('')}
-                  disabled={isSaving || uploadState.isUploading}
+                  disabled={isSaving || bannerUploadState.isUploading}
                   className="w-full border border-red-200 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 transition hover:border-red-600 hover:bg-red-50 disabled:opacity-50"
                 >
-                  Xóa banner
+                  Xóa ảnh banner trang sự kiện
                 </button>
               )}
+
+              <div className="border-t border-[#ebe7df] pt-5">
+                <ImageUploadField
+                  key={`${editingEventId || 'new-event'}-side-banner`}
+                  label="Ảnh banner dọc (hiển thị hai bên Catalog và Chi tiết sản phẩm)"
+                  helperText="Không bắt buộc. Khuyến nghị ảnh dọc tỉ lệ 1:3."
+                  value={eventForm.sideBannerImageUrl}
+                  autoUpload
+                  disabled={isSaving}
+                  readyLabel="Ảnh banner dọc đã sẵn sàng."
+                  previewAspectClassName="aspect-[1/3]"
+                  onUploaded={(asset) => onSideBannerChange(getUploadAssetUrl(asset))}
+                  onUploadStateChange={setSideBannerUploadState}
+                />
+                {eventForm.sideBannerImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onSideBannerChange('')}
+                    disabled={isSaving || sideBannerUploadState.isUploading}
+                    className="mt-3 w-full border border-red-200 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 transition hover:border-red-600 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    Xóa ảnh banner dọc
+                  </button>
+                )}
+              </div>
 
               <label className="block">
                 <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
@@ -197,11 +230,11 @@ export default function AdminEventModal({
               Hủy
             </button>
             <button
-              disabled={isSaving || uploadState.isUploading || Boolean(uploadState.error)}
+              disabled={isSaving || isUploading || Boolean(uploadError)}
               className="bg-black px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777]"
             >
-              {uploadState.isUploading
-                ? 'Đang tải banner...'
+              {isUploading
+                ? 'Đang tải ảnh banner...'
                 : isSaving
                   ? 'Đang lưu...'
                   : editingEventId

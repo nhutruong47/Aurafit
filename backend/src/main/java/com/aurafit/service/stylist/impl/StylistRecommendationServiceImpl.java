@@ -7,12 +7,14 @@ import com.aurafit.entity.ChatMessage;
 import com.aurafit.entity.ChatSession;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.CostumeMetadata;
+import com.aurafit.entity.EventCostume;
 import com.aurafit.entity.ProductAiMetadata;
 import com.aurafit.entity.ProductEmbedding;
 import com.aurafit.entity.User;
 import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.ChatMessageRole;
 import com.aurafit.enums.CostumeStatus;
+import com.aurafit.enums.EventStatus;
 import com.aurafit.enums.ItemStatus;
 import com.aurafit.enums.ProductEmbeddingStatus;
 import com.aurafit.exception.AiProviderException;
@@ -22,6 +24,7 @@ import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.CostumeSpecification;
+import com.aurafit.repository.EventCostumeRepository;
 import com.aurafit.repository.ProductAiMetadataRepository;
 import com.aurafit.repository.ProductEmbeddingRepository;
 import com.aurafit.repository.UserRepository;
@@ -37,10 +40,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -66,6 +73,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     private static final int DESCRIPTION_MAX_LENGTH = 150;
     private static final int ENRICHED_TAGS_PER_FIELD_LIMIT = 4;
     private static final int ENRICHED_TAG_FIELD_MAX_LENGTH = 60;
+    private static final double EMBEDDING_SIMILARITY_TIE_BAND = 0.01D;
     private static final String NO_RESULTS_REPLY = "Xin lỗi, hiện chưa tìm thấy sản phẩm phù hợp với yêu cầu, bạn có thể mô tả cụ thể hơn không?";
     private static final String DAILY_LIMIT_REPLY = "Bạn đã đạt giới hạn tư vấn hôm nay, vui lòng quay lại vào ngày mai";
     private static final Pattern RECOMMENDED_IDS_PATTERN = Pattern.compile(
@@ -79,6 +87,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             Chỉ nhắc đến những sản phẩm thực sự phù hợp với yêu cầu khách hàng.
             Dùng ngữ cảnh hội thoại gần nhất để hiểu các câu hỏi nối tiếp, thay đổi hoặc so sánh với gợi ý trước đó.
             Nếu yêu cầu hiện tại mâu thuẫn với lịch sử, luôn ưu tiên yêu cầu hiện tại.
+            Nếu sản phẩm phù hợp đang có ưu đãi, hãy nhắc đến ưu đãi đó một cách tự nhiên; không đề cập ưu đãi của sản phẩm không phù hợp với yêu cầu khách.
             Dòng cuối bắt buộc có đúng định dạng RECOMMENDED_IDS: 1,5,9 và chỉ chứa ID từ danh sách được cung cấp.
             Không giải thích dòng RECOMMENDED_IDS và không đặt nội dung nào sau dòng đó.
             """;
@@ -86,6 +95,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final CostumeRepository costumeRepository;
+    private final EventCostumeRepository eventCostumeRepository;
     private final ProductAiMetadataRepository productAiMetadataRepository;
     private final ProductEmbeddingRepository productEmbeddingRepository;
     private final UserRepository userRepository;
@@ -100,6 +110,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             ChatSessionRepository chatSessionRepository,
             ChatMessageRepository chatMessageRepository,
             CostumeRepository costumeRepository,
+            EventCostumeRepository eventCostumeRepository,
             ProductAiMetadataRepository productAiMetadataRepository,
             ProductEmbeddingRepository productEmbeddingRepository,
             UserRepository userRepository,
@@ -113,6 +124,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         this.chatSessionRepository = chatSessionRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.costumeRepository = costumeRepository;
+        this.eventCostumeRepository = eventCostumeRepository;
         this.productAiMetadataRepository = productAiMetadataRepository;
         this.productEmbeddingRepository = productEmbeddingRepository;
         this.userRepository = userRepository;
@@ -158,7 +170,8 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             savedUserMessage.setIntentJson(serializeCriteria(criteria));
             chatMessageRepository.save(savedUserMessage);
 
-            List<Costume> candidates = findCandidates(criteria, userMessage);
+            CandidateSelection candidateSelection = findCandidates(criteria, userMessage);
+            List<Costume> candidates = candidateSelection.candidates();
 
             if (candidates.isEmpty()) {
                 saveAssistantMessage(chatSession, NO_RESULTS_REPLY, null);
@@ -168,7 +181,12 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             String rawReply = geminiClient.generateText(
                     AiCallType.RESPONSE_GENERATION,
                     RECOMMENDATION_SYSTEM_PROMPT,
-                    buildRecommendationPrompt(userMessage, recentHistory, candidates)
+                    buildRecommendationPrompt(
+                            userMessage,
+                            recentHistory,
+                            candidates,
+                            candidateSelection.activeOffersByCostumeId()
+                    )
             );
 
             ParsedRecommendation parsedRecommendation = parseRecommendation(rawReply, candidates);
@@ -180,11 +198,20 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
 
             saveAssistantMessage(chatSession, parsedRecommendation.replyText(), recommendedIds);
 
-            List<CatalogCostumeDTO> recommendedCostumes = parsedRecommendation.costumeIds().stream()
+            List<Costume> recommendedCostumeEntities = parsedRecommendation.costumeIds().stream()
                     .map(costumeRepository::findByIdWithItems)
                     .flatMap(java.util.Optional::stream)
                     .filter(this::isEligibleStylistCostume)
-                    .map(CatalogCostumeDTO::fromEntity)
+                    .toList();
+            Map<Long, ActiveEventOffer> responseOffersByCostumeId = loadActiveEventOffers(
+                    recommendedCostumeEntities.stream().map(Costume::getId).toList(),
+                    LocalDateTime.now()
+            );
+            List<CatalogCostumeDTO> recommendedCostumes = recommendedCostumeEntities.stream()
+                    .map(costume -> toCatalogCostumeDTO(
+                            costume,
+                            responseOffersByCostumeId.get(costume.getId())
+                    ))
                     .toList();
 
             return new ChatMessageResponse(
@@ -303,24 +330,35 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         return recentMessages;
     }
 
-    private List<Costume> findCandidates(StylistFilterCriteria criteria, String userMessage) {
+    private CandidateSelection findCandidates(StylistFilterCriteria criteria, String userMessage) {
         List<Costume> strictCandidates = costumeRepository.findAll(
                 CostumeSpecification.build(criteria),
-                recommendationPage(RECOMMENDATION_LIMIT)
+                recommendationPage(RELAXED_CANDIDATE_POOL_SIZE)
         ).getContent();
         if (!strictCandidates.isEmpty()) {
-            return strictCandidates;
+            Map<Long, ActiveEventOffer> activeOffers = loadActiveEventOffers(
+                    strictCandidates.stream().map(Costume::getId).toList(),
+                    LocalDateTime.now()
+            );
+            List<Costume> rankedStrictCandidates = strictCandidates.stream()
+                    .sorted(Comparator.comparingInt(Costume::getAvailableItemCount)
+                            .reversed()
+                            .thenComparing(costume -> activeOffers.containsKey(costume.getId()) ? 0 : 1)
+                            .thenComparing(Costume::getId))
+                    .limit(RECOMMENDATION_LIMIT)
+                    .toList();
+            return new CandidateSelection(rankedStrictCandidates, activeOffers);
         }
 
-        List<Costume> embeddingCandidates = findEmbeddingCandidates(criteria, userMessage);
-        if (!embeddingCandidates.isEmpty()) {
+        CandidateSelection embeddingCandidates = findEmbeddingCandidates(criteria, userMessage);
+        if (!embeddingCandidates.candidates().isEmpty()) {
             return embeddingCandidates;
         }
 
         return findLegacyFallbackCandidates(criteria, userMessage);
     }
 
-    private List<Costume> findEmbeddingCandidates(
+    private CandidateSelection findEmbeddingCandidates(
             StylistFilterCriteria criteria,
             String userMessage
     ) {
@@ -333,14 +371,14 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                         "Stylist embedding fallback unavailable reason=no_active_available_embeddings "
                                 + "previousFallbackAiCalls=0 currentEmbeddingCalls=0 safetyFallback=java_relevance"
                 );
-                return List.of();
+                return CandidateSelection.empty();
             }
             if (!StringUtils.hasText(embeddingModel)) {
                 log.warn(
                         "Stylist embedding fallback unavailable reason=embedding_model_not_configured "
                                 + "previousFallbackAiCalls=0 currentEmbeddingCalls=0 safetyFallback=java_relevance"
                 );
-                return List.of();
+                return CandidateSelection.empty();
             }
 
             embeddingCallCount++;
@@ -383,9 +421,23 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                 }
             }
 
-            List<Long> rankedCostumeIds = scoredEmbeddings.stream()
+            List<ScoredEmbedding> rankingPool = scoredEmbeddings.stream()
                     .sorted(Comparator.comparingDouble(ScoredEmbedding::similarity)
                             .reversed()
+                            .thenComparing(ScoredEmbedding::costumeId))
+                    .limit(RELAXED_CANDIDATE_POOL_SIZE)
+                    .toList();
+            Map<Long, ActiveEventOffer> activeOffers = loadActiveEventOffers(
+                    rankingPool.stream().map(ScoredEmbedding::costumeId).toList(),
+                    LocalDateTime.now()
+            );
+            List<Long> rankedCostumeIds = rankingPool.stream()
+                    .sorted(Comparator.comparingLong(
+                                    (ScoredEmbedding scored) -> similarityTieBand(scored.similarity())
+                            )
+                            .reversed()
+                            .thenComparing(scored -> activeOffers.containsKey(scored.costumeId()) ? 0 : 1)
+                            .thenComparing(Comparator.comparingDouble(ScoredEmbedding::similarity).reversed())
                             .thenComparing(ScoredEmbedding::costumeId))
                     .limit(RECOMMENDATION_LIMIT)
                     .map(ScoredEmbedding::costumeId)
@@ -396,7 +448,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                                 + "previousFallbackAiCalls=0 currentEmbeddingCalls={} safetyFallback=java_relevance",
                         embeddingCallCount
                 );
-                return List.of();
+                return CandidateSelection.empty();
             }
 
             Map<Long, Costume> costumesById = costumeRepository.findAllByIdWithMetadata(rankedCostumeIds)
@@ -415,7 +467,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                     scoredEmbeddings.size(),
                     rankedCostumes.size()
             );
-            return rankedCostumes;
+            return new CandidateSelection(rankedCostumes, activeOffers);
         } catch (Exception exception) {
             log.warn(
                     "Stylist embedding fallback failed errorType={} message={} previousFallbackAiCalls=0 "
@@ -424,7 +476,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                     exception.getMessage(),
                     embeddingCallCount
             );
-            return List.of();
+            return CandidateSelection.empty();
         }
     }
 
@@ -481,7 +533,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         return vector;
     }
 
-    private List<Costume> findLegacyFallbackCandidates(
+    private CandidateSelection findLegacyFallbackCandidates(
             StylistFilterCriteria criteria,
             String userMessage
     ) {
@@ -509,10 +561,138 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             ).getContent();
         }
 
-        return rankCandidates(relaxedCandidates, searchTerms);
+        Map<Long, ActiveEventOffer> activeOffers = loadActiveEventOffers(
+                relaxedCandidates.stream().map(Costume::getId).toList(),
+                LocalDateTime.now()
+        );
+        return new CandidateSelection(
+                rankCandidates(relaxedCandidates, searchTerms, activeOffers),
+                activeOffers
+        );
     }
 
     private record ScoredEmbedding(Long costumeId, double similarity) {
+    }
+
+    private record ActiveEventOffer(
+            Long eventId,
+            String eventName,
+            BigDecimal discountPercent,
+            BigDecimal finalPrice
+    ) {
+    }
+
+    private record CandidateSelection(
+            List<Costume> candidates,
+            Map<Long, ActiveEventOffer> activeOffersByCostumeId
+    ) {
+        private static CandidateSelection empty() {
+            return new CandidateSelection(List.of(), Map.of());
+        }
+    }
+
+    private long similarityTieBand(double similarity) {
+        return Math.round(similarity / EMBEDDING_SIMILARITY_TIE_BAND);
+    }
+
+    private Map<Long, ActiveEventOffer> loadActiveEventOffers(
+            List<Long> costumeIds,
+            LocalDateTime now
+    ) {
+        if (costumeIds == null || costumeIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> distinctCostumeIds = costumeIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (distinctCostumeIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<EventCostume> activeAssignments = eventCostumeRepository
+                .findActiveEventsForCostumeIds(distinctCostumeIds, now);
+        if (activeAssignments == null || activeAssignments.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, ActiveEventOffer> offersByCostumeId = new LinkedHashMap<>();
+        for (EventCostume assignment : activeAssignments) {
+            if (!isActiveAt(assignment, now)) {
+                continue;
+            }
+            BigDecimal discountPercent = assignment.getDiscountPercentOverride() != null
+                    ? assignment.getDiscountPercentOverride()
+                    : assignment.getEvent().getDiscountPercent();
+            if (!isValidDiscount(discountPercent)) {
+                continue;
+            }
+
+            Costume costume = assignment.getCostume();
+            BigDecimal finalPrice = calculateFinalPrice(costume.getRentalPrice(), discountPercent);
+            ActiveEventOffer offer = new ActiveEventOffer(
+                    assignment.getEvent().getId(),
+                    assignment.getEvent().getName(),
+                    discountPercent,
+                    finalPrice
+            );
+            offersByCostumeId.merge(costume.getId(), offer, this::selectBetterOffer);
+        }
+        return Map.copyOf(offersByCostumeId);
+    }
+
+    private boolean isActiveAt(EventCostume assignment, LocalDateTime now) {
+        if (assignment == null || assignment.getEvent() == null || assignment.getCostume() == null) {
+            return false;
+        }
+        return assignment.getEvent().getStatus() == EventStatus.ACTIVE
+                && assignment.getEvent().getStartDate() != null
+                && !assignment.getEvent().getStartDate().isAfter(now)
+                && assignment.getEvent().getEndDate() != null
+                && !assignment.getEvent().getEndDate().isBefore(now);
+    }
+
+    private boolean isValidDiscount(BigDecimal discountPercent) {
+        return discountPercent != null
+                && discountPercent.compareTo(BigDecimal.ZERO) > 0
+                && discountPercent.compareTo(BigDecimal.valueOf(100)) <= 0;
+    }
+
+    private BigDecimal calculateFinalPrice(BigDecimal rentalPrice, BigDecimal discountPercent) {
+        return rentalPrice
+                .multiply(BigDecimal.valueOf(100).subtract(discountPercent))
+                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+    }
+
+    private ActiveEventOffer selectBetterOffer(ActiveEventOffer current, ActiveEventOffer candidate) {
+        int discountComparison = candidate.discountPercent().compareTo(current.discountPercent());
+        if (discountComparison != 0) {
+            return discountComparison > 0 ? candidate : current;
+        }
+        if (current.eventId() == null) {
+            return candidate;
+        }
+        if (candidate.eventId() == null) {
+            return current;
+        }
+        return candidate.eventId() < current.eventId() ? candidate : current;
+    }
+
+    private CatalogCostumeDTO toCatalogCostumeDTO(Costume costume, ActiveEventOffer activeOffer) {
+        if (activeOffer == null) {
+            return CatalogCostumeDTO.fromEntity(costume);
+        }
+        return CatalogCostumeDTO.fromEntity(
+                costume,
+                activeOffer.discountPercent(),
+                activeOffer.finalPrice(),
+                activeOffer.eventName()
+        );
+    }
+
+    private String formatDecimal(BigDecimal value) {
+        return value.stripTrailingZeros().toPlainString();
     }
 
     private boolean isEligibleStylistCostume(Costume costume) {
@@ -567,7 +747,11 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         }
     }
 
-    private List<Costume> rankCandidates(List<Costume> candidates, List<String> searchTerms) {
+    private List<Costume> rankCandidates(
+            List<Costume> candidates,
+            List<String> searchTerms,
+            Map<Long, ActiveEventOffer> activeOffers
+    ) {
         if (candidates == null || candidates.isEmpty()) {
             return List.of();
         }
@@ -584,6 +768,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
                         )
                         .reversed()
                         .thenComparing(Comparator.comparingInt(Costume::getAvailableItemCount).reversed())
+                        .thenComparing(costume -> activeOffers.containsKey(costume.getId()) ? 0 : 1)
                         .thenComparing(Costume::getId))
                 .limit(RECOMMENDATION_LIMIT)
                 .toList();
@@ -654,7 +839,8 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     private String buildRecommendationPrompt(
             String userMessage,
             List<ChatMessage> recentHistory,
-            List<Costume> candidates
+            List<Costume> candidates,
+            Map<Long, ActiveEventOffer> activeOffersByCostumeId
     ) {
         Map<Long, ProductAiMetadata> aiMetadataByCostumeId = loadProductAiMetadata(candidates);
         StringBuilder prompt = new StringBuilder("Ngữ cảnh hội thoại gần nhất (cũ đến mới):\n");
@@ -711,6 +897,16 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
             );
             if (StringUtils.hasText(trendTags)) {
                 prompt.append(" | Trend tags: ").append(trendTags);
+            }
+            ActiveEventOffer activeOffer = activeOffersByCostumeId.get(costume.getId());
+            if (activeOffer != null) {
+                prompt.append(" | Ưu đãi: ")
+                        .append(activeOffer.eventName())
+                        .append(" giảm ")
+                        .append(formatDecimal(activeOffer.discountPercent()))
+                        .append("% (còn ")
+                        .append(formatDecimal(activeOffer.finalPrice()))
+                        .append("đ)");
             }
             prompt.append('\n');
         });

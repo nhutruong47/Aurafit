@@ -34,12 +34,14 @@ const validateImageFile = (file) => {
 
 function SingleImageUploadField({
   label = 'Ảnh',
+  helperText = '',
   value,
   disabled = false,
   readyLabel = 'Ảnh đã sẵn sàng để sử dụng.',
   autoUpload = false,
   showPreview = true,
   hideUploadButton = false,
+  previewAspectClassName = 'aspect-[3/4]',
   onUploaded,
   onFileSelect,
   onUploadStateChange,
@@ -158,6 +160,9 @@ function SingleImageUploadField({
     <div className="space-y-3">
       <div>
         <p className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">{label}</p>
+        {helperText && (
+          <p className="mb-2 text-xs leading-5 text-[#777777]">{helperText}</p>
+        )}
         <input
           type="file"
           accept=".jpg,.jpeg,.png,.webp"
@@ -181,7 +186,11 @@ function SingleImageUploadField({
 
       {showPreview && previewUrl && (
         <div className="overflow-hidden border border-[#ebe7df] bg-[#fafaf8]">
-          <img src={previewUrl} alt="Xem trước ảnh tải lên" className="aspect-[3/4] w-full object-cover" />
+          <img
+            src={previewUrl}
+            alt="Xem trước ảnh tải lên"
+            className={`${previewAspectClassName} w-full object-cover`}
+          />
         </div>
       )}
 

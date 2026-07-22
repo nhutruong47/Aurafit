@@ -15,6 +15,7 @@ export const emptyEventForm = {
   name: '',
   description: '',
   bannerImageUrl: '',
+  sideBannerImageUrl: '',
   discountPercent: '',
   startDate: '',
   endDate: '',
@@ -107,6 +108,13 @@ export function useAdminEvents(currentUser) {
     }));
   };
 
+  const handleSideBannerChange = (sideBannerImageUrl) => {
+    setEventForm((currentForm) => ({
+      ...currentForm,
+      sideBannerImageUrl: sideBannerImageUrl || '',
+    }));
+  };
+
   const handleCostumeAssignmentsChange = (costumeAssignments) => {
     setEventForm((currentForm) => ({
       ...currentForm,
@@ -122,11 +130,35 @@ export function useAdminEvents(currentUser) {
       name: event.name || '',
       description: event.description || '',
       bannerImageUrl: event.bannerImageUrl || '',
+      sideBannerImageUrl: event.sideBannerImageUrl || '',
       discountPercent: event.discountPercent ?? '',
       startDate: toDateTimeLocal(event.startDate),
       endDate: toDateTimeLocal(event.endDate),
       status: event.status || 'DRAFT',
       costumeAssignments: assignments,
+    });
+    setMessage('');
+    setError('');
+  };
+
+  const hydrateSuggestedEventForm = (suggestion) => {
+    const costumeIds = Array.isArray(suggestion?.costumeIds) ? suggestion.costumeIds : [];
+    const uniqueCostumeIds = [...new Set(
+      costumeIds
+        .map(Number)
+        .filter((costumeId) => Number.isSafeInteger(costumeId) && costumeId > 0)
+    )];
+
+    setEditingEventId(null);
+    setOriginalCostumeIds([]);
+    setEventForm({
+      ...emptyEventForm,
+      name: suggestion?.name || '',
+      discountPercent: suggestion?.suggestedDiscountPercent ?? '',
+      costumeAssignments: uniqueCostumeIds.map((costumeId) => ({
+        costumeId,
+        discountPercentOverride: '',
+      })),
     });
     setMessage('');
     setError('');
@@ -202,6 +234,7 @@ export function useAdminEvents(currentUser) {
         name: eventForm.name.trim(),
         description: eventForm.description.trim() || null,
         bannerImageUrl: eventForm.bannerImageUrl.trim(),
+        sideBannerImageUrl: eventForm.sideBannerImageUrl.trim(),
         discountPercent: Number(eventForm.discountPercent),
         startDate: eventForm.startDate,
         endDate: eventForm.endDate,
@@ -266,8 +299,10 @@ export function useAdminEvents(currentUser) {
     },
     handleFieldChange,
     handleBannerChange,
+    handleSideBannerChange,
     handleCostumeAssignmentsChange,
     hydrateEventForm,
+    hydrateSuggestedEventForm,
     resetEventForm,
     submitEvent,
     handleDelete,
