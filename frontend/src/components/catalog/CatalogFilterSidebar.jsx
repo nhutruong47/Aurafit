@@ -10,16 +10,16 @@ function CategoryNode({
   const isActive = selectedCategoryPath === category.path;
 
   return (
-    <div className="border-b border-[#cfc4c5]/30 pb-4 last:border-0 last:pb-0">
+    <div className="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
       <div className="group flex items-center justify-between gap-3">
         <button
           onClick={() => onApplyFilter('category', category.path)}
           className={`text-left transition-colors ${
             isActive
-              ? 'text-[13px] font-semibold uppercase tracking-[0.1em] text-[#99854e]'
+              ? 'text-[12px] font-semibold uppercase tracking-[0.1em] text-[#99854e]'
               : category.parentPath
-                ? 'text-sm text-[#5f5e5e] hover:text-black'
-                : 'text-[13px] font-semibold uppercase tracking-[0.1em] text-black hover:text-[#99854e]'
+                ? 'text-[13px] text-[#5f5e5e] hover:text-black'
+                : 'text-[12px] font-semibold uppercase tracking-[0.1em] text-black hover:text-[#99854e]'
           }`}
         >
           {category.name}

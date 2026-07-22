@@ -166,10 +166,10 @@ export default function CatalogPage({ onNavigate }) {
         </aside>
 
         <div className="mx-auto w-full min-w-0 max-w-[1440px] xl:mx-0" data-event-page-content="catalog">
-          <div className="mb-10">
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
-            <h1 className="mb-4 font-serif text-4xl font-normal italic text-black sm:text-5xl">Bộ sưu tập trang phục</h1>
-            <p className="max-w-2xl text-lg leading-8 text-[#5f5e5e]">
+          <div className="mb-8">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
+            <h1 className="mb-3 font-serif text-3xl font-normal italic text-black sm:text-4xl">Bộ sưu tập trang phục</h1>
+            <p className="max-w-2xl text-base leading-7 text-[#5f5e5e]">
               Khám phá bộ sưu tập trang phục cao cấp, đa dạng phong cách, giúp bạn tỏa sáng trong mọi khoảnh khắc.
             </p>
           </div>

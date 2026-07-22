@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import NavbarSearch from './NavbarSearch';
 
 export default function Navbar({
   currentPage,
@@ -10,6 +11,7 @@ export default function Navbar({
   isStaff = false,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   const goPage = (page) => {
     onNavigate(page);
@@ -29,7 +31,7 @@ export default function Navbar({
   return (
     <header className="sticky top-0 z-50 h-20 w-full border-b border-[#7f7041]/70 bg-[#473a33] shadow-[0_4px_18px_rgba(41,34,29,0.16)]">
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-5 md:px-20">
-        
+
         {/* Logo Area */}
         <div className="flex items-center gap-10">
           <button
@@ -48,16 +50,16 @@ export default function Navbar({
           <nav className="hidden md:block">
             <ul className="flex items-center gap-x-8 text-[12px] font-semibold tracking-[0.15em] text-[#f4ecdc]/80">
               <li>
-                <button 
-                  onClick={() => goPage('home')} 
+                <button
+                  onClick={() => goPage('home')}
                   className={`hover:text-[#eadcae] px-4 py-2 rounded-full transition-all duration-300 uppercase ${currentPage === 'home' ? 'text-[#eadcae]' : ''}`}
                 >
                   Trang Chủ
                 </button>
               </li>
               <li className="relative group py-2">
-                <button 
-                  onClick={() => goPage('catalog')} 
+                <button
+                  onClick={() => goPage('catalog')}
                   className={`hover:text-[#eadcae] px-4 py-2 rounded-full transition-all duration-300 uppercase flex items-center gap-1 ${currentPage === 'catalog' ? 'text-[#eadcae]' : ''}`}
                 >
                   Bộ Sưu Tập
@@ -73,16 +75,16 @@ export default function Navbar({
                 </div>
               </li>
               <li>
-                <button 
-                  onClick={() => goPage('care')} 
+                <button
+                  onClick={() => goPage('care')}
                   className={`hover:text-[#eadcae] px-4 py-2 rounded-full transition-all duration-300 uppercase ${currentPage === 'care' ? 'text-[#eadcae]' : ''}`}
                 >
                   Giới Thiệu
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => goPage('policy')} 
+                <button
+                  onClick={() => goPage('policy')}
                   className={`hover:text-[#eadcae] px-4 py-2 rounded-full transition-all duration-300 uppercase ${currentPage === 'policy' ? 'text-[#eadcae]' : ''}`}
                 >
                   Chính Sách Thuê
@@ -96,7 +98,7 @@ export default function Navbar({
         <div className="flex items-center gap-2 md:gap-4">
           <button
             onClick={() => {
-              onSearchOpen?.();
+              setIsSearchModalOpen(prev => !prev);
               setMobileMenuOpen(false);
             }}
             className={`${iconButtonClass} ${currentPage === 'catalog' ? 'text-[#eadcae]' : ''}`}
@@ -104,7 +106,7 @@ export default function Navbar({
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
           </button>
-          
+
           <button
             onClick={() => {
               onNavigate('chat', null, { state: { startNewChatAt: Date.now() } });
@@ -115,7 +117,7 @@ export default function Navbar({
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
           </button>
-          
+
           <button
             onClick={() => goPage('orders')}
             className={`${iconButtonClass} ${currentPage === 'orders' ? 'text-[#eadcae]' : ''}`}
@@ -123,7 +125,7 @@ export default function Navbar({
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
           </button>
-          
+
           <button
             onClick={() => goPage('checkout')}
             className={`${iconButtonClass} group relative ${currentPage === 'checkout' ? 'text-[#eadcae]' : ''}`}
@@ -142,7 +144,7 @@ export default function Navbar({
             className={`${iconButtonClass} hidden md:flex ${currentPage === 'account' ? 'text-[#eadcae]' : ''}`}
             aria-label="Tài khoản"
           >
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
           </button>
 
           {isAdmin && (
@@ -157,7 +159,7 @@ export default function Navbar({
               </span>
             </button>
           )}
-          
+
           {isStaff && (
             <button
               onClick={() => goPage('staffDashboard')}
@@ -170,7 +172,7 @@ export default function Navbar({
               </span>
             </button>
           )}
-          
+
           <button
             onClick={() => setMobileMenuOpen((open) => !open)}
             className="flex h-11 w-11 items-center justify-center text-[#f4ecdc] transition hover:text-[#eadcae] md:hidden"
@@ -189,9 +191,8 @@ export default function Navbar({
               <button
                 key={link.label}
                 onClick={() => goPage(link.page)}
-                className={`py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] ${
-                  link.page === currentPage ? 'text-[#eadcae]' : 'text-[#f4ecdc]/80'
-                }`}
+                className={`py-3 text-left text-[12px] font-semibold uppercase tracking-[0.15em] ${link.page === currentPage ? 'text-[#eadcae]' : 'text-[#f4ecdc]/80'
+                  }`}
               >
                 {link.label}
               </button>
@@ -221,6 +222,11 @@ export default function Navbar({
           </div>
         </div>
       )}
+      <NavbarSearch 
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onNavigate={onNavigate}
+      />
     </header>
   );
 }

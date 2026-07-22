@@ -108,13 +108,88 @@ export default function StylistChatWidget() {
     });
   };
 
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSnapping, setIsSnapping] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const widgetRef = useRef(null);
+
+  const handlePointerDown = (e) => {
+    if (e.target.closest('section[role="dialog"]')) return;
+    
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    if (clientX === undefined || clientY === undefined) return;
+
+    dragStart.current = { x: clientX - position.x, y: clientY - position.y };
+    setIsDragging(false);
+    setIsSnapping(false);
+
+    const handlePointerMove = (eMove) => {
+      const currentClientX = eMove.clientX || (eMove.touches && eMove.touches[0].clientX);
+      const currentClientY = eMove.clientY || (eMove.touches && eMove.touches[0].clientY);
+      if (currentClientX === undefined || currentClientY === undefined) return;
+      
+      const newX = currentClientX - dragStart.current.x;
+      const newY = currentClientY - dragStart.current.y;
+      
+      setIsDragging(true);
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('touchmove', handlePointerMove);
+      window.removeEventListener('touchend', handlePointerUp);
+      
+      setIsSnapping(true);
+      setPosition((prevPos) => {
+        if (!widgetRef.current) return prevPos;
+        const rect = widgetRef.current.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const snapToLeft = centerX < window.innerWidth / 2;
+        
+        let targetX = prevPos.x;
+        if (snapToLeft) {
+           targetX = prevPos.x + (16 - rect.left);
+        } else {
+           targetX = prevPos.x + ((window.innerWidth - 16) - rect.right);
+        }
+        
+        let targetY = prevPos.y;
+        if (rect.bottom > window.innerHeight - 16) {
+           targetY = prevPos.y + ((window.innerHeight - 16) - rect.bottom);
+        } else if (rect.top < 16) {
+           targetY = prevPos.y + (16 - rect.top);
+        }
+        
+        return { x: targetX, y: targetY };
+      });
+      
+      setTimeout(() => setIsDragging(false), 0);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('touchmove', handlePointerMove, { passive: false });
+    window.addEventListener('touchmove', handlePointerMove);
+    window.addEventListener('touchend', handlePointerUp);
+  };
+
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end sm:bottom-6 sm:right-6">
+    <div 
+      ref={widgetRef}
+      className={`fixed bottom-4 right-4 z-[99] flex flex-col items-end sm:bottom-6 sm:right-6 ${isSnapping ? 'transition-transform duration-300 ease-out' : ''}`}
+      style={{ transform: `translate3d(${position.x}px, ${position.y}px, 0)`, touchAction: 'none' }}
+      onPointerDown={handlePointerDown}
+    >
       {isOpen && (
         <section
           role="dialog"
           aria-label="Trợ lý thời trang AuraFit"
-          className="mb-3 flex h-[min(62dvh,29rem)] w-[calc(100vw-2rem)] max-w-[22rem] flex-col overflow-hidden rounded-2xl border border-[#cfc4c5] bg-[#f9f9f9] shadow-[0_22px_60px_rgba(25,22,17,0.22)] sm:mb-4 sm:h-[30rem]"
+          className="mb-3 flex h-[min(62dvh,29rem)] w-[calc(100vw-2rem)] max-w-[22rem] flex-col overflow-hidden rounded-2xl border border-[#cfc4c5] bg-[#f9f9f9] shadow-[0_22px_60px_rgba(25,22,17,0.22)] sm:mb-4 sm:h-[30rem] cursor-default"
+          onPointerDown={(e) => e.stopPropagation()}
         >
           <header className="flex items-center justify-between bg-gradient-to-r from-[#171613] to-[#2b2519] px-4 py-3 text-white">
             <div className="flex items-center gap-3">
@@ -205,15 +280,17 @@ export default function StylistChatWidget() {
 
       <button
         type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#111111] text-white shadow-xl transition hover:bg-[#99854e] focus:outline-none focus:ring-2 focus:ring-[#99854e] focus:ring-offset-2 sm:h-16 sm:w-16"
+        onClick={() => {
+          if (!isDragging) setIsOpen((current) => !current);
+        }}
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#111111] text-white shadow-xl transition hover:bg-[#99854e] focus:outline-none focus:ring-2 focus:ring-[#99854e] focus:ring-offset-2 sm:h-16 sm:w-16 cursor-grab active:cursor-grabbing"
         aria-label={isOpen ? 'Đóng trợ lý thời trang' : 'Mở trợ lý thời trang'}
         aria-expanded={isOpen}
       >
         {isOpen ? (
-          <span className="material-symbols-outlined text-[26px] sm:text-[30px]">close</span>
+          <span className="material-symbols-outlined text-[26px] sm:text-[30px] pointer-events-none">close</span>
         ) : (
-          <StylistAvatar className="h-12 w-12 border-2 border-white/70 bg-white sm:h-14 sm:w-14" />
+          <StylistAvatar className="h-12 w-12 border-2 border-white/70 bg-white sm:h-14 sm:w-14 pointer-events-none" />
         )}
       </button>
     </div>

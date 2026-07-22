@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import ScrollToTop from './components/common/ScrollToTop';
+import BackToTop from './components/common/BackToTop';
 import StylistChatWidget from './components/common/StylistChatWidget';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
@@ -382,6 +383,7 @@ function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {!hidesStylistWidget && <StylistChatWidget />}
+      <BackToTop />
     </>
   );
 }
