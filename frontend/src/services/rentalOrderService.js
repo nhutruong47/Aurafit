@@ -3,6 +3,7 @@ import { requestJson } from './http/request';
 const normalizeOrderSummary = (order) => ({
   ...order,
   totalRentalFee: Number(order?.totalRentalFee ?? order?.totalRentalPrice ?? 0),
+  costumeImageUrl: order?.costumeImageUrl || order?.imageUrl || order?.imageUrls?.[0] || '',
 });
 
 const normalizeOrderDetail = (order) => ({
@@ -12,6 +13,9 @@ const normalizeOrderDetail = (order) => ({
     ? order.details.map((detail) => ({
         ...detail,
         skuCode: detail?.skuCode || detail?.sku || '',
+        costumeImageUrl:
+          detail?.costumeImageUrl || detail?.imageUrl || detail?.imageUrls?.[0] || '',
+        imageUrls: Array.isArray(detail?.imageUrls) ? detail.imageUrls : [],
         rentalPrice: Number(detail?.rentalPrice ?? detail?.pricePerDay ?? 0),
         depositPrice: Number(detail?.depositPrice ?? detail?.deposit ?? 0),
       }))

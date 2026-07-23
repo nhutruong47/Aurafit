@@ -18,6 +18,7 @@ export const pagePathMap = {
   traditional: '/catalog/traditional',
   programs: '/events',
   care: '/care',
+  policy: '/policy',
   account: '/account',
 };
 

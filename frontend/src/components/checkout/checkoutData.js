@@ -19,7 +19,8 @@ export function calculateDurationMultiplier(days) {
  * @returns {Object} Display item with computed fields: rentalFee, deposit, subtotal, etc.
  */
 export function toRentalItem(item, index) {
-  const basePrice = Number(item.unitPrice ?? item.priceValue ?? 0);
+  const effectiveUnitPrice = Number(item.unitPrice ?? item.priceValue ?? 0);
+  const originalUnitPrice = Number(item.originalUnitPrice ?? effectiveUnitPrice);
   const depositPrice = Number(item.depositPrice ?? 0); // retailValue from Costume.depositPrice
 
   const start = item.rentalStartDate;
@@ -42,18 +43,32 @@ export function toRentalItem(item, index) {
   const safeQuantity = Number(item.quantity) || 1;
 
   // Prefer backend-computed values; fall back to local calculation
+  const parsedOriginalRentalFee = safeNumber(item.originalRentalFee);
+  const originalRentalFee = parsedOriginalRentalFee != null
+    ? parsedOriginalRentalFee
+    : Math.round(originalUnitPrice * multiplier * safeQuantity);
   const parsedRentalFee = safeNumber(item.rentalFee);
-  const rentalFee = parsedRentalFee != null
+  const calculatedRentalFee = parsedRentalFee != null
     ? parsedRentalFee
-    : Math.round(basePrice * multiplier * safeQuantity);
+    : Math.round(effectiveUnitPrice * multiplier * safeQuantity);
+  const parsedDiscountAmount = safeNumber(item.discountAmount);
+  const discountAmount = parsedDiscountAmount != null
+    ? parsedDiscountAmount
+    : Math.max(0, originalRentalFee - calculatedRentalFee);
+  // Keep the displayed total tied to the explicit checkout formula:
+  // gross rental - promotion + deposit. This also normalizes stale local cart
+  // entries where rentalFee may still contain the pre-promotion value.
+  const rentalFee = discountAmount > 0
+    ? Math.max(0, originalRentalFee - discountAmount)
+    : calculatedRentalFee;
 
-  const expectedDeposit = Math.max(0, Math.round(depositPrice * 1.2 * safeQuantity - rentalFee));
+  const expectedDeposit = Math.max(0, Math.round(depositPrice * 1.2 * safeQuantity - originalRentalFee));
   const parsedDeposit = safeNumber(item.deposit);
   const deposit = (parsedDeposit != null && (parsedDeposit > 0 || expectedDeposit === 0))
     ? parsedDeposit
     : expectedDeposit;
 
-  const subtotal = rentalFee + deposit;
+  const subtotal = Math.max(0, originalRentalFee - discountAmount) + deposit;
 
   return {
     id: item.cartId || item.id || item.name || index,
@@ -63,7 +78,7 @@ export function toRentalItem(item, index) {
     costumeId: item.costumeId || null,
     name: item.name,
     tone: [item.size, item.color].filter(Boolean).join(' • ') || 'Tuyển chọn cho thuê',
-    badge: null,
+    badge: item.discountPercent ? `Giảm ${item.discountPercent}%` : null,
     image: item.image || fallbackCostumeImage,
     rawCategory: item.rawCategory,
     category: item.category,
@@ -76,13 +91,19 @@ export function toRentalItem(item, index) {
     rentalEndDate: end,
     rentalDays,
     multiplier,
-    unitPrice: basePrice,
+    originalUnitPrice,
+    unitPrice: effectiveUnitPrice,
     depositPrice,
+    originalRentalFee,
     rentalFee,
+    discountPercent: safeNumber(item.discountPercent),
+    discountAmount,
+    eventName: item.eventName || null,
     deposit,
     subtotal,
     period: start && end ? `${start} — ${end}` : 'Chưa chọn thời gian thuê',
     total: formatCurrency(subtotal),
+    originalRentalFeeFormatted: formatCurrency(originalRentalFee),
     rentalFeeFormatted: formatCurrency(rentalFee),
     depositFormatted: formatCurrency(deposit),
   };

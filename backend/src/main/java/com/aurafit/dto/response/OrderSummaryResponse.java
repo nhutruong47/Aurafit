@@ -15,10 +15,17 @@ public record OrderSummaryResponse(
         BigDecimal totalRentalPrice,
         BigDecimal totalDeposit,
         int itemCount,
+        String imageUrl,
         LocalDate rentalStartDate,
         LocalDate rentalEndDate
 ) {
     public static OrderSummaryResponse fromEntity(RentalOrder order) {
+        String imageUrl = order.getDetails().stream()
+                .map(detail -> detail.getCostumeItem().getCostume().getPrimaryImageUrl())
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+
         return new OrderSummaryResponse(
                 order.getId(),
                 order.getCreatedAt(),
@@ -26,6 +33,7 @@ public record OrderSummaryResponse(
                 order.getTotalRentalPrice(),
                 order.getTotalDeposit(),
                 order.getDetails().size(),
+                imageUrl,
                 order.getRentalStartDate(),
                 order.getRentalEndDate()
         );

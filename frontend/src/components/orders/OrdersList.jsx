@@ -22,7 +22,14 @@ export default function OrdersList({ orders, selectedOrderId, onSelectOrder }) {
             >
               <div className="flex gap-4">
                 <div className="h-16 w-12 shrink-0 overflow-hidden bg-[#eeeeee]">
-                  <img src={fallbackImage} alt="Đơn hàng" className="h-full w-full object-cover" />
+                  <img
+                    src={order.costumeImageUrl || order.imageUrl || fallbackImage}
+                    alt={`Sản phẩm trong ${getOrderCode(order.id)}`}
+                    onError={(event) => {
+                      event.currentTarget.src = fallbackImage;
+                    }}
+                    className="h-full w-full object-contain"
+                  />
                 </div>
                 <div className="flex flex-col justify-center">
                   <p className="text-[11px] font-bold uppercase tracking-widest">{getOrderCode(order.id)}</p>

@@ -179,13 +179,15 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
   const summary = useMemo(() => {
     if (orders?.length > 0) {
       const rentalSubtotal = orders.reduce((sum, o) => sum + Number(o.totalRentalPrice || 0), 0);
+      const discountTotal = orders.reduce((sum, o) => sum + Number(o.discountAmount || 0), 0);
       const deliveryFee = orders.reduce((sum, o) => sum + Number(o.shippingFee || 0), 0);
       const refundableDeposit = orders.reduce((sum, o) => sum + Number(o.totalDeposit || 0), 0);
       const orderTotal = Number(pendingSessionAmount || orders.reduce((sum, o) => sum + Number(o.finalAmount || 0), 0));
-      return { rentalSubtotal, deliveryFee, refundableDeposit, orderTotal };
+      return { rentalSubtotal, discountTotal, deliveryFee, refundableDeposit, orderTotal };
     }
     return {
       rentalSubtotal: 0,
+      discountTotal: 0,
       deliveryFee: 0,
       refundableDeposit: 0,
       orderTotal: 0,

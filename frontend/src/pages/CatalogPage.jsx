@@ -159,45 +159,55 @@ export default function CatalogPage({ onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] px-4 py-12 sm:px-6 lg:px-8 xl:px-0">
-      <div className="w-full xl:grid xl:grid-cols-[minmax(120px,1fr)_minmax(0,1440px)_minmax(120px,1fr)] xl:items-stretch" data-event-page-grid="catalog">
+    <div className="min-h-screen bg-[#f6f2eb] px-4 py-10 sm:px-6 sm:py-12 lg:px-8 xl:px-0">
+      <div
+        className="w-full xl:grid xl:grid-cols-[minmax(120px,1fr)_minmax(0,1440px)_minmax(120px,1fr)] xl:items-stretch"
+        data-event-page-grid="catalog"
+      >
         <aside className="hidden min-h-0 self-stretch xl:block xl:px-4" aria-label="Sự kiện nổi bật bên trái">
           {leftEvent && <EventSideBanner side="left" event={leftEvent} />}
         </aside>
 
         <div className="mx-auto w-full min-w-0 max-w-[1440px] xl:mx-0" data-event-page-content="catalog">
-          <div className="mb-8">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
-            <h1 className="mb-3 font-serif text-3xl font-normal italic text-black sm:text-4xl">Bộ sưu tập trang phục</h1>
-            <p className="max-w-2xl text-base leading-7 text-[#5f5e5e]">
+          <header className="mb-10 space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#9a7745]">Bộ sưu tập</p>
+            <h1 className="font-serif text-3xl font-normal italic text-[#2f251f] sm:text-4xl">
+              Bộ sưu tập trang phục
+            </h1>
+            <p className="max-w-2xl pt-2 text-base leading-7 text-[#6f6259]">
               Khám phá bộ sưu tập trang phục cao cấp, đa dạng phong cách, giúp bạn tỏa sáng trong mọi khoảnh khắc.
             </p>
-          </div>
+          </header>
 
-          <div className="flex flex-col gap-8 lg:flex-row">
-            <CatalogFilterSidebar
-              categoryTree={categoryTree}
-              availableTags={availableTags}
-              selectedFilter={selectedFilter}
-              expandedPaths={expandedPaths}
-              isMobileFilterOpen={isMobileFilterOpen}
-              onSetMobileFilterOpen={setIsMobileFilterOpen}
-              onClearFilters={clearFilters}
-              onApplyFilter={applyFilter}
-              onToggleCategory={toggleCategory}
-            />
+          <div className="space-y-6">
+            <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-stretch gap-3 md:grid-cols-[minmax(260px,0.55fr)_minmax(0,1.45fr)]">
+              <CatalogFilterSidebar
+                categoryTree={categoryTree}
+                availableTags={availableTags}
+                selectedFilter={selectedFilter}
+                expandedPaths={expandedPaths}
+                isMobileFilterOpen={isMobileFilterOpen}
+                onSetMobileFilterOpen={setIsMobileFilterOpen}
+                onClearFilters={clearFilters}
+                onApplyFilter={applyFilter}
+                onToggleCategory={toggleCategory}
+              />
 
-            <div className="flex-1">
               <CatalogSearchBar
                 searchInputRef={searchInputRef}
                 searchTerm={searchTerm}
                 onSearchTermChange={setSearchTerm}
                 onClearSearch={() => setSearchTerm('')}
               />
+            </div>
 
+            <div className="min-w-0 space-y-6">
               <CatalogSortBar
                 sortBy={sortBy}
                 sortDir={sortDir}
+                displayedCount={displayedCostumes.length}
+                totalCount={displayedTotal}
+                isLoading={isLoading || isLoadingCategories}
                 onSortChange={(nextSortBy, nextSortDir) => {
                   setSortBy(nextSortBy);
                   setSortDir(nextSortDir);
@@ -206,26 +216,14 @@ export default function CatalogPage({ onNavigate }) {
 
               <CatalogActiveFilters selectedFilter={selectedFilter} />
 
-              <div className="mb-6">
-                <p className="text-sm text-[#5f5e5e]">
-                  {isLoading || isLoadingCategories ? (
-                    'Đang tải sản phẩm từ database...'
-                  ) : (
-                    <>
-                      Đang hiển thị <span className="font-medium text-black">{displayedCostumes.length}</span> /{' '}
-                      <span className="font-medium text-black">{displayedTotal}</span> trang phục
-                    </>
-                  )}
+              {(error || categoryError) && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+                  Đã xảy ra lỗi khi tải dữ liệu. Chưa kết nối được backend/database. Vui lòng chạy BE ở port 8080
+                  rồi tải lại trang.
                 </p>
-                {(error || categoryError) && (
-                  <p className="mt-2 text-sm text-red-600">
-                    Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại sau.
-                    Chưa kết nối được backend/database. Vui lòng chạy BE ở port 8080 rồi tải lại trang.
-                  </p>
-                )}
-              </div>
+              )}
 
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {displayedCostumes.map((costume) => (
                   <CatalogProductCard key={costume.id} costume={costume} onNavigate={onNavigate} />
                 ))}

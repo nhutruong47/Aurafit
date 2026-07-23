@@ -90,9 +90,22 @@ export default function RentalItemCard({
             {item.color ? ` · ${item.color}` : ''}
           </p>
           
-          <p className="mt-0.5 text-xs font-medium text-black">
-            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.unitPrice || 0)} / ngày
-          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
+            {item.discountAmount > 0 && (
+              <span className="text-[#999] line-through">
+                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.originalUnitPrice || 0)}
+              </span>
+            )}
+            <span className={`font-medium ${item.discountAmount > 0 ? 'text-[#7f7041]' : 'text-black'}`}>
+              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.unitPrice || 0)} / ngày
+            </span>
+          </div>
+
+          {item.eventName && (
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7f7041]">
+              {item.eventName}
+            </p>
+          )}
 
           {/* Inline Quantity Control */}
           <div className="mt-2 flex items-center gap-3">
@@ -162,9 +175,17 @@ export default function RentalItemCard({
           {/* Price Breakdown */}
           <div className="mb-1 flex flex-col items-end gap-0.5 text-[10px] uppercase tracking-wider text-[#999]">
             <div className="flex w-full min-w-[100px] justify-between gap-2">
-              <span>Thuê:</span>
-              <span>{item.rentalFeeFormatted || item.total}</span>
+              <span>{item.discountAmount > 0 ? 'Thuê gốc:' : 'Thuê:'}</span>
+              <span>{item.discountAmount > 0
+                ? item.originalRentalFeeFormatted
+                : item.rentalFeeFormatted || item.total}</span>
             </div>
+            {item.discountAmount > 0 && (
+              <div className="flex w-full min-w-[100px] justify-between gap-2 text-[#7f7041]">
+                <span>Ưu đãi:</span>
+                <span>-{new Intl.NumberFormat('vi-VN').format(item.discountAmount)}đ</span>
+              </div>
+            )}
             <div className="flex w-full min-w-[100px] justify-between gap-2">
               <span>Cọc:</span>
               <span>{item.depositFormatted || '—'}</span>
@@ -172,8 +193,13 @@ export default function RentalItemCard({
           </div>
 
           {/* Total Price */}
-          <div className="mt-1 font-serif text-base font-medium text-black">
-            {item.total}
+          <div className="mt-1 text-right">
+            {item.discountAmount > 0 && (
+              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#7f7041]">
+                Tổng sau ưu đãi
+              </p>
+            )}
+            <div className="font-serif text-base font-medium text-black">{item.total}</div>
           </div>
         </div>
       </article>

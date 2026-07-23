@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import StylistAvatar from '../components/common/StylistAvatar';
 import StylistMessageBubble from '../components/common/StylistMessageBubble';
 import StylistProductCards from '../components/common/StylistProductCards';
 import {
-  createStylistSessionId,
   fetchChatSessions,
   fetchSessionDetail,
   getStylistSessionId,
-  saveStylistSessionId,
   sendChatMessage,
 } from '../services/stylistService';
+import { useStylistChatStore } from '../store/useStylistChatStore';
 import { formatRelativeTime } from '../utils/formatRelativeTime';
 
 const NETWORK_ERROR_MESSAGE = 'Không thể kết nối, vui lòng kiểm tra mạng và thử lại';
@@ -43,14 +42,19 @@ const createDraftSession = (sessionId) => ({
 
 export default function ChatDetailPage({ currentUser }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const messagesEndRef = useRef(null);
   const detailRequestRef = useRef(0);
   const initializationRef = useRef(0);
   const isAuthenticated = Boolean(currentUser?.id);
   const [sessions, setSessions] = useState([]);
-  const [sessionId, setSessionId] = useState(() => getStylistSessionId());
-  const [messages, setMessages] = useState([]);
+  const sessionId = useStylistChatStore((state) => state.sessionId);
+  const messages = useStylistChatStore((state) => state.messages);
+  const setSessionId = useStylistChatStore((state) => state.setSessionId);
+  const setMessages = useStylistChatStore((state) => state.setMessages);
+  const setConversation = useStylistChatStore((state) => state.setConversation);
+  const startNewConversation = useStylistChatStore(
+    (state) => state.startNewConversation
+  );
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSessionsLoading, setIsSessionsLoading] = useState(false);
@@ -59,10 +63,15 @@ export default function ChatDetailPage({ currentUser }) {
   const [detailError, setDetailError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const loadSessionDetail = useCallback(async (targetSessionId) => {
+  const loadSessionDetail = useCallback(async (
+    targetSessionId,
+    { preserveMessages = false } = {}
+  ) => {
     const requestId = detailRequestRef.current + 1;
     detailRequestRef.current = requestId;
-    setMessages([]);
+    if (!preserveMessages) {
+      setMessages([]);
+    }
     setDetailError('');
     setIsDetailLoading(true);
 
@@ -71,14 +80,16 @@ export default function ChatDetailPage({ currentUser }) {
       if (detailRequestRef.current !== requestId) {
         return;
       }
-      setMessages(detail.messages);
+      setConversation(detail.sessionId, detail.messages);
     } catch (error) {
       if (detailRequestRef.current !== requestId) {
         return;
       }
 
       if (isNotFoundError(error)) {
-        setMessages([]);
+        if (!preserveMessages) {
+          setMessages([]);
+        }
       } else {
         setDetailError(error?.message || 'Không thể tải nội dung cuộc trò chuyện.');
       }
@@ -87,20 +98,21 @@ export default function ChatDetailPage({ currentUser }) {
         setIsDetailLoading(false);
       }
     }
-  }, []);
+  }, [setConversation, setMessages]);
 
   useEffect(() => {
     const initializationId = initializationRef.current + 1;
     initializationRef.current = initializationId;
 
     const initializeChat = async () => {
-      const nextSessionId = createStylistSessionId();
-      const draftSession = createDraftSession(nextSessionId);
+      const activeSessionId = getStylistSessionId();
+      const sharedState = useStylistChatStore.getState();
+      const sharedMessages =
+        sharedState.sessionId === activeSessionId ? sharedState.messages : [];
+      const draftSession = createDraftSession(activeSessionId);
       detailRequestRef.current += 1;
-      saveStylistSessionId(nextSessionId);
-      setSessionId(nextSessionId);
+      setConversation(activeSessionId, sharedMessages);
       setSessions([draftSession]);
-      setMessages([]);
       setInputValue('');
       setDetailError('');
       setIsDetailLoading(false);
@@ -113,10 +125,25 @@ export default function ChatDetailPage({ currentUser }) {
           if (initializationRef.current !== initializationId) {
             return;
           }
-          setSessions([
-            draftSession,
-            ...loadedSessions.filter((session) => session.sessionId !== nextSessionId),
-          ]);
+          const hasPersistedActiveSession = loadedSessions.some(
+            (session) => session.sessionId === activeSessionId
+          );
+          setSessions(
+            hasPersistedActiveSession
+              ? loadedSessions
+              : [
+                  draftSession,
+                  ...loadedSessions.filter(
+                    (session) => session.sessionId !== activeSessionId
+                  ),
+                ]
+          );
+
+          if (hasPersistedActiveSession) {
+            await loadSessionDetail(activeSessionId, {
+              preserveMessages: sharedMessages.length > 0,
+            });
+          }
         } catch (error) {
           if (initializationRef.current !== initializationId) {
             return;
@@ -129,6 +156,9 @@ export default function ChatDetailPage({ currentUser }) {
         }
       } else {
         setIsSessionsLoading(false);
+        await loadSessionDetail(activeSessionId, {
+          preserveMessages: sharedMessages.length > 0,
+        });
       }
     };
 
@@ -138,7 +168,12 @@ export default function ChatDetailPage({ currentUser }) {
       initializationRef.current += 1;
       detailRequestRef.current += 1;
     };
-  }, [currentUser?.id, isAuthenticated, location.key]);
+  }, [
+    currentUser?.id,
+    isAuthenticated,
+    loadSessionDetail,
+    setConversation,
+  ]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -151,7 +186,6 @@ export default function ChatDetailPage({ currentUser }) {
 
     initializationRef.current += 1;
     setSessionId(selectedSessionId);
-    saveStylistSessionId(selectedSessionId);
     setIsSidebarOpen(false);
     await loadSessionDetail(selectedSessionId);
   };
@@ -161,12 +195,9 @@ export default function ChatDetailPage({ currentUser }) {
       return;
     }
 
-    const nextSessionId = createStylistSessionId();
+    const nextSessionId = startNewConversation();
     initializationRef.current += 1;
     detailRequestRef.current += 1;
-    saveStylistSessionId(nextSessionId);
-    setSessionId(nextSessionId);
-    setMessages([]);
     setDetailError('');
     setInputValue('');
     setSessions((current) => {
@@ -249,7 +280,6 @@ export default function ChatDetailPage({ currentUser }) {
 
       setMessages((current) => [...current, assistantMessage]);
       setSessionId(nextSessionId);
-      saveStylistSessionId(nextSessionId);
       updateSessionSummary(activeSessionId, nextSessionId, userMessage);
     } catch {
       setMessages((current) => [

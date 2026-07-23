@@ -73,6 +73,13 @@ export default function PaymentSummary({
           {/* Pricing breakdown */}
           <div className="space-y-4 text-sm">
             <SummaryRow label="Tiền thuê" value={formatCurrency(summary?.rentalSubtotal || 0)} />
+            {summary?.discountTotal > 0 && (
+              <SummaryRow
+                label="Ưu đãi chương trình"
+                value={`- ${formatCurrency(summary.discountTotal)}`}
+                accent
+              />
+            )}
             <SummaryRow label="Phí giao hàng" value={formatCurrency(summary?.deliveryFee || 0)} />
             <SummaryRow
               label="Tiền đặt cọc (Hoàn trả)"

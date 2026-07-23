@@ -25,20 +25,23 @@ export default function CatalogProductCard({ costume, product, onNavigate }) {
   const finalPrice = getCostumeFinalPriceValue(item);
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-lg border border-[#cfc4c5] bg-white shadow-sm transition-all duration-500 hover:border-[#99854e]/50">
-      <div onClick={() => onNavigate?.('productDetail', item)} className="relative h-64 cursor-pointer overflow-hidden">
+    <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-[#ded2c6] bg-[#fffdfa] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#9a7745]/60 hover:shadow-md">
+      <div
+        onClick={() => onNavigate?.('productDetail', item)}
+        className="relative aspect-[4/3] cursor-pointer overflow-hidden"
+      >
         <img
           src={getCostumeImage(item)}
           alt={item.name}
           onError={(event) => {
             event.currentTarget.src = fallbackCostumeImage;
           }}
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+          className="h-full w-full object-contain"
         />
         <div className="absolute inset-0 bg-black/20" />
 
         <div className="absolute left-3 top-3 flex flex-col items-start gap-2">
-          <span className="rounded-full border border-white/10 bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
+          <span className="rounded-full border border-white/20 bg-[#2f251f]/75 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
             {categoryLabel}
           </span>
           {tag && (
@@ -52,7 +55,7 @@ export default function CatalogProductCard({ costume, product, onNavigate }) {
           <span
             className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md ${
               available
-                ? 'border-green-500/30 bg-green-500/20 text-green-100'
+                ? 'border-[#8bc2bd]/50 bg-[#3f7c78]/75 text-white'
                 : 'border-red-500/30 bg-red-500/20 text-red-100'
             }`}
           >
@@ -67,47 +70,53 @@ export default function CatalogProductCard({ costume, product, onNavigate }) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex min-h-[248px] flex-1 flex-col gap-4 p-5">
         <div onClick={() => onNavigate?.('productDetail', item)} className="cursor-pointer">
-          <h3 className="mb-1 line-clamp-1 text-base font-semibold text-black transition-colors duration-300 group-hover:text-[#99854e]">
+          <h3 className="line-clamp-2 min-h-12 text-base font-semibold leading-6 text-[#2f251f] transition-colors duration-300 group-hover:text-[#3f7c78]">
             {item.name}
           </h3>
-          <p className="mb-4 line-clamp-1 text-[11px] text-[#777777]">
+          <p className="mt-1 line-clamp-1 text-[11px] text-[#81746a]">
             {subcategoryLabel || categoryLabel}
             {tag ? ` • ${tag}` : ''}
           </p>
         </div>
 
-        <div className="mb-4 grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 border-y border-[#eee6dc] py-4">
           <div>
-            <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#999999]">Giá thuê</span>
+            <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#9b9087]">Giá thuê</span>
             {discounted ? (
               <div className="space-y-1">
-                <span className="block text-xs text-[#777777] line-through">
+                <span className="block text-xs text-[#81746a] line-through">
                   {formatCurrency(getCostumeRentalPriceValue(item))}
                 </span>
-                <span className="block font-serif text-xl text-[#7f7041]">{formatCurrency(finalPrice)}</span>
+                <span className="block font-serif text-xl text-[#9a7745]">{formatCurrency(finalPrice)}</span>
               </div>
             ) : (
-              <span className="font-serif text-xl text-black">{formatCurrency(getCostumeRentalPriceValue(item))}</span>
+              <span className="font-serif text-xl text-[#2f251f]">
+                {formatCurrency(getCostumeRentalPriceValue(item))}
+              </span>
             )}
           </div>
           <div>
-            <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#999999]">Tiền cọc</span>
-            <span className="font-serif text-xl text-black">{formatCurrency(getCostumeDepositPriceValue(item))}</span>
+            <span className="mb-1 block text-[10px] uppercase tracking-wider text-[#9b9087]">Tiền cọc</span>
+            <span className="font-serif text-xl text-[#2f251f]">
+              {formatCurrency(getCostumeDepositPriceValue(item))}
+            </span>
           </div>
         </div>
 
-        {discounted && (
-          <div className="mb-4 inline-flex w-fit border border-[#c8b378] bg-[#fbf7e8] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#7f7041]">
-            {item.eventName ? `${item.eventName} · ` : ''}Giảm {discountPercent}%
-          </div>
-        )}
+        <div className="min-h-7">
+          {discounted && (
+            <div className="inline-flex w-fit rounded-sm border border-[#c8b378] bg-[#fbf7e8] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#7f7041]">
+              {item.eventName ? `${item.eventName} · ` : ''}Giảm {discountPercent}%
+            </div>
+          )}
+        </div>
 
         <div className="mt-auto">
           <button
             onClick={() => onNavigate?.('productDetail', item)}
-            className="w-full border border-black px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-black transition-all duration-300 hover:bg-black hover:text-white"
+            className="w-full rounded-md border border-[#4d3830] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4d3830] transition-all duration-300 hover:bg-[#4d3830] hover:text-white"
           >
             Xem chi tiết
           </button>

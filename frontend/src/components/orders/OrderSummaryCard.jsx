@@ -29,9 +29,12 @@ export default function OrderSummaryCard({ details = [] }) {
             <div className="flex items-start gap-4">
               <div className="h-16 w-12 shrink-0 overflow-hidden bg-[#eeeeee]">
                 <img
-                  src={item.costumeImageUrl || fallbackImage}
+                  src={item.costumeImageUrl || item.imageUrls?.[0] || item.imageUrl || fallbackImage}
                   alt={item.costumeName}
-                  className="h-full w-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.src = fallbackImage;
+                  }}
+                  className="h-full w-full object-contain"
                 />
               </div>
               <div className="pt-0.5">

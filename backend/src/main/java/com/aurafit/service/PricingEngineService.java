@@ -69,4 +69,56 @@ public class PricingEngineService {
     public BigDecimal calculateTotal(BigDecimal rentalFee, BigDecimal deposit) {
         return rentalFee.add(deposit);
     }
+
+    /**
+     * Calculates an authoritative rental breakdown while keeping the refundable
+     * deposit based on the original rental fee. Event discounts reduce only the
+     * rental charge and must never be converted into a higher deposit.
+     */
+    public PriceBreakdown calculateItemPricing(BigDecimal originalUnitPrice,
+                                               BigDecimal effectiveUnitPrice,
+                                               BigDecimal retailValue,
+                                               int days,
+                                               int quantity) {
+        BigDecimal safeOriginalUnitPrice = originalUnitPrice != null
+                ? originalUnitPrice.max(BigDecimal.ZERO)
+                : BigDecimal.ZERO;
+        BigDecimal safeEffectiveUnitPrice = effectiveUnitPrice != null
+                ? effectiveUnitPrice.max(BigDecimal.ZERO).min(safeOriginalUnitPrice)
+                : safeOriginalUnitPrice;
+
+        BigDecimal originalRentalFee = calculateItemRentalFee(
+                safeOriginalUnitPrice,
+                days,
+                quantity
+        );
+        BigDecimal rentalFee = calculateItemRentalFee(
+                safeEffectiveUnitPrice,
+                days,
+                quantity
+        );
+        BigDecimal discountAmount = originalRentalFee.subtract(rentalFee).max(BigDecimal.ZERO);
+        BigDecimal deposit = calculateItemDeposit(retailValue, originalRentalFee, quantity);
+
+        return new PriceBreakdown(
+                safeOriginalUnitPrice,
+                safeEffectiveUnitPrice,
+                originalRentalFee,
+                rentalFee,
+                deposit,
+                discountAmount,
+                calculateTotal(rentalFee, deposit)
+        );
+    }
+
+    public record PriceBreakdown(
+            BigDecimal originalUnitPrice,
+            BigDecimal effectiveUnitPrice,
+            BigDecimal originalRentalFee,
+            BigDecimal rentalFee,
+            BigDecimal deposit,
+            BigDecimal discountAmount,
+            BigDecimal total
+    ) {
+    }
 }

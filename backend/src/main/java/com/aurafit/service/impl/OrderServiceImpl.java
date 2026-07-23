@@ -16,6 +16,7 @@ import com.aurafit.exception.BadRequestException;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.*;
 import com.aurafit.service.InteractionEventRecorderService;
+import com.aurafit.service.EventPricingService;
 import com.aurafit.service.OrderService;
 import com.aurafit.service.PricingEngineService;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class OrderServiceImpl implements OrderService {
     private final RentalOrderDetailRepository rentalOrderDetailRepository;
     private final PaymentRepository paymentRepository;
     private final PricingEngineService pricingEngineService;
+    private final EventPricingService eventPricingService;
     private final com.aurafit.service.GhnIntegrationService ghnIntegrationService;
     private final PromotionRepository promotionRepository;
 
@@ -61,6 +63,7 @@ public class OrderServiceImpl implements OrderService {
                             RentalOrderDetailRepository rentalOrderDetailRepository,
                             PaymentRepository paymentRepository,
                             PricingEngineService pricingEngineService,
+                            EventPricingService eventPricingService,
                             com.aurafit.service.GhnIntegrationService ghnIntegrationService,
                             PromotionRepository promotionRepository) {
         this.rentalOrderRepository = rentalOrderRepository;
@@ -73,6 +76,7 @@ public class OrderServiceImpl implements OrderService {
         this.rentalOrderDetailRepository = rentalOrderDetailRepository;
         this.paymentRepository = paymentRepository;
         this.pricingEngineService = pricingEngineService;
+        this.eventPricingService = eventPricingService;
         this.ghnIntegrationService = ghnIntegrationService;
         this.promotionRepository = promotionRepository;
     }
@@ -100,6 +104,23 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Tài khoản của bạn đã bị vô hiệu hóa do tỷ lệ hủy đơn bất thường. Vui lòng liên hệ bộ phận CSKH.");
         }
 
+        Map<String, CostumeItem> representativeItemsBySku = new LinkedHashMap<>();
+        for (CheckoutItemRequest item : items) {
+            representativeItemsBySku.computeIfAbsent(
+                    item.sku(),
+                    sku -> costumeItemRepository.findBySku(sku)
+                            .orElseThrow(() -> new ResourceNotFoundException("CostumeItem", "sku", sku))
+            );
+        }
+        Map<Long, EventPricingService.ActiveEventOffer> activeOffers =
+                eventPricingService.findActiveOffers(
+                        representativeItemsBySku.values().stream()
+                                .map(costumeItem -> costumeItem.getCostume().getId())
+                                .distinct()
+                                .toList(),
+                        LocalDateTime.now()
+                );
+
         Map<String, List<CheckoutItemRequest>> groupedItems = items.stream()
                 .collect(Collectors.groupingBy(item -> item.rentalStartDate().toString() + "_" + item.rentalEndDate().toString()));
 
@@ -118,13 +139,13 @@ public class OrderServiceImpl implements OrderService {
             
             BigDecimal totalRentalPrice = BigDecimal.ZERO;
             BigDecimal totalDeposit = BigDecimal.ZERO;
+            BigDecimal totalDiscountAmount = BigDecimal.ZERO;
             List<RentalOrderDetail> orderDetails = new ArrayList<>();
 
             for (CheckoutItemRequest item : groupItems) {
                 orderedSkus.add(item.sku());
 
-                CostumeItem representativeItem = costumeItemRepository.findBySku(item.sku())
-                        .orElseThrow(() -> new ResourceNotFoundException("CostumeItem", "sku", item.sku()));
+                CostumeItem representativeItem = representativeItemsBySku.get(item.sku());
 
                 Costume costume = representativeItem.getCostume();
                 String size = representativeItem.getSize();
@@ -152,15 +173,29 @@ public class OrderServiceImpl implements OrderService {
 
                 BigDecimal pricePerDay = costume.getRentalPrice();
                 BigDecimal retailValue = costume.getDepositPrice();
+                EventPricingService.ActiveEventOffer activeOffer = activeOffers.get(costume.getId());
+                BigDecimal effectivePricePerDay = activeOffer != null
+                        ? activeOffer.finalPrice()
+                        : pricePerDay;
+                PricingEngineService.PriceBreakdown subtotalPricing = pricingEngineService.calculateItemPricing(
+                        pricePerDay,
+                        effectivePricePerDay,
+                        retailValue,
+                        (int) rentalDays,
+                        item.quantity()
+                );
 
-                BigDecimal subtotalRental = pricingEngineService.calculateItemRentalFee(pricePerDay, (int) rentalDays, item.quantity());
-                BigDecimal subtotalDeposit = pricingEngineService.calculateItemDeposit(retailValue, subtotalRental, item.quantity());
+                totalRentalPrice = totalRentalPrice.add(subtotalPricing.originalRentalFee());
+                totalDeposit = totalDeposit.add(subtotalPricing.deposit());
+                totalDiscountAmount = totalDiscountAmount.add(subtotalPricing.discountAmount());
 
-                totalRentalPrice = totalRentalPrice.add(subtotalRental);
-                totalDeposit = totalDeposit.add(subtotalDeposit);
-
-                BigDecimal singleItemRentalFee = pricingEngineService.calculateItemRentalFee(pricePerDay, (int) rentalDays, 1);
-                BigDecimal singleItemDeposit = pricingEngineService.calculateItemDeposit(retailValue, singleItemRentalFee, 1);
+                PricingEngineService.PriceBreakdown singleItemPricing = pricingEngineService.calculateItemPricing(
+                        pricePerDay,
+                        effectivePricePerDay,
+                        retailValue,
+                        (int) rentalDays,
+                        1
+                );
                 
                 for (CostumeItem allocatedItem : availableItems) {
                     RentalOrderDetail detail = RentalOrderDetail.builder()
@@ -169,16 +204,19 @@ public class OrderServiceImpl implements OrderService {
                             .rentalDays((int) rentalDays)
                             .rentalStartDate(item.rentalStartDate())
                             .rentalEndDate(item.rentalEndDate())
-                            .subtotal(singleItemRentalFee)
-                            .deposit(singleItemDeposit)
-                            .price(pricingEngineService.calculateTotal(singleItemRentalFee, singleItemDeposit))
+                            .subtotal(singleItemPricing.originalRentalFee())
+                            .deposit(singleItemPricing.deposit())
+                            .price(singleItemPricing.total())
                             .returnStatus(ReturnStatus.NOT_RETURNED)
                             .build();
                     orderDetails.add(detail);
                 }
             }
 
-            BigDecimal finalTotalPrice = totalRentalPrice.add(totalDeposit).add(splitShippingFee);
+            BigDecimal finalTotalPrice = totalRentalPrice
+                    .add(totalDeposit)
+                    .add(splitShippingFee)
+                    .subtract(totalDiscountAmount);
             sessionTotalAmount = sessionTotalAmount.add(finalTotalPrice);
 
             java.time.LocalDate groupStartDate = groupItems.isEmpty() ? null : groupItems.get(0).rentalStartDate();
@@ -196,7 +234,7 @@ public class OrderServiceImpl implements OrderService {
                     .shippingFee(splitShippingFee)
                     .totalRentalPrice(totalRentalPrice)
                     .totalDeposit(totalDeposit)
-                    .discountAmount(BigDecimal.ZERO)
+                    .discountAmount(totalDiscountAmount)
                     .totalPrice(finalTotalPrice)
                     .rentalStartDate(groupStartDate)
                     .rentalEndDate(groupEndDate)
@@ -523,7 +561,9 @@ public class OrderServiceImpl implements OrderService {
         
         BigDecimal refundAmount;
         if (order.getStatus() == com.aurafit.enums.OrderStatus.CANCELLED) {
-            refundAmount = order.getTotalDeposit().add(order.getTotalRentalPrice());
+            refundAmount = order.getTotalDeposit()
+                    .add(order.getTotalRentalPrice())
+                    .subtract(getDiscountAmount(order));
         } else {
             refundAmount = order.getTotalDeposit().subtract(damageFee).subtract(lateFee);
         }
@@ -577,6 +617,7 @@ public class OrderServiceImpl implements OrderService {
 
         BigDecimal refundAmount = order.getTotalDeposit()
                 .add(order.getTotalRentalPrice())
+                .subtract(getDiscountAmount(order))
                 .subtract(order.getShippingFee());
         
         if (refundAmount.compareTo(BigDecimal.ZERO) < 0) {
@@ -611,7 +652,9 @@ public class OrderServiceImpl implements OrderService {
             costumeItemRepository.save(costumeItem);
         });
 
-        BigDecimal refundAmount = order.getTotalDeposit().add(order.getTotalRentalPrice());
+        BigDecimal refundAmount = order.getTotalDeposit()
+                .add(order.getTotalRentalPrice())
+                .subtract(getDiscountAmount(order));
         order.setTotalRefundedAmount(refundAmount);
 
         String note = "Thất lạc kiện hàng. Lý do: " + reason;
@@ -944,5 +987,9 @@ public class OrderServiceImpl implements OrderService {
                     .build();
             paymentRepository.save(refundPayment);
         }
+    }
+
+    private BigDecimal getDiscountAmount(RentalOrder order) {
+        return order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO;
     }
 }

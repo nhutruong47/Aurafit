@@ -24,9 +24,14 @@ const mapCartItemToLocal = (cartItem) => ({
   image: cartItem.imageUrls?.[0] || cartItem.imageUrl || fallbackCostumeImage,
   rentalStartDate: cartItem.rentalStartDate,
   rentalEndDate: cartItem.rentalEndDate,
+  originalUnitPrice: cartItem.originalUnitPrice,
   unitPrice: cartItem.unitPrice,
   rentalDays: cartItem.rentalDays,
+  originalRentalFee: cartItem.originalRentalFee,
   rentalFee: cartItem.rentalFee,
+  discountPercent: cartItem.discountPercent,
+  discountAmount: cartItem.discountAmount,
+  eventName: cartItem.eventName,
   deposit: cartItem.deposit,
   depositPrice: cartItem.depositPrice,
   subtotal: cartItem.subtotal,
@@ -58,7 +63,9 @@ const groupCartItems = (flatItems) => {
       const group = groups.get(key);
       group.quantity += 1;
       group.cartItemIds.push(item.cartItemId);
+      group.originalRentalFee = (Number(group.originalRentalFee) || 0) + (Number(item.originalRentalFee) || 0);
       group.rentalFee = (Number(group.rentalFee) || 0) + (Number(item.rentalFee) || 0);
+      group.discountAmount = (Number(group.discountAmount) || 0) + (Number(item.discountAmount) || 0);
       group.deposit = (Number(group.deposit) || 0) + (Number(item.deposit) || 0);
       group.subtotal = (Number(group.subtotal) || 0) + (Number(item.subtotal) || 0);
     } else {
@@ -93,6 +100,24 @@ const cartSlice = createSlice({
 
       if (existingItem) {
         existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
+        // Refresh pricing metadata when an item already exists in a guest/local
+        // cart so a newly activated event does not keep the stale base price.
+        [
+          'price',
+          'priceValue',
+          'originalUnitPrice',
+          'unitPrice',
+          'originalRentalFee',
+          'rentalFee',
+          'discountPercent',
+          'discountAmount',
+          'eventName',
+          'depositPrice',
+        ].forEach((field) => {
+          if (item[field] !== undefined) {
+            existingItem[field] = item[field];
+          }
+        });
         persistItems(state.items);
         return;
       }

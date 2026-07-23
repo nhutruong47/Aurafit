@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getStylistSessionId,
-  saveStylistSessionId,
+  fetchSessionDetail,
   sendChatMessage,
 } from '../../services/stylistService';
+import { useStylistChatStore } from '../../store/useStylistChatStore';
 import StylistAvatar from './StylistAvatar';
 import StylistMessageBubble from './StylistMessageBubble';
 import StylistProductCards from './StylistProductCards';
@@ -19,15 +19,66 @@ const createMessageId = () => {
   return `message-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 };
 
+const isNotFoundError = (error) => error?.cause?.response?.status === 404;
+
 export default function StylistChatWidget() {
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const hydrationRequestRef = useRef(0);
+  const isOpen = useStylistChatStore((state) => state.isWidgetOpen);
+  const sessionId = useStylistChatStore((state) => state.sessionId);
+  const messages = useStylistChatStore((state) => state.messages);
+  const setIsOpen = useStylistChatStore((state) => state.setWidgetOpen);
+  const setSessionId = useStylistChatStore((state) => state.setSessionId);
+  const setMessages = useStylistChatStore((state) => state.setMessages);
+  const setConversation = useStylistChatStore((state) => state.setConversation);
   const [isSending, setIsSending] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
   const [inputValue, setInputValue] = useState('');
-  const [sessionId, setSessionId] = useState(() => getStylistSessionId());
-  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    if (!isOpen || !sessionId || messages.length > 0) {
+      return undefined;
+    }
+
+    const requestId = hydrationRequestRef.current + 1;
+    hydrationRequestRef.current = requestId;
+    Promise.resolve().then(() => {
+      if (hydrationRequestRef.current === requestId) {
+        setIsHistoryLoading(true);
+        setHistoryError('');
+      }
+    });
+
+    fetchSessionDetail(sessionId)
+      .then((detail) => {
+        if (hydrationRequestRef.current !== requestId) {
+          return;
+        }
+        setConversation(detail.sessionId, detail.messages);
+      })
+      .catch((error) => {
+        if (
+          hydrationRequestRef.current === requestId &&
+          !isNotFoundError(error)
+        ) {
+          setHistoryError(
+            error?.message || 'Không thể tải lại cuộc trò chuyện.'
+          );
+        }
+      })
+      .finally(() => {
+        if (hydrationRequestRef.current === requestId) {
+          setIsHistoryLoading(false);
+        }
+      });
+
+    return () => {
+      hydrationRequestRef.current += 1;
+    };
+  }, [isOpen, messages.length, sessionId, setConversation]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -55,26 +106,26 @@ export default function StylistChatWidget() {
       ...current,
       {
         id: createMessageId(),
-        role: 'user',
-        text: message,
+        role: 'USER',
+        content: message,
         recommendedCostumes: [],
       },
     ]);
     setInputValue('');
     setIsSending(true);
+    setHistoryError('');
 
     try {
       const response = await sendChatMessage(sessionId, message);
       const nextSessionId = response.sessionId || sessionId;
 
       setSessionId(nextSessionId);
-      saveStylistSessionId(nextSessionId);
       setMessages((current) => [
         ...current,
         {
           id: createMessageId(),
-          role: 'assistant',
-          text: response.replyText,
+          role: 'ASSISTANT',
+          content: response.replyText,
           recommendedCostumes: response.recommendedCostumes,
           isError: response.hasError,
           errorType: response.errorType,
@@ -85,8 +136,8 @@ export default function StylistChatWidget() {
         ...current,
         {
           id: createMessageId(),
-          role: 'assistant',
-          text: NETWORK_ERROR_MESSAGE,
+          role: 'ASSISTANT',
+          content: NETWORK_ERROR_MESSAGE,
           recommendedCostumes: [],
           isError: true,
           errorType: 'NETWORK_ERROR',
@@ -102,7 +153,6 @@ export default function StylistChatWidget() {
       return;
     }
 
-    setIsOpen(false);
     navigate(`/products/${encodeURIComponent(costume.id)}`, {
       state: { product: costume },
     });
@@ -150,12 +200,9 @@ export default function StylistChatWidget() {
         const centerX = rect.left + rect.width / 2;
         const snapToLeft = centerX < window.innerWidth / 2;
         
-        let targetX = prevPos.x;
-        if (snapToLeft) {
-           targetX = prevPos.x + (16 - rect.left);
-        } else {
-           targetX = prevPos.x + ((window.innerWidth - 16) - rect.right);
-        }
+        const targetX = snapToLeft
+          ? prevPos.x + (16 - rect.left)
+          : prevPos.x + ((window.innerWidth - 16) - rect.right);
         
         let targetY = prevPos.y;
         if (rect.bottom > window.innerHeight - 16) {
@@ -215,14 +262,29 @@ export default function StylistChatWidget() {
             className="flex-1 space-y-4 overflow-y-auto px-3 py-4 sm:px-4"
             aria-live="polite"
           >
-            {messages.length === 0 && (
+            {isHistoryLoading && (
+              <div className="flex items-center justify-center gap-2 py-8 text-sm text-[#777777]">
+                <span className="material-symbols-outlined animate-spin text-[19px] text-[#99854e]">
+                  progress_activity
+                </span>
+                Đang tải cuộc trò chuyện...
+              </div>
+            )}
+
+            {!isHistoryLoading && historyError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm leading-5 text-red-700">
+                {historyError}
+              </div>
+            )}
+
+            {!isHistoryLoading && messages.length === 0 && (
               <div className="rounded-xl border border-[#e4ddd2] bg-[#fffdf8] p-4 text-sm leading-6 text-[#5f5e5e] shadow-sm">
                 Xin chào! Hãy cho mình biết dịp sử dụng, phong cách, màu sắc hoặc ngân sách để được gợi ý trang phục phù hợp nhé.
               </div>
             )}
 
             {messages.map((message) => {
-              const isUser = message.role === 'user';
+              const isUser = String(message.role).toUpperCase() === 'USER';
 
               return (
                 <div
@@ -281,7 +343,7 @@ export default function StylistChatWidget() {
       <button
         type="button"
         onClick={() => {
-          if (!isDragging) setIsOpen((current) => !current);
+          if (!isDragging) setIsOpen(!isOpen);
         }}
         className="flex h-14 w-14 items-center justify-center rounded-full bg-[#111111] text-white shadow-xl transition hover:bg-[#99854e] focus:outline-none focus:ring-2 focus:ring-[#99854e] focus:ring-offset-2 sm:h-16 sm:w-16 cursor-grab active:cursor-grabbing"
         aria-label={isOpen ? 'Đóng trợ lý thời trang' : 'Mở trợ lý thời trang'}

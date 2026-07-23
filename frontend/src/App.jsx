@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import ScrollToTop from './components/common/ScrollToTop';
 import BackToTop from './components/common/BackToTop';
@@ -43,6 +43,7 @@ import {
 } from './store/cartSlice';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { useToastStore } from './store/useToastStore';
+import { useStylistChatStore } from './store/useStylistChatStore';
 import authNotify from './utils/authNotify';
 import { hasUserRole } from './utils/roles';
 
@@ -168,9 +169,33 @@ function App() {
   const handleNavigate = useLegacyNavigate();
   const handleSearchOpen = useSearchNavigation();
   const addToast = useToastStore((state) => state.addToast);
+  const stylistMessages = useStylistChatStore((state) => state.messages);
+  const setStylistWidgetOpen = useStylistChatStore((state) => state.setWidgetOpen);
+  const previousPathnameRef = useRef(location.pathname);
   const isInternalDashboard =
     location.pathname.startsWith('/admin') || location.pathname.startsWith('/staff');
   const hidesStylistWidget = isInternalDashboard || location.pathname === '/chat';
+
+  useEffect(() => {
+    const previousPathname = previousPathnameRef.current;
+    const isLeavingChat =
+      previousPathname === '/chat' &&
+      location.pathname !== '/chat' &&
+      !isInternalDashboard;
+
+    if (location.pathname === '/chat') {
+      setStylistWidgetOpen(false);
+    } else if (isLeavingChat && stylistMessages.length > 0) {
+      setStylistWidgetOpen(true);
+    }
+
+    previousPathnameRef.current = location.pathname;
+  }, [
+    isInternalDashboard,
+    location.pathname,
+    setStylistWidgetOpen,
+    stylistMessages.length,
+  ]);
 
   useEffect(() => {
     if (!currentUser?.id) return undefined;
@@ -369,7 +394,7 @@ function App() {
           element={<CostumeDetailPage currentUser={currentUser} onNavigate={handleNavigate} onAddToCart={handleAddToCart} onRentNow={handleRentNow} />}
         />
         <Route path="/success" element={<RentalOrderSuccessPage cartItems={cartItems} onNavigate={handleNavigate} />} />
-        <Route path="/policy" element={<PolicyPage />} />
+        <Route path="/policy" element={<PolicyPage onNavigate={handleNavigate} />} />
       </Route>
 
       {/* Staff layout: no Navbar, no cart, internal dashboard UI */}

@@ -18,12 +18,14 @@ import com.aurafit.repository.CartRepository;
 import com.aurafit.repository.CostumeItemRepository;
 import com.aurafit.repository.UserRepository;
 import com.aurafit.service.CartService;
+import com.aurafit.service.EventPricingService;
 import com.aurafit.service.InteractionEventRecorderService;
 import com.aurafit.service.PricingEngineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,26 +40,29 @@ public class CartServiceImpl implements CartService {
     private final UserRepository userRepository;
     private final InteractionEventRecorderService interactionEventRecorderService;
     private final PricingEngineService pricingEngineService;
+    private final EventPricingService eventPricingService;
 
     public CartServiceImpl(CartRepository cartRepository,
                            CartItemRepository cartItemRepository,
                            CostumeItemRepository costumeItemRepository,
                            UserRepository userRepository,
                            InteractionEventRecorderService interactionEventRecorderService,
-                           PricingEngineService pricingEngineService) {
+                           PricingEngineService pricingEngineService,
+                           EventPricingService eventPricingService) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.costumeItemRepository = costumeItemRepository;
         this.userRepository = userRepository;
         this.interactionEventRecorderService = interactionEventRecorderService;
         this.pricingEngineService = pricingEngineService;
+        this.eventPricingService = eventPricingService;
     }
 
     @Override
     @Transactional
     public CartDTO getCart(Long userId) {
         Cart cart = getOrCreateActiveCart(userId);
-        return CartDTO.fromEntity(cart, costumeItemRepository);
+        return toCartDTO(cart);
     }
 
     @Override
@@ -123,9 +128,13 @@ public class CartServiceImpl implements CartService {
         BigDecimal retailValue = referenceItem.getCostume().getDepositPrice(); // depositPrice = retail value
 
         // Per-item pricing (quantity = 1 per CartItem row since each row is 1 physical SKU)
-        BigDecimal itemRentalFee = pricingEngineService.calculateItemRentalFee(unitPrice, effectiveDays, 1);
-        BigDecimal itemDeposit = pricingEngineService.calculateItemDeposit(retailValue, itemRentalFee, 1);
-        BigDecimal itemSubtotal = pricingEngineService.calculateTotal(itemRentalFee, itemDeposit);
+        PricingEngineService.PriceBreakdown basePricing = pricingEngineService.calculateItemPricing(
+                unitPrice,
+                unitPrice,
+                retailValue,
+                effectiveDays,
+                1
+        );
 
         // 6. Create CartItems
         for (CostumeItem item : itemsToAdd) {
@@ -136,9 +145,9 @@ public class CartServiceImpl implements CartService {
                     .rentalEndDate(request.rentalEndDate())
                     .rentalDays(rentalDays > 0 ? rentalDays : null)
                     .unitPrice(unitPrice)
-                    .rentalFee(itemRentalFee)
-                    .deposit(itemDeposit)
-                    .subtotal(itemSubtotal)
+                    .rentalFee(basePricing.originalRentalFee())
+                    .deposit(basePricing.deposit())
+                    .subtotal(basePricing.originalRentalFee().add(basePricing.deposit()))
                     .build();
             cart.getItems().add(cartItem);
             recordAddToCartEvent(userId, item, cartItem, request);
@@ -151,7 +160,7 @@ public class CartServiceImpl implements CartService {
         Cart refreshedCart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
 
-        return CartDTO.fromEntity(refreshedCart, costumeItemRepository);
+        return toCartDTO(refreshedCart);
     }
 
     @Override
@@ -175,14 +184,23 @@ public class CartServiceImpl implements CartService {
         // 4. Recalculate pricing with the new dates
         long rentalDays = ChronoUnit.DAYS.between(request.rentalStartDate(), request.rentalEndDate());
         BigDecimal unitPrice = cartItem.getCostumeItem().getCostume().getRentalPrice();
-        BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(rentalDays));
+        BigDecimal retailValue = cartItem.getCostumeItem().getCostume().getDepositPrice();
+        PricingEngineService.PriceBreakdown basePricing = pricingEngineService.calculateItemPricing(
+                unitPrice,
+                unitPrice,
+                retailValue,
+                (int) rentalDays,
+                1
+        );
 
         // 5. Update fields
         cartItem.setRentalStartDate(request.rentalStartDate());
         cartItem.setRentalEndDate(request.rentalEndDate());
         cartItem.setRentalDays((int) rentalDays);
         cartItem.setUnitPrice(unitPrice);
-        cartItem.setSubtotal(subtotal);
+        cartItem.setRentalFee(basePricing.originalRentalFee());
+        cartItem.setDeposit(basePricing.deposit());
+        cartItem.setSubtotal(basePricing.originalRentalFee().add(basePricing.deposit()));
 
         // 6. Recalculate cart total and persist
         cart.recalculateTotal();
@@ -192,7 +210,7 @@ public class CartServiceImpl implements CartService {
         Cart refreshedCart = cartRepository.findByUserIdAndStatusWithItems(userId, CartStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
 
-        return CartDTO.fromEntity(refreshedCart, costumeItemRepository);
+        return toCartDTO(refreshedCart);
     }
 
     @Override
@@ -211,7 +229,7 @@ public class CartServiceImpl implements CartService {
         cart.recalculateTotal();
         cartRepository.save(cart);
 
-        return CartDTO.fromEntity(cart, costumeItemRepository);
+        return toCartDTO(cart);
     }
 
     // ── Private helpers ──────────────────────────────────────────────────
@@ -233,6 +251,41 @@ public class CartServiceImpl implements CartService {
 
                     return cartRepository.save(newCart);
                 });
+    }
+
+    private CartDTO toCartDTO(Cart cart) {
+        List<Long> costumeIds = cart.getItems().stream()
+                .map(item -> item.getCostumeItem().getCostume().getId())
+                .distinct()
+                .toList();
+        Map<Long, EventPricingService.ActiveEventOffer> activeOffers =
+                eventPricingService.findActiveOffers(costumeIds, LocalDateTime.now());
+
+        List<com.aurafit.dto.response.CartItemDTO> itemDTOs = cart.getItems().stream()
+                .map(item -> {
+                    var costume = item.getCostumeItem().getCostume();
+                    var activeOffer = activeOffers.get(costume.getId());
+                    BigDecimal effectiveUnitPrice = activeOffer != null
+                            ? activeOffer.finalPrice()
+                            : costume.getRentalPrice();
+                    int effectiveDays = Math.max(1, item.getRentalDays() != null ? item.getRentalDays() : 1);
+                    PricingEngineService.PriceBreakdown pricing = pricingEngineService.calculateItemPricing(
+                            costume.getRentalPrice(),
+                            effectiveUnitPrice,
+                            costume.getDepositPrice(),
+                            effectiveDays,
+                            1
+                    );
+                    return com.aurafit.dto.response.CartItemDTO.fromEntity(
+                            item,
+                            costumeItemRepository,
+                            pricing,
+                            activeOffer
+                    );
+                })
+                .toList();
+
+        return CartDTO.fromEntity(cart, itemDTOs);
     }
 
     private void recordAddToCartEvent(Long userId,

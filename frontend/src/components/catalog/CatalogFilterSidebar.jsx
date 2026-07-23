@@ -10,16 +10,17 @@ function CategoryNode({
   const isActive = selectedCategoryPath === category.path;
 
   return (
-    <div className="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
+    <div className="border-b border-[#e8dfd5] pb-3 last:border-0 last:pb-0">
       <div className="group flex items-center justify-between gap-3">
         <button
+          type="button"
           onClick={() => onApplyFilter('category', category.path)}
           className={`text-left transition-colors ${
             isActive
-              ? 'text-[12px] font-semibold uppercase tracking-[0.1em] text-[#99854e]'
+              ? 'text-[12px] font-semibold uppercase tracking-[0.1em] text-[#3f7c78]'
               : category.parentPath
-                ? 'text-[13px] text-[#5f5e5e] hover:text-black'
-                : 'text-[12px] font-semibold uppercase tracking-[0.1em] text-black hover:text-[#99854e]'
+                ? 'text-[13px] text-[#6f6259] hover:text-[#2f251f]'
+                : 'text-[12px] font-semibold uppercase tracking-[0.1em] text-[#2f251f] hover:text-[#3f7c78]'
           }`}
         >
           {category.name}
@@ -27,8 +28,11 @@ function CategoryNode({
 
         {hasChildren && (
           <button
+            type="button"
             onClick={() => onToggleCategory(category.path)}
-            className="p-1 text-[#999999] hover:text-black"
+            aria-label={`${isExpanded ? 'Thu gọn' : 'Mở rộng'} ${category.name}`}
+            aria-expanded={isExpanded}
+            className="p-1 text-[#9b9087] hover:text-[#2f251f]"
           >
             <span className="material-symbols-outlined text-[18px]">
               {isExpanded ? 'remove' : 'add'}
@@ -38,7 +42,7 @@ function CategoryNode({
       </div>
 
       {hasChildren && isExpanded && (
-        <div className="mt-3 space-y-3 border-l border-[#cfc4c5]/30 pl-3">
+        <div className="mt-3 space-y-3 border-l border-[#ded2c6] pl-3">
           {category.children.map((child) => (
             <CategoryNode
               key={child.path}
@@ -69,26 +73,37 @@ export default function CatalogFilterSidebar({
   const hasActiveFilter = Boolean(selectedFilter.categoryPath || selectedFilter.tag);
 
   return (
-    <>
+    <div className="relative h-full w-full">
       <button
+        type="button"
         onClick={() => onSetMobileFilterOpen(!isMobileFilterOpen)}
-        className="flex items-center justify-between border border-[#cfc4c5] bg-white px-5 py-3 text-sm font-semibold uppercase tracking-[0.1em] lg:hidden"
+        aria-expanded={isMobileFilterOpen}
+        aria-controls="catalog-filter-panel"
+        className="flex h-full min-h-[58px] w-full items-center justify-between gap-3 rounded-lg border border-[#ded2c6] bg-[#fffdfa] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-[#2f251f] transition hover:border-[#4d3830] sm:px-5 sm:text-sm sm:tracking-[0.1em]"
       >
-        <span>Lọc danh mục</span>
+        <span className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[20px] text-[#3f7c78]">category</span>
+          Danh mục sản phẩm
+        </span>
         <span className="material-symbols-outlined">{isMobileFilterOpen ? 'expand_less' : 'expand_more'}</span>
       </button>
 
       <aside
+        id="catalog-filter-panel"
         className={`${
           isMobileFilterOpen ? 'block' : 'hidden'
-        } w-full flex-shrink-0 border border-[#cfc4c5] bg-white p-6 lg:block lg:w-72`}
+        } custom-scrollbar absolute left-0 top-full z-40 mt-2 max-h-[32rem] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-[#ded2c6] bg-[#fffdfa] p-6 shadow-xl`}
       >
-        <div className="mb-6 flex items-center justify-between border-b border-[#cfc4c5]/50 pb-4">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.1em]">Danh mục sản phẩm</h2>
+        <div className="mb-6 flex items-center justify-between border-b border-[#ded2c6] pb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[#2f251f]">Danh mục sản phẩm</h2>
           {hasActiveFilter && (
             <button
-              onClick={onClearFilters}
-              className="text-[11px] font-semibold uppercase text-[#99854e] hover:text-black"
+              type="button"
+              onClick={() => {
+                onClearFilters();
+                onSetMobileFilterOpen(false);
+              }}
+              className="text-[11px] font-semibold uppercase text-[#3f7c78] hover:text-[#2f251f]"
             >
               Xóa bộ lọc
             </button>
@@ -109,9 +124,9 @@ export default function CatalogFilterSidebar({
         </div>
 
         {availableTags.length > 0 && (
-          <div className="mt-8 border-t border-[#cfc4c5]/50 pt-6">
-            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5f5e5e]">
-              Tags metadata
+          <div className="mt-8 border-t border-[#ded2c6] pt-6">
+            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6f6259]">
+              Phong cách
             </h3>
             <div className="flex flex-wrap gap-2">
               {availableTags.slice(0, 18).map((tag) => {
@@ -119,12 +134,13 @@ export default function CatalogFilterSidebar({
 
                 return (
                   <button
+                    type="button"
                     key={tag}
                     onClick={() => onApplyFilter('tag', tag)}
                     className={`rounded-full border px-3 py-1 text-[11px] transition ${
                       isActive
-                        ? 'border-[#99854e] bg-[#99854e] text-white'
-                        : 'border-[#d7d2c8] text-[#5f5e5e] hover:border-black hover:text-black'
+                        ? 'border-[#3f7c78] bg-[#3f7c78] text-white'
+                        : 'border-[#ded2c6] text-[#6f6259] hover:border-[#4d3830] hover:text-[#2f251f]'
                     }`}
                   >
                     {tag}
@@ -135,6 +151,6 @@ export default function CatalogFilterSidebar({
           </div>
         )}
       </aside>
-    </>
+    </div>
   );
 }

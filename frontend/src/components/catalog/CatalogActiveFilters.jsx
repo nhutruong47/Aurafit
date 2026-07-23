@@ -5,21 +5,21 @@ export default function CatalogActiveFilters({ selectedFilter }) {
   }
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-2 text-sm">
-      <span className="text-[#777777]">Đang xem:</span>
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="text-[#6f6259]">Đang xem:</span>
       {selectedFilter.category && (
-        <span className="rounded-full bg-[#f0f0f0] px-3 py-1 text-black">{selectedFilter.category}</span>
+        <span className="rounded-full bg-[#e9e1d7] px-3 py-1 text-[#2f251f]">{selectedFilter.category}</span>
       )}
       {selectedFilter.subcategory && (
         <>
-          <span className="text-[#cfc4c5]">/</span>
-          <span className="rounded-full bg-[#f0f0f0] px-3 py-1 text-black">{selectedFilter.subcategory}</span>
+          <span className="text-[#b9aa9b]">/</span>
+          <span className="rounded-full bg-[#e9e1d7] px-3 py-1 text-[#2f251f]">{selectedFilter.subcategory}</span>
         </>
       )}
       {selectedFilter.tag && (
         <>
-          <span className="text-[#cfc4c5]">/</span>
-          <span className="rounded-full bg-[#99854e] px-3 py-1 text-white">{selectedFilter.tag}</span>
+          <span className="text-[#b9aa9b]">/</span>
+          <span className="rounded-full bg-[#3f7c78] px-3 py-1 text-white">{selectedFilter.tag}</span>
         </>
       )}
     </div>

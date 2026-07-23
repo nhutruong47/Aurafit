@@ -247,23 +247,32 @@ export function useCheckout({
 
   const summaryRows = useMemo(() => {
     const rows = [];
-    let totalRental = 0;
+    let totalOriginalRental = 0;
+    let totalDiscount = 0;
     let totalDeposit = 0;
 
     itemsToOrder.forEach((item) => {
-      totalRental += item.rentalFee || 0;
+      totalOriginalRental += item.originalRentalFee || item.rentalFee || 0;
+      totalDiscount += item.discountAmount || 0;
       totalDeposit += item.deposit || 0;
     });
 
-    if (totalRental > 0) {
-      rows.push({ label: 'Tiền thuê', value: formatCurrency(totalRental) });
+    if (totalOriginalRental > 0) {
+      rows.push({ label: 'Tiền thuê gốc', value: formatCurrency(totalOriginalRental) });
+    }
+    if (totalDiscount > 0) {
+      rows.push({
+        label: 'Ưu đãi chương trình',
+        value: `- ${formatCurrency(totalDiscount)}`,
+        accent: true,
+      });
     }
     if (totalDeposit > 0) {
       rows.push({ label: 'Tiền đặt cọc (Hoàn trả)', value: formatCurrency(totalDeposit) });
     }
 
     return rows;
-  }, [itemsToOrder, deliveryMethod, shippingFee]); // shippingFee added as dependency but not used here, matching original
+  }, [itemsToOrder]);
 
   const rawTotalDue = useMemo(() => {
     let total = itemsToOrder.reduce((acc, item) => acc + (item.subtotal || 0), 0);

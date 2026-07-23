@@ -147,6 +147,11 @@ export const getCostumeDeposit = (costume) => formatCurrency(getCostumeDepositPr
 
 export const toCartItemFromCostume = (costume, selectedItem = null) => {
   const item = selectedItem || getCostumeItems(costume)[0] || null;
+  const originalUnitPrice = getCostumeRentalPriceValue(costume);
+  const discounted = hasCostumeDiscount(costume);
+  const effectiveUnitPrice = discounted
+    ? getCostumeFinalPriceValue(costume)
+    : originalUnitPrice;
 
   return {
     id: costume.id,
@@ -158,10 +163,14 @@ export const toCartItemFromCostume = (costume, selectedItem = null) => {
     category: getCostumeDisplayCategory(costume),
     subcategory: getCostumeSubcategory(costume),
     tag: getCostumeTag(costume),
-    price: getCostumePrice(costume),
-    priceValue: getCostumeRentalPriceValue(costume),
+    price: formatCurrency(effectiveUnitPrice),
+    priceValue: effectiveUnitPrice,
+    originalUnitPrice,
+    discountPercent: discounted ? getCostumeDiscountPercentValue(costume) : null,
+    eventName: discounted ? costume?.eventName || null : null,
     deposit: getCostumeDeposit(costume),
     depositValue: getCostumeDepositPriceValue(costume),
+    depositPrice: getCostumeDepositPriceValue(costume),
     image: getCostumeImage(costume),
     sku: item?.sku ?? null,
     size: item?.size ?? getCostumePrimarySize(costume) ?? null,

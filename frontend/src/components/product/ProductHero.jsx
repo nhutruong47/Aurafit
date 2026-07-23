@@ -229,7 +229,7 @@ export default function ProductHero({
             onError={(event) => {
               event.currentTarget.src = fallbackCostumeImage;
             }}
-            className="max-h-[60vh] w-full object-cover md:max-h-[550px]"
+            className="max-h-[60vh] w-full object-contain md:max-h-[550px]"
           />
 
           {costumeImages.length > 1 && (
@@ -255,7 +255,7 @@ export default function ProductHero({
                       onError={(event) => {
                         event.currentTarget.src = fallbackCostumeImage;
                       }}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain"
                     />
                   </button>
                 );
