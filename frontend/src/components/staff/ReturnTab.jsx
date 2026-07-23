@@ -171,6 +171,7 @@ export default function ReturnTab({
     setMessage('');
     
     try {
+      const isPendingRefund = activeOrder?.status === 'PENDING_REFUND';
       let finalReturnImageUrl = returnImageUrl;
       if (returnImageFile) {
         const asset = await uploadImage(returnImageFile);
@@ -178,10 +179,17 @@ export default function ReturnTab({
         setReturnImageUrl(finalReturnImageUrl);
       }
 
+      const persistedInspectionNote = isPendingRefund
+        ? activeOrder?.inspectionNote || ''
+        : inspectionNote;
       const payload = {
-        damageFee: Number(damageFee),
-        lateFee: Number(lateFee),
-        inspectionNote: inspectionNote 
+        damageFee: isPendingRefund
+          ? Number(activeOrder?.totalDamageFee || 0)
+          : Number(damageFee),
+        lateFee: isPendingRefund
+          ? Number(activeOrder?.totalLateFee || 0)
+          : Number(lateFee),
+        inspectionNote: persistedInspectionNote
           + (finalReturnImageUrl ? `\n[Ảnh minh chứng: ${finalReturnImageUrl}]` : '')
           + (receiptImageUrl ? `\n[Biên lai chuyển khoản: ${receiptImageUrl}]` : ''),
         actualReturnDate: actualReturnDate
