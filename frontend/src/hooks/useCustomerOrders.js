@@ -50,6 +50,11 @@ export function useCustomerOrders(currentUser) {
       const nextOrders = Array.isArray(data) ? data : [];
       setOrders(nextOrders);
 
+      if (selectedOrder) {
+        const updatedOrder = nextOrders.find(o => o.id === selectedOrder.id);
+        setSelectedOrder(updatedOrder || null);
+      }
+
       // Determine next selected order ID
       const nextSelectedOrderId = nextOrders.some((order) => order.id === selectedOrderId)
         ? selectedOrderId

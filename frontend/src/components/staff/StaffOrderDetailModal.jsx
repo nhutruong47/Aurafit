@@ -320,7 +320,7 @@ export default function StaffOrderDetailModal({
                       SKU: <span className="font-medium">{detail.skuCode || 'N/A'}</span> | Size: <span className="font-medium">{detail.size || 'N/A'}</span>
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
-                      Giá thuê: {formatCurrency(detail.rentalPrice)} | Cọc: {formatCurrency(detail.depositPrice)}
+                      Giá thuê: {formatCurrency(detail.subtotal)} | Cọc: {formatCurrency(detail.deposit)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">

@@ -86,32 +86,30 @@ export default function ReturnTab({
   // Tự động tính phí trễ dựa trên ngày trả
   useEffect(() => {
     if (activeOrder && actualReturnDate) {
-      const returnDateStr = actualReturnDate; 
-      const endDateStr = activeOrder.rentalEndDate?.split('T')[0] || returnDateStr;
-      const startDateStr = activeOrder.rentalStartDate?.split('T')[0] || returnDateStr;
-      
-      const rDate = new Date(returnDateStr);
+      const rDate = new Date(actualReturnDate);
       rDate.setHours(0, 0, 0, 0);
-      
-      const eDate = new Date(endDateStr);
+
+      const eDate = parseDateString(activeOrder.rentalEndDate) || rDate;
       eDate.setHours(0, 0, 0, 0);
-      
-      const sDate = new Date(startDateStr);
+
+      const sDate = parseDateString(activeOrder.rentalStartDate) || rDate;
       sDate.setHours(0, 0, 0, 0);
 
       const diffTime = rDate.getTime() - eDate.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
-      setLateDays(Math.max(0, diffDays));
+      const calculatedLateDays = Math.max(0, diffDays);
+      setLateDays(calculatedLateDays);
 
-      if (diffDays > 0) {
+      if (calculatedLateDays > 0) {
         let rentalDurationDays = Math.ceil((eDate.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24));
         if (rentalDurationDays <= 0) rentalDurationDays = 1;
         
+        // Ensure dailyPrice from backend is used if available, otherwise calculate it
         const totalRentalFee = Number(activeOrder.totalRentalFee || activeOrder.totalRentalPrice || 0);
-        const dailyRate = totalRentalFee / rentalDurationDays;
+        const dailyRate = activeOrder.details?.[0]?.dailyPrice || (totalRentalFee / rentalDurationDays);
         
-        const calculatedLateFee = Math.round(dailyRate * 1.5 * diffDays);
+        const calculatedLateFee = Math.round(dailyRate * 1.5 * calculatedLateDays);
         setLateFee(calculatedLateFee);
       } else {
         setLateFee(0);
@@ -236,6 +234,44 @@ export default function ReturnTab({
       <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Nghiệm thu & Thanh toán</h3>
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="space-y-4">
+          <div className="bg-gray-50 p-4 rounded-md border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Ngày trả quy định</p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-gray-900">{formatDate(activeOrder?.rentalEndDate)}</p>
+                {(() => {
+                  if (!activeOrder?.rentalStartDate || !activeOrder?.rentalEndDate || !activeOrder?.details?.[0]?.rentalDays) return null;
+                  const sDate = parseDateString(activeOrder.rentalStartDate);
+                  const eDate = parseDateString(activeOrder.rentalEndDate);
+                  if (!sDate || !eDate) return null;
+                  
+                  const originalEnd = new Date(sDate);
+                  originalEnd.setDate(originalEnd.getDate() + activeOrder.details[0].rentalDays - 1);
+                  originalEnd.setHours(0,0,0,0);
+                  eDate.setHours(0,0,0,0);
+                  
+                  if (eDate.getTime() > originalEnd.getTime()) {
+                    return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">Đã gia hạn</span>;
+                  }
+                  return null;
+                })()}
+              </div>
+            </div>
+            <div className="mt-3 md:mt-0">
+              <p className="text-sm text-gray-500 mb-1">Giá thuê / ngày</p>
+              <p className="font-medium text-gray-900">
+                {formatCurrency(activeOrder?.details?.[0]?.dailyPrice || (() => {
+                  const sDate = parseDateString(activeOrder?.rentalStartDate);
+                  const eDate = parseDateString(activeOrder?.rentalEndDate);
+                  if (sDate && eDate) {
+                     const days = Math.max(1, Math.ceil((eDate.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24)));
+                     return Number(activeOrder?.totalRentalFee || activeOrder?.totalRentalPrice || 0) / days;
+                  }
+                  return 0;
+                })())}
+              </p>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Ngày trả thực tế</label>

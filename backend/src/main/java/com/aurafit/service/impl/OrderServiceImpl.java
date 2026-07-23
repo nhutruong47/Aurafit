@@ -286,6 +286,7 @@ public class OrderServiceImpl implements OrderService {
             order.setTotalDeposit(order.getTotalDeposit().subtract(additionalFee));
         }
 
+        order.setRentalEndDate(newEndDate);
         RentalOrder savedOrder = rentalOrderRepository.save(order);
         return OrderResponse.fromEntity(savedOrder);
     }
@@ -627,8 +628,8 @@ public class OrderServiceImpl implements OrderService {
         RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        if (order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING && order.getStatus() != com.aurafit.enums.OrderStatus.RETURNED && order.getStatus() != com.aurafit.enums.OrderStatus.PENDING_REFUND) {
-            throw new BadRequestException("Order must be RETURNING, RETURNED or PENDING_REFUND to report invalid bank.");
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.RENTED && order.getStatus() != com.aurafit.enums.OrderStatus.RETURNING && order.getStatus() != com.aurafit.enums.OrderStatus.RETURNED && order.getStatus() != com.aurafit.enums.OrderStatus.PENDING_REFUND) {
+            throw new BadRequestException("Order must be RENTED, RETURNING, RETURNED or PENDING_REFUND to report invalid bank.");
         }
 
         order.setStatus(com.aurafit.enums.OrderStatus.PENDING_REFUND);
@@ -822,8 +823,8 @@ public class OrderServiceImpl implements OrderService {
         RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
-        if (order.getStatus() != com.aurafit.enums.OrderStatus.PICKED_UP && order.getStatus() != com.aurafit.enums.OrderStatus.RETURNED) {
-            throw new BadRequestException("Chi co the tra hang khi don hang da duoc giao (PICKED_UP). Trang thai hien tai: " + order.getStatus());
+        if (order.getStatus() != com.aurafit.enums.OrderStatus.PICKED_UP && order.getStatus() != com.aurafit.enums.OrderStatus.RETURNED && order.getStatus() != com.aurafit.enums.OrderStatus.RENTED) {
+            throw new BadRequestException("Chi co the tra hang khi don hang da duoc giao (PICKED_UP/RENTED). Trang thai hien tai: " + order.getStatus());
         }
 
         List<HandoverRecord> records = new ArrayList<>();

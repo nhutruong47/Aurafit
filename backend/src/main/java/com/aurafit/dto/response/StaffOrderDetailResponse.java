@@ -35,7 +35,9 @@ public record StaffOrderDetailResponse(
         BigDecimal totalLateFee,
         BigDecimal totalDamageFee,
         String inspectionNote,
-        Boolean hasPendingRefund
+        Boolean hasPendingRefund,
+        LocalDate rentalStartDate,
+        LocalDate rentalEndDate
 ) {
     public record CustomerInfo(
             String bankName,
@@ -53,14 +55,15 @@ public record StaffOrderDetailResponse(
             List<String> imageUrls,
             ReturnStatus itemStatus,
             ReturnStatus returnStatus,
-            BigDecimal rentalPrice,
-            BigDecimal depositPrice,
+            BigDecimal subtotal,
+            BigDecimal deposit,
             int rentalDays,
             BigDecimal lateFee,
             BigDecimal damageFee,
             BigDecimal refundedAmount,
             LocalDate rentalStartDate,
-            LocalDate rentalEndDate
+            LocalDate rentalEndDate,
+            BigDecimal dailyPrice
     ) {}
 
     public static StaffOrderDetailResponse fromEntity(RentalOrder order, List<HandoverRecord> handovers) {
@@ -75,14 +78,15 @@ public record StaffOrderDetailResponse(
                         d.getCostumeItem().getCostume().getAllImageUrls(),
                         ReturnStatus.NOT_RETURNED,
                         d.getReturnStatus(),
-                        d.getPricePerDay(),
+                        d.getSubtotal(),
                         d.getDeposit(),
                         d.getRentalDays(),
                         d.getLateFee(),
                         d.getDamageFee(),
                         d.getRefundedAmount(),
                         d.getRentalStartDate(),
-                        d.getRentalEndDate()
+                        d.getRentalEndDate(),
+                        d.getPricePerDay()
                 ))
                 .toList();
 
@@ -127,7 +131,9 @@ public record StaffOrderDetailResponse(
                 order.getTotalLateFee(),
                 order.getTotalDamageFee(),
                 order.getInspectionNote(),
-                hasPendingRefund
+                hasPendingRefund,
+                order.getRentalStartDate(),
+                order.getRentalEndDate()
         );
     }
 }

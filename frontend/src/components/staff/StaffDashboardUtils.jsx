@@ -3,7 +3,7 @@ export const formatCurrency = (amount) => {
 };
 
 export const formatDate = (dateString) => {
-  if (!dateString) return '';
+  if (!dateString) return 'Đang cập nhật';
   return new Date(dateString).toLocaleDateString('vi-VN', {
     year: 'numeric',
     month: 'short',

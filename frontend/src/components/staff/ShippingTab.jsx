@@ -194,8 +194,8 @@ export default function ShippingTab({
                         <div key={detail.id} className="p-4 border border-gray-200 rounded-md bg-gray-50 flex flex-col gap-3">
                           <div className="font-medium text-gray-900">{detail.costumeName}</div>
                           <div className="flex justify-between text-sm text-gray-500">
-                            <span>Phí thuê: <span className="font-medium text-gray-900">{formatCurrency(detail.rentalPrice)}</span></span>
-                            <span>Tiền cọc: <span className="font-medium text-gray-900">{formatCurrency(detail.depositPrice)}</span></span>
+                            <span>Phí thuê: <span className="font-medium text-gray-900">{formatCurrency(detail.subtotal)}</span></span>
+                            <span>Tiền cọc: <span className="font-medium text-gray-900">{formatCurrency(detail.deposit)}</span></span>
                           </div>
                         </div>
                       ))}
@@ -280,7 +280,7 @@ export default function ShippingTab({
                                     SKU: <span className="font-medium">{detail.skuCode || 'N/A'}</span> | Size: <span className="font-medium">{detail.size || 'N/A'}</span>
                                   </p>
                                   <p className="text-sm text-gray-500 mt-1">
-                                    Giá thuê: {formatCurrency(detail.rentalPrice)} | Cọc: {formatCurrency(detail.depositPrice)}
+                                    Giá thuê: {formatCurrency(detail.subtotal)} | Cọc: {formatCurrency(detail.deposit)}
                                   </p>
                                 </div>
                               </div>

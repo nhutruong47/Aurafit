@@ -32,7 +32,9 @@ public record OrderResponse(
         BigDecimal totalRefundedAmount,
         Integer consecutiveCancelCount,
         Boolean hasPendingRefund,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        LocalDate rentalStartDate,
+        LocalDate rentalEndDate
 ) {
     public record OrderDetailResponse(
             Long id,
@@ -44,6 +46,7 @@ public record OrderResponse(
             BigDecimal pricePerDay,
             int rentalDays,
             BigDecimal subtotal,
+            BigDecimal deposit,
             String returnStatus,
             LocalDate rentalStartDate,
             LocalDate rentalEndDate
@@ -61,6 +64,7 @@ public record OrderResponse(
                         d.getPricePerDay(),
                         d.getRentalDays(),
                         d.getSubtotal(),
+                        d.getDeposit(),
                         d.getReturnStatus().name(),
                         d.getRentalStartDate(),
                         d.getRentalEndDate()
@@ -97,7 +101,9 @@ public record OrderResponse(
                 order.getTotalRefundedAmount(),
                 order.getUser().getConsecutiveCancelCount(),
                 hasPendingRefund,
-                order.getUpdatedAt()
+                order.getUpdatedAt(),
+                order.getRentalStartDate(),
+                order.getRentalEndDate()
         );
     }
 }

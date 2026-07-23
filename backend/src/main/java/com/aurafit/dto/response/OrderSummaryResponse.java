@@ -6,13 +6,17 @@ import com.aurafit.enums.OrderStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import java.time.LocalDate;
+
 public record OrderSummaryResponse(
         Long id,
         LocalDateTime createdAt,
         OrderStatus status,
         BigDecimal totalRentalPrice,
         BigDecimal totalDeposit,
-        int itemCount
+        int itemCount,
+        LocalDate rentalStartDate,
+        LocalDate rentalEndDate
 ) {
     public static OrderSummaryResponse fromEntity(RentalOrder order) {
         return new OrderSummaryResponse(
@@ -21,7 +25,9 @@ public record OrderSummaryResponse(
                 order.getStatus(),
                 order.getTotalRentalPrice(),
                 order.getTotalDeposit(),
-                order.getDetails().size()
+                order.getDetails().size(),
+                order.getRentalStartDate(),
+                order.getRentalEndDate()
         );
     }
 }
