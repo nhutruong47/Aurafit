@@ -59,8 +59,8 @@ class AnalyticsServiceImplTest {
     private AnalyticsServiceImpl analyticsService;
 
     @Test
-    void getDashboardMetrics_usesPaidPaymentsAndCountsAllUsers() {
-        when(paymentRepository.calculateTotalAmountByTypeAndStatus(PaymentType.PAYMENT, PaymentStatus.PAID))
+    void getDashboardMetrics_usesPaidRevenueExcludingDepositsAndCountsAllUsers() {
+        when(paymentRepository.calculateTotalPaidRevenueExcludingDeposits())
                 .thenReturn(new BigDecimal("1250000"));
         when(rentalOrderRepository.count()).thenReturn(18L);
         when(userRepository.count()).thenReturn(9L);
@@ -80,7 +80,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void getRevenueTransactions_returnsMappedPaidPayments() {
+    void getRevenueTransactions_includesRetainedPenaltyAndExcludesRefundableDeposit() {
         LocalDateTime paidAt = LocalDateTime.of(2026, 7, 18, 14, 30);
         User customer = new User();
         customer.setFullName("Nguyễn An");
@@ -110,6 +110,12 @@ class AnalyticsServiceImplTest {
                 eq("FT-42"),
                 any()
         )).thenReturn(new PageImpl<>(List.of(payment)));
+        when(paymentRepository.findRevenueAdjustmentsByPaymentIds(List.of(7L)))
+                .thenReturn(List.<Object[]>of(new Object[]{
+                        7L,
+                        new BigDecimal("500000"),
+                        new BigDecimal("100000")
+                }));
 
         PaginatedResponse<RevenueTransactionDTO> result = analyticsService.getRevenueTransactions(
                 0,
@@ -124,7 +130,7 @@ class AnalyticsServiceImplTest {
         assertEquals(7L, transaction.paymentId());
         assertEquals(42L, transaction.orderId());
         assertEquals("Nguyễn An", transaction.customerName());
-        assertEquals(new BigDecimal("750000"), transaction.amount());
+        assertEquals(new BigDecimal("350000"), transaction.amount());
         assertEquals(paidAt, transaction.paidAt());
     }
 

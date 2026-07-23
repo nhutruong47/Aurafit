@@ -18,6 +18,11 @@ const normalizeOrderDetail = (order) => ({
         imageUrls: Array.isArray(detail?.imageUrls) ? detail.imageUrls : [],
         rentalPrice: Number(detail?.rentalPrice ?? detail?.pricePerDay ?? 0),
         depositPrice: Number(detail?.depositPrice ?? detail?.deposit ?? 0),
+        subtotal: Number(detail?.subtotal ?? 0),
+        rentalFee: Number(detail?.rentalFee ?? detail?.subtotal ?? 0),
+        discountAmount: Number(detail?.discountAmount ?? 0),
+        discountPercent:
+          detail?.discountPercent == null ? null : Number(detail.discountPercent),
       }))
     : [],
 });
@@ -28,6 +33,11 @@ const normalizeStaffOrderDetailItem = (detail) => ({
   costumeImageUrl: detail?.costumeImageUrl || detail?.imageUrl || '',
   rentalPrice: Number(detail?.rentalPrice ?? detail?.pricePerDay ?? 0),
   depositPrice: Number(detail?.depositPrice ?? detail?.deposit ?? 0),
+  subtotal: Number(detail?.subtotal ?? 0),
+  rentalFee: Number(detail?.rentalFee ?? detail?.subtotal ?? 0),
+  discountAmount: Number(detail?.discountAmount ?? 0),
+  discountPercent:
+    detail?.discountPercent == null ? null : Number(detail.discountPercent),
 });
 
 const normalizeStaffOrder = (order) => {
@@ -51,6 +61,7 @@ const normalizeStaffOrder = (order) => {
 
   return {
     ...order,
+    discountAmount: Number(order?.discountAmount ?? 0),
     details,
     handovers,
   };

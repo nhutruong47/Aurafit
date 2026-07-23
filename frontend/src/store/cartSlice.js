@@ -12,36 +12,45 @@ const initialItems = loadJson('aurafitCartItems', []);
  * Maps a single Backend CartItemDTO into a local flat object.
  * Each Backend row represents exactly 1 physical SKU.
  */
-const mapCartItemToLocal = (cartItem) => ({
-  cartId: `cart-item-${cartItem.id}`,
-  id: cartItem.costumeItemId,
-  cartItemId: cartItem.id,
-  costumeId: cartItem.costumeId,
-  costumeItemId: cartItem.costumeItemId,
-  name: cartItem.costumeName,
-  rawCategory: cartItem.category || 'Costume',
-  category: cartItem.category || 'Costume',
-  image: cartItem.imageUrls?.[0] || cartItem.imageUrl || fallbackCostumeImage,
-  rentalStartDate: cartItem.rentalStartDate,
-  rentalEndDate: cartItem.rentalEndDate,
-  originalUnitPrice: cartItem.originalUnitPrice,
-  unitPrice: cartItem.unitPrice,
-  rentalDays: cartItem.rentalDays,
-  originalRentalFee: cartItem.originalRentalFee,
-  rentalFee: cartItem.rentalFee,
-  discountPercent: cartItem.discountPercent,
-  discountAmount: cartItem.discountAmount,
-  eventName: cartItem.eventName,
-  deposit: cartItem.deposit,
-  depositPrice: cartItem.depositPrice,
-  subtotal: cartItem.subtotal,
-  sku: cartItem.sku,
-  size: cartItem.size,
-  color: cartItem.color,
-  quantity: 1,
-  availableStock: cartItem.availableStock,
-  attribution: cartItem.attribution || null,
-});
+const mapCartItemToLocal = (cartItem) => {
+  const imageUrls = Array.isArray(cartItem.imageUrls)
+    ? cartItem.imageUrls.filter(Boolean)
+    : [];
+  const imageUrl = cartItem.imageUrl || imageUrls[0] || fallbackCostumeImage;
+
+  return {
+    cartId: `cart-item-${cartItem.id}`,
+    id: cartItem.costumeItemId,
+    cartItemId: cartItem.id,
+    costumeId: cartItem.costumeId,
+    costumeItemId: cartItem.costumeItemId,
+    name: cartItem.costumeName,
+    rawCategory: cartItem.category || 'Costume',
+    category: cartItem.category || 'Costume',
+    imageUrl,
+    imageUrls,
+    image: imageUrl,
+    rentalStartDate: cartItem.rentalStartDate,
+    rentalEndDate: cartItem.rentalEndDate,
+    originalUnitPrice: cartItem.originalUnitPrice,
+    unitPrice: cartItem.unitPrice,
+    rentalDays: cartItem.rentalDays,
+    originalRentalFee: cartItem.originalRentalFee,
+    rentalFee: cartItem.rentalFee,
+    discountPercent: cartItem.discountPercent,
+    discountAmount: cartItem.discountAmount,
+    eventName: cartItem.eventName,
+    deposit: cartItem.deposit,
+    depositPrice: cartItem.depositPrice,
+    subtotal: cartItem.subtotal,
+    sku: cartItem.sku,
+    size: cartItem.size,
+    color: cartItem.color,
+    quantity: 1,
+    availableStock: cartItem.availableStock,
+    attribution: cartItem.attribution || null,
+  };
+};
 
 /**
  * Groups an array of flat cart items (each representing 1 physical SKU row)
@@ -113,6 +122,9 @@ const cartSlice = createSlice({
           'discountAmount',
           'eventName',
           'depositPrice',
+          'image',
+          'imageUrl',
+          'imageUrls',
         ].forEach((field) => {
           if (item[field] !== undefined) {
             existingItem[field] = item[field];

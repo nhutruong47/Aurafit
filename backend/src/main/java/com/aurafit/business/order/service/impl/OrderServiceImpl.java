@@ -222,6 +222,9 @@ public class OrderServiceImpl implements OrderService {
                             .subtotal(singleItemPricing.originalRentalFee())
                             .deposit(singleItemPricing.deposit())
                             .price(singleItemPricing.total())
+                            .discountEventId(activeOffer != null ? activeOffer.eventId() : null)
+                            .discountEventName(activeOffer != null ? activeOffer.eventName() : null)
+                            .discountPercent(activeOffer != null ? activeOffer.discountPercent() : null)
                             .returnStatus(ReturnStatus.NOT_RETURNED)
                             .build();
                     orderDetails.add(detail);

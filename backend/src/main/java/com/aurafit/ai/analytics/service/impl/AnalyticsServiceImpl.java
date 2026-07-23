@@ -24,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,10 +43,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     @Override
     @Transactional(readOnly = true)
     public DashboardMetricsDTO getDashboardMetrics() {
-        BigDecimal totalRevenue = paymentRepository.calculateTotalAmountByTypeAndStatus(
-                PaymentType.PAYMENT,
-                PaymentStatus.PAID
-        );
+        BigDecimal totalRevenue = paymentRepository.calculateTotalPaidRevenueExcludingDeposits();
         long totalOrders = rentalOrderRepository.count();
         long totalUsers = userRepository.count();
         long pendingOrdersCount = rentalOrderRepository.countByStatus(OrderStatus.PENDING);
@@ -71,7 +70,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             endDate = LocalDateTime.now();
         }
 
-        List<Object[]> results = paymentRepository.getDailyPaidRevenue(startDate, endDate);
+        List<Object[]> results = paymentRepository.getDailyPaidRevenueExcludingDeposits(startDate, endDate);
         return results.stream()
                 .map(row -> new RevenueChartDTO((String) row[0], (BigDecimal) row[1]))
                 .collect(Collectors.toList());
@@ -107,7 +106,40 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "updatedAt"))
         );
 
-        return PaginatedResponse.from(payments, RevenueTransactionDTO::fromEntity);
+        List<Long> paymentIds = payments.getContent().stream()
+                .map(payment -> payment.getId())
+                .toList();
+        Map<Long, RevenueAdjustments> adjustmentsByPaymentId = paymentIds.isEmpty()
+                ? Collections.emptyMap()
+                : paymentRepository.findRevenueAdjustmentsByPaymentIds(paymentIds).stream()
+                        .collect(Collectors.toMap(
+                                row -> ((Number) row[0]).longValue(),
+                                row -> new RevenueAdjustments(
+                                        (BigDecimal) row[1],
+                                        (BigDecimal) row[2]
+                                )
+                        ));
+
+        return PaginatedResponse.from(
+                payments,
+                payment -> {
+                    RevenueAdjustments adjustments = adjustmentsByPaymentId.getOrDefault(
+                            payment.getId(),
+                            new RevenueAdjustments(
+                                    payment.getRentalOrder().getTotalDeposit(),
+                                    BigDecimal.ZERO
+                            )
+                    );
+                    return RevenueTransactionDTO.fromEntity(
+                            payment,
+                            calculateRevenueAmount(
+                                    payment.getAmount(),
+                                    adjustments.totalDeposit(),
+                                    adjustments.retainedPenalty()
+                            )
+                    );
+                }
+        );
     }
 
     @Override
@@ -115,4 +147,20 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     public List<TopCostumeDTO> getTopCostumes(int limit) {
         return rentalOrderDetailRepository.findTopCostumes(PageRequest.of(0, limit));
     }
+
+    private BigDecimal calculateRevenueAmount(
+            BigDecimal paymentAmount,
+            BigDecimal totalDeposit,
+            BigDecimal retainedPenalty
+    ) {
+        BigDecimal safePaymentAmount = paymentAmount != null ? paymentAmount : BigDecimal.ZERO;
+        BigDecimal safeTotalDeposit = totalDeposit != null ? totalDeposit : BigDecimal.ZERO;
+        BigDecimal safeRetainedPenalty = retainedPenalty != null ? retainedPenalty : BigDecimal.ZERO;
+        return safePaymentAmount
+                .subtract(safeTotalDeposit)
+                .max(BigDecimal.ZERO)
+                .add(safeRetainedPenalty);
+    }
+
+    private record RevenueAdjustments(BigDecimal totalDeposit, BigDecimal retainedPenalty) {}
 }

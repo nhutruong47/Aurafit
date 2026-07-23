@@ -92,6 +92,7 @@ export default function OrdersTab({
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Ngày trả</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Loại đơn</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tiền cọc</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Ưu đãi</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Trạng thái</th>
                 <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Thao tác</th>
               </tr>
@@ -99,7 +100,7 @@ export default function OrdersTab({
             <tbody className="divide-y divide-gray-200 bg-white">
               {paginatedOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-8 text-center text-sm text-gray-500">
+                  <td colSpan="9" className="px-6 py-8 text-center text-sm text-gray-500">
                     Không tìm thấy đơn hàng nào.
                   </td>
                 </tr>
@@ -128,6 +129,24 @@ export default function OrdersTab({
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
                       {formatCurrency(order.totalDeposit)}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      {Number(order.discountAmount || 0) > 0 ? (
+                        <div>
+                          <p className="font-semibold text-emerald-700">
+                            -{formatCurrency(order.discountAmount)}
+                          </p>
+                          <p className="mt-1 max-w-40 truncate text-xs text-gray-500">
+                            {[...new Set(
+                              (order.details || [])
+                                .map(detail => detail.discountEventName)
+                                .filter(Boolean)
+                            )].join(', ') || 'Ưu đãi đã áp dụng'}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                       <StatusBadge status={order.status} />

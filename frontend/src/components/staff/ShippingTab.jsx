@@ -3,6 +3,7 @@ import AlertMessage from '../ui/AlertMessage';
 import ImageUploadField from '../ui/ImageUploadField';
 import { StatusBadge } from './StaffDashboardShared';
 import { formatDateTime, getDetailStatusLabel } from './StaffDashboardUtils';
+import OrderItemPromotion from '../orders/OrderItemPromotion';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
@@ -193,8 +194,8 @@ export default function ShippingTab({
                       {activeOrder.details?.map(detail => (
                         <div key={detail.id} className="p-4 border border-gray-200 rounded-md bg-gray-50 flex flex-col gap-3">
                           <div className="font-medium text-gray-900">{detail.costumeName}</div>
-                          <div className="flex justify-between text-sm text-gray-500">
-                            <span>Phí thuê: <span className="font-medium text-gray-900">{formatCurrency(detail.subtotal)}</span></span>
+                          <OrderItemPromotion detail={detail} />
+                          <div className="flex justify-end text-sm text-gray-500">
                             <span>Tiền cọc: <span className="font-medium text-gray-900">{formatCurrency(detail.deposit)}</span></span>
                           </div>
                         </div>
@@ -279,8 +280,9 @@ export default function ShippingTab({
                                   <p className="text-sm text-gray-500 mt-1">
                                     SKU: <span className="font-medium">{detail.skuCode || 'N/A'}</span> | Size: <span className="font-medium">{detail.size || 'N/A'}</span>
                                   </p>
+                                  <OrderItemPromotion detail={detail} className="mt-2" />
                                   <p className="text-sm text-gray-500 mt-1">
-                                    Giá thuê: {formatCurrency(detail.subtotal)} | Cọc: {formatCurrency(detail.deposit)}
+                                    Cọc: <span className="font-medium text-gray-900">{formatCurrency(detail.deposit)}</span>
                                   </p>
                                 </div>
                               </div>

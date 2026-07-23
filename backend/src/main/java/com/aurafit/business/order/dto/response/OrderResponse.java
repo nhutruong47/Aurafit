@@ -48,6 +48,11 @@ public record OrderResponse(
             BigDecimal pricePerDay,
             int rentalDays,
             BigDecimal subtotal,
+            BigDecimal rentalFee,
+            BigDecimal discountAmount,
+            BigDecimal discountPercent,
+            Long discountEventId,
+            String discountEventName,
             BigDecimal deposit,
             String returnStatus,
             LocalDate rentalStartDate,
@@ -56,24 +61,32 @@ public record OrderResponse(
 
     public static OrderResponse fromEntity(RentalOrder order) {
         List<OrderDetailResponse> details = order.getDetails().stream()
-                .map(d -> new OrderDetailResponse(
-                        d.getId(),
-                        d.getCostumeItem().getId(),
-                        d.getCostumeItem().getCostume().getId(),
-                        d.getCostumeItem().getSku(),
-                        d.getCostumeItem().getCostume().getName(),
-                        d.getCostumeItem().getSize(),
-                        d.getCostumeItem().getColor(),
-                        d.getCostumeItem().getCostume().getPrimaryImageUrl(),
-                        d.getCostumeItem().getCostume().getAllImageUrls(),
-                        d.getPricePerDay(),
-                        d.getRentalDays(),
-                        d.getSubtotal(),
-                        d.getDeposit(),
-                        d.getReturnStatus().name(),
-                        d.getRentalStartDate(),
-                        d.getRentalEndDate()
-                ))
+                .map(d -> {
+                    OrderDetailPricing.Values pricing = OrderDetailPricing.from(d);
+                    return new OrderDetailResponse(
+                            d.getId(),
+                            d.getCostumeItem().getId(),
+                            d.getCostumeItem().getCostume().getId(),
+                            d.getCostumeItem().getSku(),
+                            d.getCostumeItem().getCostume().getName(),
+                            d.getCostumeItem().getSize(),
+                            d.getCostumeItem().getColor(),
+                            d.getCostumeItem().getCostume().getPrimaryImageUrl(),
+                            d.getCostumeItem().getCostume().getAllImageUrls(),
+                            d.getPricePerDay(),
+                            d.getRentalDays(),
+                            pricing.originalRentalFee(),
+                            pricing.rentalFee(),
+                            pricing.discountAmount(),
+                            pricing.discountPercent(),
+                            d.getDiscountEventId(),
+                            d.getDiscountEventName(),
+                            d.getDeposit(),
+                            d.getReturnStatus().name(),
+                            d.getRentalStartDate(),
+                            d.getRentalEndDate()
+                    );
+                })
                 .toList();
 
         BigDecimal finalAmount = order.getTotalRentalPrice()

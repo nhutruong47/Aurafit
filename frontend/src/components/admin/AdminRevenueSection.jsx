@@ -51,7 +51,7 @@ export default function AdminRevenueSection() {
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7f7041]">Tài chính</p>
         <h2 className="mt-2 font-serif text-4xl italic">Chi tiết doanh thu</h2>
         <p className="mt-2 text-sm text-[#5f5e5e]">
-          Số liệu gồm các giao dịch thanh toán đã thành công, bao gồm tiền cọc.
+          Doanh thu gồm phí thuê, phí giao hàng và phần cọc giữ lại do trả trễ hoặc hư hỏng.
         </p>
 
         <div className="mt-6 grid gap-3 md:grid-cols-[1fr_180px_180px]">
@@ -96,7 +96,7 @@ export default function AdminRevenueSection() {
         <article className="border border-[#d7d2c8] bg-[#fdfdfb] p-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">Doanh thu trong kỳ</p>
           <p className="mt-4 font-serif text-4xl italic">{isLoading ? '—' : formatCurrency(periodRevenue)}</p>
-          <p className="mt-3 text-sm text-[#5f5e5e]">Tổng từ các giao dịch PAID trong khoảng ngày đã chọn.</p>
+          <p className="mt-3 text-sm text-[#5f5e5e]">Không bao gồm phần tiền cọc được hoàn lại cho khách.</p>
         </article>
         <article className="border border-[#d7d2c8] bg-[#fdfdfb] p-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">Giao dịch tìm thấy</p>
@@ -168,7 +168,7 @@ export default function AdminRevenueSection() {
                   <th className="px-5 py-3">Khách hàng</th>
                   <th className="px-5 py-3">Thời gian</th>
                   <th className="px-5 py-3">Phương thức</th>
-                  <th className="px-5 py-3 text-right">Số tiền</th>
+                  <th className="px-5 py-3 text-right">Doanh thu</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#ebe7df]">

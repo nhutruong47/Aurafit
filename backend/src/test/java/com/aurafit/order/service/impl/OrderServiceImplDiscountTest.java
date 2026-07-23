@@ -153,5 +153,14 @@ class OrderServiceImplDiscountTest {
         assertEquals(new BigDecimal("580000"), response.getSessionTotalAmount());
         assertEquals(new BigDecimal("580000"), response.getOrders().get(0).finalAmount());
         assertEquals(new BigDecimal("100000"), response.getOrders().get(0).details().get(0).subtotal());
+        assertEquals(new BigDecimal("80000"), response.getOrders().get(0).details().get(0).rentalFee());
+        assertEquals(new BigDecimal("20000"), response.getOrders().get(0).details().get(0).discountAmount());
+        assertEquals(new BigDecimal("20"), response.getOrders().get(0).details().get(0).discountPercent());
+        assertEquals(30L, response.getOrders().get(0).details().get(0).discountEventId());
+        assertEquals("Ưu đãi hè", response.getOrders().get(0).details().get(0).discountEventName());
+
+        assertEquals(30L, savedOrder.getDetails().get(0).getDiscountEventId());
+        assertEquals("Ưu đãi hè", savedOrder.getDetails().get(0).getDiscountEventName());
+        assertEquals(new BigDecimal("20"), savedOrder.getDetails().get(0).getDiscountPercent());
     }
 }

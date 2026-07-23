@@ -24,6 +24,7 @@ public record StaffOrderDetailResponse(
         String deliveryAddress,
         OrderStatus status,
         BigDecimal totalRentalFee,
+        BigDecimal discountAmount,
         BigDecimal totalDeposit,
         BigDecimal shippingFee,
         BigDecimal finalAmount,
@@ -58,6 +59,11 @@ public record StaffOrderDetailResponse(
             ReturnStatus itemStatus,
             ReturnStatus returnStatus,
             BigDecimal subtotal,
+            BigDecimal rentalFee,
+            BigDecimal discountAmount,
+            BigDecimal discountPercent,
+            Long discountEventId,
+            String discountEventName,
             BigDecimal deposit,
             int rentalDays,
             BigDecimal lateFee,
@@ -70,26 +76,34 @@ public record StaffOrderDetailResponse(
 
     public static StaffOrderDetailResponse fromEntity(RentalOrder order, List<HandoverRecord> handovers) {
         List<StaffOrderItemResponse> items = order.getDetails().stream()
-                .map(d -> new StaffOrderItemResponse(
-                        d.getId(),
-                        d.getCostumeItem().getCostume().getName(),
-                        d.getCostumeItem().getSku(),
-                        d.getCostumeItem().getSize(),
-                        d.getCostumeItem().getColor(),
-                        d.getCostumeItem().getCostume().getPrimaryImageUrl(),
-                        d.getCostumeItem().getCostume().getAllImageUrls(),
-                        ReturnStatus.NOT_RETURNED,
-                        d.getReturnStatus(),
-                        d.getSubtotal(),
-                        d.getDeposit(),
-                        d.getRentalDays(),
-                        d.getLateFee(),
-                        d.getDamageFee(),
-                        d.getRefundedAmount(),
-                        d.getRentalStartDate(),
-                        d.getRentalEndDate(),
-                        d.getPricePerDay()
-                ))
+                .map(d -> {
+                    OrderDetailPricing.Values pricing = OrderDetailPricing.from(d);
+                    return new StaffOrderItemResponse(
+                            d.getId(),
+                            d.getCostumeItem().getCostume().getName(),
+                            d.getCostumeItem().getSku(),
+                            d.getCostumeItem().getSize(),
+                            d.getCostumeItem().getColor(),
+                            d.getCostumeItem().getCostume().getPrimaryImageUrl(),
+                            d.getCostumeItem().getCostume().getAllImageUrls(),
+                            ReturnStatus.NOT_RETURNED,
+                            d.getReturnStatus(),
+                            pricing.originalRentalFee(),
+                            pricing.rentalFee(),
+                            pricing.discountAmount(),
+                            pricing.discountPercent(),
+                            d.getDiscountEventId(),
+                            d.getDiscountEventName(),
+                            d.getDeposit(),
+                            d.getRentalDays(),
+                            d.getLateFee(),
+                            d.getDamageFee(),
+                            d.getRefundedAmount(),
+                            d.getRentalStartDate(),
+                            d.getRentalEndDate(),
+                            d.getPricePerDay()
+                    );
+                })
                 .toList();
 
         List<HandoverRecordDTO> handoverDTOs = handovers.stream()
@@ -120,6 +134,7 @@ public record StaffOrderDetailResponse(
                 order.getDeliveryAddress(),
                 order.getStatus(),
                 order.getTotalRentalPrice(),
+                order.getDiscountAmount(),
                 order.getTotalDeposit(),
                 order.getShippingFee(),
                 finalAmount,

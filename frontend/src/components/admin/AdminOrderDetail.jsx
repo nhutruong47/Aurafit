@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminOrderService } from '../../services/adminOrderService';
 import { formatCurrency } from '../../utils/formatCurrency';
+import OrderItemPromotion from '../orders/OrderItemPromotion';
 import InspectionModal from './InspectionModal';
 import { useAdminOrderDetail } from '../../hooks/useAdminOrderDetail';
 
@@ -172,6 +173,12 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                     <span className="text-[#5f5e5e]">Phí thuê:</span>
                     <span className="font-semibold">{formatCurrency(order.totalRentalFee || 0)}</span>
                   </div>
+                  {Number(order.discountAmount || 0) > 0 && (
+                    <div className="flex justify-between text-emerald-700">
+                      <span>Ưu đãi:</span>
+                      <span className="font-semibold">-{formatCurrency(order.discountAmount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-[#5f5e5e]">Tiền cọc:</span>
                     <span className="font-semibold">{formatCurrency(order.totalDeposit || 0)}</span>
@@ -205,6 +212,10 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                         <p className="font-semibold text-sm line-clamp-2">{detail.costumeName}</p>
                         <p className="text-xs text-[#5f5e5e] uppercase tracking-wider mt-1">
                           {detail.skuCode} | Size: {detail.size}
+                        </p>
+                        <OrderItemPromotion detail={detail} className="mt-2" />
+                        <p className="mt-1 text-xs text-[#5f5e5e]">
+                          Tiền cọc: <span className="font-semibold text-gray-900">{formatCurrency(detail.deposit)}</span>
                         </p>
                       </div>
                     </div>

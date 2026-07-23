@@ -10,6 +10,7 @@ import {
 } from './StaffDashboardUtils';
 import { useToastStore } from '../../store/useToastStore';
 import { compensateRentalOrder } from '../../services/rentalOrderService';
+import OrderItemPromotion from '../orders/OrderItemPromotion';
 
 export default function StaffOrderDetailModal({ 
   activeOrder, 
@@ -161,6 +162,12 @@ export default function StaffOrderDetailModal({
                 <span className="text-gray-500">Phí thuê:</span>
                 <span className="font-medium">{formatCurrency(activeOrder.totalRentalFee || 0)}</span>
               </div>
+              {Number(activeOrder.discountAmount || 0) > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Ưu đãi:</span>
+                  <span className="font-medium">-{formatCurrency(activeOrder.discountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Tiền cọc ban đầu:</span>
                 <span className="font-medium">{formatCurrency(activeOrder.totalDeposit || 0)}</span>
@@ -319,8 +326,9 @@ export default function StaffOrderDetailModal({
                     <p className="text-sm text-gray-500 mt-1">
                       SKU: <span className="font-medium">{detail.skuCode || 'N/A'}</span> | Size: <span className="font-medium">{detail.size || 'N/A'}</span>
                     </p>
+                    <OrderItemPromotion detail={detail} className="mt-2" />
                     <p className="text-sm text-gray-500 mt-1">
-                      Giá thuê: {formatCurrency(detail.subtotal)} | Cọc: {formatCurrency(detail.deposit)}
+                      Cọc: <span className="font-medium text-gray-900">{formatCurrency(detail.deposit)}</span>
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">

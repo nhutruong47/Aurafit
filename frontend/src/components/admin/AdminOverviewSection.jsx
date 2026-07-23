@@ -39,7 +39,7 @@ export default function AdminOverviewSection({ onNavigate }) {
     {
       label: 'Doanh thu',
       value: isLoading ? '—' : formatCurrency(metrics?.totalRevenue ?? 0),
-      delta: 'Các giao dịch đã thanh toán',
+      delta: 'Gồm phí thuê, giao hàng và phí phạt',
       target: 'revenue',
     },
     {

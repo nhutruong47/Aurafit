@@ -58,6 +58,15 @@ public class RentalOrderDetail extends BaseEntity {
     @Column(name = "price", nullable = false)
     private BigDecimal price;
 
+    @Column(name = "discount_event_id")
+    private Long discountEventId;
+
+    @Column(name = "discount_event_name")
+    private String discountEventName;
+
+    @Column(name = "discount_percent", precision = 5, scale = 2)
+    private BigDecimal discountPercent;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "return_status", nullable = false)
     @Builder.Default

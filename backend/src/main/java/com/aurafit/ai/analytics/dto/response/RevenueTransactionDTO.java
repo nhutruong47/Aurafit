@@ -23,7 +23,7 @@ public record RevenueTransactionDTO(
         OrderStatus orderStatus,
         LocalDateTime paidAt
 ) {
-    public static RevenueTransactionDTO fromEntity(Payment payment) {
+    public static RevenueTransactionDTO fromEntity(Payment payment, BigDecimal revenueAmount) {
         var order = payment.getRentalOrder();
         var customer = order.getUser();
 
@@ -33,7 +33,7 @@ public record RevenueTransactionDTO(
                 customer.getFullName(),
                 customer.getEmail(),
                 customer.getPhone(),
-                payment.getAmount(),
+                revenueAmount,
                 payment.getMethod(),
                 payment.getStatus(),
                 payment.getType(),

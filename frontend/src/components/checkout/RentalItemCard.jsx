@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
+import { fallbackCostumeImage } from '../../utils/costumeUtils';
 import CartItemEditModal from './CartItemEditModal';
 
 export default function RentalItemCard({
@@ -34,8 +35,12 @@ export default function RentalItemCard({
   const imageElement = (
     <img
       className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-      src={item.image}
+      src={item.imageUrl || item.image || fallbackCostumeImage}
       alt={item.name}
+      onError={(event) => {
+        event.currentTarget.onerror = null;
+        event.currentTarget.src = fallbackCostumeImage;
+      }}
     />
   );
 

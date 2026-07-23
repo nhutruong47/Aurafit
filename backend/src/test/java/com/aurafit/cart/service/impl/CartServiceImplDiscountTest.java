@@ -6,6 +6,7 @@ import com.aurafit.business.cart.entity.Cart;
 import com.aurafit.business.cart.entity.CartItem;
 import com.aurafit.business.cart.service.impl.CartServiceImpl;
 import com.aurafit.business.catalog.entity.Costume;
+import com.aurafit.business.catalog.entity.CostumeImage;
 import com.aurafit.business.catalog.entity.CostumeItem;
 import com.aurafit.business.user.entity.User;
 import com.aurafit.business.cart.enums.CartStatus;
@@ -70,6 +71,15 @@ class CartServiceImplDiscountTest {
                 .rentalPrice(new BigDecimal("100000"))
                 .depositPrice(new BigDecimal("500000"))
                 .build();
+        costume.setImages(List.of(
+                CostumeImage.builder()
+                        .id(11L)
+                        .costume(costume)
+                        .imageUrl("https://cdn.example.com/ao-dai-primary.jpg")
+                        .displayOrder(1)
+                        .primary(true)
+                        .build()
+        ));
         CostumeItem costumeItem = CostumeItem.builder()
                 .id(20L)
                 .sku("AF-AD-01")
@@ -122,6 +132,8 @@ class CartServiceImplDiscountTest {
         assertEquals(new BigDecimal("20000"), item.discountAmount());
         assertEquals(new BigDecimal("500000"), item.deposit());
         assertEquals(new BigDecimal("580000"), item.subtotal());
+        assertEquals("https://cdn.example.com/ao-dai-primary.jpg", item.imageUrl());
+        assertEquals(List.of("https://cdn.example.com/ao-dai-primary.jpg"), item.imageUrls());
         assertEquals(new BigDecimal("20000"), result.totalDiscount());
         assertEquals(new BigDecimal("580000"), result.totalCartValue());
     }

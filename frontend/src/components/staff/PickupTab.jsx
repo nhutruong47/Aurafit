@@ -2,6 +2,7 @@ import AlertMessage from '../ui/AlertMessage';
 import ImageUploadField from '../ui/ImageUploadField';
 import { StatusBadge } from './StaffDashboardShared';
 import { formatCurrency, formatDate, formatDateTime, getDetailStatusLabel } from './StaffDashboardUtils';
+import OrderItemPromotion from '../orders/OrderItemPromotion';
 
 export default function PickupTab({
   filteredOrders,
@@ -96,6 +97,7 @@ export default function PickupTab({
                   {activeOrder.details?.map(detail => (
                     <div key={detail.id} className="p-4 border border-gray-200 rounded-md bg-gray-50 flex flex-col gap-3">
                       <div className="font-medium text-gray-900">{detail.costumeName}</div>
+                      <OrderItemPromotion detail={detail} />
                       <div className="flex justify-between text-sm text-gray-500">
                          <span>Tiền cọc: <span className="font-medium text-gray-900">{formatCurrency(detail.deposit)}</span></span>
                          <span>Trạng thái: {getDetailStatusLabel(detail.returnStatus || 'PENDING')}</span>

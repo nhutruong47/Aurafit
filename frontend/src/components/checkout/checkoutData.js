@@ -41,6 +41,15 @@ export function toRentalItem(item, index) {
   };
 
   const safeQuantity = Number(item.quantity) || 1;
+  const apiImageUrls = Array.isArray(item.imageUrls)
+    ? item.imageUrls.filter(Boolean)
+    : [];
+  const imageUrl =
+    item.imageUrl ||
+    item.costumeImageUrl ||
+    apiImageUrls[0] ||
+    item.image ||
+    fallbackCostumeImage;
 
   // Prefer backend-computed values; fall back to local calculation
   const parsedOriginalRentalFee = safeNumber(item.originalRentalFee);
@@ -79,7 +88,9 @@ export function toRentalItem(item, index) {
     name: item.name,
     tone: [item.size, item.color].filter(Boolean).join(' • ') || 'Tuyển chọn cho thuê',
     badge: item.discountPercent ? `Giảm ${item.discountPercent}%` : null,
-    image: item.image || fallbackCostumeImage,
+    image: imageUrl,
+    imageUrl,
+    imageUrls: apiImageUrls,
     rawCategory: item.rawCategory,
     category: item.category,
     sku: item.sku,

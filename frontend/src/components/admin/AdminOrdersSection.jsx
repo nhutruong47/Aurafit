@@ -187,7 +187,14 @@ export default function AdminOrdersSection() {
                     <td className="whitespace-nowrap px-5 py-4 text-[#5f5e5e]">
                       {order.deliveryMethod === 'STORE_PICKUP' ? 'Nhận tại cửa hàng' : 'Giao hàng GHN'}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-4 font-semibold">{formatCurrency(order.finalAmount || 0)}</td>
+                    <td className="whitespace-nowrap px-5 py-4">
+                      <p className="font-semibold">{formatCurrency(order.finalAmount || 0)}</p>
+                      {Number(order.discountAmount || 0) > 0 && (
+                        <p className="mt-1 text-xs font-medium text-emerald-700">
+                          Đã giảm {formatCurrency(order.discountAmount)}
+                        </p>
+                      )}
+                    </td>
                     <td className="whitespace-nowrap px-5 py-4">
                       <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${STATUS_STYLES[order.status] || 'border-slate-300 bg-slate-50 text-slate-700'}`}>
                         <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
