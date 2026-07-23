@@ -546,6 +546,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
         if (relaxedCandidates.isEmpty() && StringUtils.hasText(criteria.category())) {
             StylistFilterCriteria categoryAndBudgetOnly = new StylistFilterCriteria(
                     criteria.category(),
+                    criteria.requestedItem(),
                     null,
                     null,
                     null,
@@ -714,6 +715,7 @@ public class StylistRecommendationServiceImpl implements StylistRecommendationSe
     private List<String> buildSearchTerms(StylistFilterCriteria criteria, String userMessage) {
         LinkedHashSet<String> searchTerms = new LinkedHashSet<>();
         addSearchTerms(searchTerms, userMessage);
+        addSearchTerms(searchTerms, criteria.requestedItem());
         addSearchTerms(searchTerms, criteria.style());
         addSearchTerms(searchTerms, criteria.occasion());
         addSearchTerms(searchTerms, criteria.season());

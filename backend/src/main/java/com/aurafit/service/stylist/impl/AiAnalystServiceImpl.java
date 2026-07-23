@@ -6,6 +6,7 @@ import com.aurafit.dto.response.AiInsightResponse.SuggestedEvent;
 import com.aurafit.entity.AiInsight;
 import com.aurafit.entity.Category;
 import com.aurafit.entity.Costume;
+import com.aurafit.entity.CostumeMetadata;
 import com.aurafit.enums.AiCallType;
 import com.aurafit.enums.AiInsightType;
 import com.aurafit.enums.ChatMessageRole;
@@ -30,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -54,6 +56,8 @@ public class AiAnalystServiceImpl implements AiAnalystService {
     );
     private static final String ANALYST_SYSTEM_PROMPT = """
             Bạn là chuyên gia phân tích dữ liệu thời trang, hãy đọc số liệu sau và viết nhận xét xu hướng, đề xuất hành động cho admin cửa hàng cho thuê trang phục, viết bằng tiếng Việt, dưới 300 từ.
+            Khi danh sách mặt hàng khách yêu cầu lặp lại nhưng catalog ACTIVE chưa có không rỗng, phải nêu rõ mặt hàng và đề xuất admin nhập hoặc tạo thêm costume tương ứng.
+            Nhu cầu mặt hàng chưa có catalog là đề xuất mở rộng catalog, không phải suggested event và không được bịa costumeIds cho các mặt hàng này.
             Sau phần nhận xét, dòng cuối bắt buộc có đúng định dạng SUGGESTED_EVENTS_JSON: [{"name":"...","reason":"...","categorySlug":"...","suggestedDiscountPercent":15,"costumeIds":[12,45]}].
             costumeIds chỉ được lấy từ danh sách sản phẩm nhu cầu cao nhưng tồn kho thấp đã cung cấp, không được bịa ID ngoài danh sách.
             Nếu không có gợi ý event phù hợp, dòng cuối phải là SUGGESTED_EVENTS_JSON: [].
@@ -70,6 +74,7 @@ public class AiAnalystServiceImpl implements AiAnalystService {
     private final GeminiClient geminiClient;
     private final ObjectMapper objectMapper;
     private final int lowStockThreshold;
+    private final int unmetDemandMinCount;
 
     public AiAnalystServiceImpl(
             ChatMessageRepository chatMessageRepository,
@@ -81,7 +86,8 @@ public class AiAnalystServiceImpl implements AiAnalystService {
             EventRepository eventRepository,
             GeminiClient geminiClient,
             ObjectMapper objectMapper,
-            @Value("${ai-analyst.low-stock-threshold}") int lowStockThreshold
+            @Value("${ai-analyst.low-stock-threshold}") int lowStockThreshold,
+            @Value("${ai-analyst.unmet-demand-min-count}") int unmetDemandMinCount
     ) {
         this.chatMessageRepository = chatMessageRepository;
         this.userInteractionEventRepository = userInteractionEventRepository;
@@ -96,6 +102,10 @@ public class AiAnalystServiceImpl implements AiAnalystService {
             throw new IllegalArgumentException("ai-analyst.low-stock-threshold must not be negative.");
         }
         this.lowStockThreshold = lowStockThreshold;
+        if (unmetDemandMinCount < 1) {
+            throw new IllegalArgumentException("ai-analyst.unmet-demand-min-count must be positive.");
+        }
+        this.unmetDemandMinCount = unmetDemandMinCount;
     }
 
     @Override
@@ -118,11 +128,14 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 findDemandCategoriesWithoutActiveEvent(highDemandCategories, now);
         List<LowStockCostumeSignal> lowStockHighDemandCostumes =
                 findLowStockHighDemandCostumes(highDemandCategories);
+        List<UnmetItemDemandSignal> unmetItemDemands =
+                findUnmetItemDemands(metrics.intentRequestedItems());
         String metricsSnapshot = serializeMetrics(metrics);
         String analystInput = buildAnalystInput(
                 metrics,
                 demandCategoriesWithoutActiveEvent,
-                lowStockHighDemandCostumes
+                lowStockHighDemandCostumes,
+                unmetItemDemands
         );
 
         String rawGeneratedContent = geminiClient.generateText(
@@ -179,11 +192,13 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 );
 
         Map<String, Long> intentCategories = new LinkedHashMap<>();
+        Map<String, Long> intentRequestedItems = new LinkedHashMap<>();
         Map<String, Long> intentStyles = new LinkedHashMap<>();
         Map<String, Long> intentOccasions = new LinkedHashMap<>();
         intentJsonValues.forEach(intentJson -> countIntentDimensions(
                 intentJson,
                 intentCategories,
+                intentRequestedItems,
                 intentStyles,
                 intentOccasions
         ));
@@ -222,6 +237,7 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 periodEnd,
                 userChatMessageCount,
                 sortByCount(intentCategories),
+                sortByCount(intentRequestedItems),
                 sortByCount(intentStyles),
                 sortByCount(intentOccasions),
                 interactionCounts,
@@ -239,6 +255,7 @@ public class AiAnalystServiceImpl implements AiAnalystService {
     private void countIntentDimensions(
             String intentJson,
             Map<String, Long> categories,
+            Map<String, Long> requestedItems,
             Map<String, Long> styles,
             Map<String, Long> occasions
     ) {
@@ -249,6 +266,7 @@ public class AiAnalystServiceImpl implements AiAnalystService {
         try {
             StylistFilterCriteria criteria = objectMapper.readValue(intentJson, StylistFilterCriteria.class);
             increment(categories, criteria.category());
+            increment(requestedItems, criteria.requestedItem());
             increment(styles, criteria.style());
             increment(occasions, criteria.occasion());
         } catch (JsonProcessingException | IllegalArgumentException ignored) {
@@ -520,6 +538,87 @@ public class AiAnalystServiceImpl implements AiAnalystService {
         counts.put(costumeId.longValue(), count.longValue());
     }
 
+    private List<UnmetItemDemandSignal> findUnmetItemDemands(
+            Map<String, Long> requestedItemCounts
+    ) {
+        if (requestedItemCounts == null || requestedItemCounts.isEmpty()) {
+            return List.of();
+        }
+
+        List<Map.Entry<String, Long>> repeatedRequests = requestedItemCounts.entrySet().stream()
+                .filter(entry -> entry.getValue() >= unmetDemandMinCount)
+                .limit(TOP_LIMIT)
+                .toList();
+        if (repeatedRequests.isEmpty()) {
+            return List.of();
+        }
+
+        List<Costume> activeCatalog = costumeRepository.findAllByStatusWithMetadataAndTags(
+                CostumeStatus.ACTIVE
+        );
+        if (activeCatalog == null) {
+            activeCatalog = List.of();
+        }
+
+        List<Costume> catalogSnapshot = activeCatalog;
+        return repeatedRequests.stream()
+                .filter(entry -> catalogSnapshot.stream()
+                        .noneMatch(costume -> matchesRequestedItem(costume, entry.getKey())))
+                .map(entry -> new UnmetItemDemandSignal(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private boolean matchesRequestedItem(Costume costume, String requestedItem) {
+        if (costume == null || !StringUtils.hasText(requestedItem)) {
+            return false;
+        }
+
+        StringBuilder searchable = new StringBuilder();
+        appendSearchableValue(searchable, costume.getName());
+        if (costume.getCategory() != null) {
+            appendSearchableValue(searchable, costume.getCategory().getName());
+            appendSearchableValue(searchable, costume.getCategory().getSlug());
+            appendSearchableValue(searchable, costume.getCategory().getPath());
+        }
+        CostumeMetadata metadata = costume.getMetadata();
+        if (metadata != null) {
+            appendSearchableValue(searchable, metadata.getStyle());
+            appendSearchableValue(searchable, metadata.getOccasion());
+            appendSearchableValue(searchable, metadata.getSeason());
+            appendSearchableValue(searchable, metadata.getColor());
+            appendSearchableValue(searchable, metadata.getGender());
+            appendSearchableValue(searchable, metadata.getMaterial());
+            if (metadata.getTags() != null) {
+                metadata.getTags().forEach(tag -> appendSearchableValue(searchable, tag));
+            }
+        }
+
+        String normalizedRequestedItem = normalizeCatalogText(requestedItem);
+        return StringUtils.hasText(normalizedRequestedItem)
+                && normalizeCatalogText(searchable.toString()).contains(normalizedRequestedItem);
+    }
+
+    private void appendSearchableValue(StringBuilder searchable, String value) {
+        if (StringUtils.hasText(value)) {
+            searchable.append(' ').append(value.trim());
+        }
+    }
+
+    private String normalizeCatalogText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return Normalizer.normalize(
+                        value.replace('Đ', 'D').replace('đ', 'd'),
+                        Normalizer.Form.NFD
+                )
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", " ")
+                .trim()
+                .replaceAll("\\s+", " ");
+    }
+
     private String serializeMetrics(WeeklyMetrics metrics) {
         try {
             return objectMapper.writeValueAsString(metrics);
@@ -531,7 +630,8 @@ public class AiAnalystServiceImpl implements AiAnalystService {
     private String buildAnalystInput(
             WeeklyMetrics metrics,
             List<DemandCategorySignal> demandCategoriesWithoutActiveEvent,
-            List<LowStockCostumeSignal> lowStockHighDemandCostumes
+            List<LowStockCostumeSignal> lowStockHighDemandCostumes,
+            List<UnmetItemDemandSignal> unmetItemDemands
     ) {
         return """
                 - Kỳ dữ liệu: %s đến %s (7 ngày hoàn chỉnh gần nhất).
@@ -546,6 +646,7 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 - Tỷ lệ session chat nhận được recommendation: %d/%d session, tương đương %.2f%%.
                 - Danh mục nhu cầu cao nhưng chưa có event: %s.
                 - Sản phẩm nhu cầu cao nhưng tồn kho thấp: %s.
+                - Mặt hàng khách yêu cầu lặp lại nhưng catalog ACTIVE chưa có: %s.
                 """.formatted(
                 metrics.periodStart(),
                 metrics.periodEnd(),
@@ -561,7 +662,8 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 metrics.totalChatSessions(),
                 metrics.recommendationCoverageRatePercent(),
                 formatDemandCategorySignals(demandCategoriesWithoutActiveEvent),
-                formatLowStockCostumeSignals(lowStockHighDemandCostumes)
+                formatLowStockCostumeSignals(lowStockHighDemandCostumes),
+                formatUnmetItemDemandSignals(unmetItemDemands)
         );
     }
 
@@ -590,6 +692,19 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                         signal.categoryName(),
                         signal.categorySlug(),
                         signal.pooledItemCount()
+                ))
+                .reduce((left, right) -> left + "; " + right)
+                .orElse("không có");
+    }
+
+    private String formatUnmetItemDemandSignals(List<UnmetItemDemandSignal> signals) {
+        if (signals == null || signals.isEmpty()) {
+            return "không có";
+        }
+        return signals.stream()
+                .map(signal -> "%s [requests=%d]".formatted(
+                        signal.requestedItem(),
+                        signal.requestCount()
                 ))
                 .reduce((left, right) -> left + "; " + right)
                 .orElse("không có");
@@ -756,6 +871,12 @@ public class AiAnalystServiceImpl implements AiAnalystService {
     ) {
     }
 
+    private record UnmetItemDemandSignal(
+            String requestedItem,
+            long requestCount
+    ) {
+    }
+
     private record ParsedAnalystResponse(
             String content,
             String suggestedEventsJson,
@@ -768,6 +889,7 @@ public class AiAnalystServiceImpl implements AiAnalystService {
             LocalDate periodEnd,
             long userChatMessageCount,
             Map<String, Long> intentCategories,
+            Map<String, Long> intentRequestedItems,
             Map<String, Long> intentStyles,
             Map<String, Long> intentOccasions,
             Map<InteractionEventType, Long> interactionCounts,

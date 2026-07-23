@@ -89,6 +89,7 @@ ai:
 
 ai-analyst:
   low-stock-threshold: ${AI_ANALYST_LOW_STOCK_THRESHOLD:3}
+  unmet-demand-min-count: ${AI_ANALYST_UNMET_DEMAND_MIN_COUNT:2}
 
 
 ghn:

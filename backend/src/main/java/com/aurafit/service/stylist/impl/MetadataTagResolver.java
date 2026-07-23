@@ -45,6 +45,7 @@ public class MetadataTagResolver {
         TagCatalog catalog = getTagCatalog();
         return new StylistFilterCriteria(
                 safeIntent.category(),
+                safeIntent.requestedItem(),
                 resolveValue(safeIntent.style(), catalog.styleTags()),
                 resolveValue(safeIntent.occasion(), catalog.occasionTags()),
                 resolveValue(safeIntent.season(), catalog.seasonTags()),

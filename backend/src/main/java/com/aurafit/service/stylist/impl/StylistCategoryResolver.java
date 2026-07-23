@@ -36,6 +36,7 @@ public class StylistCategoryResolver {
 
         return new StylistFilterCriteria(
                 resolvedCategoryPath,
+                safeCriteria.requestedItem(),
                 safeCriteria.style(),
                 safeCriteria.occasion(),
                 safeCriteria.season(),
@@ -110,6 +111,7 @@ public class StylistCategoryResolver {
             addSignalGroup(groups, criteria.tags());
         }
         addSignalGroup(groups, Arrays.asList(
+                criteria.requestedItem(),
                 criteria.style(),
                 criteria.occasion(),
                 criteria.season(),

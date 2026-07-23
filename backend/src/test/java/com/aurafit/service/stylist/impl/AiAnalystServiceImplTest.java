@@ -63,7 +63,8 @@ class AiAnalystServiceImplTest {
                 mock(EventRepository.class),
                 mock(GeminiClient.class),
                 new ObjectMapper().findAndRegisterModules(),
-                3
+                3,
+                2
         );
 
         Map<InteractionEventType, Long> counts = ReflectionTestUtils.invokeMethod(
@@ -213,6 +214,77 @@ class AiAnalystServiceImplTest {
     }
 
     @Test
+    void generateWeeklyInsight_shouldRecommendCatalogExpansionForRepeatedUnmetItemDemand() {
+        AnalystFixture fixture = fixture();
+        when(fixture.chatMessageRepository().findIntentJsonByRoleAndPeriod(any(), any(), any()))
+                .thenReturn(List.of(
+                        "{\"category\":null,\"requestedItem\":\"bikini\"}",
+                        "{\"category\":null,\"requestedItem\":\"Bikini\"}"
+                ));
+        when(fixture.costumeRepository().findAllByStatusWithMetadataAndTags(CostumeStatus.ACTIVE))
+                .thenReturn(List.of());
+        when(fixture.geminiClient().generateText(eq(AiCallType.INSIGHT), any(), any()))
+                .thenReturn("""
+                        Khách hàng đã hỏi bikini nhiều lần nhưng catalog chưa có; admin nên tạo thêm costume bikini.
+                        SUGGESTED_EVENTS_JSON: []
+                        """);
+
+        AiInsightResponse response = fixture.service().generateWeeklyInsight();
+
+        assertTrue(response.content().contains("nên tạo thêm costume bikini"));
+
+        ArgumentCaptor<String> systemPromptCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> inputPromptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(fixture.geminiClient()).generateText(
+                eq(AiCallType.INSIGHT),
+                systemPromptCaptor.capture(),
+                inputPromptCaptor.capture()
+        );
+        assertTrue(systemPromptCaptor.getValue().contains(
+                "đề xuất admin nhập hoặc tạo thêm costume tương ứng"
+        ));
+        assertTrue(inputPromptCaptor.getValue().contains(
+                "Mặt hàng khách yêu cầu lặp lại nhưng catalog ACTIVE chưa có: bikini [requests=2]"
+        ));
+
+        ArgumentCaptor<AiInsight> insightCaptor = ArgumentCaptor.forClass(AiInsight.class);
+        verify(fixture.aiInsightRepository()).save(insightCaptor.capture());
+        assertTrue(insightCaptor.getValue().getMetricsSnapshot().contains(
+                "\"intentRequestedItems\":{\"bikini\":2}"
+        ));
+    }
+
+    @Test
+    void generateWeeklyInsight_shouldNotMarkRequestedItemAsUnmetWhenActiveCatalogMatches() {
+        AnalystFixture fixture = fixture();
+        when(fixture.chatMessageRepository().findIntentJsonByRoleAndPeriod(any(), any(), any()))
+                .thenReturn(List.of(
+                        "{\"requestedItem\":\"bikini\"}",
+                        "{\"requestedItem\":\"Bikini\"}"
+                ));
+        when(fixture.costumeRepository().findAllByStatusWithMetadataAndTags(CostumeStatus.ACTIVE))
+                .thenReturn(List.of(Costume.builder()
+                        .id(88L)
+                        .name("Bikini đi biển")
+                        .status(CostumeStatus.ACTIVE)
+                        .build()));
+        when(fixture.geminiClient().generateText(eq(AiCallType.INSIGHT), any(), any()))
+                .thenReturn("Catalog đã đáp ứng nhu cầu.\nSUGGESTED_EVENTS_JSON: []");
+
+        fixture.service().generateWeeklyInsight();
+
+        ArgumentCaptor<String> inputPromptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(fixture.geminiClient()).generateText(
+                eq(AiCallType.INSIGHT),
+                any(),
+                inputPromptCaptor.capture()
+        );
+        assertTrue(inputPromptCaptor.getValue().contains(
+                "Mặt hàng khách yêu cầu lặp lại nhưng catalog ACTIVE chưa có: không có"
+        ));
+    }
+
+    @Test
     void generateWeeklyInsight_shouldKeepContentAndStoreNullWhenSuggestedJsonIsMalformed() {
         AnalystFixture fixture = fixture();
         when(fixture.geminiClient().generateText(eq(AiCallType.INSIGHT), any(), any()))
@@ -293,7 +365,8 @@ class AiAnalystServiceImplTest {
                 eventRepository,
                 geminiClient,
                 new ObjectMapper().findAndRegisterModules(),
-                3
+                3,
+                2
         );
         return new AnalystFixture(
                 service,

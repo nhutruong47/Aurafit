@@ -209,7 +209,12 @@ class StylistRecommendationServiceImplTest {
                 .filter(message -> message.getRole() == ChatMessageRole.USER)
                 .findFirst()
                 .orElseThrow();
-        assertEquals(cachedIntent, savedUserMessage.getIntentJson());
+        assertEquals(
+                "{\"category\":null,\"requestedItem\":null,\"style\":null,\"occasion\":null,"
+                        + "\"season\":null,\"color\":\"đỏ\",\"gender\":null,\"tags\":null,"
+                        + "\"minBudget\":null,\"maxBudget\":null}",
+                savedUserMessage.getIntentJson()
+        );
     }
 
     @Test

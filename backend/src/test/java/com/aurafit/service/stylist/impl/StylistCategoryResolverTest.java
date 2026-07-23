@@ -50,6 +50,28 @@ class StylistCategoryResolverTest {
         assertNull(resolved.category());
     }
 
+    @Test
+    void resolve_shouldPreserveRequestedItemWhenNoCategoryMatches() {
+        when(categoryRepository.findByIsActiveTrueOrderBySortOrderAsc()).thenReturn(categories());
+        StylistFilterCriteria criteria = new StylistFilterCriteria(
+                null,
+                "bikini",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        StylistFilterCriteria resolved = resolver.resolve(criteria, "Shop có bikini không?");
+
+        assertNull(resolved.category());
+        assertEquals("bikini", resolved.requestedItem());
+    }
+
     private StylistFilterCriteria criteria(String category, String occasion, List<String> tags) {
         return new StylistFilterCriteria(
                 category,

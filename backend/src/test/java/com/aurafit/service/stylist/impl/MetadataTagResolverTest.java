@@ -62,6 +62,28 @@ class MetadataTagResolverTest {
     }
 
     @Test
+    void resolve_shouldPreserveRequestedItemWhileNormalizingMetadataTags() {
+        when(productAiMetadataRepository.findAll()).thenReturn(metadataRows());
+        StylistFilterCriteria rawIntent = new StylistFilterCriteria(
+                "su-kien",
+                "bikini",
+                "thanh lich",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        StylistFilterCriteria resolved = resolver.resolve(rawIntent);
+
+        assertEquals("bikini", resolved.requestedItem());
+        assertEquals("thanh lịch", resolved.style());
+    }
+
+    @Test
     void resolve_shouldSkipNullValuesAndAvoidLoadingCatalogWhenNothingCanBeResolved() {
         StylistFilterCriteria rawIntent = criteria(null, null, null, null, null);
 
