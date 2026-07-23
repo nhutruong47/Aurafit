@@ -22,7 +22,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create # Auto-create/alter tables in dev
+      ddl-auto: update # Auto-create/alter tables in dev
     show-sql: false
     properties:
       hibernate:
