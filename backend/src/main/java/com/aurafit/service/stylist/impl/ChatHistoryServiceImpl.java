@@ -6,11 +6,14 @@ import com.aurafit.dto.response.ChatSessionDetailDTO;
 import com.aurafit.dto.response.ChatSessionSummaryDTO;
 import com.aurafit.entity.ChatMessage;
 import com.aurafit.entity.ChatSession;
+import com.aurafit.entity.Costume;
 import com.aurafit.enums.ChatMessageRole;
 import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
 import com.aurafit.repository.CostumeRepository;
+import com.aurafit.service.EventPricingService;
+import com.aurafit.service.EventPricingService.ActiveEventOffer;
 import com.aurafit.service.stylist.ChatHistoryService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,15 +35,18 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final CostumeRepository costumeRepository;
+    private final EventPricingService eventPricingService;
 
     public ChatHistoryServiceImpl(
             ChatSessionRepository chatSessionRepository,
             ChatMessageRepository chatMessageRepository,
-            CostumeRepository costumeRepository
+            CostumeRepository costumeRepository,
+            EventPricingService eventPricingService
     ) {
         this.chatSessionRepository = chatSessionRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.costumeRepository = costumeRepository;
+        this.eventPricingService = eventPricingService;
     }
 
     @Override
@@ -128,12 +134,36 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
             return Map.of();
         }
 
-        return costumeRepository.findAllByIdWithItems(new ArrayList<>(costumeIds)).stream()
-                .map(CatalogCostumeDTO::fromEntity)
+        List<Long> recommendedCostumeIds = new ArrayList<>(costumeIds);
+        Map<Long, ActiveEventOffer> offersByCostumeId = eventPricingService.findActiveOffers(
+                recommendedCostumeIds,
+                LocalDateTime.now()
+        );
+
+        return costumeRepository.findAllByIdWithItems(recommendedCostumeIds).stream()
+                .map(costume -> toCatalogCostumeDTO(
+                        costume,
+                        offersByCostumeId.get(costume.getId())
+                ))
                 .collect(Collectors.toMap(
                         CatalogCostumeDTO::id,
                         Function.identity()
                 ));
+    }
+
+    private CatalogCostumeDTO toCatalogCostumeDTO(
+            Costume costume,
+            ActiveEventOffer offer
+    ) {
+        if (offer == null) {
+            return CatalogCostumeDTO.fromEntity(costume);
+        }
+        return CatalogCostumeDTO.fromEntity(
+                costume,
+                offer.discountPercent(),
+                offer.finalPrice(),
+                offer.eventName()
+        );
     }
 
     private ChatMessageDTO toMessageDTO(

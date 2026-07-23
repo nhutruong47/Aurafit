@@ -196,6 +196,10 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 periodStartTime,
                 periodEndExclusive
         );
+        Map<String, Long> combinedCategoryInterest = mergeCategoryInterest(
+                intentCategories,
+                interactionCategories.combinedCategories()
+        );
 
         long totalChatSessions = chatMessageRepository.countDistinctSessionsByRoleAndPeriod(
                 ChatMessageRole.USER,
@@ -209,7 +213,7 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                         periodStartTime,
                         periodEndExclusive
                 );
-        double recommendationConversionRate = totalChatSessions == 0
+        double recommendationCoverageRate = totalChatSessions == 0
                 ? 0.0
                 : Math.round((recommendedChatSessions * 10000.0) / totalChatSessions) / 100.0;
 
@@ -223,10 +227,10 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 interactionCounts,
                 interactionCategories.searchCategories(),
                 interactionCategories.viewProductCategories(),
-                interactionCategories.combinedCategories(),
+                combinedCategoryInterest,
                 totalChatSessions,
                 recommendedChatSessions,
-                recommendationConversionRate,
+                recommendationCoverageRate,
                 topCounts(intentStyles, TOP_LIMIT),
                 topCounts(intentOccasions, TOP_LIMIT)
         );
@@ -373,17 +377,26 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 .toList();
     }
 
+    private Map<String, Long> mergeCategoryInterest(
+            Map<String, Long> intentCategories,
+            Map<String, Long> interactionCategories
+    ) {
+        Map<String, Long> merged = new LinkedHashMap<>();
+        intentCategories.forEach((category, count) -> merged.merge(category, count, Long::sum));
+        interactionCategories.forEach((category, count) -> merged.merge(category, count, Long::sum));
+        return sortByCount(merged);
+    }
+
     private List<DemandCategorySignal> resolveHighDemandCategories(WeeklyMetrics metrics) {
-        List<Map.Entry<String, Long>> topDemandEntries = metrics.combinedCategoryInterest()
+        List<Map.Entry<String, Long>> demandEntries = metrics.combinedCategoryInterest()
                 .entrySet()
                 .stream()
-                .limit(TOP_LIMIT)
                 .toList();
-        if (topDemandEntries.isEmpty()) {
+        if (demandEntries.isEmpty()) {
             return List.of();
         }
 
-        List<String> identifiers = topDemandEntries.stream()
+        List<String> identifiers = demandEntries.stream()
                 .map(Map.Entry::getKey)
                 .filter(StringUtils::hasText)
                 .distinct()
@@ -393,22 +406,36 @@ public class AiAnalystServiceImpl implements AiAnalystService {
         }
 
         List<Category> matchingCategories = categoryRepository.findActiveByDemandIdentifiers(identifiers);
-        Set<Long> resolvedCategoryIds = new LinkedHashSet<>();
-        List<DemandCategorySignal> resolved = new ArrayList<>();
-        for (Map.Entry<String, Long> demandEntry : topDemandEntries) {
+        Map<Long, DemandCategorySignal> resolvedByCategoryId = new LinkedHashMap<>();
+        for (Map.Entry<String, Long> demandEntry : demandEntries) {
             Category category = findBestMatchingCategory(matchingCategories, demandEntry.getKey());
-            if (category == null || !resolvedCategoryIds.add(category.getId())) {
+            if (category == null) {
                 continue;
             }
-            resolved.add(new DemandCategorySignal(
+            resolvedByCategoryId.merge(
                     category.getId(),
-                    category.getName(),
-                    category.getSlug(),
-                    category.getPath(),
-                    demandEntry.getValue()
-            ));
+                    new DemandCategorySignal(
+                            category.getId(),
+                            category.getName(),
+                            category.getSlug(),
+                            category.getPath(),
+                            demandEntry.getValue()
+                    ),
+                    (current, duplicate) -> new DemandCategorySignal(
+                            current.categoryId(),
+                            current.categoryName(),
+                            current.categorySlug(),
+                            current.categoryPath(),
+                            current.demandCount() + duplicate.demandCount()
+                    )
+            );
         }
-        return List.copyOf(resolved);
+        return resolvedByCategoryId.values().stream()
+                .sorted(Comparator.comparingLong(DemandCategorySignal::demandCount)
+                        .reversed()
+                        .thenComparing(DemandCategorySignal::categoryId))
+                .limit(TOP_LIMIT)
+                .toList();
     }
 
     private Category findBestMatchingCategory(List<Category> categories, String demandIdentifier) {
@@ -515,8 +542,8 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 - Số tương tác theo loại: %s.
                 - Danh mục được tìm kiếm nhiều: %s.
                 - Danh mục được xem nhiều: %s.
-                - Tổng hợp danh mục được quan tâm: %s.
-                - Tín hiệu chuyển đổi recommendation: %d/%d session, tương đương %.2f%%.
+                - Tổng hợp danh mục được quan tâm (chat + tìm kiếm + xem sản phẩm): %s.
+                - Tỷ lệ session chat nhận được recommendation: %d/%d session, tương đương %.2f%%.
                 - Danh mục nhu cầu cao nhưng chưa có event: %s.
                 - Sản phẩm nhu cầu cao nhưng tồn kho thấp: %s.
                 """.formatted(
@@ -532,7 +559,7 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 formatTopMap(metrics.combinedCategoryInterest(), TOP_LIMIT),
                 metrics.recommendedChatSessions(),
                 metrics.totalChatSessions(),
-                metrics.recommendationConversionRatePercent(),
+                metrics.recommendationCoverageRatePercent(),
                 formatDemandCategorySignals(demandCategoriesWithoutActiveEvent),
                 formatLowStockCostumeSignals(lowStockHighDemandCostumes)
         );
@@ -749,7 +776,7 @@ public class AiAnalystServiceImpl implements AiAnalystService {
             Map<String, Long> combinedCategoryInterest,
             long totalChatSessions,
             long recommendedChatSessions,
-            double recommendationConversionRatePercent,
+            double recommendationCoverageRatePercent,
             List<TrendCount> topStyles,
             List<TrendCount> topOccasions
     ) {

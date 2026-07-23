@@ -13,6 +13,8 @@ import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.ChatMessageRepository;
 import com.aurafit.repository.ChatSessionRepository;
 import com.aurafit.repository.CostumeRepository;
+import com.aurafit.service.EventPricingService;
+import com.aurafit.service.EventPricingService.ActiveEventOffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,9 +24,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -40,6 +44,8 @@ class ChatHistoryServiceImplTest {
     private ChatMessageRepository chatMessageRepository;
     @Mock
     private CostumeRepository costumeRepository;
+    @Mock
+    private EventPricingService eventPricingService;
 
     private ChatHistoryServiceImpl service;
 
@@ -48,14 +54,20 @@ class ChatHistoryServiceImplTest {
         service = new ChatHistoryServiceImpl(
                 chatSessionRepository,
                 chatMessageRepository,
-                costumeRepository
+                costumeRepository,
+                eventPricingService
         );
     }
 
     @Test
     void getSessionsForUser_shouldReturnEmptyForGuest() {
         assertEquals(List.of(), service.getSessionsForUser(null));
-        verifyNoInteractions(chatSessionRepository, chatMessageRepository, costumeRepository);
+        verifyNoInteractions(
+                chatSessionRepository,
+                chatMessageRepository,
+                costumeRepository,
+                eventPricingService
+        );
     }
 
     @Test
@@ -123,6 +135,18 @@ class ChatHistoryServiceImplTest {
                 .thenReturn(List.of(userMessage, assistantMessage));
         when(costumeRepository.findAllByIdWithItems(List.of(7L, 8L)))
                 .thenReturn(List.of(costume8, costume7));
+        when(eventPricingService.findActiveOffers(
+                org.mockito.ArgumentMatchers.eq(List.of(7L, 8L)),
+                org.mockito.ArgumentMatchers.any(LocalDateTime.class)
+        )).thenReturn(Map.of(
+                7L,
+                new ActiveEventOffer(
+                        20L,
+                        "Ưu đãi áo dài",
+                        BigDecimal.valueOf(15),
+                        BigDecimal.valueOf(170_000)
+                )
+        ));
 
         ChatSessionDetailDTO result = service.getSessionDetail("session-2", 10L);
 
@@ -132,6 +156,19 @@ class ChatHistoryServiceImplTest {
                 List.of(7L, 8L),
                 result.messages().get(1).recommendedCostumes().stream().map(costume -> costume.id()).toList()
         );
+        assertEquals(
+                BigDecimal.valueOf(15),
+                result.messages().get(1).recommendedCostumes().getFirst().discountPercent()
+        );
+        assertEquals(
+                BigDecimal.valueOf(170_000),
+                result.messages().get(1).recommendedCostumes().getFirst().finalPrice()
+        );
+        assertEquals(
+                "Ưu đãi áo dài",
+                result.messages().get(1).recommendedCostumes().getFirst().eventName()
+        );
+        assertNull(result.messages().get(1).recommendedCostumes().get(1).discountPercent());
         verify(chatSessionRepository, never()).findBySessionIdAndUserIsNull("session-2");
     }
 
@@ -146,7 +183,7 @@ class ChatHistoryServiceImplTest {
         );
 
         verify(chatSessionRepository, never()).findBySessionId("owned-session");
-        verifyNoInteractions(chatMessageRepository, costumeRepository);
+        verifyNoInteractions(chatMessageRepository, costumeRepository, eventPricingService);
     }
 
     private ChatMessage message(

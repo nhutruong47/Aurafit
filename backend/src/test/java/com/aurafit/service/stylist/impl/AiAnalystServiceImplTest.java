@@ -27,9 +27,11 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -147,6 +149,70 @@ class AiAnalystServiceImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void generateWeeklyInsight_shouldMergeChatAndInteractionCategoryDemandAndNameCoverageMetric() {
+        AnalystFixture fixture = fixture();
+        Category category = Category.builder()
+                .id(9L)
+                .name("Áo dài")
+                .slug("ao-dai")
+                .path("truyen-thong/ao-dai")
+                .isActive(true)
+                .build();
+        when(fixture.chatMessageRepository().findIntentJsonByRoleAndPeriod(any(), any(), any()))
+                .thenReturn(List.of("{\"category\":\"Áo dài\"}"));
+        when(fixture.chatMessageRepository().countDistinctSessionsByRoleAndPeriod(any(), any(), any()))
+                .thenReturn(4L);
+        when(fixture.chatMessageRepository().countDistinctRecommendedSessionsByRoleAndPeriod(
+                any(),
+                any(),
+                any(),
+                any()
+        )).thenReturn(3L);
+        when(fixture.interactionRepository().findEventTypeAndMetadataForPeriod(any(), any(), any()))
+                .thenReturn(List.<Object[]>of(
+                        new Object[]{
+                                InteractionEventType.VIEW_PRODUCT,
+                                "{\"categoryPath\":\"truyen-thong/ao-dai\"}"
+                        }
+                ));
+        when(fixture.categoryRepository().findActiveByDemandIdentifiers(anyList()))
+                .thenReturn(List.of(category));
+        when(fixture.eventRepository().existsActiveEventForCategory(
+                eq(9L),
+                eq("truyen-thong/ao-dai"),
+                eq(EventStatus.ACTIVE),
+                any(LocalDateTime.class)
+        )).thenReturn(false);
+        when(fixture.geminiClient().generateText(eq(AiCallType.INSIGHT), any(), any()))
+                .thenReturn("Có nhu cầu áo dài.\nSUGGESTED_EVENTS_JSON: []");
+
+        fixture.service().generateWeeklyInsight();
+
+        ArgumentCaptor<List<String>> identifiersCaptor = ArgumentCaptor.forClass(List.class);
+        verify(fixture.categoryRepository()).findActiveByDemandIdentifiers(identifiersCaptor.capture());
+        assertTrue(identifiersCaptor.getValue().contains("áo dài"));
+        assertTrue(identifiersCaptor.getValue().contains("truyen-thong/ao-dai"));
+
+        ArgumentCaptor<String> inputPromptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(fixture.geminiClient()).generateText(
+                eq(AiCallType.INSIGHT),
+                any(),
+                inputPromptCaptor.capture()
+        );
+        assertTrue(inputPromptCaptor.getValue().contains(
+                "Tổng hợp danh mục được quan tâm (chat + tìm kiếm + xem sản phẩm)"
+        ));
+        assertTrue(inputPromptCaptor.getValue().contains(
+                "Danh mục nhu cầu cao nhưng chưa có event: Áo dài [slug=ao-dai, demand=2]"
+        ));
+        assertTrue(inputPromptCaptor.getValue().contains(
+                "Tỷ lệ session chat nhận được recommendation: 3/4 session"
+        ));
+        assertFalse(inputPromptCaptor.getValue().contains("Tín hiệu chuyển đổi recommendation"));
+    }
+
+    @Test
     void generateWeeklyInsight_shouldKeepContentAndStoreNullWhenSuggestedJsonIsMalformed() {
         AnalystFixture fixture = fixture();
         when(fixture.geminiClient().generateText(eq(AiCallType.INSIGHT), any(), any()))
@@ -231,6 +297,7 @@ class AiAnalystServiceImplTest {
         );
         return new AnalystFixture(
                 service,
+                chatMessageRepository,
                 interactionRepository,
                 aiInsightRepository,
                 categoryRepository,
@@ -243,6 +310,7 @@ class AiAnalystServiceImplTest {
 
     private record AnalystFixture(
             AiAnalystServiceImpl service,
+            ChatMessageRepository chatMessageRepository,
             UserInteractionEventRepository interactionRepository,
             AiInsightRepository aiInsightRepository,
             CategoryRepository categoryRepository,

@@ -2,6 +2,16 @@ import { fallbackCostumeImage, getCostumeImage } from '../../utils/costumeUtils'
 import { formatCurrency } from '../../utils/formatCurrency';
 
 function StylistProductCard({ costume, onSelect }) {
+  const rentalPrice = Number(costume.rentalPrice);
+  const finalPrice = Number(costume.finalPrice);
+  const discountPercent = Number(costume.discountPercent);
+  const hasActiveDiscount =
+    Number.isFinite(rentalPrice) &&
+    Number.isFinite(finalPrice) &&
+    Number.isFinite(discountPercent) &&
+    discountPercent > 0 &&
+    finalPrice < rentalPrice;
+
   return (
     <button
       type="button"
@@ -23,6 +33,11 @@ function StylistProductCard({ costume, onSelect }) {
             Sẵn sàng thuê
           </span>
         )}
+        {hasActiveDiscount && (
+          <span className="absolute right-2 top-2 rounded-full bg-[#9a4439] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
+            Giảm {discountPercent}%
+          </span>
+        )}
       </div>
       <div className="p-3">
         {costume.categoryName && (
@@ -33,12 +48,22 @@ function StylistProductCard({ costume, onSelect }) {
         <p className="line-clamp-2 min-h-10 text-xs font-semibold leading-5 text-black transition group-hover:text-[#99854e]">
           {costume.name}
         </p>
+        {hasActiveDiscount && costume.eventName && (
+          <p className="mt-1 line-clamp-1 text-[10px] font-medium text-[#9a4439]">
+            {costume.eventName}
+          </p>
+        )}
         <div className="mt-2 flex items-end justify-between gap-2 border-t border-[#eee9e0] pt-2">
           <div>
             <p className="text-[9px] uppercase tracking-[0.1em] text-[#8b877f]">Giá thuê</p>
             <p className="mt-0.5 font-serif text-sm font-semibold text-[#7f7041]">
-              {formatCurrency(costume.rentalPrice)}
+              {formatCurrency(hasActiveDiscount ? costume.finalPrice : costume.rentalPrice)}
             </p>
+            {hasActiveDiscount && (
+              <p className="text-[10px] text-[#99948b] line-through">
+                {formatCurrency(costume.rentalPrice)}
+              </p>
+            )}
           </div>
           <span className="material-symbols-outlined text-[18px] text-[#9b8248] transition group-hover:translate-x-0.5">
             arrow_forward
