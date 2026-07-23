@@ -2,14 +2,20 @@ package com.aurafit.order.service.impl;
 
 import com.aurafit.business.order.dto.request.CheckoutItemRequest;
 import com.aurafit.business.order.dto.request.CheckoutRequest;
+import com.aurafit.business.order.dto.request.InspectionRequest;
 import com.aurafit.business.order.dto.response.CheckoutSessionResponse;
+import com.aurafit.business.order.dto.response.StaffOrderDetailResponse;
 import com.aurafit.business.catalog.entity.Costume;
 import com.aurafit.business.catalog.entity.CostumeItem;
 import com.aurafit.business.order.entity.RentalOrder;
+import com.aurafit.business.order.entity.RentalOrderDetail;
 import com.aurafit.business.order.service.impl.OrderServiceImpl;
 import com.aurafit.business.order.service.impl.PricingEngineService;
 import com.aurafit.business.user.entity.User;
 import com.aurafit.business.order.enums.DeliveryMethod;
+import com.aurafit.business.order.enums.OrderStatus;
+import com.aurafit.business.order.enums.ReturnStatus;
+import com.aurafit.business.catalog.enums.ItemStatus;
 import com.aurafit.business.cart.repository.CartItemRepository;
 import com.aurafit.business.cart.repository.CartRepository;
 import com.aurafit.business.catalog.repository.CostumeItemRepository;
@@ -162,5 +168,98 @@ class OrderServiceImplDiscountTest {
         assertEquals(30L, savedOrder.getDetails().get(0).getDiscountEventId());
         assertEquals("Ưu đãi hè", savedOrder.getDetails().get(0).getDiscountEventName());
         assertEquals(new BigDecimal("20"), savedOrder.getDetails().get(0).getDiscountPercent());
+    }
+
+    @Test
+    void completeOrder_shouldPersistPenaltiesAndRefundedDeposit() {
+        RentalOrder order = inspectionOrder(OrderStatus.RETURNED);
+        InspectionRequest request = InspectionRequest.builder()
+                .lateFee(new BigDecimal("100000"))
+                .damageFee(new BigDecimal("250000"))
+                .inspectionNote("Hư phụ kiện")
+                .actualReturnDate(LocalDate.of(2026, 7, 12))
+                .build();
+        when(rentalOrderRepository.findById(200L)).thenReturn(Optional.of(order));
+
+        orderService.completeOrder(200L, request);
+
+        assertEquals(OrderStatus.COMPLETED, order.getStatus());
+        assertEquals(new BigDecimal("100000"), order.getTotalLateFee());
+        assertEquals(new BigDecimal("250000"), order.getTotalDamageFee());
+        assertEquals(new BigDecimal("650000"), order.getTotalRefundedAmount());
+        assertEquals(ReturnStatus.RETURNED, order.getDetails().get(0).getReturnStatus());
+        assertEquals(ItemStatus.MAINTENANCE, order.getDetails().get(0).getCostumeItem().getStatus());
+        verify(rentalOrderRepository).save(order);
+    }
+
+    @Test
+    void reportInvalidBank_shouldKeepInspectionAmountsWhileWaitingForRefund() {
+        RentalOrder order = inspectionOrder(OrderStatus.RENTED);
+        InspectionRequest request = InspectionRequest.builder()
+                .lateFee(new BigDecimal("50000"))
+                .damageFee(new BigDecimal("150000"))
+                .inspectionNote("Chờ khách cập nhật tài khoản")
+                .actualReturnDate(LocalDate.of(2026, 7, 12))
+                .build();
+        when(rentalOrderRepository.findByIdWithDetailsAndCostumes(200L)).thenReturn(Optional.of(order));
+
+        orderService.reportInvalidBank(200L, request);
+
+        assertEquals(OrderStatus.PENDING_REFUND, order.getStatus());
+        assertEquals(new BigDecimal("50000"), order.getTotalLateFee());
+        assertEquals(new BigDecimal("150000"), order.getTotalDamageFee());
+        assertEquals(new BigDecimal("800000"), order.getTotalRefundedAmount());
+        assertEquals(
+                new BigDecimal("800000"),
+                StaffOrderDetailResponse.fromEntity(order, List.of()).totalRefundedAmount()
+        );
+        verify(rentalOrderRepository).save(order);
+    }
+
+    private RentalOrder inspectionOrder(OrderStatus status) {
+        User customer = new User();
+        customer.setId(1L);
+        customer.setFullName("Khách AuraFit");
+        customer.setEmail("customer@aurafit.vn");
+
+        Costume costume = Costume.builder()
+                .id(10L)
+                .name("Áo dài")
+                .build();
+        CostumeItem item = CostumeItem.builder()
+                .id(20L)
+                .sku("AF-AD-01")
+                .size("M")
+                .color("Đỏ")
+                .status(ItemStatus.RENTED)
+                .costume(costume)
+                .build();
+        RentalOrderDetail detail = RentalOrderDetail.builder()
+                .id(30L)
+                .costumeItem(item)
+                .pricePerDay(new BigDecimal("100000"))
+                .rentalDays(2)
+                .rentalStartDate(LocalDate.of(2026, 7, 10))
+                .rentalEndDate(LocalDate.of(2026, 7, 12))
+                .subtotal(new BigDecimal("200000"))
+                .deposit(new BigDecimal("1000000"))
+                .price(new BigDecimal("1200000"))
+                .build();
+        RentalOrder order = RentalOrder.builder()
+                .id(200L)
+                .user(customer)
+                .receiverName("Khách AuraFit")
+                .receiverPhone("0900000000")
+                .deliveryAddress("AuraFit Store")
+                .totalRentalPrice(new BigDecimal("200000"))
+                .totalDeposit(new BigDecimal("1000000"))
+                .discountAmount(BigDecimal.ZERO)
+                .totalPrice(new BigDecimal("1200000"))
+                .shippingFee(BigDecimal.ZERO)
+                .status(status)
+                .details(List.of(detail))
+                .build();
+        detail.setRentalOrder(order);
+        return order;
     }
 }

@@ -53,8 +53,8 @@ export const adminOrderService = {
     return response.data;
   },
 
-  reportInvalidBank: async (orderId) => {
-    const response = await api.post(`/admin/orders/${orderId}/report-invalid-bank`);
+  reportInvalidBank: async (orderId, inspectionPayload) => {
+    const response = await api.post(`/admin/orders/${orderId}/report-invalid-bank`, inspectionPayload ?? null);
     return response.data;
   }
 };

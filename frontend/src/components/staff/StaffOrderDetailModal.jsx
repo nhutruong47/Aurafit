@@ -293,6 +293,21 @@ export default function StaffOrderDetailModal({
                     {formatCurrency(activeOrder.totalDamageFee || 0)}
                   </p>
                 </div>
+                <div className="sm:col-span-2 border-t border-gray-200 pt-3">
+                  <span className="text-gray-500">Số tiền hoàn cọc cho khách:</span>
+                  <p className="mt-1 font-semibold text-green-700">
+                    {formatCurrency(
+                      activeOrder.totalRefundedAmount != null
+                        ? activeOrder.totalRefundedAmount
+                        : Math.max(
+                            0,
+                            Number(activeOrder.totalDeposit || 0)
+                              - Number(activeOrder.totalLateFee || 0)
+                              - Number(activeOrder.totalDamageFee || 0)
+                          )
+                    )}
+                  </p>
+                </div>
                 <div className="sm:col-span-2">
                   <span className="text-gray-500">Ghi chú nghiệm thu:</span>
                   <p className="mt-1 font-medium whitespace-pre-line text-gray-800">

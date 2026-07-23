@@ -95,8 +95,9 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
   const depositAmount = Number(order.totalDeposit) || 0;
   const lateFee = Number(order.totalLateFee) || 0;
   const damageFee = Number(order.totalDamageFee) || 0;
-  const refundedAmount = Number(order.totalRefundedAmount) || 0;
-  const totalPenalty = lateFee + damageFee;
+  const refundedAmount = order.totalRefundedAmount != null
+    ? Number(order.totalRefundedAmount) || 0
+    : Math.max(0, depositAmount - lateFee - damageFee);
 
   return (
     <>
@@ -253,7 +254,7 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
                       )}
                       <div className="flex justify-between font-bold border-t border-[#d7d2c8] pt-2 mt-2 text-[#087b3f]">
                         <span>Hoàn cọc cho khách:</span>
-                        <span>{formatCurrency(refundedAmount > 0 ? refundedAmount : (depositAmount - totalPenalty))}</span>
+                        <span>{formatCurrency(refundedAmount)}</span>
                       </div>
                     </div>
                   </div>

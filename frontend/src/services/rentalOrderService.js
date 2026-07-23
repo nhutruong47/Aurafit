@@ -62,6 +62,11 @@ const normalizeStaffOrder = (order) => {
   return {
     ...order,
     discountAmount: Number(order?.discountAmount ?? 0),
+    totalDeposit: Number(order?.totalDeposit ?? 0),
+    totalLateFee: Number(order?.totalLateFee ?? 0),
+    totalDamageFee: Number(order?.totalDamageFee ?? 0),
+    totalRefundedAmount:
+      order?.totalRefundedAmount == null ? null : Number(order.totalRefundedAmount),
     details,
     handovers,
   };

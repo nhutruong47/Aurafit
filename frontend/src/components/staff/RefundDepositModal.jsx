@@ -2,7 +2,13 @@ import { useState } from 'react';
 import ImageUploadField from '../ui/ImageUploadField';
 import { adminOrderService } from '../../services/adminOrderService';
 
-export default function RefundDepositModal({ order, refundAmount, onClose, onComplete }) {
+export default function RefundDepositModal({
+  order,
+  refundAmount,
+  inspectionPayload,
+  onClose,
+  onComplete
+}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [receiptImageUrl, setReceiptImageUrl] = useState('');
@@ -27,7 +33,7 @@ export default function RefundDepositModal({ order, refundAmount, onClose, onCom
     setIsSubmitting(true);
     setError('');
     try {
-      await adminOrderService.reportInvalidBank(order.id);
+      await adminOrderService.reportInvalidBank(order.id, inspectionPayload);
       onComplete(null, true); // true indicates reported invalid
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Lỗi khi báo sai thông tin');

@@ -50,7 +50,7 @@ public interface OrderService {
     void completeOrder(Long orderId, InspectionRequest request);
     void handleDeliveryFailed(Long orderId, String reason);
     void handleLostPackage(Long orderId, String reason);
-    void reportInvalidBank(Long orderId);
+    void reportInvalidBank(Long orderId, InspectionRequest request);
 
     StaffOrderDetailResponse getOrderDetail(Long orderId);
 

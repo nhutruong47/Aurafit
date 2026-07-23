@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/admin/orders")
@@ -104,7 +105,10 @@ public class AdminOrderController {
 
     @PostMapping("/{id}/complete")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<ApiResponse<Void>> completeOrder(@PathVariable Long id, @RequestBody InspectionRequest request) {
+    public ResponseEntity<ApiResponse<Void>> completeOrder(
+            @PathVariable Long id,
+            @Valid @RequestBody InspectionRequest request
+    ) {
         orderService.completeOrder(id, request);
         return ResponseEntity.ok(ApiResponse.success("Order marked as COMPLETED and deposits refunded", (Void) null));
     }
@@ -125,8 +129,11 @@ public class AdminOrderController {
 
     @PostMapping("/{id}/report-invalid-bank")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<ApiResponse<Void>> reportInvalidBank(@PathVariable Long id) {
-        orderService.reportInvalidBank(id);
+    public ResponseEntity<ApiResponse<Void>> reportInvalidBank(
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) InspectionRequest request
+    ) {
+        orderService.reportInvalidBank(id, request);
         return ResponseEntity.ok(ApiResponse.success("Order marked as PENDING_REFUND due to invalid bank info", (Void) null));
     }
 }

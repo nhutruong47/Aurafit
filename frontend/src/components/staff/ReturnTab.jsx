@@ -378,6 +378,12 @@ export default function ReturnTab({
         <RefundDepositModal 
           order={activeOrder} 
           refundAmount={Math.max(0, activeOrder.totalDeposit - Number(lateFee) - Number(damageFee))}
+          inspectionPayload={{
+            damageFee: Number(damageFee),
+            lateFee: Number(lateFee),
+            inspectionNote,
+            actualReturnDate
+          }}
           onClose={() => setShowRefundModal(false)}
           onComplete={handleRefundComplete}
         />
@@ -387,7 +393,9 @@ export default function ReturnTab({
 
   const renderDisbursementPanel = () => {
     const hasBankInfo = activeOrder?.customer?.bankAccountNumber && activeOrder?.customer?.bankName;
-    const calculatedRefundAmount = Math.max(0, (activeOrder?.totalDeposit || 0) - (activeOrder?.totalLateFee || 0) - (activeOrder?.totalDamageFee || 0));
+    const calculatedRefundAmount = activeOrder?.totalRefundedAmount != null
+      ? Number(activeOrder.totalRefundedAmount) || 0
+      : Math.max(0, (activeOrder?.totalDeposit || 0) - (activeOrder?.totalLateFee || 0) - (activeOrder?.totalDamageFee || 0));
     
     const note = activeOrder?.inspectionNote || '';
     const imgMatch = note.match(/\[Ảnh minh chứng:\s*(https?:\/\/[^\]]+)\]/);

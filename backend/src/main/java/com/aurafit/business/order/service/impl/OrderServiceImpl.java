@@ -590,10 +590,7 @@ public class OrderServiceImpl implements OrderService {
             refundAmount = BigDecimal.ZERO;
         }
 
-        order.setTotalDamageFee(damageFee);
-        order.setTotalLateFee(lateFee);
-        order.setInspectionNote(inspectionNote);
-        order.setTotalRefundedAmount(refundAmount);
+        applyInspectionResult(order, damageFee, lateFee, refundAmount, inspectionNote);
         
         // Update payments to PAID if there is a REFUND pending payment
         order.getPayments().stream()
@@ -601,16 +598,7 @@ public class OrderServiceImpl implements OrderService {
              .forEach(p -> p.setStatus(PaymentStatus.PAID));
         
         // Update items to AVAILABLE or MAINTENANCE
-        for (RentalOrderDetail detail : order.getDetails()) {
-            detail.setReturnStatus(ReturnStatus.RETURNED);
-            CostumeItem item = detail.getCostumeItem();
-            if (damageFee.compareTo(BigDecimal.ZERO) > 0) {
-                item.setStatus(ItemStatus.MAINTENANCE);
-            } else {
-                item.setStatus(ItemStatus.AVAILABLE);
-            }
-            costumeItemRepository.save(item);
-        }
+        updateReturnedItems(order, damageFee);
 
         rentalOrderRepository.save(order);
     }
@@ -685,12 +673,30 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void reportInvalidBank(Long orderId) {
+    public void reportInvalidBank(Long orderId, InspectionRequest request) {
         RentalOrder order = rentalOrderRepository.findByIdWithDetailsAndCostumes(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (order.getStatus() != OrderStatus.RENTED && order.getStatus() != OrderStatus.RETURNING && order.getStatus() != OrderStatus.RETURNED && order.getStatus() != OrderStatus.PENDING_REFUND) {
             throw new BadRequestException("Order must be RENTED, RETURNING, RETURNED or PENDING_REFUND to report invalid bank.");
+        }
+
+        if (request != null) {
+            BigDecimal damageFee = nonNegative(request.getDamageFee());
+            BigDecimal lateFee = nonNegative(request.getLateFee());
+            BigDecimal refundAmount = order.getTotalDeposit()
+                    .subtract(damageFee)
+                    .subtract(lateFee)
+                    .max(BigDecimal.ZERO);
+
+            applyInspectionResult(
+                    order,
+                    damageFee,
+                    lateFee,
+                    refundAmount,
+                    request.getInspectionNote() != null ? request.getInspectionNote() : ""
+            );
+            updateReturnedItems(order, damageFee);
         }
 
         order.setStatus(OrderStatus.PENDING_REFUND);
@@ -700,6 +706,34 @@ public class OrderServiceImpl implements OrderService {
                 : note);
 
         rentalOrderRepository.save(order);
+    }
+
+    private void applyInspectionResult(
+            RentalOrder order,
+            BigDecimal damageFee,
+            BigDecimal lateFee,
+            BigDecimal refundAmount,
+            String inspectionNote
+    ) {
+        order.setTotalDamageFee(damageFee);
+        order.setTotalLateFee(lateFee);
+        order.setTotalRefundedAmount(refundAmount);
+        order.setInspectionNote(inspectionNote);
+    }
+
+    private void updateReturnedItems(RentalOrder order, BigDecimal damageFee) {
+        for (RentalOrderDetail detail : order.getDetails()) {
+            detail.setReturnStatus(ReturnStatus.RETURNED);
+            CostumeItem item = detail.getCostumeItem();
+            item.setStatus(damageFee.compareTo(BigDecimal.ZERO) > 0
+                    ? ItemStatus.MAINTENANCE
+                    : ItemStatus.AVAILABLE);
+            costumeItemRepository.save(item);
+        }
+    }
+
+    private BigDecimal nonNegative(BigDecimal amount) {
+        return amount != null ? amount.max(BigDecimal.ZERO) : BigDecimal.ZERO;
     }
 
     @Override
