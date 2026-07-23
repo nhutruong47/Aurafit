@@ -1,9 +1,9 @@
-package com.aurafit.interaction.entity;
+package com.aurafit.business.interaction.entity;
 
 import com.aurafit.common.entity.BaseEntity;
 import com.aurafit.business.user.entity.User;
-import com.aurafit.interaction.enums.InteractionEventType;
-import com.aurafit.interaction.enums.InteractionTargetType;
+import com.aurafit.business.interaction.enums.InteractionEventType;
+import com.aurafit.business.interaction.enums.InteractionTargetType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

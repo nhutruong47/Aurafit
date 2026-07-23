@@ -1,6 +1,6 @@
-package com.aurafit.interaction.service;
+package com.aurafit.business.interaction.service;
 
-import com.aurafit.interaction.dto.request.TrackInteractionRequest;
+import com.aurafit.business.interaction.dto.request.TrackInteractionRequest;
 
 public interface UserInteractionService {
 

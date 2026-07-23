@@ -1,4 +1,4 @@
-package com.aurafit.interaction.dto.response;
+package com.aurafit.business.interaction.dto.response;
 
 public record InteractionSessionAttachResponse(
         String sessionId,

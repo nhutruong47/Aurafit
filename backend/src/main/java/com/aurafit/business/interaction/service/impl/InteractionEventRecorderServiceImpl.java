@@ -1,12 +1,12 @@
-package com.aurafit.interaction.service.impl;
+package com.aurafit.business.interaction.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.aurafit.business.user.entity.User;
-import com.aurafit.interaction.entity.UserInteractionEvent;
-import com.aurafit.interaction.enums.InteractionEventType;
-import com.aurafit.interaction.enums.InteractionTargetType;
-import com.aurafit.interaction.repository.UserInteractionEventRepository;
-import com.aurafit.interaction.service.InteractionEventRecorderService;
+import com.aurafit.business.interaction.entity.UserInteractionEvent;
+import com.aurafit.business.interaction.enums.InteractionEventType;
+import com.aurafit.business.interaction.enums.InteractionTargetType;
+import com.aurafit.business.interaction.repository.UserInteractionEventRepository;
+import com.aurafit.business.interaction.service.InteractionEventRecorderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

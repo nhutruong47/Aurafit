@@ -1,10 +1,10 @@
-package com.aurafit.interaction.controller;
+package com.aurafit.business.interaction.controller;
 
-import com.aurafit.interaction.dto.request.AttachInteractionSessionRequest;
-import com.aurafit.interaction.dto.request.TrackInteractionRequest;
+import com.aurafit.business.interaction.dto.request.AttachInteractionSessionRequest;
+import com.aurafit.business.interaction.dto.request.TrackInteractionRequest;
 import com.aurafit.common.dto.response.ApiResponse;
-import com.aurafit.interaction.dto.response.InteractionSessionAttachResponse;
-import com.aurafit.interaction.service.UserInteractionService;
+import com.aurafit.business.interaction.dto.response.InteractionSessionAttachResponse;
+import com.aurafit.business.interaction.service.UserInteractionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;

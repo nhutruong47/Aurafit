@@ -1,4 +1,4 @@
-package com.aurafit.interaction.dto.request;
+package com.aurafit.business.interaction.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 

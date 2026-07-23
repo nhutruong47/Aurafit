@@ -206,7 +206,7 @@ export default function AiInsightTab({ eventManagement }) {
                       )}
                     </div>
                     <p className="mt-2 text-xs text-[#777777]">
-                      Tạo lúc {formatCreatedAt(insight.createdAt)}
+                      Cập nhật lúc {formatCreatedAt(insight.updatedAt || insight.createdAt)}
                     </p>
                   </div>
                   <span className="w-fit rounded-full border border-[#d7d2c8] bg-[#faf9f6] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#5f5e5e]">

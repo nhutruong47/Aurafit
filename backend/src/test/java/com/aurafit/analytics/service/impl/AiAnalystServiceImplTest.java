@@ -2,13 +2,14 @@ package com.aurafit.analytics.service.impl;
 
 import com.aurafit.ai.analytics.dto.response.AiInsightResponse;
 import com.aurafit.ai.analytics.entity.AiInsight;
+import com.aurafit.ai.analytics.enums.AiInsightType;
 import com.aurafit.ai.analytics.service.impl.AiAnalystServiceImpl;
 import com.aurafit.business.catalog.entity.Category;
 import com.aurafit.business.catalog.entity.Costume;
 import com.aurafit.infrastructure.AiCallType;
 import com.aurafit.business.catalog.enums.CostumeStatus;
 import com.aurafit.business.catalog.enums.EventStatus;
-import com.aurafit.interaction.enums.InteractionEventType;
+import com.aurafit.business.interaction.enums.InteractionEventType;
 import com.aurafit.infrastructure.GeminiClient;
 import com.aurafit.ai.analytics.repository.AiInsightRepository;
 import com.aurafit.business.catalog.repository.CategoryRepository;
@@ -16,16 +17,18 @@ import com.aurafit.ai.stylist.repository.ChatMessageRepository;
 import com.aurafit.business.catalog.repository.CostumeRepository;
 import com.aurafit.business.catalog.repository.EventRepository;
 import com.aurafit.business.catalog.repository.InventoryRepository;
-import com.aurafit.interaction.repository.UserInteractionEventRepository;
+import com.aurafit.business.interaction.repository.UserInteractionEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,6 +43,66 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AiAnalystServiceImplTest {
+
+    @Test
+    void generateWeeklyInsight_shouldIncludeCurrentDayInRollingPeriod() {
+        AnalystFixture fixture = fixture();
+
+        fixture.service().generateWeeklyInsight();
+
+        LocalDate today = LocalDate.now();
+        verify(fixture.interactionRepository()).countByEventTypeForPeriod(
+                today.minusDays(6).atStartOfDay(),
+                today.plusDays(1).atStartOfDay()
+        );
+    }
+
+    @Test
+    void generateCompletedWeeklyInsight_shouldExcludeCurrentDay() {
+        AnalystFixture fixture = fixture();
+
+        fixture.service().generateCompletedWeeklyInsight();
+
+        LocalDate today = LocalDate.now();
+        verify(fixture.interactionRepository()).countByEventTypeForPeriod(
+                today.minusDays(7).atStartOfDay(),
+                today.atStartOfDay()
+        );
+    }
+
+    @Test
+    void generateWeeklyInsight_shouldUpdateLatestInsightForSamePeriodAndType() {
+        AnalystFixture fixture = fixture();
+        LocalDate periodEnd = LocalDate.now();
+        LocalDate periodStart = periodEnd.minusDays(6);
+        AiInsight existingInsight = AiInsight.builder()
+                .id(77L)
+                .periodStart(periodStart)
+                .periodEnd(periodEnd)
+                .insightType(AiInsightType.WEEKLY_TREND)
+                .content("Old content")
+                .metricsSnapshot("{}")
+                .suggestedEventsJson("[]")
+                .build();
+        when(fixture.aiInsightRepository()
+                .findFirstByPeriodStartAndPeriodEndAndInsightTypeOrderByCreatedAtDesc(
+                        periodStart,
+                        periodEnd,
+                        AiInsightType.WEEKLY_TREND
+                ))
+                .thenReturn(Optional.of(existingInsight));
+        when(fixture.geminiClient().generateText(eq(AiCallType.INSIGHT), any(), any()))
+                .thenReturn("Updated content\nSUGGESTED_EVENTS_JSON: []");
+
+        AiInsightResponse response = fixture.service().generateWeeklyInsight();
+
+        assertEquals(77L, response.id());
+        assertEquals("Updated content", response.content());
+        ArgumentCaptor<AiInsight> insightCaptor = ArgumentCaptor.forClass(AiInsight.class);
+        verify(fixture.aiInsightRepository()).save(insightCaptor.capture());
+        assertEquals(77L, insightCaptor.getValue().getId());
+        assertEquals("Updated content", insightCaptor.getValue().getContent());
+    }
 
     @Test
     @SuppressWarnings("unchecked")
@@ -350,9 +413,18 @@ class AiAnalystServiceImplTest {
         when(interactionRepository.countByEventTypeForPeriod(any(), any())).thenReturn(List.of());
         when(interactionRepository.findEventTypeAndMetadataForPeriod(any(), any(), any()))
                 .thenReturn(List.of());
+        when(aiInsightRepository
+                .findFirstByPeriodStartAndPeriodEndAndInsightTypeOrderByCreatedAtDesc(
+                        any(),
+                        any(),
+                        any()
+                ))
+                .thenReturn(Optional.empty());
         when(aiInsightRepository.save(any(AiInsight.class))).thenAnswer(invocation -> {
             AiInsight insight = invocation.getArgument(0);
-            insight.setId(100L);
+            if (insight.getId() == null) {
+                insight.setId(100L);
+            }
             return insight;
         });
 

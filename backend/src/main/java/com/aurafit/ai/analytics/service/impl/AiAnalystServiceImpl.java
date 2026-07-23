@@ -12,7 +12,7 @@ import com.aurafit.ai.analytics.enums.AiInsightType;
 import com.aurafit.ai.stylist.enums.ChatMessageRole;
 import com.aurafit.business.catalog.enums.CostumeStatus;
 import com.aurafit.business.catalog.enums.EventStatus;
-import com.aurafit.interaction.enums.InteractionEventType;
+import com.aurafit.business.interaction.enums.InteractionEventType;
 import com.aurafit.infrastructure.GeminiClient;
 import com.aurafit.ai.analytics.repository.AiInsightRepository;
 import com.aurafit.business.catalog.repository.CategoryRepository;
@@ -20,7 +20,7 @@ import com.aurafit.ai.stylist.repository.ChatMessageRepository;
 import com.aurafit.business.catalog.repository.CostumeRepository;
 import com.aurafit.business.catalog.repository.EventRepository;
 import com.aurafit.business.catalog.repository.InventoryRepository;
-import com.aurafit.interaction.repository.UserInteractionEventRepository;
+import com.aurafit.business.interaction.repository.UserInteractionEventRepository;
 import com.aurafit.ai.analytics.service.AiAnalystService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -111,7 +111,19 @@ public class AiAnalystServiceImpl implements AiAnalystService {
     @Override
     @Transactional
     public AiInsightResponse generateWeeklyInsight() {
-        LocalDate periodEnd = LocalDate.now().minusDays(1);
+        return generateWeeklyInsightForPeriod(LocalDate.now(), false);
+    }
+
+    @Override
+    @Transactional
+    public AiInsightResponse generateCompletedWeeklyInsight() {
+        return generateWeeklyInsightForPeriod(LocalDate.now().minusDays(1), true);
+    }
+
+    private AiInsightResponse generateWeeklyInsightForPeriod(
+            LocalDate periodEnd,
+            boolean completedPeriod
+    ) {
         LocalDate periodStart = periodEnd.minusDays(6);
         LocalDateTime periodStartTime = periodStart.atStartOfDay();
         LocalDateTime periodEndExclusive = periodEnd.plusDays(1).atStartOfDay();
@@ -135,7 +147,8 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 metrics,
                 demandCategoriesWithoutActiveEvent,
                 lowStockHighDemandCostumes,
-                unmetItemDemands
+                unmetItemDemands,
+                completedPeriod
         );
 
         String rawGeneratedContent = geminiClient.generateText(
@@ -150,14 +163,21 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                         .collect(Collectors.toSet())
         );
 
-        AiInsight savedInsight = aiInsightRepository.save(AiInsight.builder()
-                .periodStart(periodStart)
-                .periodEnd(periodEnd)
-                .insightType(AiInsightType.WEEKLY_TREND)
-                .content(parsedResponse.content())
-                .metricsSnapshot(metricsSnapshot)
-                .suggestedEventsJson(parsedResponse.suggestedEventsJson())
-                .build());
+        AiInsight insight = aiInsightRepository
+                .findFirstByPeriodStartAndPeriodEndAndInsightTypeOrderByCreatedAtDesc(
+                        periodStart,
+                        periodEnd,
+                        AiInsightType.WEEKLY_TREND
+                )
+                .orElseGet(AiInsight::new);
+        insight.setPeriodStart(periodStart);
+        insight.setPeriodEnd(periodEnd);
+        insight.setInsightType(AiInsightType.WEEKLY_TREND);
+        insight.setContent(parsedResponse.content());
+        insight.setMetricsSnapshot(metricsSnapshot);
+        insight.setSuggestedEventsJson(parsedResponse.suggestedEventsJson());
+
+        AiInsight savedInsight = aiInsightRepository.save(insight);
 
         return AiInsightResponse.fromEntity(savedInsight, parsedResponse.suggestedEvents());
     }
@@ -631,10 +651,11 @@ public class AiAnalystServiceImpl implements AiAnalystService {
             WeeklyMetrics metrics,
             List<DemandCategorySignal> demandCategoriesWithoutActiveEvent,
             List<LowStockCostumeSignal> lowStockHighDemandCostumes,
-            List<UnmetItemDemandSignal> unmetItemDemands
+            List<UnmetItemDemandSignal> unmetItemDemands,
+            boolean completedPeriod
     ) {
         return """
-                - Kỳ dữ liệu: %s đến %s (7 ngày hoàn chỉnh gần nhất).
+                - Kỳ dữ liệu: %s đến %s (%s).
                 - Tin nhắn người dùng trong chat: %d.
                 - Nhu cầu theo danh mục nổi bật: %s.
                 - Top 5 phong cách: %s.
@@ -650,6 +671,9 @@ public class AiAnalystServiceImpl implements AiAnalystService {
                 """.formatted(
                 metrics.periodStart(),
                 metrics.periodEnd(),
+                completedPeriod
+                        ? "7 ngày hoàn chỉnh gần nhất"
+                        : "7 ngày rolling, bao gồm dữ liệu hôm nay đến thời điểm tạo báo cáo",
                 metrics.userChatMessageCount(),
                 formatTopMap(metrics.intentCategories(), TOP_LIMIT),
                 formatTrendCounts(metrics.topStyles()),

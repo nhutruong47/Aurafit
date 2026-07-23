@@ -21,7 +21,7 @@ import com.aurafit.business.order.repository.RentalOrderRepository;
 import com.aurafit.business.user.repository.UserRepository;
 import com.aurafit.business.catalog.service.EventPricingService;
 import com.aurafit.business.shipping.service.GhnIntegrationService;
-import com.aurafit.interaction.service.InteractionEventRecorderService;
+import com.aurafit.business.interaction.service.InteractionEventRecorderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,12 +1,12 @@
-package com.aurafit.interaction.service.impl;
+package com.aurafit.business.interaction.service.impl;
 
-import com.aurafit.interaction.dto.request.TrackInteractionRequest;
+import com.aurafit.business.interaction.dto.request.TrackInteractionRequest;
 import com.aurafit.business.user.entity.User;
-import com.aurafit.interaction.entity.UserInteractionEvent;
+import com.aurafit.business.interaction.entity.UserInteractionEvent;
 import com.aurafit.common.exception.ResourceNotFoundException;
-import com.aurafit.interaction.repository.UserInteractionEventRepository;
+import com.aurafit.business.interaction.repository.UserInteractionEventRepository;
 import com.aurafit.business.user.repository.UserRepository;
-import com.aurafit.interaction.service.UserInteractionService;
+import com.aurafit.business.interaction.service.UserInteractionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

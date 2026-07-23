@@ -1,4 +1,4 @@
-package com.aurafit.interaction.enums;
+package com.aurafit.business.interaction.enums;
 
 public enum InteractionTargetType {
     COSTUME,

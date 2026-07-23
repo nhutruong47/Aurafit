@@ -1,8 +1,8 @@
-package com.aurafit.interaction.service;
+package com.aurafit.business.interaction.service;
 
 import com.aurafit.business.user.entity.User;
-import com.aurafit.interaction.enums.InteractionEventType;
-import com.aurafit.interaction.enums.InteractionTargetType;
+import com.aurafit.business.interaction.enums.InteractionEventType;
+import com.aurafit.business.interaction.enums.InteractionTargetType;
 
 import java.util.Map;
 

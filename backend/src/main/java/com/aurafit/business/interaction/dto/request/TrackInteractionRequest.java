@@ -1,7 +1,7 @@
-package com.aurafit.interaction.dto.request;
+package com.aurafit.business.interaction.dto.request;
 
-import com.aurafit.interaction.enums.InteractionEventType;
-import com.aurafit.interaction.enums.InteractionTargetType;
+import com.aurafit.business.interaction.enums.InteractionEventType;
+import com.aurafit.business.interaction.enums.InteractionTargetType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 

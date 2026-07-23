@@ -1,10 +1,11 @@
 package com.aurafit.interaction.service.impl;
 
-import com.aurafit.interaction.dto.request.TrackInteractionRequest;
-import com.aurafit.interaction.entity.UserInteractionEvent;
-import com.aurafit.interaction.enums.InteractionEventType;
-import com.aurafit.interaction.enums.InteractionTargetType;
-import com.aurafit.interaction.repository.UserInteractionEventRepository;
+import com.aurafit.business.interaction.dto.request.TrackInteractionRequest;
+import com.aurafit.business.interaction.entity.UserInteractionEvent;
+import com.aurafit.business.interaction.enums.InteractionEventType;
+import com.aurafit.business.interaction.enums.InteractionTargetType;
+import com.aurafit.business.interaction.repository.UserInteractionEventRepository;
+import com.aurafit.business.interaction.service.impl.UserInteractionServiceImpl;
 import com.aurafit.business.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

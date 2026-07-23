@@ -14,7 +14,7 @@ import com.aurafit.business.cart.repository.CartRepository;
 import com.aurafit.business.catalog.repository.CostumeItemRepository;
 import com.aurafit.business.user.repository.UserRepository;
 import com.aurafit.business.catalog.service.EventPricingService;
-import com.aurafit.interaction.service.InteractionEventRecorderService;
+import com.aurafit.business.interaction.service.InteractionEventRecorderService;
 import com.aurafit.business.order.service.impl.PricingEngineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -8,5 +8,7 @@ public interface AiAnalystService {
 
     AiInsightResponse generateWeeklyInsight();
 
+    AiInsightResponse generateCompletedWeeklyInsight();
+
     List<AiInsightResponse> getLatestInsights();
 }

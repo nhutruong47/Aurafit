@@ -15,7 +15,8 @@ public record AiInsightResponse(
         AiInsightType insightType,
         String content,
         List<SuggestedEvent> suggestedEvents,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
     public static AiInsightResponse fromEntity(
             AiInsight insight,
@@ -28,7 +29,8 @@ public record AiInsightResponse(
                 insight.getInsightType(),
                 insight.getContent(),
                 suggestedEvents == null ? List.of() : List.copyOf(suggestedEvents),
-                insight.getCreatedAt()
+                insight.getCreatedAt(),
+                insight.getUpdatedAt()
         );
     }
 

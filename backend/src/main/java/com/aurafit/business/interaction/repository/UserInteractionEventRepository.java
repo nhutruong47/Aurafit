@@ -1,9 +1,9 @@
-package com.aurafit.interaction.repository;
+package com.aurafit.business.interaction.repository;
 
 import com.aurafit.business.user.entity.User;
-import com.aurafit.interaction.entity.UserInteractionEvent;
-import com.aurafit.interaction.enums.InteractionEventType;
-import com.aurafit.interaction.enums.InteractionTargetType;
+import com.aurafit.business.interaction.entity.UserInteractionEvent;
+import com.aurafit.business.interaction.enums.InteractionEventType;
+import com.aurafit.business.interaction.enums.InteractionTargetType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

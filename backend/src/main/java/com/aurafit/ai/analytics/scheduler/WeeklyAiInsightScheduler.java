@@ -15,6 +15,6 @@ public class WeeklyAiInsightScheduler {
 
     @Scheduled(cron = "0 0 6 * * MON", zone = "Asia/Ho_Chi_Minh")
     public void generateWeeklyInsight() {
-        aiAnalystService.generateWeeklyInsight();
+        aiAnalystService.generateCompletedWeeklyInsight();
     }
 }
