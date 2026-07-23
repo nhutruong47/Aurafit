@@ -16,6 +16,8 @@ public interface EventService {
 
     List<EventBannerResponse> getUpcomingAndActiveEvents(int limit);
 
+    EventResponse getPublicEventBySlug(String slug);
+
     EventResponse createEvent(EventCreateRequest request);
 
     EventResponse updateEvent(Long id, EventUpdateRequest request);

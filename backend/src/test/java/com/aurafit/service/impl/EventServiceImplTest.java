@@ -2,13 +2,16 @@ package com.aurafit.service.impl;
 
 import com.aurafit.dto.request.EventCostumeAssignRequest;
 import com.aurafit.dto.request.EventCreateRequest;
+import com.aurafit.dto.request.EventUpdateRequest;
 import com.aurafit.dto.response.EventBannerResponse;
 import com.aurafit.dto.response.EventResponse;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.Event;
 import com.aurafit.entity.EventCostume;
+import com.aurafit.enums.CostumeStatus;
 import com.aurafit.enums.EventStatus;
 import com.aurafit.exception.BadRequestException;
+import com.aurafit.exception.ResourceNotFoundException;
 import com.aurafit.repository.CostumeRepository;
 import com.aurafit.repository.EventCostumeRepository;
 import com.aurafit.repository.EventRepository;
@@ -22,6 +25,7 @@ import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,7 +56,7 @@ class EventServiceImplTest {
 
     @Test
     void createEvent_shouldRejectInvalidDateRange() {
-        LocalDateTime startDate = LocalDateTime.of(2026, 8, 10, 8, 0);
+        LocalDateTime startDate = LocalDateTime.now().plusDays(2);
         EventCreateRequest request = createRequest(startDate, startDate);
 
         assertThrows(BadRequestException.class, () -> eventService.createEvent(request));
@@ -62,7 +66,7 @@ class EventServiceImplTest {
 
     @Test
     void createEvent_shouldRejectMissingDiscount() {
-        LocalDateTime startDate = LocalDateTime.of(2026, 8, 10, 8, 0);
+        LocalDateTime startDate = LocalDateTime.now().plusDays(2);
         EventCreateRequest request = new EventCreateRequest(
                 "Summer Sale",
                 null,
@@ -82,7 +86,7 @@ class EventServiceImplTest {
 
     @Test
     void createEvent_shouldNormalizeSlugAndDefaultStatus() {
-        LocalDateTime startDate = LocalDateTime.of(2026, 8, 10, 8, 0);
+        LocalDateTime startDate = LocalDateTime.now().plusDays(2);
         EventCreateRequest request = createRequest(startDate, startDate.plusDays(7));
         when(eventRepository.findBySlug("summer-sale-2026")).thenReturn(Optional.empty());
         when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> {
@@ -103,6 +107,83 @@ class EventServiceImplTest {
         assertEquals(12L, response.id());
         assertEquals("https://cdn.example.com/event-wide.jpg", response.bannerImageUrl());
         assertEquals("https://cdn.example.com/event-side.jpg", response.sideBannerImageUrl());
+    }
+
+    @Test
+    void createEvent_shouldRejectPastStartDate() {
+        LocalDateTime startDate = LocalDateTime.now().minusDays(1);
+        EventCreateRequest request = createRequest(startDate, startDate.plusDays(7));
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> eventService.createEvent(request)
+        );
+
+        assertEquals("Thời gian bắt đầu không được nằm trong quá khứ.", exception.getMessage());
+        verify(eventRepository, never()).save(any(Event.class));
+    }
+
+    @Test
+    void updateEvent_shouldRejectChangedPastStartDate() {
+        LocalDateTime referenceTime = LocalDateTime.now();
+        Event event = Event.builder()
+                .id(10L)
+                .name("Upcoming Sale")
+                .slug("upcoming-sale")
+                .discountPercent(new BigDecimal("20"))
+                .startDate(referenceTime.plusDays(2))
+                .endDate(referenceTime.plusDays(5))
+                .status(EventStatus.DRAFT)
+                .build();
+        EventUpdateRequest request = new EventUpdateRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                referenceTime.minusDays(1),
+                null,
+                null
+        );
+        when(eventRepository.findById(10L)).thenReturn(Optional.of(event));
+
+        assertThrows(BadRequestException.class, () -> eventService.updateEvent(10L, request));
+
+        verify(eventRepository, never()).save(any(Event.class));
+    }
+
+    @Test
+    void updateEvent_shouldAllowKeepingOriginalPastStartDate() {
+        LocalDateTime referenceTime = LocalDateTime.now();
+        Event event = Event.builder()
+                .id(10L)
+                .name("Ongoing Sale")
+                .slug("ongoing-sale")
+                .discountPercent(new BigDecimal("20"))
+                .startDate(referenceTime.minusDays(1).withSecond(37))
+                .endDate(referenceTime.plusDays(1).withSecond(42))
+                .status(EventStatus.ACTIVE)
+                .build();
+        EventUpdateRequest request = new EventUpdateRequest(
+                "Ongoing Sale Updated",
+                null,
+                null,
+                null,
+                null,
+                null,
+                event.getStartDate().truncatedTo(ChronoUnit.MINUTES),
+                event.getEndDate().truncatedTo(ChronoUnit.MINUTES),
+                null
+        );
+        when(eventRepository.findById(10L)).thenReturn(Optional.of(event));
+        when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventCostumeRepository.findAllByEventIdWithCostumes(10L)).thenReturn(List.of());
+
+        EventResponse response = eventService.updateEvent(10L, request);
+
+        assertEquals("Ongoing Sale Updated", response.name());
+        verify(eventRepository).save(event);
     }
 
     @Test
@@ -140,6 +221,79 @@ class EventServiceImplTest {
         assertEquals("https://cdn.example.com/ongoing-side.jpg", responses.get(0).sideBannerImageUrl());
         assertTrue(responses.get(0).isOngoing());
         assertFalse(responses.get(1).isOngoing());
+    }
+
+    @Test
+    void getPublicEventBySlug_shouldReturnOnlyActiveCostumesWithCalculatedPrice() {
+        LocalDateTime referenceTime = LocalDateTime.now();
+        Event event = Event.builder()
+                .id(10L)
+                .name("Mid-year Sale")
+                .slug("mid-year-sale")
+                .discountPercent(new BigDecimal("20"))
+                .startDate(referenceTime.minusDays(1))
+                .endDate(referenceTime.plusDays(1))
+                .status(EventStatus.ACTIVE)
+                .build();
+        Costume activeCostume = Costume.builder()
+                .id(21L)
+                .name("Evening Dress")
+                .slug("evening-dress")
+                .imageUrl("https://cdn.example.com/dress.jpg")
+                .rentalPrice(new BigDecimal("500000"))
+                .status(CostumeStatus.ACTIVE)
+                .build();
+        Costume inactiveCostume = Costume.builder()
+                .id(22L)
+                .name("Archived Dress")
+                .rentalPrice(new BigDecimal("400000"))
+                .status(CostumeStatus.INACTIVE)
+                .build();
+        EventCostume activeAssignment = EventCostume.builder()
+                .id(31L)
+                .event(event)
+                .costume(activeCostume)
+                .discountPercentOverride(new BigDecimal("25"))
+                .build();
+        EventCostume inactiveAssignment = EventCostume.builder()
+                .id(32L)
+                .event(event)
+                .costume(inactiveCostume)
+                .build();
+
+        when(eventRepository.findBySlug("mid-year-sale")).thenReturn(Optional.of(event));
+        when(eventCostumeRepository.findAllByEventIdWithCostumes(10L))
+                .thenReturn(List.of(activeAssignment, inactiveAssignment));
+
+        EventResponse response = eventService.getPublicEventBySlug("mid-year-sale");
+
+        assertEquals(1, response.costumes().size());
+        EventResponse.AssignedCostume costume = response.costumes().get(0);
+        assertEquals(21L, costume.costumeId());
+        assertEquals("https://cdn.example.com/dress.jpg", costume.imageUrl());
+        assertEquals(new BigDecimal("25"), costume.appliedDiscountPercent());
+        assertEquals(new BigDecimal("375000"), costume.finalPrice());
+    }
+
+    @Test
+    void getPublicEventBySlug_shouldHideDraftEvent() {
+        LocalDateTime referenceTime = LocalDateTime.now();
+        Event draftEvent = Event.builder()
+                .id(10L)
+                .name("Draft Sale")
+                .slug("draft-sale")
+                .discountPercent(new BigDecimal("20"))
+                .startDate(referenceTime.plusDays(1))
+                .endDate(referenceTime.plusDays(5))
+                .status(EventStatus.DRAFT)
+                .build();
+        when(eventRepository.findBySlug("draft-sale")).thenReturn(Optional.of(draftEvent));
+
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> eventService.getPublicEventBySlug("draft-sale")
+        );
+        verify(eventCostumeRepository, never()).findAllByEventIdWithCostumes(any());
     }
 
     @Test

@@ -28,6 +28,12 @@ const toDateTimeLocal = (value) => {
   return String(value).slice(0, 16);
 };
 
+const getCurrentMinuteTimestamp = () => {
+  const currentMinute = new Date();
+  currentMinute.setSeconds(0, 0);
+  return currentMinute.getTime();
+};
+
 const loadAllAdminCostumes = async () => {
   const pageSize = 100;
   const firstPage = await fetchAdminCostumes({ pageNo: 0, pageSize, sortBy: 'name', sortDir: 'asc' });
@@ -61,6 +67,10 @@ export function useAdminEvents(currentUser) {
   const [eventForm, setEventForm] = useState(emptyEventForm);
   const [editingEventId, setEditingEventId] = useState(null);
   const [originalCostumeIds, setOriginalCostumeIds] = useState([]);
+  const [originalEventDates, setOriginalEventDates] = useState({
+    startDate: '',
+    endDate: '',
+  });
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCostumes, setIsLoadingCostumes] = useState(true);
@@ -124,16 +134,19 @@ export function useAdminEvents(currentUser) {
 
   const hydrateEventForm = (event) => {
     const assignments = normalizeAssignments(event.costumes);
+    const startDate = toDateTimeLocal(event.startDate);
+    const endDate = toDateTimeLocal(event.endDate);
     setEditingEventId(event.id);
     setOriginalCostumeIds(assignments.map((assignment) => assignment.costumeId));
+    setOriginalEventDates({ startDate, endDate });
     setEventForm({
       name: event.name || '',
       description: event.description || '',
       bannerImageUrl: event.bannerImageUrl || '',
       sideBannerImageUrl: event.sideBannerImageUrl || '',
       discountPercent: event.discountPercent ?? '',
-      startDate: toDateTimeLocal(event.startDate),
-      endDate: toDateTimeLocal(event.endDate),
+      startDate,
+      endDate,
       status: event.status || 'DRAFT',
       costumeAssignments: assignments,
     });
@@ -151,6 +164,7 @@ export function useAdminEvents(currentUser) {
 
     setEditingEventId(null);
     setOriginalCostumeIds([]);
+    setOriginalEventDates({ startDate: '', endDate: '' });
     setEventForm({
       ...emptyEventForm,
       name: suggestion?.name || '',
@@ -167,6 +181,7 @@ export function useAdminEvents(currentUser) {
   const resetEventForm = () => {
     setEditingEventId(null);
     setOriginalCostumeIds([]);
+    setOriginalEventDates({ startDate: '', endDate: '' });
     setEventForm(emptyEventForm);
     setMessage('');
     setError('');
@@ -181,8 +196,26 @@ export function useAdminEvents(currentUser) {
     if (!eventForm.startDate || !eventForm.endDate) {
       return 'Vui lòng chọn đầy đủ thời gian bắt đầu và kết thúc.';
     }
-    if (new Date(eventForm.startDate).getTime() >= new Date(eventForm.endDate).getTime()) {
+    const startTimestamp = new Date(eventForm.startDate).getTime();
+    const endTimestamp = new Date(eventForm.endDate).getTime();
+    if (!Number.isFinite(startTimestamp) || !Number.isFinite(endTimestamp)) {
+      return 'Thời gian bắt đầu hoặc kết thúc không hợp lệ.';
+    }
+    if (startTimestamp >= endTimestamp) {
       return 'Thời gian bắt đầu phải trước thời gian kết thúc.';
+    }
+    const currentMinuteTimestamp = getCurrentMinuteTimestamp();
+    const startDateWasChanged =
+      !editingEventId || eventForm.startDate !== originalEventDates.startDate;
+    const endDateWasChanged =
+      !editingEventId || eventForm.endDate !== originalEventDates.endDate;
+    if (startDateWasChanged && startTimestamp < currentMinuteTimestamp) {
+      return editingEventId
+        ? 'Không thể đổi thời gian bắt đầu sang một thời điểm trong quá khứ.'
+        : 'Thời gian bắt đầu không được nằm trong quá khứ.';
+    }
+    if (endDateWasChanged && endTimestamp < currentMinuteTimestamp) {
+      return 'Không thể đổi thời gian kết thúc sang một thời điểm trong quá khứ.';
     }
     const invalidOverride = eventForm.costumeAssignments.some((assignment) => {
       if (assignment.discountPercentOverride === '' || assignment.discountPercentOverride == null) {

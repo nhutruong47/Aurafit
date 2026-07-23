@@ -13,12 +13,13 @@ import CosplayPage from './pages/CosplayPage';
 import CostumeDetailPage from './pages/CostumeDetailPage';
 import CustomerCarePage from './pages/CustomerCarePage';
 import EventsPage from './pages/EventsPage';
-import EventDetailPlaceholderPage from './pages/EventDetailPlaceholderPage';
+import EventDetailPage from './pages/EventDetailPage';
 import HomePage from './pages/HomePage';
 import PaymentPage from './pages/PaymentPage';
 import RentalOrderCheckoutPage from './pages/RentalOrderCheckoutPage';
 import RentalOrdersPage from './pages/RentalOrdersPage';
 import RentalOrderSuccessPage from './pages/RentalOrderSuccessPage';
+import ProgramsPage from './pages/ProgramsPage';
 import StaffDashboardPage from './pages/StaffDashboardPage';
 import TraditionalPage from './pages/TraditionalPage';
 import UserAccountPage from './pages/UserAccountPage';
@@ -352,11 +353,15 @@ function App() {
 
         <Route path="/orders" element={<RentalOrdersPage currentUser={currentUser} onNavigate={handleNavigate} />} />
         <Route path="/chat" element={<ChatDetailPage currentUser={currentUser} />} />
-        <Route path="/yearbook" element={<YearbookPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
-        <Route path="/cosplay" element={<CosplayPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
-        <Route path="/events" element={<EventsPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
-        <Route path="/events/:eventSlug" element={<EventDetailPlaceholderPage />} />
-        <Route path="/traditional" element={<TraditionalPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/catalog/yearbook" element={<YearbookPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/catalog/cosplay" element={<CosplayPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/catalog/events" element={<EventsPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/events" element={<ProgramsPage />} />
+        <Route path="/events/:eventSlug" element={<EventDetailPage />} />
+        <Route path="/catalog/traditional" element={<TraditionalPage onNavigate={handleNavigate} onAddToCart={handleAddToCart} />} />
+        <Route path="/yearbook" element={<Navigate to="/catalog/yearbook" replace />} />
+        <Route path="/cosplay" element={<Navigate to="/catalog/cosplay" replace />} />
+        <Route path="/traditional" element={<Navigate to="/catalog/traditional" replace />} />
         <Route path="/care" element={<CustomerCarePage onNavigate={handleNavigate} />} />
         <Route path="/account" element={<UserAccountPage currentUser={currentUser} onAuthChange={handleAuthChange} onNavigate={handleNavigate} />} />
         <Route

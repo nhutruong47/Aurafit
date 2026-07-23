@@ -8,6 +8,7 @@ import com.aurafit.dto.response.EventResponse;
 import com.aurafit.entity.Costume;
 import com.aurafit.entity.Event;
 import com.aurafit.entity.EventCostume;
+import com.aurafit.enums.CostumeStatus;
 import com.aurafit.enums.EventStatus;
 import com.aurafit.exception.BadRequestException;
 import com.aurafit.exception.ConflictException;
@@ -24,6 +25,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -80,9 +82,26 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    public EventResponse getPublicEventBySlug(String slug) {
+        LocalDateTime now = LocalDateTime.now();
+        Event event = eventRepository.findBySlug(slug)
+                .filter(candidate -> candidate.getStatus() == EventStatus.ACTIVE)
+                .filter(candidate -> !candidate.getEndDate().isBefore(now))
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "slug", slug));
+
+        List<EventCostume> publicAssignments = eventCostumeRepository
+                .findAllByEventIdWithCostumes(event.getId())
+                .stream()
+                .filter(assignment -> assignment.getCostume().getStatus() == CostumeStatus.ACTIVE)
+                .toList();
+        return EventResponse.fromEntity(event, publicAssignments);
+    }
+
+    @Override
     @Transactional
     public EventResponse createEvent(EventCreateRequest request) {
         validateDateRange(request.startDate(), request.endDate());
+        validateNewEventStartDate(request.startDate());
         if (request.discountPercent() == null) {
             throw new BadRequestException("Phần trăm giảm giá là bắt buộc.");
         }
@@ -111,6 +130,7 @@ public class EventServiceImpl implements EventService {
     @Transactional
     public EventResponse updateEvent(Long id, EventUpdateRequest request) {
         Event event = requireEvent(id);
+        validateUpdatedEventDates(event, request);
 
         if (request.name() != null) {
             event.setName(requireName(request.name()));
@@ -303,6 +323,46 @@ public class EventServiceImpl implements EventService {
         if (startDate == null || endDate == null || !startDate.isBefore(endDate)) {
             throw new BadRequestException("Thời gian bắt đầu phải trước thời gian kết thúc.");
         }
+    }
+
+    private void validateNewEventStartDate(LocalDateTime startDate) {
+        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+        if (startDate.isBefore(currentMinute)) {
+            throw new BadRequestException("Thời gian bắt đầu không được nằm trong quá khứ.");
+        }
+    }
+
+    private void validateUpdatedEventDates(Event event, EventUpdateRequest request) {
+        LocalDateTime resolvedStartDate = request.startDate() != null
+                ? request.startDate()
+                : event.getStartDate();
+        LocalDateTime resolvedEndDate = request.endDate() != null
+                ? request.endDate()
+                : event.getEndDate();
+        validateDateRange(resolvedStartDate, resolvedEndDate);
+
+        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+        if (request.startDate() != null
+                && request.startDate().isBefore(currentMinute)
+                && !isSameMinute(request.startDate(), event.getStartDate())) {
+            throw new BadRequestException(
+                    "Không thể đổi thời gian bắt đầu sang một thời điểm trong quá khứ."
+            );
+        }
+        if (request.endDate() != null
+                && request.endDate().isBefore(currentMinute)
+                && !isSameMinute(request.endDate(), event.getEndDate())) {
+            throw new BadRequestException(
+                    "Không thể đổi thời gian kết thúc sang một thời điểm trong quá khứ."
+            );
+        }
+    }
+
+    private boolean isSameMinute(LocalDateTime left, LocalDateTime right) {
+        return left != null
+                && right != null
+                && left.truncatedTo(ChronoUnit.MINUTES)
+                        .equals(right.truncatedTo(ChronoUnit.MINUTES));
     }
 
     private void validateDiscountPercent(BigDecimal discountPercent, String fieldLabel) {

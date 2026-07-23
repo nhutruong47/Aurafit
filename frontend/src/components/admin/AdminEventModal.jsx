@@ -205,6 +205,11 @@ export default function AdminEventModal({
                   required
                 />
               </div>
+              <p className="text-xs leading-5 text-[#7b746c]">
+                {editingEventId
+                  ? 'Không thể đổi thời gian bắt đầu hoặc kết thúc sang một mốc trong quá khứ. Ngày cũ vẫn được giữ nguyên khi chỉnh sửa sự kiện đang diễn ra hoặc đã kết thúc.'
+                  : 'Sự kiện mới phải bắt đầu từ thời điểm hiện tại trở đi.'}
+              </p>
 
               <AdminEventCostumePicker
                 costumes={costumes}

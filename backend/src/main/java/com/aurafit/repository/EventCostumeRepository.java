@@ -26,18 +26,20 @@ public interface EventCostumeRepository extends JpaRepository<EventCostume, Long
     );
 
     @Query("""
-            SELECT ec
+            SELECT DISTINCT ec
             FROM EventCostume ec
             JOIN FETCH ec.costume c
+            LEFT JOIN FETCH c.images
             WHERE ec.event.id IN :eventIds
             ORDER BY ec.event.id ASC, ec.id ASC
             """)
     List<EventCostume> findAllByEventIdsWithCostumes(@Param("eventIds") List<Long> eventIds);
 
     @Query("""
-            SELECT ec
+            SELECT DISTINCT ec
             FROM EventCostume ec
             JOIN FETCH ec.costume c
+            LEFT JOIN FETCH c.images
             WHERE ec.event.id = :eventId
             ORDER BY ec.id ASC
             """)

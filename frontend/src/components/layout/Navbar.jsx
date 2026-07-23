@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import NavbarSearch from './NavbarSearch';
 
 export default function Navbar({
   currentPage,
   onNavigate,
-  onSearchOpen,
   cartCount = 0,
   isAdmin = false,
   isStaff = false,
@@ -21,9 +19,11 @@ export default function Navbar({
   const navLinks = [
     { label: 'Trang chủ', page: 'home', to: '/' },
     { label: 'Bộ sưu tập', page: 'catalog', to: '/catalog' },
+    { label: 'Chương trình', page: 'programs', to: '/events' },
     { label: 'Giới thiệu', page: 'care', to: '/care' },
     { label: 'Chính sách thuê', page: 'policy', to: '/policy' },
   ];
+  const isCatalogPage = ['catalog', 'cosplay', 'events', 'traditional', 'yearbook'].includes(currentPage);
 
   const iconButtonClass =
     'flex h-11 w-11 items-center justify-center text-[#f4ecdc] transition hover:text-[#eadcae] focus:outline-none focus:ring-2 focus:ring-[#eadcae]/40';
@@ -60,7 +60,7 @@ export default function Navbar({
               <li className="relative group py-2">
                 <button
                   onClick={() => goPage('catalog')}
-                  className={`hover:text-[#eadcae] px-4 py-2 rounded-full transition-all duration-300 uppercase flex items-center gap-1 ${currentPage === 'catalog' ? 'text-[#eadcae]' : ''}`}
+                  className={`hover:text-[#eadcae] px-4 py-2 rounded-full transition-all duration-300 uppercase flex items-center gap-1 ${isCatalogPage ? 'text-[#eadcae]' : ''}`}
                 >
                   Bộ Sưu Tập
                 </button>
@@ -68,11 +68,19 @@ export default function Navbar({
                 <div className="absolute top-full left-0 mt-2 w-48 bg-[#473a33] border border-[#7f7041]/70 shadow-xl rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 py-2">
                   <ul className="flex flex-col">
                     <li><button onClick={() => goPage('cosplay')} className="block w-full text-left px-6 py-2 hover:bg-[#3b2f29] hover:text-[#eadcae] transition-colors text-[12px] uppercase tracking-[0.15em]">Cosplay</button></li>
-                    <li><button onClick={() => goPage('events')} className="block w-full text-left px-6 py-2 hover:bg-[#3b2f29] hover:text-[#eadcae] transition-colors text-[12px] uppercase tracking-[0.15em]">Sự kiện</button></li>
+                    <li><button onClick={() => goPage('events')} className="block w-full text-left px-6 py-2 hover:bg-[#3b2f29] hover:text-[#eadcae] transition-colors text-[12px] uppercase tracking-[0.15em]">Trang phục sự kiện</button></li>
                     <li><button onClick={() => goPage('traditional')} className="block w-full text-left px-6 py-2 hover:bg-[#3b2f29] hover:text-[#eadcae] transition-colors text-[12px] uppercase tracking-[0.15em]">Truyền thống</button></li>
                     <li><button onClick={() => goPage('yearbook')} className="block w-full text-left px-6 py-2 hover:bg-[#3b2f29] hover:text-[#eadcae] transition-colors text-[12px] uppercase tracking-[0.15em]">Yearbook</button></li>
                   </ul>
                 </div>
+              </li>
+              <li>
+                <button
+                  onClick={() => goPage('programs')}
+                  className={`hover:text-[#eadcae] px-4 py-2 rounded-full transition-all duration-300 uppercase ${currentPage === 'programs' ? 'text-[#eadcae]' : ''}`}
+                >
+                  Chương Trình
+                </button>
               </li>
               <li>
                 <button
@@ -101,7 +109,7 @@ export default function Navbar({
               setIsSearchModalOpen(prev => !prev);
               setMobileMenuOpen(false);
             }}
-            className={`${iconButtonClass} ${currentPage === 'catalog' ? 'text-[#eadcae]' : ''}`}
+            className={`${iconButtonClass} ${isCatalogPage ? 'text-[#eadcae]' : ''}`}
             aria-label="Tìm kiếm"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>

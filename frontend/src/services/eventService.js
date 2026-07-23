@@ -26,7 +26,16 @@ export const fetchUpcomingAndActiveEvents = async (limit = 2) =>
       method: 'GET',
       params: { limit },
     },
-    'Không thể tải banner sự kiện.'
+    'Không thể tải danh sách chương trình đang diễn ra và sắp tới.'
+  );
+
+export const fetchEventBySlug = async (slug) =>
+  requestJson(
+    {
+      url: `/events/${encodeURIComponent(slug)}`,
+      method: 'GET',
+    },
+    'Không thể tải chi tiết chương trình.'
   );
 
 export const createEvent = async (eventData) =>

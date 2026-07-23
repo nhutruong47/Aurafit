@@ -90,7 +90,7 @@ export default function HomeActiveEventsSection({ events, isLoading, error }) {
             to="/events"
             className="inline-flex w-fit items-center gap-2 border-b border-[#d8c38a] pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#eadcae] transition hover:text-white"
           >
-            Xem tất cả sự kiện
+            Xem tất cả chương trình
             <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
           </Link>
         </div>
@@ -120,7 +120,7 @@ export default function HomeActiveEventsSection({ events, isLoading, error }) {
           <div className="rounded-lg border border-dashed border-[#d8c38a]/50 bg-[#fffdf8]/5 px-6 py-10 text-center">
             <span className="material-symbols-outlined text-4xl text-[#d8c38a]">event_busy</span>
             <p className="mt-3 font-serif text-2xl italic">Hiện chưa có sự kiện đang diễn ra</p>
-            <p className="mt-2 text-sm text-[#f4ecdc]/65">Bạn có thể xem các sự kiện sắp tới trên trang Sự kiện.</p>
+            <p className="mt-2 text-sm text-[#f4ecdc]/65">Bạn có thể xem các ưu đãi sắp tới trên trang Chương trình.</p>
           </div>
         )}
       </div>

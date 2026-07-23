@@ -12,10 +12,11 @@ export const pagePathMap = {
   chat: '/chat',
   adminDashboard: '/admin',
   staffDashboard: '/staff',
-  yearbook: '/yearbook',
-  cosplay: '/cosplay',
-  events: '/events',
-  traditional: '/traditional',
+  yearbook: '/catalog/yearbook',
+  cosplay: '/catalog/cosplay',
+  events: '/catalog/events',
+  traditional: '/catalog/traditional',
+  programs: '/events',
   care: '/care',
   account: '/account',
 };
@@ -30,7 +31,7 @@ export function getCurrentPageFromPath(pathname) {
   }
 
   if (pathname.startsWith('/events/')) {
-    return 'events';
+    return 'programs';
   }
 
   if (pathname === '/direct-rental') {

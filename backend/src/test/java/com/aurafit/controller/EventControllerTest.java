@@ -2,6 +2,7 @@ package com.aurafit.controller;
 
 import com.aurafit.config.SecurityConfig;
 import com.aurafit.dto.response.EventBannerResponse;
+import com.aurafit.dto.response.EventResponse;
 import com.aurafit.enums.EventStatus;
 import com.aurafit.exception.GlobalExceptionHandler;
 import com.aurafit.security.JwtAuthenticationFilter;
@@ -73,5 +74,34 @@ class EventControllerTest {
                 .andExpect(jsonPath("$.data[0].bannerImageUrl").doesNotExist())
                 .andExpect(jsonPath("$.data[0].status", is("ACTIVE")))
                 .andExpect(jsonPath("$.data[0].isOngoing", is(true)));
+    }
+
+    @Test
+    void getPublicEventBySlug_shouldBePublicAndReturnEventDetails() throws Exception {
+        LocalDateTime startDate = LocalDateTime.of(2026, 7, 20, 8, 0);
+        EventResponse response = new EventResponse(
+                10L,
+                "Mid-year Sale",
+                "mid-year-sale",
+                "Ưu đãi giữa năm",
+                "https://cdn.example.com/event-wide.jpg",
+                "https://cdn.example.com/event-side.jpg",
+                new BigDecimal("20.00"),
+                startDate,
+                startDate.plusDays(7),
+                EventStatus.ACTIVE,
+                List.of(),
+                startDate.minusDays(1),
+                startDate.minusDays(1)
+        );
+        when(eventService.getPublicEventBySlug("mid-year-sale")).thenReturn(response);
+
+        mockMvc.perform(get("/api/events/mid-year-sale"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.slug", is("mid-year-sale")))
+                .andExpect(jsonPath("$.data.description", is("Ưu đãi giữa năm")))
+                .andExpect(jsonPath("$.data.bannerImageUrl", is("https://cdn.example.com/event-wide.jpg")))
+                .andExpect(jsonPath("$.data.costumes", hasSize(0)));
     }
 }

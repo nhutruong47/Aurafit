@@ -141,4 +141,15 @@ public class EventController {
                 eventService.getUpcomingAndActiveEvents(limit)
         ));
     }
+
+    @GetMapping("/events/{slug}")
+    @Operation(summary = "Lấy chi tiết event public theo slug")
+    public ResponseEntity<ApiResponse<EventResponse>> getPublicEventBySlug(
+            @PathVariable String slug
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy chi tiết chương trình thành công.",
+                eventService.getPublicEventBySlug(slug)
+        ));
+    }
 }

@@ -6,6 +6,7 @@ import com.aurafit.entity.EventCostume;
 import com.aurafit.enums.EventStatus;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -53,19 +54,41 @@ public record EventResponse(
             Long costumeId,
             String costumeName,
             String costumeSlug,
+            String imageUrl,
             BigDecimal rentalPrice,
-            BigDecimal discountPercentOverride
+            BigDecimal discountPercentOverride,
+            BigDecimal appliedDiscountPercent,
+            BigDecimal finalPrice
     ) {
         private static AssignedCostume fromEntity(EventCostume eventCostume) {
             Costume costume = eventCostume.getCostume();
+            BigDecimal appliedDiscountPercent = eventCostume.getDiscountPercentOverride() != null
+                    ? eventCostume.getDiscountPercentOverride()
+                    : eventCostume.getEvent().getDiscountPercent();
+            BigDecimal finalPrice = calculateFinalPrice(costume.getRentalPrice(), appliedDiscountPercent);
             return new AssignedCostume(
                     eventCostume.getId(),
                     costume.getId(),
                     costume.getName(),
                     costume.getSlug(),
+                    costume.getPrimaryImageUrl(),
                     costume.getRentalPrice(),
-                    eventCostume.getDiscountPercentOverride()
+                    eventCostume.getDiscountPercentOverride(),
+                    appliedDiscountPercent,
+                    finalPrice
             );
+        }
+
+        private static BigDecimal calculateFinalPrice(
+                BigDecimal rentalPrice,
+                BigDecimal discountPercent
+        ) {
+            if (rentalPrice == null || discountPercent == null) {
+                return rentalPrice;
+            }
+            return rentalPrice
+                    .multiply(BigDecimal.valueOf(100).subtract(discountPercent))
+                    .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
         }
     }
 }
