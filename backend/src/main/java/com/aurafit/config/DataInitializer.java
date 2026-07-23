@@ -1,12 +1,12 @@
 package com.aurafit.config;
 
-import com.aurafit.entity.Category;
-import com.aurafit.entity.Costume;
-import com.aurafit.entity.User;
-import com.aurafit.enums.Role;
-import com.aurafit.repository.CategoryRepository;
-import com.aurafit.repository.CostumeRepository;
-import com.aurafit.repository.UserRepository;
+import com.aurafit.business.catalog.entity.Category;
+import com.aurafit.business.catalog.entity.Costume;
+import com.aurafit.business.user.entity.User;
+import com.aurafit.business.user.enums.Role;
+import com.aurafit.business.catalog.repository.CategoryRepository;
+import com.aurafit.business.catalog.repository.CostumeRepository;
+import com.aurafit.business.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;

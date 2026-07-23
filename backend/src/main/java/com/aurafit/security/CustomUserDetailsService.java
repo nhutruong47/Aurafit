@@ -1,9 +1,9 @@
 package com.aurafit.security;
 
-import com.aurafit.entity.User;
-import com.aurafit.enums.UserStatus;
-import com.aurafit.exception.UnauthorizedException;
-import com.aurafit.repository.UserRepository;
+import com.aurafit.business.user.entity.User;
+import com.aurafit.business.user.enums.UserStatus;
+import com.aurafit.common.exception.UnauthorizedException;
+import com.aurafit.business.user.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

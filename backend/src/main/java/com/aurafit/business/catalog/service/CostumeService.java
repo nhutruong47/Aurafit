@@ -1,0 +1,62 @@
+package com.aurafit.business.catalog.service;
+
+import com.aurafit.business.catalog.dto.request.CostumeCreateRequest;
+import com.aurafit.business.catalog.dto.request.CostumeUpdateRequest;
+import com.aurafit.business.catalog.dto.response.AdminCostumeDTO;
+import com.aurafit.business.catalog.dto.response.CatalogCostumeDTO;
+import com.aurafit.business.catalog.dto.response.CategoryDTO;
+import com.aurafit.business.catalog.dto.response.CostumeDTO;
+import com.aurafit.common.dto.response.PaginatedResponse;
+
+import java.util.List;
+
+public interface CostumeService {
+
+    PaginatedResponse<AdminCostumeDTO> getAllCostumes(String authenticatedEmail, int pageNo, int pageSize,
+                                                       String sortBy, String sortDir, String keyword,
+                                                       String status, Long categoryId);
+
+    AdminCostumeDTO createCostume(CostumeCreateRequest request, String authenticatedEmail);
+
+    AdminCostumeDTO updateCostume(Long id, CostumeUpdateRequest request, String authenticatedEmail);
+
+    /**
+     * Fetches a paginated, filtered list of ACTIVE costumes for the public catalog.
+     *
+     * @param categoryId Optional filter by category id. Pass null to skip.
+     * @param categoryPath Optional filter by category path. Pass null to skip.
+     * @param keyword    Optional search term matched against costume name. Pass null to skip.
+     * @param pageNo     Zero-based page index.
+     * @param pageSize   Number of items per page.
+     * @param sortBy     Field to sort by (e.g. "rentalPrice", "name", "createdAt").
+     * @param sortDir    Sort direction: "asc" or "desc".
+     * @return A paginated response containing CostumeDTOs.
+     */
+    PaginatedResponse<CatalogCostumeDTO> getAllActiveCostumes(Long categoryId, String categoryPath, String keyword,
+                                                       int pageNo, int pageSize,
+                                                       String sortBy, String sortDir, Long userId);
+
+    /**
+     * Fetches a single costume by ID. Throws ResourceNotFoundException if not found.
+     *
+     * @param id The costume ID.
+     * @return The CostumeDTO.
+     */
+    CostumeDTO getCostumeById(Long id, Long userId);
+
+    /**
+     * Fetches all categories for sidebar/filter UI.
+     *
+     * @return A list of CategoryDTOs.
+     */
+    List<CategoryDTO> getAllCategories();
+
+    /**
+     * Fetches seasonal / featured costumes for the homepage banner.
+     *
+     * @param limit Number of costumes to return.
+     * @return A list of CatalogCostumeDTOs, sorted by popularity.
+     */
+    List<CatalogCostumeDTO> getSeasonalCostumes(int limit);
+
+}

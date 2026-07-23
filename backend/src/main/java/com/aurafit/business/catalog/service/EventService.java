@@ -1,0 +1,30 @@
+package com.aurafit.business.catalog.service;
+
+import com.aurafit.business.catalog.dto.request.EventCostumeAssignRequest;
+import com.aurafit.business.catalog.dto.request.EventCreateRequest;
+import com.aurafit.business.catalog.dto.request.EventUpdateRequest;
+import com.aurafit.business.catalog.dto.response.EventBannerResponse;
+import com.aurafit.business.catalog.dto.response.EventResponse;
+
+import java.util.List;
+
+public interface EventService {
+
+    List<EventResponse> getAdminEvents(String status);
+
+    List<EventResponse> getActiveEvents();
+
+    List<EventBannerResponse> getUpcomingAndActiveEvents(int limit);
+
+    EventResponse getPublicEventBySlug(String slug);
+
+    EventResponse createEvent(EventCreateRequest request);
+
+    EventResponse updateEvent(Long id, EventUpdateRequest request);
+
+    void deleteEvent(Long id);
+
+    EventResponse assignCostumes(Long eventId, List<EventCostumeAssignRequest> requests);
+
+    void removeCostume(Long eventId, Long costumeId);
+}

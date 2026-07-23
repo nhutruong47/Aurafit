@@ -1,6 +1,6 @@
 package com.aurafit.config;
 
-import com.aurafit.enums.ItemStatus;
+import com.aurafit.business.catalog.enums.ItemStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;

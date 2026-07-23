@@ -1,14 +1,14 @@
 package com.aurafit.config;
 
-import com.aurafit.entity.Category;
-import com.aurafit.entity.Costume;
-import com.aurafit.entity.CostumeItem;
-import com.aurafit.entity.CostumeMetadata;
-import com.aurafit.enums.CostumeStatus;
-import com.aurafit.enums.ItemStatus;
-import com.aurafit.repository.CategoryRepository;
-import com.aurafit.repository.CostumeItemRepository;
-import com.aurafit.repository.CostumeRepository;
+import com.aurafit.business.catalog.entity.Category;
+import com.aurafit.business.catalog.entity.Costume;
+import com.aurafit.business.catalog.entity.CostumeItem;
+import com.aurafit.business.catalog.entity.CostumeMetadata;
+import com.aurafit.business.catalog.enums.CostumeStatus;
+import com.aurafit.business.catalog.enums.ItemStatus;
+import com.aurafit.business.catalog.repository.CategoryRepository;
+import com.aurafit.business.catalog.repository.CostumeItemRepository;
+import com.aurafit.business.catalog.repository.CostumeRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
