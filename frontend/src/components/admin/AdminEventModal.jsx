@@ -91,12 +91,12 @@ export default function AdminEventModal({
               <ImageUploadField
                 key={`${editingEventId || 'new-event'}-page-banner`}
                 label="Ảnh banner trang sự kiện"
-                helperText="Không bắt buộc. Khuyến nghị ảnh ngang tỉ lệ 16:9."
+                helperText="Không bắt buộc. Khuyến nghị ảnh banner ngang tỉ lệ 3:1."
                 value={eventForm.bannerImageUrl}
                 autoUpload
                 disabled={isSaving}
                 readyLabel="Ảnh banner trang sự kiện đã sẵn sàng."
-                previewAspectClassName="aspect-video"
+                previewAspectClassName="aspect-[3/1]"
                 onUploaded={(asset) => onBannerChange(getUploadAssetUrl(asset))}
                 onUploadStateChange={setBannerUploadState}
               />

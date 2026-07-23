@@ -193,6 +193,7 @@ class EventServiceImplTest {
                 .id(1L)
                 .name("Đang diễn ra")
                 .slug("dang-dien-ra")
+                .bannerImageUrl("https://cdn.example.com/ongoing-wide.jpg")
                 .sideBannerImageUrl("https://cdn.example.com/ongoing-side.jpg")
                 .discountPercent(new BigDecimal("20"))
                 .startDate(referenceTime.minusDays(1))
@@ -218,6 +219,7 @@ class EventServiceImplTest {
         List<EventBannerResponse> responses = eventService.getUpcomingAndActiveEvents(2);
 
         assertEquals(List.of(1L, 2L), responses.stream().map(EventBannerResponse::id).toList());
+        assertEquals("https://cdn.example.com/ongoing-wide.jpg", responses.get(0).bannerImageUrl());
         assertEquals("https://cdn.example.com/ongoing-side.jpg", responses.get(0).sideBannerImageUrl());
         assertTrue(responses.get(0).isOngoing());
         assertFalse(responses.get(1).isOngoing());

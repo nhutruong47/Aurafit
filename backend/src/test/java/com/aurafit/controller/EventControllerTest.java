@@ -55,6 +55,7 @@ class EventControllerTest {
                 10L,
                 "Mid-year Sale",
                 "mid-year-sale",
+                "https://cdn.example.com/event-wide.jpg",
                 "https://cdn.example.com/event-side.jpg",
                 new BigDecimal("20.00"),
                 startDate,
@@ -70,8 +71,8 @@ class EventControllerTest {
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].id", is(10)))
                 .andExpect(jsonPath("$.data[0].slug", is("mid-year-sale")))
+                .andExpect(jsonPath("$.data[0].bannerImageUrl", is("https://cdn.example.com/event-wide.jpg")))
                 .andExpect(jsonPath("$.data[0].sideBannerImageUrl", is("https://cdn.example.com/event-side.jpg")))
-                .andExpect(jsonPath("$.data[0].bannerImageUrl").doesNotExist())
                 .andExpect(jsonPath("$.data[0].status", is("ACTIVE")))
                 .andExpect(jsonPath("$.data[0].isOngoing", is(true)));
     }

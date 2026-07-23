@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePrograms } from '../hooks/usePrograms';
+
+const HERO_BANNER_INTERVAL_MS = 2000;
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -105,37 +107,93 @@ function ProgramGrid({ events, emptyMessage }) {
 
 export default function ProgramsPage() {
   const { events, isLoading, error } = usePrograms();
+  const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const ongoingEvents = useMemo(() => events.filter((event) => event.isOngoing), [events]);
   const upcomingEvents = useMemo(() => events.filter((event) => !event.isOngoing), [events]);
+  const heroBannerEvents = useMemo(
+    () => events.filter((event) => Boolean(event.bannerImageUrl)),
+    [events]
+  );
+  const activeHeroBannerIndex = heroBannerEvents.length
+    ? activeBannerIndex % heroBannerEvents.length
+    : 0;
+
+  useEffect(() => {
+    if (heroBannerEvents.length <= 1) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      setActiveBannerIndex((currentIndex) => (
+        (currentIndex + 1) % heroBannerEvents.length
+      ));
+    }, HERO_BANNER_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [heroBannerEvents.length]);
 
   return (
     <div className="min-h-screen bg-[#f7f4ee] text-[#302721]">
-      <section className="overflow-hidden border-b border-[#7f7041]/40 bg-[#473a33] text-[#f4ecdc]">
-        <div className="mx-auto grid max-w-[1440px] gap-10 px-5 py-16 md:grid-cols-[1fr_auto] md:items-end md:px-20 md:py-24">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#d8c38a]">AuraFit Offers</p>
-            <h1 className="mt-4 font-serif text-5xl italic leading-tight md:text-7xl">Chương trình</h1>
-            <p className="mt-6 max-w-2xl text-sm leading-7 text-[#f4ecdc]/70 md:text-base">
+      <section className="relative min-h-[360px] overflow-hidden border-b border-[#7f7041]/40 bg-[#473a33] text-[#f4ecdc] md:aspect-[3/1] md:min-h-0">
+        <div className="absolute inset-0" aria-hidden="true">
+          {heroBannerEvents.map((event, index) => (
+            <img
+              key={event.id}
+              src={event.bannerImageUrl}
+              alt=""
+              className={`absolute inset-0 h-full w-full object-contain object-center brightness-105 transition-opacity duration-700 ${
+                index === activeHeroBannerIndex ? 'opacity-100' : 'opacity-0'
+              }`}
+              onError={(imageEvent) => {
+                imageEvent.currentTarget.style.display = 'none';
+              }}
+            />
+          ))}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#302721]/70 via-[#473a33]/35 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#302721]/35 via-transparent to-transparent" />
+        </div>
+
+        <div className="relative z-10 mx-auto grid h-full max-w-[1440px] gap-5 px-5 pb-10 pt-14 drop-shadow-md md:grid-cols-[1fr_auto] md:items-end md:px-20 md:pb-14 md:pt-20">
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.26em] text-[#eadcae]">AuraFit Offers</p>
+            <h1 className="mt-2 font-serif text-3xl italic leading-tight md:text-5xl">Chương trình</h1>
+            <p className="mt-3 max-w-2xl text-xs leading-5 text-[#f4ecdc]/85 md:text-sm md:leading-6">
               Khám phá các chương trình ưu đãi đang diễn ra và những đợt giảm giá sắp ra mắt tại AuraFit.
             </p>
           </div>
           {!isLoading && !error && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-[#d8c38a]/35 bg-white/5 px-5 py-4 text-center">
-                <strong className="block font-serif text-3xl text-[#eadcae]">{ongoingEvents.length}</strong>
-                <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.14em] text-[#f4ecdc]/65">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg border border-[#d8c38a]/40 bg-[#302721]/30 px-4 py-2.5 text-center backdrop-blur-sm">
+                <strong className="block font-serif text-2xl text-[#eadcae]">{ongoingEvents.length}</strong>
+                <span className="mt-0.5 block text-[8px] font-semibold uppercase tracking-[0.13em] text-[#f4ecdc]/80">
                   Đang diễn ra
                 </span>
               </div>
-              <div className="rounded-lg border border-[#d8c38a]/35 bg-white/5 px-5 py-4 text-center">
-                <strong className="block font-serif text-3xl text-[#eadcae]">{upcomingEvents.length}</strong>
-                <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.14em] text-[#f4ecdc]/65">
+              <div className="rounded-lg border border-[#d8c38a]/40 bg-[#302721]/30 px-4 py-2.5 text-center backdrop-blur-sm">
+                <strong className="block font-serif text-2xl text-[#eadcae]">{upcomingEvents.length}</strong>
+                <span className="mt-0.5 block text-[8px] font-semibold uppercase tracking-[0.13em] text-[#f4ecdc]/80">
                   Sắp ra mắt
                 </span>
               </div>
             </div>
           )}
         </div>
+
+        {heroBannerEvents.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+            {heroBannerEvents.map((event, index) => (
+              <button
+                key={event.id}
+                type="button"
+                onClick={() => setActiveBannerIndex(index)}
+                className={`h-1.5 rounded-full shadow-sm transition-all duration-300 ${
+                  index === activeHeroBannerIndex
+                    ? 'w-7 bg-[#eadcae]'
+                    : 'w-2 bg-white/55 hover:bg-white/80'
+                }`}
+                aria-label={`Hiển thị banner ${event.name}`}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       <main className="mx-auto max-w-[1440px] space-y-20 px-5 py-16 md:px-20 md:py-24">

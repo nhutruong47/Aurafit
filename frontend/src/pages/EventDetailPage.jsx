@@ -164,31 +164,37 @@ export default function EventDetailPage() {
             Tất cả chương trình
           </Link>
 
-          <div className="relative min-h-[360px] overflow-hidden rounded-lg bg-gradient-to-br from-[#8f7948] via-[#6f5e35] to-[#302721] shadow-md md:min-h-[520px]">
+          <div className="relative min-h-[360px] overflow-hidden rounded-lg bg-gradient-to-br from-[#8f7948] via-[#6f5e35] to-[#302721] shadow-md md:aspect-[3/1] md:min-h-0">
             {event.bannerImageUrl && (
               <img
                 src={event.bannerImageUrl}
                 alt={event.name}
-                className="absolute inset-0 h-full w-full object-cover object-center"
+                className="absolute inset-0 h-full w-full object-contain object-center"
                 onError={(imageEvent) => {
                   imageEvent.currentTarget.style.display = 'none';
                 }}
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/10" />
-            <div className="absolute inset-x-0 bottom-0 p-6 text-white md:p-12">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-4 text-white md:p-6">
               <span
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.14em] ${
                   isOngoing ? 'bg-[#c9ae68] text-[#302721]' : 'bg-white/90 text-[#6f5e35]'
                 }`}
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${isOngoing ? 'bg-[#473a33]' : 'bg-[#c9ae68]'}`} />
                 {isOngoing ? 'Đang diễn ra' : 'Sắp ra mắt'}
               </span>
-              <h1 className="mt-5 max-w-4xl font-serif text-4xl italic leading-tight md:text-7xl">{event.name}</h1>
-              {discount && (
-                <p className="mt-4 font-serif text-2xl text-[#eadcae] md:text-3xl">Ưu đãi đến {discount}%</p>
-              )}
+              <div className="mt-2 flex min-w-0 items-baseline gap-3 md:gap-5">
+                <h1 className="min-w-0 flex-1 truncate font-serif text-2xl italic leading-tight md:text-4xl">
+                  {event.name}
+                </h1>
+                {discount && (
+                  <p className="shrink-0 whitespace-nowrap font-serif text-lg text-[#eadcae] md:text-2xl">
+                    Ưu đãi đến {discount}%
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
