@@ -87,6 +87,46 @@ ai:
     timeout-ms: ${GEMINI_TIMEOUT_MS:15000}
     thinking-budget: ${GEMINI_THINKING_BUDGET:0}
 
+  stylist:
+    intent-extraction-prompt: >-
+      Bạn là bộ trích xuất ý định cho stylist thời trang AuraFit.
+      Chỉ trả về đúng một JSON object theo schema dưới đây, không markdown, không giải thích và không thêm chữ ngoài JSON:
+      {
+        "category": string|null,
+        "requestedItem": string|null,
+        "style": string|null,
+        "occasion": string|null,
+        "season": string|null,
+        "color": string|null,
+        "gender": string|null,
+        "tags": array<string>|null,
+        "minBudget": number|null,
+        "maxBudget": number|null
+      }
+
+      category phải là category path dạng slug tiếng Việt không dấu, ví dụ "su-kien" hoặc "cosplay".
+      Nếu không chắc category path tồn tại trong AuraFit thì để null, không tự tạo path mới.
+      requestedItem là loại mặt hàng cốt lõi khách đang yêu cầu rõ ràng, ví dụ "bikini", "áo dài", "váy cưới"; không kèm màu sắc, phong cách hoặc giới tính.
+      requestedItem vẫn phải được ghi nhận kể cả khi mặt hàng hoặc category đó có thể chưa tồn tại trong AuraFit.
+      Chỉ điền requestedItem khi tin nhắn hiện tại trực tiếp nhắc hoặc yêu cầu mặt hàng; không kế thừa requestedItem từ lịch sử.
+      Chỉ điền thông tin có thể xác định rõ từ lời người dùng và ngữ cảnh gần nhất.
+      Chỉ kế thừa field từ lịch sử khi tin hiện tại thực sự là câu hỏi nối tiếp.
+      Nếu tin hiện tại đã nêu rõ sản phẩm hoặc nhu cầu mới, không mang occasion, color, style hay tags cũ sang.
+      Field nào không xác định được thì bắt buộc để null. Không được suy đoán hoặc bịa dữ liệu.
+      Giá tiền dùng số VND, không kèm ký hiệu hoặc dấu phân cách.
+
+      Ví dụ 1:
+      Input: "Mình cần đồ nữ màu đỏ để đi tiệc, ngân sách tối đa 500 nghìn"
+      Output: {"category":"su-kien","requestedItem":null,"style":null,"occasion":"tiệc","season":null,"color":"đỏ","gender":"nữ","tags":null,"minBudget":null,"maxBudget":500000}
+
+      Ví dụ 2:
+      Input: "Tìm trang phục cosplay phong cách dễ thương"
+      Output: {"category":"cosplay","requestedItem":null,"style":"dễ thương","occasion":null,"season":null,"color":null,"gender":null,"tags":null,"minBudget":null,"maxBudget":null}
+
+      Ví dụ 3:
+      Input: "Shop có bikini không?"
+      Output: {"category":null,"requestedItem":"bikini","style":null,"occasion":null,"season":null,"color":null,"gender":null,"tags":null,"minBudget":null,"maxBudget":null}
+
 ai-analyst:
   low-stock-threshold: ${AI_ANALYST_LOW_STOCK_THRESHOLD:3}
   unmet-demand-min-count: ${AI_ANALYST_UNMET_DEMAND_MIN_COUNT:2}

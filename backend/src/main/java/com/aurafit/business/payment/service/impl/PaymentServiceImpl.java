@@ -232,13 +232,6 @@ public class PaymentServiceImpl implements PaymentService {
                 for (RentalOrder o : ordersToConfirm) {
                         o.setStatus(OrderStatus.CONFIRMED);
                         rentalOrderRepository.save(o);
-                        for (RentalOrderDetail detail : o.getDetails()) {
-                                CostumeItem item = detail.getCostumeItem();
-                                if (item != null && item.getStatus() == ItemStatus.RESERVED) {
-                                        item.setStatus(ItemStatus.RENTED);
-                                        costumeItemRepository.save(item);
-                                }
-                        }
                 }
                 log.info("Order status updated to CONFIRMED");
                 log.info("SUCCESS: Webhook processed completely");
@@ -279,13 +272,6 @@ public class PaymentServiceImpl implements PaymentService {
                 for (RentalOrder o : ordersToConfirm) {
                         o.setStatus(OrderStatus.CONFIRMED);
                         rentalOrderRepository.save(o);
-                        for (RentalOrderDetail detail : o.getDetails()) {
-                                CostumeItem item = detail.getCostumeItem();
-                                if (item != null && item.getStatus() == ItemStatus.RESERVED) {
-                                        item.setStatus(ItemStatus.RENTED);
-                                        costumeItemRepository.save(item);
-                                }
-                        }
                 }
         }
 

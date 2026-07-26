@@ -6,6 +6,7 @@ import com.aurafit.business.order.entity.HandoverRecord;
 import com.aurafit.business.order.entity.Promotion;
 import com.aurafit.business.order.entity.RentalOrder;
 import com.aurafit.business.order.entity.RentalOrderDetail;
+import com.aurafit.business.order.enums.DeliveryMethod;
 import com.aurafit.business.order.enums.HandoverType;
 import com.aurafit.business.order.enums.OrderStatus;
 import com.aurafit.business.order.repository.HandoverRecordRepository;
@@ -145,7 +146,7 @@ public class OrderServiceImpl implements OrderService {
         
         BigDecimal splitShippingFee = BigDecimal.ZERO;
         if (request.shippingFee() != null && !groupedItems.isEmpty()) {
-            splitShippingFee = request.shippingFee().divide(new BigDecimal(groupedItems.size()), 0, java.math.RoundingMode.HALF_UP);
+            splitShippingFee = request.shippingFee();
         }
         String checkoutSessionId = java.util.UUID.randomUUID().toString();
 
@@ -338,8 +339,6 @@ public class OrderServiceImpl implements OrderService {
             order.setExtensionFee(order.getExtensionFee().add(additionalFee));
             order.setTotalRentalPrice(order.getTotalRentalPrice().add(additionalFee));
             order.setTotalPrice(order.getTotalPrice().add(additionalFee));
-            
-            order.setTotalDeposit(order.getTotalDeposit().subtract(additionalFee));
         }
 
         order.setRentalEndDate(newEndDate);
@@ -361,19 +360,6 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalRefundedAmount(order.getTotalPrice());
         
         String compensationNote = "Order cancelled due to incident: " + reason + ". Compensated full refund.";
-        
-        String promoCode = "COMP50-" + java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        Promotion promotion = Promotion.builder()
-                .code(promoCode)
-                .discountPercent(50)
-                .maxDiscount(BigDecimal.valueOf(500000))
-                .expiryDate(LocalDateTime.now().plusDays(30))
-                .user(order.getUser())
-                .build();
-        
-        promotionRepository.save(promotion);
-        
-        compensationNote += " Issued 50% discount code: " + promoCode;
         
         if (order.getInspectionNote() != null) {
             order.setInspectionNote(order.getInspectionNote() + "\n" + compensationNote);
@@ -426,6 +412,10 @@ public class OrderServiceImpl implements OrderService {
         
         if (order.getStatus() != OrderStatus.CONFIRMED) {
             throw new BadRequestException("Order must be CONFIRMED to ship");
+        }
+
+        if (order.getDeliveryMethod() == DeliveryMethod.STORE_PICKUP) {
+            throw new BadRequestException("Đơn hàng nhận tại cửa hàng. Vui lòng sử dụng luồng Bàn giao (Handover) thay vì Giao hàng GHN.");
         }
 
         if (order.getDistrictId() == null || order.getWardCode() == null) {
@@ -488,6 +478,10 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getStatus() != OrderStatus.RENTED) {
             throw new BadRequestException("Order must be RENTED to return");
+        }
+
+        if (order.getDeliveryMethod() == DeliveryMethod.STORE_PICKUP) {
+            throw new BadRequestException("Đơn hàng trả tại cửa hàng. Vui lòng sử dụng luồng Bàn giao (Handover) thay vì Hoàn hàng GHN.");
         }
 
         if (order.getDistrictId() == null || order.getWardCode() == null) {
@@ -563,10 +557,6 @@ public class OrderServiceImpl implements OrderService {
                 
                 BigDecimal dailyRentalRate = order.getTotalRentalPrice().divide(BigDecimal.valueOf(rentalDays), 0, java.math.RoundingMode.HALF_UP);
                 lateFee = dailyRentalRate.multiply(new BigDecimal("1.5")).multiply(new BigDecimal(lateDays));
-                
-                if (lateFee.compareTo(order.getTotalDeposit()) > 0) {
-                    lateFee = order.getTotalDeposit();
-                }
             }
             inspectionNote += (inspectionNote.isEmpty() ? "" : " | ") + String.format("Trả trễ %d ngày, áp dụng hệ số 1.5x giá thuê ngày (phí %s VND)", lateDays, lateFee.toPlainString());
         } else {
@@ -579,9 +569,7 @@ public class OrderServiceImpl implements OrderService {
         
         BigDecimal refundAmount;
         if (order.getStatus() == OrderStatus.CANCELLED) {
-            refundAmount = order.getTotalDeposit()
-                    .add(order.getTotalRentalPrice())
-                    .subtract(getDiscountAmount(order));
+            refundAmount = order.getTotalRefundedAmount() != null ? order.getTotalRefundedAmount() : BigDecimal.ZERO;
         } else {
             refundAmount = order.getTotalDeposit().subtract(damageFee).subtract(lateFee);
         }
@@ -617,7 +605,7 @@ public class OrderServiceImpl implements OrderService {
         
         order.getDetails().forEach(detail -> {
             CostumeItem costumeItem = detail.getCostumeItem();
-            costumeItem.setStatus(ItemStatus.AVAILABLE);
+            costumeItem.setStatus(ItemStatus.MAINTENANCE);
             costumeItemRepository.save(costumeItem);
         });
 
