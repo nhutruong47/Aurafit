@@ -35,6 +35,10 @@ const KNOWN_API_MESSAGES = [
     register: 'Mã OTP đã hết hạn. Vui lòng bấm "Gửi lại mã" để nhận mã mới.',
   },
   {
+    pattern: /thao tác quá nhanh|thao tac qua nhanh/i,
+    register: 'Bạn thao tác quá nhanh. Vui lòng đợi 1 phút trước khi yêu cầu mã mới.',
+  },
+  {
     pattern: /chưa yêu cầu mã xác thực|chua yeu cau ma xac thuc/i,
     register: 'Chưa có yêu cầu OTP cho email này. Vui lòng quay lại bước nhập thông tin và đăng ký lại.',
   },

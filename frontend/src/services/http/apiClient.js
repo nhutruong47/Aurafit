@@ -83,6 +83,19 @@ const resolvePendingRequests = (error, token = null) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Intercept Network Errors immediately
+    if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || error.message === 'Network Error') {
+      const friendlyMessage = 'Hệ thống máy chủ hiện đang bảo trì hoặc quá tải. Vui lòng thử lại sau vài phút.';
+      error.message = friendlyMessage;
+      if (!error.response) {
+        error.response = { data: { message: friendlyMessage }, status: 503 };
+      } else if (!error.response.data) {
+        error.response.data = { message: friendlyMessage };
+      } else {
+        error.response.data.message = friendlyMessage;
+      }
+    }
+
     const originalRequest = error.config;
 
     // Skip refresh logic for login endpoint or if we already retried

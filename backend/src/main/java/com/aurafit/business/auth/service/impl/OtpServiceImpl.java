@@ -30,10 +30,18 @@ public class OtpServiceImpl implements OtpService {
      */
     @Transactional
     public void store(String email, String fullName, String phone, String passwordHash) {
-        String code = generateOtp();
         LocalDateTime now = LocalDateTime.now();
-
         OtpVerification entry = repository.findByEmail(email).orElseGet(OtpVerification::new);
+
+        if (entry.getId() != null && entry.getExpiresAt() != null) {
+            LocalDateTime createdTime = entry.getExpiresAt().minusMinutes(OTP_TTL_MINUTES);
+            if (now.isBefore(createdTime.plusMinutes(1))) {
+                throw new BadRequestException("Bạn thao tác quá nhanh. Vui lòng đợi 1 phút trước khi yêu cầu gửi lại mã OTP.");
+            }
+        }
+
+        String code = generateOtp();
+
         entry.setEmail(email);
         entry.setOtpCode(code);
         entry.setExpiresAt(now.plusMinutes(OTP_TTL_MINUTES));
