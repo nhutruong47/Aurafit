@@ -133,7 +133,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        createAccountIfNotExists("admin@aurafit.com", "System Admin", Role.ADMIN);
+        createAccountIfNotExists("truongthainhuu@gmail.com", "System Admin", Role.ADMIN);
         createAccountIfNotExists("staff@aurafit.com", "Default Staff", Role.STAFF);
         createAccountIfNotExists("customer@aurafit.com", "Default Customer", Role.CUSTOMER);
     }

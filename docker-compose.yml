@@ -27,7 +27,7 @@ services:
 
   # ---------------------------------------------------------------------------
   # pgAdmin 4 – Optional database admin UI (http://localhost:5050)
-  # Login: admin@aurafit.com / admin123
+  # Login: truongthainhuu@gmail.com / admin123
   # ---------------------------------------------------------------------------
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -36,7 +36,7 @@ services:
     ports:
       - "5050:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@aurafit.com
+      PGADMIN_DEFAULT_EMAIL: truongthainhuu@gmail.com
       PGADMIN_DEFAULT_PASSWORD: admin123
     depends_on:
       postgres:
