@@ -35,7 +35,7 @@ class StylistIntentServiceTest {
                         + "\"season\":null,\"color\":null,\"gender\":null,\"tags\":null,"
                         + "\"minBudget\":null,\"maxBudget\":null}"
         );
-        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper());
+        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper(), "test system prompt");
 
         StylistFilterCriteria result = service.extractIntent("Tôi muốn đi dạ hội", List.of());
 
@@ -55,7 +55,7 @@ class StylistIntentServiceTest {
                 anyString(),
                 anyString()
         )).thenReturn("not-json");
-        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper());
+        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper(), "test system prompt");
 
         AiProviderException exception = assertThrows(
                 AiProviderException.class,

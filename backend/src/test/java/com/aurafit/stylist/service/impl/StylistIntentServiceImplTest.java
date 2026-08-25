@@ -33,7 +33,7 @@ class StylistIntentServiceImplTest {
 
     @Test
     void extractIntent_shouldUseLastThreeConversationTurnsIncludingAssistantRecommendations() {
-        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper());
+        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper(), "test system prompt");
         List<ChatMessage> history = new ArrayList<>();
         for (int index = 1; index <= 7; index++) {
             ChatMessageRole role = index % 2 == 0 ? ChatMessageRole.ASSISTANT : ChatMessageRole.USER;
@@ -70,7 +70,7 @@ class StylistIntentServiceImplTest {
 
     @Test
     void extractIntent_shouldCaptureRequestedItemEvenWhenCatalogCategoryIsUnknown() {
-        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper());
+        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper(), "test system prompt");
         when(geminiClient.generateJson(eq(AiCallType.INTENT_EXTRACTION), any(), any()))
                 .thenReturn("""
                         {"category":null,"requestedItem":"bikini","style":null,"occasion":null,
