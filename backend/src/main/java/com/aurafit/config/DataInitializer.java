@@ -24,10 +24,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.context.annotation.Lazy;
+
 @Component
 @Profile({ "dev", "seed" })
 @Order(1)
-@RequiredArgsConstructor
+@Lazy(false) // Force initialization despite global lazy-init
 @Slf4j
 public class DataInitializer implements CommandLineRunner {
 
@@ -39,6 +41,17 @@ public class DataInitializer implements CommandLineRunner {
     private final CostumeRepository costumeRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    public DataInitializer(
+            @Lazy CategoryRepository categoryRepository,
+            @Lazy CostumeRepository costumeRepository,
+            @Lazy UserRepository userRepository,
+            @Lazy PasswordEncoder passwordEncoder) {
+        this.categoryRepository = categoryRepository;
+        this.costumeRepository = costumeRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     @Transactional
