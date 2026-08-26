@@ -10,6 +10,12 @@ server:
   port: ${PORT:8080}
 
 spring:
+  main:
+    lazy-initialization: true
+  data:
+    jpa:
+      repositories:
+        bootstrap-mode: deferred
   profiles:
     active: dev
 
