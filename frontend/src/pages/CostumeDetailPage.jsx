@@ -126,7 +126,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
           return;
         }
 
-        setLoadError(error.message || 'Không thể tải chi tiết sản phẩm.');
+        setLoadError(error.message || 'Không thể tải chi tiết sản phẩm. 🥺');
         setProduct(null);
       })
       .finally(() => {

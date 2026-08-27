@@ -70,7 +70,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       })
       .catch((error) => {
         if (!isMounted) return;
-        setPaymentError(error.message || 'Không thể tải thông tin đơn hàng.');
+        setPaymentError(error.message || 'Không thể tải thông tin đơn hàng. 🥺');
       })
       .finally(() => {
         if (isMounted) setIsLoadingOrder(false);
@@ -125,7 +125,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       
       if (diff === 0 && isMountedRef.current) {
         clearPolling();
-        useToastStore.getState().addToast('Đơn hàng đã hết hạn thanh toán.', 'error');
+        useToastStore.getState().addToast('Đơn hàng này đã hết hạn thanh toán mất rồi bạn ơi! 🥺', 'error');
         onNavigate?.('orders');
         return;
       }
@@ -210,7 +210,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
       }
     } catch (error) {
       if (isMountedRef.current) {
-        setPaymentError(error.message || 'Không thể tạo thanh toán.');
+        setPaymentError(error.message || 'Không thể tạo thanh toán. 🥺');
       }
     } finally {
       if (isMountedRef.current) setIsSubmitting(false);

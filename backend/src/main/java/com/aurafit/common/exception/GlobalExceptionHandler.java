@@ -17,6 +17,7 @@ import org.springframework.web.context.request.async.AsyncRequestNotUsableExcept
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
@@ -27,22 +28,22 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.CONFLICT, "Conflict", ex.getMessage() + " 🥺", request.getRequestURI());
     }
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage() + " 🌸", request.getRequestURI());
     }
 
     @ExceptionHandler(FileUploadException.class)
     public ResponseEntity<ErrorResponse> handleFileUpload(FileUploadException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_GATEWAY, "Bad Gateway", ex.getMessage(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, "Bad Gateway", "Tải file chưa thành công rồi: " + ex.getMessage() + " 🥺", request.getRequestURI());
     }
 
     @ExceptionHandler(CloudinaryUploadException.class)
     public ResponseEntity<ErrorResponse> handleCloudinaryUpload(CloudinaryUploadException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_GATEWAY, "Bad Gateway", ex.getMessage(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, "Bad Gateway", "Lỗi tải ảnh lên Cloudinary: " + ex.getMessage() + " 🥺", request.getRequestURI());
     }
 
     @ExceptionHandler(AiProviderException.class)
@@ -57,7 +58,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage() + " 🔍", request.getRequestURI());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -67,35 +68,35 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", "Validation failed - " + validationErrors, request.getRequestURI());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", "Dữ liệu chưa hợp lệ, bạn kiểm tra lại một chút nhé! 🌸 - " + validationErrors, request.getRequestURI());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", "Sai thông tin đăng nhập mất rồi, bạn thử kiểm tra lại nha! 🔑", request.getRequestURI());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Payload Too Large",
-                "Kich thuoc tep vuot qua gioi han cho phep.", request.getRequestURI());
+                "Tệp của bạn hơi bự quá rồi, hãy chọn tệp nhỏ hơn nha! 💖", request.getRequestURI());
     }
 
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<ErrorResponse> handleMultipart(MultipartException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request",
-                "Yêu cầu tải lên tệp không hợp lệ.", request.getRequestURI());
+                "File bạn tải lên có chút vấn đề rồi, thử lại file khác nha! 🍀", request.getRequestURI());
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported Media Type",
-                "Định dạng nội dung không được hỗ trợ.", request.getRequestURI());
+                "AuraFit chưa hỗ trợ định dạng file này, bạn đổi định dạng khác nhé! 🌸", request.getRequestURI());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", "You do not have permission to access this resource.", request.getRequestURI());
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", "Bạn chưa có quyền truy cập vào đây rồi, liên hệ AuraFit nếu cần hỗ trợ nhé! 🥺", request.getRequestURI());
     }
 
     @ExceptionHandler({AsyncRequestNotUsableException.class, ClientAbortException.class})
@@ -106,13 +107,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage() + " 🔑", request.getRequestURI());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex, HttpServletRequest request) {
+        log.error("Database error at {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildErrorResponse(HttpStatus.CONFLICT, "Conflict", "Dữ liệu này có vẻ đã tồn tại hoặc bị trùng lặp mất rồi, bạn thử đổi thông tin khác xem sao nhé! 🥺", request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", ex.getMessage(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "Ôi hỏng, hệ thống đang gặp chút sự cố nhỏ. Đội ngũ AuraFit đang sửa lỗi ngay đây, bạn đợi chút nhé! 🛠️", request.getRequestURI());
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String error, String message, String path) {

@@ -48,7 +48,7 @@ export default function AdminEventModal({
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (isUploading) {
-      useToastStore.getState().addToast('Vui lòng chờ các ảnh banner tải lên hoàn tất.', 'error');
+      useToastStore.getState().addToast('Vui lòng chờ các ảnh banner tải lên hoàn tất. 🥺', 'error');
       return;
     }
     if (uploadError) {

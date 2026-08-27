@@ -26,7 +26,7 @@ export function useCustomerOrders(currentUser) {
       const detail = await fetchOrderDetail(shallowOrder.id);
       setSelectedOrder(detail || null);
     } catch (err) {
-      setError(err.message || 'Hệ thống không thể truy xuất chi tiết đơn hàng.');
+      setError(err.message || 'Hệ thống không thể truy xuất chi tiết đơn hàng. 🥺');
       setSelectedOrder(null);
     } finally {
       setIsDetailLoading(false);
@@ -65,7 +65,7 @@ export function useCustomerOrders(currentUser) {
       const shallowOrder = nextOrders.find(o => o.id === nextSelectedOrderId);
       await loadOrderDetail(shallowOrder);
     } catch (err) {
-      setError(err.message || 'Hệ thống không thể truy xuất danh sách lịch sử đơn hàng.');
+      setError(err.message || 'Hệ thống không thể truy xuất danh sách lịch sử đơn hàng. 🥺');
       setOrders([]);
       setSelectedOrderId(null);
       setSelectedOrder(null);

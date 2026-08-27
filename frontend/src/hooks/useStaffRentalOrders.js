@@ -429,7 +429,7 @@ export function useStaffRentalOrders(currentUser) {
       setMessage('Đã xác nhận khách nhận hàng (RENTED).');
       await loadOrders(activeOrder.id);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Lỗi khi cập nhật trạng thái nhận hàng.');
+      setError(err.response?.data?.message || err.message || 'Lỗi khi cập nhật trạng thái nhận hàng. 🥺');
     } finally {
       setIsSubmitting(false);
     }
@@ -447,7 +447,7 @@ export function useStaffRentalOrders(currentUser) {
       setMessage('Đã báo Boom hàng/Giao thất bại.');
       await loadOrders(activeOrder.id);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Lỗi khi báo giao thất bại.');
+      setError(err.response?.data?.message || err.message || 'Lỗi khi báo giao thất bại. 🥺');
     } finally {
       setIsSubmitting(false);
     }
@@ -465,7 +465,7 @@ export function useStaffRentalOrders(currentUser) {
       setMessage('Đã báo thất lạc hàng hóa.');
       await loadOrders(activeOrder.id);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Lỗi khi báo thất lạc.');
+      setError(err.response?.data?.message || err.message || 'Lỗi khi báo thất lạc. 🥺');
     } finally {
       setIsSubmitting(false);
     }
@@ -483,7 +483,7 @@ export function useStaffRentalOrders(currentUser) {
       setMessage('Đã tạo đơn thu hồi qua GHN (RETURNING).');
       await loadOrders(activeOrder.id);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Lỗi khi cập nhật trạng thái gửi trả.');
+      setError(err.response?.data?.message || err.message || 'Lỗi khi cập nhật trạng thái gửi trả. 🥺');
     } finally {
       setIsSubmitting(false);
     }
@@ -501,7 +501,7 @@ export function useStaffRentalOrders(currentUser) {
       setMessage('Đã nhận hàng tại kho (RETURNED).');
       await loadOrders(activeOrder.id);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Lỗi khi xác nhận nhận hàng tại kho.');
+      setError(err.response?.data?.message || err.message || 'Lỗi khi xác nhận nhận hàng tại kho. 🥺');
     } finally {
       setIsSubmitting(false);
     }

@@ -68,7 +68,7 @@ export default function RentalExtensionModal({ isOpen, onClose, order, onSuccess
       onSuccess?.();
       onClose?.();
     } catch (err) {
-      setError(err.message || 'Không thể gia hạn đơn hàng. Ngày này có thể đã có người khác đặt.');
+      setError(err.message || 'Không thể gia hạn đơn hàng. Ngày này có thể đã có người khác đặt. 🥺');
     } finally {
       setIsSubmitting(false);
     }

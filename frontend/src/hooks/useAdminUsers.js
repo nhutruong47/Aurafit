@@ -89,8 +89,8 @@ export function useAdminUsers(currentUser) {
       useToastStore.getState().addToast(`Đã tạo tài khoản staff cho ${createdStaff.fullName || createdStaff.email}.`, 'success');
       return createdStaff;
     } catch (createError) {
-      setError(createError.message || 'Hệ thống gặp sự cố khi khởi tạo tài khoản nhân viên.');
-      useToastStore.getState().addToast(createError.message || 'Hệ thống gặp sự cố khi khởi tạo tài khoản nhân viên.', 'error');
+      setError(createError.message || 'Hệ thống đang nghẽn chút xíu, chưa tạo được tài khoản nhân viên rồi! 🛠️');
+      useToastStore.getState().addToast(createError.message || 'Hệ thống đang nghẽn chút xíu, chưa tạo được tài khoản nhân viên rồi! 🛠️', 'error');
       return null;
     } finally {
       setIsCreatingStaff(false);

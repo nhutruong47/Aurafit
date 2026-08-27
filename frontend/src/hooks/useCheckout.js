@@ -131,7 +131,7 @@ export function useCheckout({
     }
     if (!isDeliveryValid()) {
       setDeliveryError('Vui lòng điền đầy đủ thông tin giao hàng.');
-      addToast('Vui lòng điền đầy đủ Thông tin giao hàng.', 'error');
+      addToast('Vui lòng điền đầy đủ thông tin giao hàng để chúng mình gửi đồ cho bạn nha! 🥰', 'error');
 
       let targetId = null;
       if (!deliveryInfo.receiverName.trim()) targetId = 'receiverName';
@@ -202,7 +202,7 @@ export function useCheckout({
       const errorMsg = error.message || '';
       
       if (errorMsg.includes('bị vô hiệu hóa') || errorMsg.includes('hủy đơn bất thường')) {
-        addToast('Tài khoản của bạn đã bị vô hiệu hóa do tỷ lệ hủy đơn bất thường. Vui lòng liên hệ bộ phận CSKH.', 'error');
+        addToast('Tài khoản của bạn đang tạm khóa do hủy đơn hơi nhiều. Liên hệ CSKH để chúng mình mở lại nha! 🥺', 'error');
         onNavigate?.('home');
         return;
       }

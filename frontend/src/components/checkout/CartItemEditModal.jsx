@@ -238,7 +238,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
       onSaved?.();
       onClose();
     } catch (error) {
-      addToast('Cập nhật thất bại: ' + (error.message || 'Vui lòng kiểm tra lại'), 'error');
+      addToast('Cập nhật thất bại: ' + (error.message || 'Vui lòng kiểm tra lại 🥺'), 'error');
     } finally {
       setIsUpdating(false);
     }
@@ -370,7 +370,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
                   <button
                     onClick={() => {
                       if (editQuantity >= effectiveStock) {
-                        addToast('Vượt quá số lượng tồn kho khả dụng', 'error');
+                        addToast('Vượt quá số lượng tồn kho khả dụng 🥺', 'error');
                         return;
                       }
                       setEditQuantity((q) => q + 1);

@@ -124,8 +124,8 @@ export function useAdminCostumes(currentUser) {
         }
       })
       .catch((err) => {
-        setProductError(err.message || 'Không thể tải danh sách sản phẩm.');
-        useToastStore.getState().addToast(err.message || 'Không thể tải danh sách sản phẩm.', 'error');
+        setProductError(err.message || 'Ui chao, không tải được danh sách sản phẩm rồi, bạn thử lại nha! 🥺 🥺');
+        useToastStore.getState().addToast(err.message || 'Ui chao, không tải được danh sách sản phẩm rồi, bạn thử lại nha! 🥺 🥺', 'error');
       })
       .finally(() => setIsLoading(false));
   }, [canManageProducts, isAdmin, page, pageSize, productSearch, productStatusFilter, productCategoryFilter]);
@@ -318,8 +318,8 @@ export function useAdminCostumes(currentUser) {
       });
       return true;
     } catch (error) {
-      setProductError(error.message || 'Không thể lưu sản phẩm.');
-      useToastStore.getState().addToast(error.message || 'Không thể lưu sản phẩm.', 'error');
+      setProductError(error.message || 'Không thể lưu sản phẩm. 🥺');
+      useToastStore.getState().addToast(error.message || 'Không thể lưu sản phẩm. 🥺', 'error');
       return false;
     } finally {
       setIsSavingProduct(false);

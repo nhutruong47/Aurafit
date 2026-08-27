@@ -107,7 +107,7 @@ export default function AdminCostumeModal({
     e.preventDefault();
 
     if (imageUploadState.isUploading) {
-      useToastStore.getState().addToast('Vui lòng chờ ảnh tải lên hoàn tất trước khi lưu sản phẩm.', 'error');
+      useToastStore.getState().addToast('Vui lòng chờ ảnh tải lên hoàn tất trước khi lưu sản phẩm. 🥺', 'error');
       return;
     }
 

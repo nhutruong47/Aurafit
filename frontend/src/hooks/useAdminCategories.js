@@ -45,8 +45,8 @@ export function useAdminCategories(currentUser) {
         setPublicCategories(flattenCategoryTree(Array.isArray(treeData) ? treeData : []));
       })
       .catch(() => {
-        setError('Hệ thống không thể truy xuất danh sách danh mục.');
-        useToastStore.getState().addToast('Hệ thống không thể truy xuất danh sách danh mục.', 'error');
+        setError('Ui chao, không tải được danh sách danh mục rồi, bạn thử lại nha! 🥺');
+        useToastStore.getState().addToast('Ui chao, không tải được danh sách danh mục rồi, bạn thử lại nha! 🥺', 'error');
       })
       .finally(() => setIsLoading(false));
   }, [isAdmin, reloadKey]);
@@ -111,8 +111,8 @@ export function useAdminCategories(currentUser) {
       setReloadKey((currentKey) => currentKey + 1);
       resetForm();
     } catch (err) {
-      setError(err.message || 'Hệ thống gặp sự cố khi lưu thông tin danh mục.');
-      useToastStore.getState().addToast(err.message || 'Hệ thống gặp sự cố khi lưu thông tin danh mục.', 'error');
+      setError(err.message || 'Lưu danh mục chưa thành công rồi, kiểm tra lại kết nối mạng nhé! 💖 🥺');
+      useToastStore.getState().addToast(err.message || 'Lưu danh mục chưa thành công rồi, kiểm tra lại kết nối mạng nhé! 💖 🥺', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -128,8 +128,8 @@ export function useAdminCategories(currentUser) {
       useToastStore.getState().addToast(`Đã xóa danh mục "${name}".`, 'success');
       if (editingCategoryId === id) resetForm();
     } catch (err) {
-      setError(err.message || 'Hệ thống gặp sự cố khi xóa danh mục.');
-      useToastStore.getState().addToast(err.message || 'Hệ thống gặp sự cố khi xóa danh mục.', 'error');
+      setError(err.message || 'Xóa danh mục chưa được rồi, hệ thống đang bận xíu! 🥺 🥺');
+      useToastStore.getState().addToast(err.message || 'Xóa danh mục chưa được rồi, hệ thống đang bận xíu! 🥺 🥺', 'error');
     }
   };
 

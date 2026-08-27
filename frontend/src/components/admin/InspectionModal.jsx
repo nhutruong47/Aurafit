@@ -54,7 +54,7 @@ const InspectionModal = ({ order, isOpen, onClose, onSuccess }) => {
       await adminOrderService.completeOrder(order.id, payload);
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Có lỗi xảy ra khi nghiệm thu');
+      setError(err.response?.data?.message || err.message || 'Có lỗi xảy ra khi nghiệm thu 🥺');
     } finally {
       setIsSubmitting(false);
     }

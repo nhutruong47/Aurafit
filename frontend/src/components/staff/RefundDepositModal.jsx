@@ -36,7 +36,7 @@ export default function RefundDepositModal({
       await adminOrderService.reportInvalidBank(order.id, inspectionPayload);
       onComplete(null, true); // true indicates reported invalid
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Lỗi khi báo sai thông tin');
+      setError(err.response?.data?.message || err.message || 'Lỗi khi báo sai thông tin 🥺');
     } finally {
       setIsSubmitting(false);
     }

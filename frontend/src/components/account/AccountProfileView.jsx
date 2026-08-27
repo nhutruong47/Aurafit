@@ -50,7 +50,7 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
       onSaved(updated);
       onClose();
     } catch (err) {
-      setError(err.message || 'Hệ thống gặp sự cố khi cập nhật hồ sơ.');
+      setError(err.message || 'Hệ thống gặp sự cố khi cập nhật hồ sơ. 🥺');
     } finally {
       setIsSubmitting(false);
     }
@@ -159,7 +159,7 @@ function ChangePasswordModal({ onClose }) {
       addToast('Đổi mật khẩu thành công!');
       onClose();
     } catch (err) {
-      setError(err.message || 'Hệ thống gặp sự cố khi thay đổi mật khẩu.');
+      setError(err.message || 'Hệ thống gặp sự cố khi thay đổi mật khẩu. 🥺');
     } finally {
       setIsSubmitting(false);
     }

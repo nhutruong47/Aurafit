@@ -85,7 +85,7 @@ apiClient.interceptors.response.use(
   async (error) => {
     // Intercept Network Errors immediately
     if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || error.message === 'Network Error') {
-      const friendlyMessage = 'Hệ thống máy chủ hiện đang bảo trì hoặc quá tải. Vui lòng thử lại sau vài phút.';
+      const friendlyMessage = 'Máy chủ hiện đang ngủ gật hoặc bận một chút rồi. Bạn đợi vài phút rồi thử lại nha! 🥺';
       error.message = friendlyMessage;
       if (!error.response) {
         error.response = { data: { message: friendlyMessage }, status: 503 };

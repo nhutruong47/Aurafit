@@ -24,7 +24,7 @@ export default function ProfileTab({ currentUser }) {
       setOldPassword('');
       setNewPassword('');
     } catch (err) {
-      setProfileErr(err.message || 'Lỗi đổi mật khẩu.');
+      setProfileErr(err.message || 'Lỗi đổi mật khẩu. 🥺');
     } finally {
       setIsChangingPwd(false);
     }

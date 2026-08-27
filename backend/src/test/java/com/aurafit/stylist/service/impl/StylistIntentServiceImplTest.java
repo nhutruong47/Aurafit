@@ -70,7 +70,7 @@ class StylistIntentServiceImplTest {
 
     @Test
     void extractIntent_shouldCaptureRequestedItemEvenWhenCatalogCategoryIsUnknown() {
-        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper(), "test system prompt");
+        StylistIntentServiceImpl service = new StylistIntentServiceImpl(geminiClient, new ObjectMapper(), "test system prompt requestedItem vẫn phải được ghi nhận");
         when(geminiClient.generateJson(eq(AiCallType.INTENT_EXTRACTION), any(), any()))
                 .thenReturn("""
                         {"category":null,"requestedItem":"bikini","style":null,"occasion":null,

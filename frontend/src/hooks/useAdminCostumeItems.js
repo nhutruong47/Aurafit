@@ -80,7 +80,7 @@ export function useAdminCostumeItems(editingProductId, productName) {
       const data = await fetchAdminCostumeItems(editingProductId);
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
-      useToastStore.getState().addToast(err.message || 'Không thể tải phân loại kho.', 'error');
+      useToastStore.getState().addToast(err.message || 'Ui chao, chưa tải được phân loại kho rồi, bạn chờ chút nha! 🥺 🥺', 'error');
     } finally {
       setIsLoadingItems(false);
     }
@@ -131,7 +131,7 @@ export function useAdminCostumeItems(editingProductId, productName) {
         setItemForm((prev) => ({ ...prev, sku: nextSku }));
       }
     } catch (err) {
-      useToastStore.getState().addToast(err.message || 'Lỗi khi lưu phân loại.', 'error');
+      useToastStore.getState().addToast(err.message || 'Lưu phân loại chưa thành công rồi, kiểm tra lại mạng xíu nha! 💖 🥺', 'error');
     } finally {
       setIsSavingItem(false);
     }
@@ -155,7 +155,7 @@ export function useAdminCostumeItems(editingProductId, productName) {
       setItems((prev) => prev.filter((i) => i.id !== itemId));
       useToastStore.getState().addToast('Đã xóa phân loại.', 'success');
     } catch (err) {
-      useToastStore.getState().addToast(err.message || 'Không thể xóa phân loại.', 'error');
+      useToastStore.getState().addToast(err.message || 'Chưa xóa được phân loại rồi bạn ơi! 🥺 🥺', 'error');
     }
   };
 

@@ -69,7 +69,7 @@ export function useAdminRevenue() {
           setChartData([]);
           setTotalPages(0);
           setTotalElements(0);
-          setLoadError(error.message || 'Không thể tải dữ liệu doanh thu.');
+          setLoadError(error.message || 'Không thể tải dữ liệu doanh thu. 🥺');
         })
         .finally(() => {
           if (mounted) setIsLoading(false);

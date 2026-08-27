@@ -32,9 +32,9 @@ export default function RentalOrdersPage({ currentUser, onNavigate }) {
       const count = result?.consecutiveCancelCount || 0;
       
       if (count >= 3) {
-        addToast('Tài khoản của bạn đã bị vô hiệu hóa do tỷ lệ hủy đơn bất thường. Vui lòng liên hệ bộ phận CSKH.', 'error');
+        addToast('Tài khoản của bạn đang tạm khóa do hủy đơn hơi nhiều. Liên hệ CSKH để chúng mình mở lại nha! 🥺', 'error');
       } else if (count === 2) {
-        addToast('Cảnh báo: Bạn đã hủy đơn 2 lần liên tiếp. Lần tiếp theo tài khoản sẽ bị vô hiệu hóa!', 'warning');
+        addToast('Nhắc nhẹ nè: Bạn đã hủy đơn 2 lần rồi, cẩn thận kẻo hệ thống tự khóa tài khoản nha! 🥺', 'warning');
       } else {
         addToast('Đã hủy đơn hàng thành công.');
       }

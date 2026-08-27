@@ -201,7 +201,7 @@ export default function ReturnTab({
         onOrderCompleted(activeOrder.id);
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Có lỗi xảy ra khi nghiệm thu');
+      setError(err.response?.data?.message || err.message || 'Có lỗi xảy ra khi nghiệm thu 🥺');
     } finally {
       setIsSubmitting(false);
     }
@@ -227,7 +227,7 @@ export default function ReturnTab({
           useToastStore.getState().addToast('Đã hoàn tiền đơn hủy thành công!', 'success');
           if (onOrderCompleted) onOrderCompleted(activeOrder.id);
         } catch (err) {
-          useToastStore.getState().addToast(err.response?.data?.message || err.message || 'Có lỗi xảy ra', 'error');
+          useToastStore.getState().addToast(err.response?.data?.message || err.message || 'Có lỗi xảy ra 🥺', 'error');
         } finally {
           setIsSubmitting(false);
         }
