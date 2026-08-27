@@ -120,6 +120,18 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Tài khoản của bạn đã bị vô hiệu hóa do tỷ lệ hủy đơn bất thường. Vui lòng liên hệ bộ phận CSKH.");
         }
 
+        long pendingOrders = rentalOrderRepository.countByUserIdAndStatus(userId, OrderStatus.PENDING);
+        if (pendingOrders >= 2) {
+            throw new BadRequestException("Bạn đang có quá nhiều đơn hàng chờ thanh toán. Vui lòng thanh toán hoặc hủy bớt trước khi đặt đơn mới.");
+        }
+
+        LocalDateTime cutoffTime = LocalDateTime.now().minusHours(24);
+        long autoCancelledOrders = rentalOrderRepository.countRecentAutoCancelledOrders(
+                userId, OrderStatus.CANCELLED, "Hệ thống tự động hủy do quá hạn thanh toán", cutoffTime);
+        if (autoCancelledOrders >= 3) {
+            throw new BadRequestException("Tài khoản bị tạm khóa đặt hàng do có quá nhiều đơn bị hủy tự động do không thanh toán trong 24h qua. Vui lòng thử lại sau.");
+        }
+
         Map<String, CostumeItem> representativeItemsBySku = new LinkedHashMap<>();
         for (CheckoutItemRequest item : items) {
             representativeItemsBySku.computeIfAbsent(

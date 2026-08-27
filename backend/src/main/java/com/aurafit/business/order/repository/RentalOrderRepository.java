@@ -139,4 +139,14 @@ public interface RentalOrderRepository extends JpaRepository<RentalOrder, Long> 
             ORDER BY TO_CHAR(created_at, 'YYYY-MM-DD') ASC
             """, nativeQuery = true)
     List<Object[]> getDailyRevenue(@Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
+
+    @Query("SELECT COUNT(ro) FROM RentalOrder ro WHERE ro.user.id = :userId AND ro.status = :status")
+    long countByUserIdAndStatus(@Param("userId") Long userId, @Param("status") OrderStatus status);
+
+    @Query("SELECT COUNT(ro) FROM RentalOrder ro WHERE ro.user.id = :userId AND ro.status = :status AND ro.cancelReason = :cancelReason AND ro.createdAt >= :cutoffTime")
+    long countRecentAutoCancelledOrders(
+            @Param("userId") Long userId,
+            @Param("status") OrderStatus status,
+            @Param("cancelReason") String cancelReason,
+            @Param("cutoffTime") java.time.LocalDateTime cutoffTime);
 }

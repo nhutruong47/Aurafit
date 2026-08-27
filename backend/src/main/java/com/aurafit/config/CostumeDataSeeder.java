@@ -76,12 +76,7 @@ public class CostumeDataSeeder implements org.springframework.boot.CommandLineRu
         );
 
         for (SeedProduct seed : seeds) {
-            if (existingSlugs.contains(seed.slug())) {
-                skippedCount++;
-                continue;
-            }
-
-            Costume costume = new Costume();
+            Costume costume = costumeRepository.findBySlug(seed.slug()).orElse(new Costume());
             Category category = categoryCache.computeIfAbsent(seed.categoryPath(), this::requireLeafCategory);
             applyProduct(costume, category, seed);
             Costume savedCostume = costumeRepository.save(costume);
@@ -187,6 +182,27 @@ public class CostumeDataSeeder implements org.springframework.boot.CommandLineRu
         costume.setDepositPrice(seed.depositPrice());
         costume.setStatus(CostumeStatus.ACTIVE);
         costume.setCategory(category);
+        
+        // Use real fashion images from Unsplash based on keywords
+        String lowerCategory = seed.categoryPath().toLowerCase();
+        if (lowerCategory.contains("vest") || lowerCategory.contains("tuxedo")) {
+            costume.setImageUrl("https://images.unsplash.com/photo-1594938291221-94f18cbb5660?auto=format&fit=crop&w=800&q=80");
+        } else if (lowerCategory.contains("da-hoi") || lowerCategory.contains("vay") || lowerCategory.contains("dam")) {
+            costume.setImageUrl("https://images.unsplash.com/photo-1566160982510-48e02d8ee1c3?auto=format&fit=crop&w=800&q=80");
+        } else if (lowerCategory.contains("truyen-thong") || lowerCategory.contains("ao-dai") || lowerCategory.contains("hanbok")) {
+            costume.setImageUrl("https://images.unsplash.com/photo-1583391265517-35bbdad01209?auto=format&fit=crop&w=800&q=80");
+        } else if (lowerCategory.contains("cosplay") || lowerCategory.contains("anime") || lowerCategory.contains("game")) {
+            costume.setImageUrl("https://images.unsplash.com/photo-1612404730960-5c71577fca11?auto=format&fit=crop&w=800&q=80");
+        } else {
+            // Default generic fashion/clothing image
+            String[] defaults = {
+                "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
+                "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=800&q=80",
+                "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80"
+            };
+            int index = Math.abs(seed.slug().hashCode()) % defaults.length;
+            costume.setImageUrl(defaults[index]);
+        }
 
         CostumeMetadata metadata = costume.getMetadata();
         if (metadata == null) {

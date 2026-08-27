@@ -14,6 +14,8 @@ import java.util.Optional;
 
 public interface CostumeRepository extends JpaRepository<Costume, Long>, JpaSpecificationExecutor<Costume> {
 
+    Optional<Costume> findBySlug(String slug);
+
     /**
      * Fetches a paginated list of Costumes with optional filtering by category
      * and search keyword. Uses JOIN FETCH on the category relationship to prevent
