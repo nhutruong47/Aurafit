@@ -112,6 +112,36 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
   );
 }
 
+function PasswordField({ label, value, onChange }) {
+  const [showPassword, setShowPassword] = useState(false);
+  return (
+    <div>
+      <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">{label}</label>
+      <div className="relative">
+        <input 
+          type={showPassword ? 'text' : 'password'} 
+          value={value} 
+          onChange={onChange} 
+          className="w-full border border-[#cfc4c5] py-3 pl-4 pr-10 text-sm focus:border-black focus:outline-none" 
+        />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            setShowPassword(!showPassword);
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5f5e5e] hover:text-black flex items-center justify-center"
+          title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {showPassword ? 'visibility_off' : 'visibility'}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ChangePasswordModal({ onClose }) {
   const [form, setForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,18 +172,21 @@ function ChangePasswordModal({ onClose }) {
     >
       <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 space-y-5">
         <h2 className="font-serif text-2xl italic">Đổi mật khẩu</h2>
-        <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Mật khẩu cũ *</label>
-          <input type="password" value={form.oldPassword} onChange={(e) => setForm(f => ({...f, oldPassword: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
-        </div>
-        <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Mật khẩu mới *</label>
-          <input type="password" value={form.newPassword} onChange={(e) => setForm(f => ({...f, newPassword: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
-        </div>
-        <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Xác nhận mật khẩu mới *</label>
-          <input type="password" value={form.confirmPassword} onChange={(e) => setForm(f => ({...f, confirmPassword: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
-        </div>
+        <PasswordField 
+          label="Mật khẩu cũ *" 
+          value={form.oldPassword} 
+          onChange={(e) => setForm(f => ({...f, oldPassword: e.target.value}))} 
+        />
+        <PasswordField 
+          label="Mật khẩu mới *" 
+          value={form.newPassword} 
+          onChange={(e) => setForm(f => ({...f, newPassword: e.target.value}))} 
+        />
+        <PasswordField 
+          label="Xác nhận mật khẩu mới *" 
+          value={form.confirmPassword} 
+          onChange={(e) => setForm(f => ({...f, confirmPassword: e.target.value}))} 
+        />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-3">
           <button type="submit" disabled={isSubmitting} className="flex-1 bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:opacity-50">

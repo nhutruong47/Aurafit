@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import AdBanners from '../components/ui/AdBanners';
 import HomeCategoryMosaic from '../components/home/HomeCategoryMosaic';
 import HomeActiveEventsSection from '../components/home/HomeActiveEventsSection';
 import HomeFeaturedSection from '../components/home/HomeFeaturedSection';
@@ -30,7 +31,7 @@ export default function HomePage({ onNavigate, onAddToCart }) {
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const sliderRef = useRef(null);
-  const { costumes, isLoading } = useCatalogCostumes();
+  const { costumes, isLoading } = useCatalogCostumes({ pageSize: 500 });
   const [trendingProducts, setTrendingProducts] = useState([]);
   const [isTrendingLoading, setIsTrendingLoading] = useState(false);
   const [trendingError, setTrendingError] = useState('');
@@ -158,28 +159,31 @@ export default function HomePage({ onNavigate, onAddToCart }) {
         isLoading={isActiveEventsLoading}
         error={activeEventsError}
       />
-      <HomeFeaturedSection
-        activeTab={activeTab}
-        isLoading={isLoading}
-        products={products}
-        onSetActiveTab={setActiveTab}
-        onAddToCart={onAddToCart}
-        onNavigate={onNavigate}
-      />
-      <HomeTrendingSection
-        title="Gợi ý dành cho bạn"
-        emptyMessage="Chưa có sản phẩm gợi ý phù hợp lúc này."
-        trending={recommendedProducts}
-        isLoading={isRecommendedLoading}
-        error={recommendedError}
-        onNavigate={onNavigate}
-      />
-      <HomeTrendingSection
-        trending={trendingProducts}
-        isLoading={isTrendingLoading}
-        error={trendingError}
-        onNavigate={onNavigate}
-      />
+      <div className="relative">
+        <AdBanners />
+        <HomeFeaturedSection
+          activeTab={activeTab}
+          isLoading={isLoading}
+          products={products}
+          onSetActiveTab={setActiveTab}
+          onAddToCart={onAddToCart}
+          onNavigate={onNavigate}
+        />
+        <HomeTrendingSection
+          title="Gợi ý dành cho bạn"
+          emptyMessage="Chưa có sản phẩm gợi ý phù hợp lúc này."
+          trending={recommendedProducts}
+          isLoading={isRecommendedLoading}
+          error={recommendedError}
+          onNavigate={onNavigate}
+        />
+        <HomeTrendingSection
+          trending={trendingProducts}
+          isLoading={isTrendingLoading}
+          error={trendingError}
+          onNavigate={onNavigate}
+        />
+      </div>
       <HomeCategoryMosaic onNavigate={onNavigate} />
       <HomeStyleSlider sliderRef={sliderRef} onNavigate={onNavigate} onScroll={scrollSlider} />
       <HomeTrustSection />

@@ -6,6 +6,7 @@ import StylistChatWidget from './components/common/StylistChatWidget';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
 import ToastContainer from './components/ui/ToastContainer';
+import AdBanners from './components/ui/AdBanners';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import CatalogPage from './pages/CatalogPage';
 import ChatDetailPage from './pages/ChatDetailPage';
@@ -63,7 +64,7 @@ function CustomerLayout({ currentUser, cartCount, onNavigate, onSearchOpen }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f9f9f9]">
+    <div className="relative flex min-h-screen flex-col bg-[#f9f9f9]">
       <ScrollToTop />
       <Navbar
         currentPage={currentPage}

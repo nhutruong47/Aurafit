@@ -98,6 +98,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
   const [personPreview, setPersonPreview] = useState(null);
   const [resultUrl, setResultUrl] = useState(null);
   const [error, setError] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
   const fileRef = useRef(null);
 
   const handleFile = (file) => {
@@ -139,6 +140,42 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
     setPersonPreview(null);
     setResultUrl(null);
     setError('');
+  };
+
+  const handleDownload = async (e) => {
+    e.preventDefault();
+    if (!resultUrl) return;
+    try {
+      const response = await fetch(resultUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `aurafit-tryon-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      window.open(resultUrl, '_blank');
+    }
+  };
+
+  const handleShare = async () => {
+    if (!resultUrl) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({ url: resultUrl, title: 'Kết quả thử đồ AuraFit' });
+      } catch (err) {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(resultUrl);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (err) {
+        alert('Trình duyệt không hỗ trợ sao chép link');
+      }
+    }
   };
 
   const isProcessing = step === 'processing';
@@ -372,27 +409,23 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
                 />
               </div>
               <div className="flex gap-2">
-                <a
-                  href={resultUrl}
-                  download="aurafit-virtual-tryon.png"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={handleDownload}
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-xs font-bold text-gray-600 transition-colors hover:border-gray-400 hover:text-black"
                 >
                   <span className="material-symbols-outlined text-[16px]">download</span>
                   Tải xuống
-                </a>
+                </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({ url: resultUrl, title: 'Kết quả thử đồ AuraFit' }).catch(() => {});
-                    }
-                  }}
+                  onClick={handleShare}
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-xs font-bold text-gray-600 transition-colors hover:border-gray-400 hover:text-black"
                 >
-                  <span className="material-symbols-outlined text-[16px]">share</span>
-                  Chia sẻ
+                  <span className="material-symbols-outlined text-[16px]">
+                    {copySuccess ? 'check' : 'share'}
+                  </span>
+                  {copySuccess ? 'Đã copy link' : 'Chia sẻ'}
                 </button>
               </div>
               <button

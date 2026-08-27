@@ -16,6 +16,7 @@ public record CatalogCostumeDTO(
         String eventName,
         String imageUrl,
         String categoryName,
+        String categoryPath,
         boolean isAvailable
 ) {
     public static CatalogCostumeDTO fromEntity(Costume costume) {
@@ -50,6 +51,7 @@ public record CatalogCostumeDTO(
                 null,
                 costume.getPrimaryImageUrl(),
                 costume.getCategory().getName(),
+                costume.getCategory().getPath(),
                 isAvailable
         );
     }
@@ -72,6 +74,7 @@ public record CatalogCostumeDTO(
                 eventName,
                 base.imageUrl(),
                 base.categoryName(),
+                base.categoryPath(),
                 base.isAvailable()
         );
     }

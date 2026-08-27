@@ -11,19 +11,40 @@ import {
 } from '../../utils/authMessages';
 
 function TextField({ label, name, placeholder, type = 'text', value, onChange, required = true, autoComplete }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+  const inputType = isPassword && showPassword ? 'text' : type;
+
   return (
     <label className="block">
       <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5f5e5e]">{label}</span>
-      <input
-        className="w-full border border-[#cfc4c5] bg-[#f9f9f9] px-4 py-4 outline-none transition focus:border-[#99854e]"
-        name={name}
-        placeholder={placeholder}
-        required={required}
-        type={type}
-        value={value}
-        onChange={onChange}
-        autoComplete={autoComplete}
-      />
+      <div className="relative">
+        <input
+          className={`w-full border border-[#cfc4c5] bg-[#f9f9f9] py-4 pl-4 outline-none transition focus:border-[#99854e] ${isPassword ? 'pr-12' : 'pr-4'}`}
+          name={name}
+          placeholder={placeholder}
+          required={required}
+          type={inputType}
+          value={value}
+          onChange={onChange}
+          autoComplete={autoComplete}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              setShowPassword(!showPassword);
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5f5e5e] hover:text-black transition flex items-center justify-center"
+            title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {showPassword ? 'visibility_off' : 'visibility'}
+            </span>
+          </button>
+        )}
+      </div>
     </label>
   );
 }

@@ -10,6 +10,7 @@ import AdminReviewSection from '../components/admin/AdminReviewSection';
 import AdminRevenueSection from '../components/admin/AdminRevenueSection';
 import AdminSupportSection from '../components/admin/AdminSupportSection';
 import AdminUsersSection from '../components/admin/AdminUsersSection';
+import AdminAdsSection from '../components/admin/AdminAdsSection';
 import { useAdminCategories } from '../hooks/useAdminCategories';
 import { useAdminCostumes } from '../hooks/useAdminCostumes';
 import { useAdminEvents } from '../hooks/useAdminEvents';
@@ -104,6 +105,7 @@ export default function AdminDashboardPage({ currentUser }) {
         isAdmin ? ['users', 'Tài khoản', 'manage_accounts'] : null,
         isAdmin ? ['categories', 'Danh mục', 'category'] : null,
         isAdmin ? ['events', 'Sự kiện', 'event'] : null,
+        isAdmin ? ['ads', 'Quảng cáo', 'campaign'] : null,
         isAdmin ? ['reviews', 'Đánh giá', 'reviews'] : null,
         isAdmin ? ['support', 'Hỗ trợ', 'support_agent'] : null,
         isAdmin ? ['ai-insights', 'Phân tích AI', 'auto_awesome'] : null,
@@ -212,6 +214,9 @@ export default function AdminDashboardPage({ currentUser }) {
               totalElements={productTotalElements}
               setPage={setProductPage}
             />
+          )}
+          {activeTab === 'ads' && isAdmin && (
+            <AdminAdsSection currentUser={currentUser} />
           )}
           {activeTab === 'users' && isAdmin && (
             <AdminUsersSection

@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 public class CostumeDataSeeder implements org.springframework.boot.CommandLineRunner {
 
     static final String SEED_RESOURCE = "seed/costumes-50.json";
-    static final int EXPECTED_PRODUCT_COUNT = 50;
 
     private final CategoryRepository categoryRepository;
     private final CostumeRepository costumeRepository;
@@ -118,8 +117,8 @@ public class CostumeDataSeeder implements org.springframework.boot.CommandLineRu
     }
 
     void validateSeeds(List<SeedProduct> seeds) {
-        if (seeds == null || seeds.size() != EXPECTED_PRODUCT_COUNT) {
-            throw new IllegalStateException("Costume seed must contain exactly " + EXPECTED_PRODUCT_COUNT + " products.");
+        if (seeds == null || seeds.isEmpty()) {
+            throw new IllegalStateException("Costume seed must not be empty.");
         }
 
         Set<String> slugs = new HashSet<>();
@@ -183,25 +182,22 @@ public class CostumeDataSeeder implements org.springframework.boot.CommandLineRu
         costume.setStatus(CostumeStatus.ACTIVE);
         costume.setCategory(category);
         
-        // Use real fashion images from Unsplash based on keywords
+        // Use unique images per product using loremflickr with a lock so they don't change on every reload
         String lowerCategory = seed.categoryPath().toLowerCase();
+        int lockId = Math.abs(seed.slug().hashCode()) % 10000;
+        
         if (lowerCategory.contains("vest") || lowerCategory.contains("tuxedo")) {
-            costume.setImageUrl("https://images.unsplash.com/photo-1594938291221-94f18cbb5660?auto=format&fit=crop&w=800&q=80");
+            costume.setImageUrl("https://loremflickr.com/800/1000/suit,menswear?lock=" + lockId);
         } else if (lowerCategory.contains("da-hoi") || lowerCategory.contains("vay") || lowerCategory.contains("dam")) {
-            costume.setImageUrl("https://images.unsplash.com/photo-1566160982510-48e02d8ee1c3?auto=format&fit=crop&w=800&q=80");
-        } else if (lowerCategory.contains("truyen-thong") || lowerCategory.contains("ao-dai") || lowerCategory.contains("hanbok")) {
-            costume.setImageUrl("https://images.unsplash.com/photo-1583391265517-35bbdad01209?auto=format&fit=crop&w=800&q=80");
+            costume.setImageUrl("https://loremflickr.com/800/1000/dress,gown?lock=" + lockId);
+        } else if (lowerCategory.contains("truyen-thong") || lowerCategory.contains("ao-dai") || lowerCategory.contains("hanbok") || lowerCategory.contains("kimono")) {
+            costume.setImageUrl("https://loremflickr.com/800/1000/traditional,clothing?lock=" + lockId);
         } else if (lowerCategory.contains("cosplay") || lowerCategory.contains("anime") || lowerCategory.contains("game")) {
-            costume.setImageUrl("https://images.unsplash.com/photo-1612404730960-5c71577fca11?auto=format&fit=crop&w=800&q=80");
+            costume.setImageUrl("https://loremflickr.com/800/1000/cosplay,costume?lock=" + lockId);
+        } else if (lowerCategory.contains("phu-kien")) {
+            costume.setImageUrl("https://loremflickr.com/800/1000/accessory,jewelry?lock=" + lockId);
         } else {
-            // Default generic fashion/clothing image
-            String[] defaults = {
-                "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
-                "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=800&q=80",
-                "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80"
-            };
-            int index = Math.abs(seed.slug().hashCode()) % defaults.length;
-            costume.setImageUrl(defaults[index]);
+            costume.setImageUrl("https://loremflickr.com/800/1000/fashion,outfit?lock=" + lockId);
         }
 
         CostumeMetadata metadata = costume.getMetadata();
