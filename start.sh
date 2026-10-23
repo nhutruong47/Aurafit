@@ -3,7 +3,7 @@ set -e
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export JAVA_HOME=/home/ubuntu/.local/jdk-21.0.12.1+1
-export PATH=$JAVA_HOME:/home/ubuntu/.local/bin:$PATH
+export PATH=$JAVA_HOME/bin:/home/ubuntu/.local/bin:$PATH
 
 echo "=== [1/3] Starting Database (PostgreSQL & pgAdmin) ==="
 cd "$DIR"
