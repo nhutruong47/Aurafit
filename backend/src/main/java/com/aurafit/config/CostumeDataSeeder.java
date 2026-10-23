@@ -75,7 +75,12 @@ public class CostumeDataSeeder implements org.springframework.boot.CommandLineRu
         );
 
         for (SeedProduct seed : seeds) {
-            Costume costume = costumeRepository.findBySlug(seed.slug()).orElse(new Costume());
+            if (existingSlugs.contains(seed.slug())) {
+                skippedCount++;
+                continue;
+            }
+
+            Costume costume = new Costume();
             Category category = categoryCache.computeIfAbsent(seed.categoryPath(), this::requireLeafCategory);
             applyProduct(costume, category, seed);
             Costume savedCostume = costumeRepository.save(costume);

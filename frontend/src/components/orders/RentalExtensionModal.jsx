@@ -23,7 +23,7 @@ export default function RentalExtensionModal({ isOpen, onClose, order, onSuccess
   const { currentEndDate, minDate, dailyPrice } = useMemo(() => {
     if (!order) return {};
     const end = order.rentalEndDate || (order.details && order.details[0]?.rentalEndDate);
-    let min = '';
+    let min;
     
     if (end) {
       const d = new Date(end);

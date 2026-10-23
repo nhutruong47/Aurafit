@@ -6,7 +6,6 @@ import StylistChatWidget from './components/common/StylistChatWidget';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
 import ToastContainer from './components/ui/ToastContainer';
-import AdBanners from './components/ui/AdBanners';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import CatalogPage from './pages/CatalogPage';
 import ChatDetailPage from './pages/ChatDetailPage';

@@ -111,27 +111,3 @@ export const getStaffReturnInfo = (order) => {
     canUpdateImage: returnHandovers.length > 0,
   };
 };
-
-export const StatusBadge = ({ status, label }) => {
-  const statusColors = {
-    PENDING: 'border border-[#7f7041] bg-[#fdfdfb] text-[#7f7041]',
-    CONFIRMED: 'border border-blue-200 bg-blue-50 text-blue-700',
-    SHIPPING: 'border border-indigo-200 bg-indigo-50 text-indigo-700',
-    RENTED: 'border border-[#d7d2c8] bg-[#111111] text-white',
-    RETURNING: 'border border-pink-200 bg-pink-50 text-pink-700',
-    PICKED_UP: 'border border-indigo-200 bg-indigo-50 text-indigo-700',
-    RETURNED: 'border border-green-200 bg-green-50 text-green-700',
-    COMPLETED: 'border border-green-200 bg-green-50 text-green-700',
-    CANCELLED: 'border border-[#d7d2c8] bg-[#f4f4f2] text-[#171717]',
-    NOT_RETURNED: 'border border-orange-200 bg-orange-50 text-orange-700',
-    RETURNED_GOOD: 'border border-green-200 bg-green-50 text-green-700',
-    DAMAGED: 'border border-orange-200 bg-orange-50 text-orange-700',
-    LOST: 'border border-red-200 bg-red-50 text-red-700',
-    LATE: 'border border-yellow-200 bg-yellow-50 text-yellow-800',
-  };
-  return (
-    <span className={`inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-medium ${statusColors[status] || 'border border-[#d7d2c8] bg-[#f4f4f2] text-[#171717]'}`}>
-      {label || status}
-    </span>
-  );
-};

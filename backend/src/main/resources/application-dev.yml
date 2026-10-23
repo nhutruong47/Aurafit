@@ -22,7 +22,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update # Auto-create/alter tables in dev
+      ddl-auto: validate # Validates schema against Flyway baseline
     show-sql: false
     properties:
       hibernate:

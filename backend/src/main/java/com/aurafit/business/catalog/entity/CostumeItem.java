@@ -41,4 +41,8 @@ public class CostumeItem extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "costume_id", nullable = false)
     private Costume costume;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 }

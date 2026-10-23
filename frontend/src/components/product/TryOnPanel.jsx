@@ -156,7 +156,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-    } catch (error) {
+    } catch {
       window.open(resultUrl, '_blank');
     }
   };
@@ -166,13 +166,15 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
     if (navigator.share) {
       try {
         await navigator.share({ url: resultUrl, title: 'Kết quả thử đồ AuraFit' });
-      } catch (err) {}
+      } catch {
+        // User cancelled or share failed
+      }
     } else {
       try {
         await navigator.clipboard.writeText(resultUrl);
         setCopySuccess(true);
         setTimeout(() => setCopySuccess(false), 2000);
-      } catch (err) {
+      } catch {
         alert('Trình duyệt không hỗ trợ sao chép link');
       }
     }

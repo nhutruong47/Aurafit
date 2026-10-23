@@ -1,4 +1,5 @@
-import { formatDate, StatusBadge } from './StaffDashboardUtils';
+import { formatDate } from './StaffDashboardUtils';
+import { StatusBadge } from './StaffDashboardShared';
 
 export default function DashboardTab({ 
   activeTotals, 

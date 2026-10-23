@@ -1,5 +1,6 @@
 package com.aurafit.ai.tryon.service.impl;
 
+import com.aurafit.ai.tryon.dto.ByteArrayMultipartFile;
 import com.aurafit.infrastructure.OpenAiImageEditClient;
 import com.aurafit.infrastructure.ReplicateTryOnClient;
 import com.aurafit.ai.tryon.dto.request.TryOnRequest;
@@ -17,12 +18,15 @@ import com.aurafit.ai.tryon.repository.TryOnHistoryRepository;
 import com.aurafit.business.user.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @Service
 public class TryOnServiceImpl implements TryOnService {
@@ -35,19 +39,22 @@ public class TryOnServiceImpl implements TryOnService {
     private final OpenAiImageEditClient openAiImageEditClient;
     private final CostumeRepository costumeRepository;
     private final ReplicateTryOnClient replicateTryOnClient;
+    private final TryOnAsyncWorker tryOnAsyncWorker;
 
     public TryOnServiceImpl(
             TryOnHistoryRepository tryOnHistoryRepository,
             UserRepository userRepository,
             OpenAiImageEditClient openAiImageEditClient,
             CostumeRepository costumeRepository,
-            ReplicateTryOnClient replicateTryOnClient
+            ReplicateTryOnClient replicateTryOnClient,
+            @Lazy TryOnAsyncWorker tryOnAsyncWorker
     ) {
         this.tryOnHistoryRepository = tryOnHistoryRepository;
         this.userRepository = userRepository;
         this.openAiImageEditClient = openAiImageEditClient;
         this.costumeRepository = costumeRepository;
         this.replicateTryOnClient = replicateTryOnClient;
+        this.tryOnAsyncWorker = tryOnAsyncWorker;
     }
 
     @Override
@@ -119,9 +126,69 @@ public class TryOnServiceImpl implements TryOnService {
 
     @Override
     @Transactional
+    public TryOnResponse generateAsync(
+            Long userId,
+            MultipartFile personImage,
+            String garmentImageUrl,
+            Long productId,
+            String productName
+    ) {
+        validatePersonImage(personImage);
+
+        byte[] imageBytes;
+        try {
+            imageBytes = personImage.getBytes();
+        } catch (IOException e) {
+            throw new BadRequestException("Không thể đọc file ảnh: " + e.getMessage());
+        }
+
+        String referenceUrl = StringUtils.hasText(garmentImageUrl) ? garmentImageUrl : "uploaded-person-image";
+        TryOnRequest pending = new TryOnRequest();
+        pending.setProductId(productId);
+        pending.setProductName(productName);
+        pending.setOriginalImageUrl(referenceUrl);
+
+        TryOnResponse pendingResponse = createRequest(userId, pending);
+        Long historyId = pendingResponse.getId();
+
+        MultipartFile safeFile = new ByteArrayMultipartFile(
+                personImage.getName(),
+                personImage.getOriginalFilename(),
+                personImage.getContentType(),
+                imageBytes
+        );
+
+        tryOnAsyncWorker.processTryOnTask(
+                historyId,
+                userId,
+                safeFile,
+                garmentImageUrl,
+                productId,
+                productName
+        );
+
+        return pendingResponse;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TryOnResponse getHistoryById(Long userId, Long historyId) {
+        TryOnHistory history = tryOnHistoryRepository.findById(historyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Try-on history", "id", historyId));
+        if (userId != null && history.getUser() != null && !history.getUser().getId().equals(userId)) {
+            throw new BadRequestException("Bạn không có quyền truy cập kết quả thử đồ này.");
+        }
+        return toResponse(history);
+    }
+
+    @Override
+    @Transactional
     public TryOnResponse createRequest(Long userId, TryOnRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        User user = null;
+        if (userId != null) {
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        }
 
         TryOnHistory history = TryOnHistory.builder()
                 .user(user)
@@ -139,8 +206,15 @@ public class TryOnServiceImpl implements TryOnService {
     @Override
     @Transactional
     public TryOnResponse updateResult(Long userId, Long historyId, TryOnResultRequest request) {
-        TryOnHistory history = tryOnHistoryRepository.findByIdAndUserId(historyId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Try-on history", "id", historyId));
+        TryOnHistory history;
+        if (userId != null) {
+            history = tryOnHistoryRepository.findByIdAndUserId(historyId, userId)
+                    .orElseGet(() -> tryOnHistoryRepository.findById(historyId)
+                            .orElseThrow(() -> new ResourceNotFoundException("Try-on history", "id", historyId)));
+        } else {
+            history = tryOnHistoryRepository.findById(historyId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Try-on history", "id", historyId));
+        }
 
         String status = StringUtils.hasText(request.getStatus()) ? request.getStatus() : "COMPLETED";
         history.setStatus(status);
@@ -185,7 +259,7 @@ public class TryOnServiceImpl implements TryOnService {
     private TryOnResponse toResponse(TryOnHistory history) {
         return TryOnResponse.builder()
                 .id(history.getId())
-                .userId(history.getUser().getId())
+                .userId(history.getUser() != null ? history.getUser().getId() : null)
                 .productId(history.getProductId())
                 .productName(history.getProductName())
                 .originalImageUrl(history.getOriginalImageUrl())

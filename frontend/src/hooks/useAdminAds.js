@@ -14,7 +14,7 @@ export function useAdminAds(currentUser) {
     try {
       const response = await apiClient.get('/admin/advertisements');
       setAds(response.data);
-    } catch (error) {
+    } catch {
       addToast('Ui chao, lỗi tải danh sách quảng cáo rồi, thử lại nhé! 🥺', 'error');
     } finally {
       setIsLoading(false);
@@ -32,7 +32,7 @@ export function useAdminAds(currentUser) {
       setAds((prev) => [...prev, response.data]);
       addToast('Đã thêm quảng cáo mới thành công.');
       return true;
-    } catch (error) {
+    } catch {
       addToast('Thêm quảng cáo chưa được rồi, kiểm tra lại nha! 💖', 'error');
       return false;
     } finally {
@@ -47,7 +47,7 @@ export function useAdminAds(currentUser) {
       setAds((prev) => prev.map((ad) => (ad.id === id ? response.data : ad)));
       addToast('Cập nhật quảng cáo thành công.');
       return true;
-    } catch (error) {
+    } catch {
       addToast('Lỗi khi cập nhật quảng cáo. 🥺', 'error');
       return false;
     } finally {
@@ -62,7 +62,7 @@ export function useAdminAds(currentUser) {
       await apiClient.delete(`/admin/advertisements/${id}`);
       setAds((prev) => prev.filter((ad) => ad.id !== id));
       addToast('Đã xoá quảng cáo.');
-    } catch (error) {
+    } catch {
       addToast('Lỗi khi xoá quảng cáo. 🥺', 'error');
     } finally {
       setIsSaving(false);
@@ -76,7 +76,7 @@ export function useAdminAds(currentUser) {
       const response = await apiClient.put(`/admin/advertisements/${ad.id}`, updatedAd);
       setAds((prev) => prev.map((a) => (a.id === ad.id ? response.data : a)));
       addToast(`Đã ${updatedAd.isActive ? 'bật' : 'tắt'} quảng cáo.`);
-    } catch (error) {
+    } catch {
       addToast('Lỗi khi cập nhật trạng thái quảng cáo. 🥺', 'error');
     } finally {
       setIsSaving(false);
@@ -108,7 +108,7 @@ export function useAdminAds(currentUser) {
         await apiClient.put(`/admin/advertisements/${swapAd.id}`, { ...swapAd, displayOrder: currentOrder });
         await fetchAds();
       }
-    } catch (error) {
+    } catch {
       addToast('Lỗi khi thay đổi thứ tự. 🥺', 'error');
     } finally {
       setIsSaving(false);

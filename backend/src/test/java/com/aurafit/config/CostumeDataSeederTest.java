@@ -116,16 +116,6 @@ class CostumeDataSeederTest {
 
     @Test
     void run_shouldSkipAllExistingSeedProductsOnBackendRestart() {
-        Category leafCategory = Category.builder()
-                .id(1L)
-                .name("Leaf")
-                .slug("leaf")
-                .path("leaf")
-                .isActive(true)
-                .children(new ArrayList<>())
-                .build();
-        when(categoryRepository.findByPathAndIsActiveTrue(anyString())).thenReturn(Optional.of(leafCategory));
-
         CostumeDataSeeder seeder = seeder();
         List<Costume> existingSeeds = seeder.loadSeeds().stream()
                 .map(seed -> Costume.builder().id(1L).slug(seed.slug()).build())

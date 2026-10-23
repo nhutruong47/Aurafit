@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { formatDate, formatCurrency, StatusBadge } from './StaffDashboardUtils';
+import { formatDate, formatCurrency } from './StaffDashboardUtils';
+import { StatusBadge } from './StaffDashboardShared';
 import { adminOrderService } from '../../services/adminOrderService';
 
 export default function OrdersTab({

@@ -5,9 +5,9 @@ import {
   formatCurrency, 
   getDetailStatusLabel, 
   canShowPickupInfo, 
-  getStaffPickupInfo, 
-  StatusBadge 
+  getStaffPickupInfo 
 } from './StaffDashboardUtils';
+import { StatusBadge } from './StaffDashboardShared';
 import { useToastStore } from '../../store/useToastStore';
 import { compensateRentalOrder } from '../../services/rentalOrderService';
 import OrderItemPromotion from '../orders/OrderItemPromotion';

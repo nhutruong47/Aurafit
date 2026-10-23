@@ -17,6 +17,16 @@ public interface TryOnService {
             String productName
     );
 
+    TryOnResponse generateAsync(
+            Long userId,
+            MultipartFile personImage,
+            String garmentImageUrl,
+            Long productId,
+            String productName
+    );
+
+    TryOnResponse getHistoryById(Long userId, Long historyId);
+
     TryOnResponse createRequest(Long userId, TryOnRequest request);
 
     TryOnResponse updateResult(Long userId, Long historyId, TryOnResultRequest request);

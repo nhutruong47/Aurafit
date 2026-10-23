@@ -60,6 +60,38 @@ public class TryOnController {
         return ResponseEntity.ok(ApiResponse.success("Đã tạo kết quả thử đồ", response));
     }
 
+    @PostMapping(value = "/async", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Submit virtual try-on task asynchronously")
+    public ResponseEntity<ApiResponse<TryOnResponse>> generateAsync(
+            Authentication authentication,
+            @RequestParam("personImage") MultipartFile personImage,
+            @RequestParam(value = "garmentImageUrl", required = false) String garmentImageUrl,
+            @RequestParam(value = "productId", required = false) Long productId,
+            @RequestParam(value = "productName", required = false) String productName
+    ) {
+        Long userId = resolveOptionalUserId(authentication);
+        TryOnResponse response = tryOnService.generateAsync(
+                userId,
+                personImage,
+                garmentImageUrl,
+                productId,
+                productName
+        );
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(ApiResponse.success("Yêu cầu thử đồ đang được xử lý ngầm", response));
+    }
+
+    @GetMapping("/history/{id}")
+    @Operation(summary = "Get try-on status and result by history ID")
+    public ResponseEntity<ApiResponse<TryOnResponse>> getHistoryById(
+            Authentication authentication,
+            @PathVariable Long id
+    ) {
+        Long userId = resolveOptionalUserId(authentication);
+        TryOnResponse response = tryOnService.getHistoryById(userId, id);
+        return ResponseEntity.ok(ApiResponse.success("Chi tiết thử đồ", response));
+    }
+
     @PostMapping("/history")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Create a PENDING try-on history record")
