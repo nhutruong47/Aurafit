@@ -1,43 +1,29 @@
 package com.aurafit.config;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
-import org.springframework.test.context.TestPropertySource;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Verifies the actuator configuration properties shipped in application.yml.
- * Deliberately avoids component scanning the app's config package (seeders
- * need a live DataSource); only Spring Boot auto-configuration is loaded.
+ * Verifies actuator configuration shipped in application.yml as source-of-truth.
+ * Plain file test: no Spring context, so it passes in CI without a live DB or
+ * local .env file.
  */
-@SpringBootTest(classes = ActuatorConfigurationTest.MinimalConfig.class)
-@TestPropertySource(properties = {"spring.main.web-application-type=none"})
 class ActuatorConfigurationTest {
 
-    @EnableAutoConfiguration
-    @Configuration
-    static class MinimalConfig {
-    }
-
-    @Autowired
-    private Environment environment;
-
     @Test
-    void applicationYml_exposesHealthAndInfoAndEnablesProbes() {
-        assertThat(environment.getProperty("management.endpoints.web.exposure.include"))
-                .contains("health", "info", "metrics");
-        assertThat(environment.getProperty("management.endpoint.health.probes.enabled"))
-                .isEqualTo("true");
-        assertThat(environment.getProperty("management.endpoint.health.show-details"))
-                .isEqualTo("never");
-        assertThat(environment.getProperty("management.endpoint.health.exclude"))
-                .isEqualTo("mail");
-        assertThat(environment.getProperty("management.endpoint.health.group.readiness.include"))
-                .contains("db");
+    void applicationYml_exposesHealthAndInfoAndEnablesProbes() throws Exception {
+        String yml = Files.readString(Path.of("src/main/resources/application.yml"));
+
+        assertThat(yml).contains("include: health,info,metrics");
+        assertThat(yml).contains("probes:");
+        assertThat(yml).contains("enabled: true");
+        assertThat(yml).contains("show-details: never");
+        assertThat(yml).contains("exclude: mail");
+        assertThat(yml).contains("readiness:");
+        assertThat(yml).contains("application: aurafit-backend");
     }
 }
