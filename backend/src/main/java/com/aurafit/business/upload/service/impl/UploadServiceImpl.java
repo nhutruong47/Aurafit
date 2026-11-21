@@ -176,7 +176,16 @@ public class UploadServiceImpl implements UploadService {
                     "use_filename", true,
                     "unique_filename", true,
                     "overwrite", false,
-                    "filename_override", originalFileName
+                    "filename_override", originalFileName,
+                    "quality", "auto",
+                    "fetch_format", "auto",
+                    "responsive_breakpoints", ObjectUtils.asMap(
+                            "create_derived", true,
+                            "bytes_step", 20000,
+                            "min_width", 200,
+                            "max_width", 1920,
+                            "max_images", 5
+                    )
             ));
         } catch (IOException ex) {
             throw new FileUploadException("Tải ảnh lên máy chủ lưu trữ thất bại.", ex);
