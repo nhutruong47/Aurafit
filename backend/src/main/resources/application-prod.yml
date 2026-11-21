@@ -48,12 +48,12 @@ jwt:
 
 app:
   cors:
-    # Allow Vercel frontend, production domain, and localhost for development
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://aurafitstore.vercel.app,https://aurafit-frontend.vercel.app,http://localhost:5173}
+    # Real production domains only — override via APP_CORS_ALLOWED_ORIGINS
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://aurafit-iota.vercel.app,https://aurafitstore.vercel.app}
 
 # -- SePay ---------------------------------------------------------------------
 sepay:
-  api-key: ${SEPAY_API_KEY:}
+  api-key: ${SEPAY_API_KEY:}          # MUST be injected from Render environment
   webhook-secret: ${SEPAY_WEBHOOK_SECRET:}
   va-account: ${SEPAY_VA_ACCOUNT:}
-  vietqr-base-url: ${SEPAY_VIETQR_BASE_URL:}
+  vietqr-base-url: ${SEPAY_VIETQR_BASE_URL:https://qr.sepay.vn/img}
