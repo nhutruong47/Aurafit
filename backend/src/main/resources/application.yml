@@ -175,6 +175,12 @@ management:
       probes:
         enabled: true
       show-details: never          # never = không lộ DB/host chi tiết cho public
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db   # readiness = app sẵn sàng nhận traffic (có DB)
+      exclude: mail               # SMTP Gmail không phải dependency liveness của app
   metrics:
     tags:
       application: aurafit-backend

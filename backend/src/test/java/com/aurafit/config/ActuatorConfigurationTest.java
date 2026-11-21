@@ -35,5 +35,9 @@ class ActuatorConfigurationTest {
                 .isEqualTo("true");
         assertThat(environment.getProperty("management.endpoint.health.show-details"))
                 .isEqualTo("never");
+        assertThat(environment.getProperty("management.endpoint.health.exclude"))
+                .isEqualTo("mail");
+        assertThat(environment.getProperty("management.endpoint.health.group.readiness.include"))
+                .contains("db");
     }
 }
