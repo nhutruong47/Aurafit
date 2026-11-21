@@ -312,7 +312,7 @@ function App() {
 
       dispatch(removeCartItem(cartId));
     },
-    [cartItems, currentUser?.id, dispatch]
+    [cartItems, currentUser?.id, dispatch, addToast]
   );
   const handleUpdateCartItem = useCallback(
     async (cartItemId, localCartId, data) => {

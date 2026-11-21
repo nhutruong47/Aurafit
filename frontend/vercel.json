@@ -1,8 +1,24 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://aurafit-smlm.onrender.com/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://aurafit-smlm.onrender.com/uploads/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*\\.(?:png|jpg|jpeg|webp|svg|ico|gif))",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
     }
   ]
 }
