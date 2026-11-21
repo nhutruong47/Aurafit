@@ -278,7 +278,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
               src={item.image}
               alt={item.name}
               className="h-20 w-16 flex-shrink-0 border border-[#e8e4e3] object-cover"
-            />
+             loading="lazy" decoding="async" />
             <div>
               <h3 className="font-serif text-base uppercase tracking-wide">{item.name}</h3>
               <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#99854e]">

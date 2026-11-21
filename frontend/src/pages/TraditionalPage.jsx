@@ -260,7 +260,7 @@ export default function TraditionalPage({ onNavigate }) {
                 src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=85"
                 alt="Trang phục truyền thống"
                 className="h-full w-full object-cover opacity-75"
-              />
+               loading="lazy" decoding="async" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 p-6 md:p-8">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">

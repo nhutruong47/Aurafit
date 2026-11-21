@@ -46,7 +46,7 @@ function CategoryTile({ category, wide = false, onClick }) {
         src={category.image || fallbackImage}
         alt={category.title}
         className="h-full w-full object-cover opacity-60 transition duration-1000 group-hover:scale-105"
-      />
+       loading="lazy" decoding="async" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
       <div className={wide ? 'absolute bottom-0 left-0 p-8 md:p-10' : 'absolute bottom-0 left-0 p-5 md:p-6'}>
         <h3 className={`${wide ? 'text-3xl md:text-4xl' : 'text-xl'} mb-2 font-serif italic text-white`}>

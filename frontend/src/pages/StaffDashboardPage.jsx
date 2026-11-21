@@ -244,7 +244,7 @@ export default function StaffDashboardPage({ currentUser, onNavigate }) {
       {/* Image Preview Modal */}
       {previewImage && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4" onClick={() => setPreviewImage(null)}>
-          <img src={previewImage} alt="Preview" className="max-h-full max-w-full object-contain" />
+          <img src={previewImage} alt="Preview" className="max-h-full max-w-full object-contain"  loading="lazy" decoding="async" />
           <button className="absolute top-4 right-4 text-white hover:text-gray-300">
             <span className="material-symbols-outlined text-3xl">close</span>
           </button>

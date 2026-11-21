@@ -433,7 +433,7 @@ export default function ReturnTab({
             <div className="mt-4 pt-3 border-t border-gray-200">
               <span className="block text-sm text-gray-600 mb-2">Ảnh minh chứng nghiệm thu:</span>
               {returnImageUrlFromNote ? (
-                <img src={returnImageUrlFromNote} alt="Minh chứng" className="w-32 h-32 object-cover rounded border border-gray-300" />
+                <img src={returnImageUrlFromNote} alt="Minh chứng" className="w-32 h-32 object-cover rounded border border-gray-300"  loading="lazy" decoding="async" />
               ) : (
                 <span className="text-sm text-gray-500 italic">Không có ảnh minh chứng</span>
               )}

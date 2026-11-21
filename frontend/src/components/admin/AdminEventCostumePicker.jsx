@@ -319,7 +319,7 @@ export default function AdminEventCostumePicker({
                   />
                   <div className="h-12 w-12 shrink-0 overflow-hidden bg-[#ebe7df]">
                     {costume.imageUrl ? (
-                      <img src={costume.imageUrl} alt={costume.name} className="h-full w-full object-cover" />
+                      <img src={costume.imageUrl} alt={costume.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                     ) : (
                       <span className="material-symbols-outlined flex h-full items-center justify-center text-[#aaa49a]">
                         image

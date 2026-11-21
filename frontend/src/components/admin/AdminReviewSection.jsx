@@ -265,7 +265,7 @@ export default function AdminReviewSection() {
                                   src={imageUrl}
                                   alt={`Ảnh review ${index + 1}`}
                                   className="h-12 w-12 border border-[#d7d2c8] object-cover transition group-hover:scale-105"
-                                />
+                                 loading="lazy" decoding="async" />
                               </button>
                             ))}
                           </div>
@@ -391,7 +391,7 @@ export default function AdminReviewSection() {
                         src={imageUrl}
                         alt={`Ảnh review ${index + 1}`}
                         className="aspect-square w-full object-cover transition duration-300 group-hover:scale-105"
-                      />
+                       loading="lazy" decoding="async" />
                       <span className="material-symbols-outlined absolute inset-0 flex items-center justify-center bg-black/0 text-[26px] text-transparent transition group-hover:bg-black/25 group-hover:text-white">
                         zoom_in
                       </span>

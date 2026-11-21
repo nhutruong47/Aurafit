@@ -48,7 +48,7 @@ export default function PaymentSummary({
               items.map((item) => (
                 <div key={item.cartId || item.id || item.name} className="flex gap-4">
                   <div className="h-24 w-20 overflow-hidden bg-[#eeeeee]">
-                    <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                    <img src={item.image} alt={item.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                   </div>
                   <div className="flex flex-col justify-between py-1">
                     <div>
@@ -112,7 +112,7 @@ export default function PaymentSummary({
                   src={paymentInit.qrImageUrl}
                   alt="Mã VietQR thanh toán"
                   className="mx-auto mb-4 h-52 w-52 rounded-lg border border-[#cfc4c5] bg-white object-contain p-2"
-                />
+                 loading="lazy" decoding="async" />
               ) : (
                 <div className="mx-auto mb-4 flex h-52 w-52 items-center justify-center rounded-lg border border-[#cfc4c5] bg-white">
                   <span className="material-symbols-outlined text-6xl text-[#ccc]">qr_code</span>

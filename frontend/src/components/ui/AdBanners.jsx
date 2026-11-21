@@ -47,7 +47,7 @@ export default function AdBanners() {
                 src={ad.imageUrl} 
                 alt={ad.name} 
                 className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105" 
-              />
+               loading="lazy" decoding="async" />
             </div>
             {ad.description && (
               <div className="p-3 bg-white text-center border-t border-[#eaeaea]">
@@ -73,7 +73,7 @@ export default function AdBanners() {
                 src={ad.imageUrl} 
                 alt={ad.name} 
                 className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105" 
-              />
+               loading="lazy" decoding="async" />
             </div>
             {ad.description && (
               <div className="p-3 bg-white text-center border-t border-[#eaeaea]">

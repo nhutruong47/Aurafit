@@ -273,7 +273,7 @@ export default function ShippingTab({
                                     src={detail.costumeImageUrl || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=200&q=80'} 
                                     alt={detail.costumeName} 
                                     className="h-full w-full object-cover" 
-                                  />
+                                   loading="lazy" decoding="async" />
                                 </div>
                                 <div>
                                   <p className="font-medium text-gray-900 text-base">{detail.costumeName}</p>

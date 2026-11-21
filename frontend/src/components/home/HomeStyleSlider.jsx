@@ -52,7 +52,7 @@ export default function HomeStyleSlider({ sliderRef, onNavigate, onScroll }) {
                 src={category.image}
                 alt={category.title}
                 className="h-full w-full object-cover opacity-80 transition duration-1000 group-hover:scale-110"
-              />
+               loading="lazy" decoding="async" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute bottom-10 left-8 right-8 md:left-10 md:right-10">
                 <h3 className="mb-4 font-serif text-4xl italic text-white">{category.title}</h3>

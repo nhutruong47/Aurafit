@@ -114,7 +114,7 @@ export default function AdminAdsSection({ currentUser }) {
                   <tr key={ad.id} className="transition hover:bg-[#f9f9f9]">
                     <td className="px-4 py-3">
                       <div className="h-16 w-12 overflow-hidden border border-[#ebe7df] bg-[#f4f4f2]">
-                        <img src={ad.imageUrl} alt={ad.name} className="h-full w-full object-cover" />
+                        <img src={ad.imageUrl} alt={ad.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                       </div>
                     </td>
                     <td className="px-4 py-3 font-medium text-[#111111]">
@@ -291,7 +291,7 @@ export default function AdminAdsSection({ currentUser }) {
               {formData.imageUrl && (
                 <div className="mt-2 text-center">
                   <p className="mb-1 text-xs text-[#5f5e5e]">Xem trước ảnh:</p>
-                  <img src={formData.imageUrl} alt="Preview" className="mx-auto h-32 object-contain border border-[#ebe7df]" />
+                  <img src={formData.imageUrl} alt="Preview" className="mx-auto h-32 object-contain border border-[#ebe7df]"  loading="lazy" decoding="async" />
                 </div>
               )}
 

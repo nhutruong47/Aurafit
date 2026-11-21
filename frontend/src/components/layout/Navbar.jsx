@@ -40,10 +40,10 @@ export default function Navbar({
             aria-label="Về trang chủ AuraFit"
           >
             <img
-              src="/LogoAF.png"
+              src="/LogoAF.webp"
               alt="AuraFit"
               className="h-16 w-auto object-contain"
-            />
+             loading="lazy" decoding="async" />
           </button>
 
           {/* Navigation Links - Lê's exact layout restored with Teammate's colors */}

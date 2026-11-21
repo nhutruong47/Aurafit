@@ -174,7 +174,7 @@ export default function AdminProductsSection({
                       <td className="px-4 py-3">
                         <div className="h-12 w-12 overflow-hidden bg-[#eeeeee]">
                           {product.imageUrl ? (
-                            <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                            <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[#999999]">
                               <span className="material-symbols-outlined text-[18px]">image</span>

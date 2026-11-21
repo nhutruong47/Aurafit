@@ -107,7 +107,7 @@ export default function CustomerCarePage() {
                   alt="Thợ may đang đo vải"
                   className="h-full w-full object-cover grayscale-[0.35] transition duration-700 hover:scale-105 hover:grayscale-0"
                   src="https://images.unsplash.com/photo-1593032465175-481ac7f401a0?auto=format&fit=crop&w=900&q=85"
-                />
+                 loading="lazy" decoding="async" />
               </div>
             </div>
           </div>
@@ -129,7 +129,7 @@ export default function CustomerCarePage() {
                 alt="Stylist đang chuẩn bị tủ đồ thuê cao cấp"
                 className="h-full w-full object-cover opacity-90 transition duration-700 hover:scale-105"
                 src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1000&q=85"
-              />
+               loading="lazy" decoding="async" />
             </div>
             <div className="flex flex-col justify-center p-8 md:p-16">
               <p className="mb-6 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#99854e]">

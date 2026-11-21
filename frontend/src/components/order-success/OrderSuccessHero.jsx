@@ -9,7 +9,7 @@ export default function OrderSuccessHero({ orderId, status, totalLabel, onContin
           className="h-full w-full animate-[subtleZoom_20s_linear_infinite_alternate] object-cover opacity-20 grayscale"
           src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=85"
           alt="Xưởng thời trang tối giản"
-        />
+         loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#f9f9f9]/0 to-[#f9f9f9]" />
       </div>
       <div className="relative z-10 flex flex-col items-center text-center">

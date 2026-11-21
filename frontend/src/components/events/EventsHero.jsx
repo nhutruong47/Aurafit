@@ -28,14 +28,14 @@ export default function EventsHero() {
               src="https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=900&q=85"
               alt="Không gian sự kiện cao cấp"
               className="h-full min-h-[520px] w-full object-cover grayscale-[0.35]"
-            />
+             loading="lazy" decoding="async" />
           </div>
           <div className="relative aspect-[4/5] overflow-hidden bg-black md:aspect-auto">
             <img
               src="https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=1100&q=85"
               alt="Đầm dạ hội cho sự kiện"
               className="h-full w-full object-cover opacity-90 transition duration-700 hover:scale-105"
-            />
+             loading="lazy" decoding="async" />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-7 text-white md:p-10">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/65">Sẵn sàng trong 24h</p>
               <p className="mt-3 font-serif text-3xl italic leading-tight md:text-5xl">Gala, tiệc cưới, prom</p>

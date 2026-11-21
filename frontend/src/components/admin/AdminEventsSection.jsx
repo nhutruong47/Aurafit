@@ -136,7 +136,7 @@ export default function AdminEventsSection({
                     <td className="px-4 py-3">
                       <div className="h-12 w-16 overflow-hidden bg-[#ebe7df]">
                         {event.bannerImageUrl ? (
-                          <img src={event.bannerImageUrl} alt={event.name} className="h-full w-full object-cover" />
+                          <img src={event.bannerImageUrl} alt={event.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                         ) : (
                           <span className="material-symbols-outlined flex h-full items-center justify-center text-[#aaa49a]">
                             image

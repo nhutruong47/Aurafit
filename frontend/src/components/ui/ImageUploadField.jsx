@@ -175,7 +175,7 @@ function SingleImageUploadField({
       {selectedFile && (
         <div className="flex items-center gap-3 border border-[#ebe7df] bg-[#fafaf8] p-3 text-xs text-[#5f5e5e]">
           {showPreview && previewUrl && (
-            <img src={previewUrl} alt="Xem trước" className="h-12 w-12 object-cover rounded-sm border border-[#d7d2c8] shrink-0" />
+            <img src={previewUrl} alt="Xem trước" className="h-12 w-12 object-cover rounded-sm border border-[#d7d2c8] shrink-0"  loading="lazy" decoding="async" />
           )}
           <div className="min-w-0 flex-1">
             <p className="font-medium text-black truncate">{selectedFile.name}</p>
@@ -190,7 +190,7 @@ function SingleImageUploadField({
             src={previewUrl}
             alt="Xem trước ảnh tải lên"
             className={`${previewAspectClassName} w-full object-cover`}
-          />
+           loading="lazy" decoding="async" />
         </div>
       )}
 
@@ -387,7 +387,7 @@ function MultipleImageUploadField({
                   src={previewUrl}
                   alt={`Ảnh đánh giá ${item.file.name}`}
                   className="aspect-square w-full object-cover"
-                />
+                 loading="lazy" decoding="async" />
                 <button
                   type="button"
                   onClick={() => removeItem(item.id)}

@@ -298,7 +298,7 @@ function ReviewCard({
                     src={imageUrl}
                     alt={`Ảnh đánh giá ${index + 1}`}
                     className="aspect-square w-full object-cover transition duration-300 group-hover:scale-105"
-                  />
+                   loading="lazy" decoding="async" />
                   <span className="material-symbols-outlined absolute inset-0 flex items-center justify-center bg-black/0 text-[24px] text-transparent transition group-hover:bg-black/25 group-hover:text-white">
                     zoom_in
                   </span>

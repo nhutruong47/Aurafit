@@ -81,7 +81,7 @@ export default function RefundDepositModal({
         {hasBankInfo ? (
           <div className="space-y-4">
             <div className="flex justify-center bg-gray-50 p-4 rounded-lg border">
-              <img src={vietQrUrl} alt="VietQR" className="max-w-[250px] h-auto rounded" />
+              <img src={vietQrUrl} alt="VietQR" className="max-w-[250px] h-auto rounded"  loading="lazy" decoding="async" />
             </div>
             
             <div className="bg-gray-50 p-3 rounded-md text-sm border space-y-2">
@@ -128,7 +128,7 @@ export default function RefundDepositModal({
               />
               {(receiptImageUrl || receiptImageFile) && (
                 <div className="mt-2 p-2 border rounded-md bg-white">
-                  <img src={receiptImageFile ? URL.createObjectURL(receiptImageFile) : receiptImageUrl} alt="Biên lai" className="max-h-40 object-contain mx-auto" />
+                  <img src={receiptImageFile ? URL.createObjectURL(receiptImageFile) : receiptImageUrl} alt="Biên lai" className="max-h-40 object-contain mx-auto"  loading="lazy" decoding="async" />
                 </div>
               )}
             </div>

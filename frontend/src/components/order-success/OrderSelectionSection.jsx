@@ -12,7 +12,7 @@ function ConfirmedItem({ item }) {
   return (
     <div className="group flex flex-col gap-8 md:flex-row">
       <div className="h-64 w-full overflow-hidden bg-[#f7f7f7] md:w-48">
-        <img src={item.image} alt={item.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+        <img src={item.image} alt={item.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-105"  loading="lazy" decoding="async" />
       </div>
       <div className="flex flex-col justify-between py-2">
         <div>

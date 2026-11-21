@@ -126,7 +126,7 @@ export default function ImageGalleryUploadField({
                   src={imageUrl}
                   alt={`Ảnh sản phẩm ${index + 1}`}
                   className="h-full w-full object-cover"
-                />
+                 loading="lazy" decoding="async" />
                 {index === 0 && (
                   <span className="absolute left-1.5 top-1.5 bg-black px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-white rounded-[2px] shadow-sm">
                     Ảnh chính

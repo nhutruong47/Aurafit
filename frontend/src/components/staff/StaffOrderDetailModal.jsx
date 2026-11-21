@@ -259,7 +259,7 @@ export default function StaffOrderDetailModal({
                           onClick={() => setPreviewImage(imageUrl)}
                           className="block h-24 w-24 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
                         >
-                          <img src={imageUrl} alt={`Ảnh minh chứng ${index + 1}`} className="h-full w-full object-cover" />
+                          <img src={imageUrl} alt={`Ảnh minh chứng ${index + 1}`} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                         </button>
                       ))}
                     </div>
@@ -322,7 +322,7 @@ export default function StaffOrderDetailModal({
                       onClick={() => setPreviewImage(parseInspectionNote(activeOrder.inspectionNote).imageUrl)}
                       className="mt-2 block h-24 w-24 overflow-hidden rounded-md border border-gray-200 bg-gray-100"
                     >
-                      <img src={parseInspectionNote(activeOrder.inspectionNote).imageUrl} alt="Ảnh minh chứng Return" className="h-full w-full object-cover" />
+                      <img src={parseInspectionNote(activeOrder.inspectionNote).imageUrl} alt="Ảnh minh chứng Return" className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                     </button>
                   ) : (
                     <p className="mt-1 font-medium">Không có ảnh minh chứng</p>

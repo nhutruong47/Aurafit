@@ -29,7 +29,7 @@ export default function YearbookHero() {
             src="https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1500&q=85"
             alt="Nhóm sinh viên trong trang phục kỷ yếu học thuật"
             className="h-full w-full object-cover grayscale-[0.2]"
-          />
+           loading="lazy" decoding="async" />
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-7 text-white md:p-10">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">Hỗ trợ thuê theo lớp</p>
             <p className="mt-3 max-w-lg font-serif text-2xl italic leading-[1.25] md:text-4xl">

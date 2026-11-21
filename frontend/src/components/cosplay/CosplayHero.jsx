@@ -6,7 +6,7 @@ export default function CosplayHero() {
         src="https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1800&q=85"
         alt="Bối cảnh Cosplay biên tập"
         className="absolute inset-0 h-full w-full object-cover"
-      />
+       loading="lazy" decoding="async" />
       <div className="absolute inset-0 bg-black/55" />
       <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-80px)] max-w-[1440px] items-end px-5 pb-16 pt-20 md:px-20 md:pb-24">
         <div className="max-w-4xl text-white">

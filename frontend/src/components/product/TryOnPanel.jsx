@@ -237,7 +237,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
                   alt="Ảnh của bạn"
                   className="w-full object-contain"
                   style={{ maxHeight: 480, background: '#f9f9f9' }}
-                />
+                 loading="lazy" decoding="async" />
                 <button
                   type="button"
                   onClick={(e) => {
@@ -408,7 +408,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
                   alt="Kết quả thử đồ"
                   className="w-full object-contain"
                   style={{ background: '#f9f9f9' }}
-                />
+                 loading="lazy" decoding="async" />
               </div>
               <div className="flex gap-2">
                 <button

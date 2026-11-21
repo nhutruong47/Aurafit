@@ -207,7 +207,7 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                         src={detail.imageUrl || detail.imageUrls?.[0] || 'https://placehold.co/100x120?text=No+Image'}
                         alt={detail.costumeName} 
                         className="w-16 h-20 object-cover bg-gray-100" 
-                      />
+                       loading="lazy" decoding="async" />
                       <div className="flex-1">
                         <p className="font-semibold text-sm line-clamp-2">{detail.costumeName}</p>
                         <p className="text-xs text-[#5f5e5e] uppercase tracking-wider mt-1">
