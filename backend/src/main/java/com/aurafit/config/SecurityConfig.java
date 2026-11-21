@@ -58,6 +58,9 @@ public class SecurityConfig {
                 // Public auth endpoints (register, login, refresh, OTP)
                 .requestMatchers("/api/auth/**").permitAll()
 
+                // Actuator health/liveness for Render & uptime monitors
+                .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+
                 // Public product browsing (future catalog endpoints)
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/interactions").permitAll()

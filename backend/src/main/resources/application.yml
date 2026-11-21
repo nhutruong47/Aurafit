@@ -163,3 +163,21 @@ openai:
   image-size: ${OPENAI_IMAGE_SIZE:1024x1024}
   connect-timeout-ms: ${OPENAI_CONNECT_TIMEOUT_MS:10000}
   read-timeout-ms: ${OPENAI_READ_TIMEOUT_MS:120000}
+
+# -- Actuator / Observability ------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never          # never = không lộ DB/host chi tiết cho public
+  metrics:
+    tags:
+      application: aurafit-backend
+  info:
+    env:
+      enabled: true
