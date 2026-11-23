@@ -33,8 +33,8 @@ const LEVEL_STYLES = [
   },
   {
     row: 'bg-[#fbf9f4]',
-    badge: 'bg-[#99854e] text-white',
-    connector: 'border-[#99854e]/45',
+    badge: 'bg-[#756536] text-white',
+    connector: 'border-[#A98A55]/45',
   },
   {
     row: 'bg-[#f5f1e8]',
@@ -185,7 +185,7 @@ export default function AdminCategoriesSection({
         action={
           <button
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
+            className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             Thêm danh mục
@@ -195,14 +195,14 @@ export default function AdminCategoriesSection({
         {/* Filter bar */}
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <label className="relative block w-full lg:max-w-md lg:flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#6B6259]">
               search
             </span>
             <input
               value={categorySearch}
               onChange={(event) => setCategorySearch(event.target.value)}
               placeholder="Tìm kiếm danh mục..."
-              className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
+              className="w-full border border-[#DED2C2] bg-[#FAF5ED] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#756536]"
             />
           </label>
           <div className="flex flex-wrap gap-2">
@@ -219,7 +219,7 @@ export default function AdminCategoriesSection({
               type="button"
               onClick={collapseAllCategories}
               disabled={Boolean(normalizedSearch) || expandedCategoryIds.size === 0}
-              className="inline-flex items-center gap-1.5 border border-[#d7d2c8] bg-[#f6f3ed] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5f5e5e] transition hover:border-black hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 border border-[#DED2C2] bg-[#f6f3ed] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B6259] transition hover:border-black hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
             >
               <span className="material-symbols-outlined text-[17px]">unfold_less</span>
               Thu gọn
@@ -227,13 +227,13 @@ export default function AdminCategoriesSection({
           </div>
         </div>
 
-        <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 border border-[#e7e1d6] bg-[#faf8f3] px-3 py-2.5 text-xs text-[#5f5e5e]">
+        <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 border border-[#e7e1d6] bg-[#faf8f3] px-3 py-2.5 text-xs text-[#6B6259]">
           <span className="font-semibold text-black">Chú thích tầng:</span>
           <span className="inline-flex items-center gap-1.5">
             <span className="size-2.5 bg-black" /> Cấp 1 · Gốc
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="size-2.5 bg-[#99854e]" /> Cấp 2 · Nhánh
+            <span className="size-2.5 bg-[#756536]" /> Cấp 2 · Nhánh
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="size-2.5 bg-[#ded3b9]" /> Cấp 3 trở lên · Danh mục con
@@ -241,15 +241,15 @@ export default function AdminCategoriesSection({
         </div>
 
         {isLoading ? (
-          <p className="py-12 text-center text-sm text-[#5f5e5e]">Đang tải danh mục...</p>
+          <p className="py-12 text-center text-sm text-[#6B6259]">Đang tải danh mục...</p>
         ) : visibleTreeCategories.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
-            <span className="material-symbols-outlined text-[48px] text-[#d7d2c8]">category</span>
-            <p className="text-sm text-[#5f5e5e]">Không có danh mục nào khớp bộ lọc hiện tại.</p>
+            <span className="material-symbols-outlined text-[48px] text-[#DED2C2]">category</span>
+            <p className="text-sm text-[#6B6259]">Không có danh mục nào khớp bộ lọc hiện tại.</p>
             {categorySearch === '' && (
               <button
                 onClick={handleOpenCreate}
-                className="bg-black px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
+                className="bg-black px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
               >
                 Thêm danh mục
               </button>
@@ -270,7 +270,7 @@ export default function AdminCategoriesSection({
                     <th className="px-4 py-3 w-[140px] text-right">Hành động</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
+                <tbody className="divide-y divide-[#E8DDCE] bg-[#FAF5ED]">
                   {visibleTreeCategories.map((category) => {
                     const hasChildren = Array.isArray(category.children) && category.children.length > 0;
                     const isExpanded = expandedCategoryIds.has(category.id);
@@ -281,7 +281,7 @@ export default function AdminCategoriesSection({
                         key={category.id}
                         className={`${levelStyles.row} transition hover:bg-[#e9e2d5]`}
                       >
-                        <td className={`border-l-4 px-4 py-3.5 font-mono text-xs text-[#777777] ${levelStyles.connector}`}>
+                        <td className={`border-l-4 px-4 py-3.5 font-mono text-xs text-[#6B6259] ${levelStyles.connector}`}>
                           #{category.id}
                         </td>
                         <td className="px-4 py-3.5">
@@ -311,7 +311,7 @@ export default function AdminCategoriesSection({
                                   ? `Thu gọn danh mục ${category.name}`
                                   : `Mở rộng danh mục ${category.name}`}
                                 aria-expanded={isExpanded || Boolean(normalizedSearch)}
-                                className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center text-[#777777] transition hover:bg-[#e7e1d6] hover:text-black"
+                                className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center text-[#6B6259] transition hover:bg-[#e7e1d6] hover:text-black"
                               >
                                 <span className="material-symbols-outlined text-[18px]">
                                   {isExpanded || normalizedSearch ? 'expand_more' : 'chevron_right'}
@@ -322,7 +322,7 @@ export default function AdminCategoriesSection({
                                 <span className="material-symbols-outlined text-[15px]">subdirectory_arrow_right</span>
                               </span>
                             )}
-                            <span className="material-symbols-outlined mt-0.5 text-[18px] text-[#99854e]">
+                            <span className="material-symbols-outlined mt-0.5 text-[18px] text-[#756536]">
                               {category.depth === 0 ? 'account_tree' : hasChildren ? 'folder' : 'label'}
                             </span>
                             <div className="min-w-0">
@@ -335,7 +335,7 @@ export default function AdminCategoriesSection({
                                 </span>
                               </div>
                               {category.description && (
-                                <p className="mt-0.5 line-clamp-1 text-xs text-[#5f5e5e]">{category.description}</p>
+                                <p className="mt-0.5 line-clamp-1 text-xs text-[#6B6259]">{category.description}</p>
                               )}
                             </div>
                           </div>
@@ -343,10 +343,10 @@ export default function AdminCategoriesSection({
                         <td className="px-4 py-3.5">
                           <code className="bg-[#eeeeee] px-1.5 py-0.5 text-xs">{category.slug || '—'}</code>
                         </td>
-                        <td className="px-4 py-3.5 text-xs text-[#5f5e5e]">
+                        <td className="px-4 py-3.5 text-xs text-[#6B6259]">
                           {category.path || '—'}
                         </td>
-                        <td className="px-4 py-3.5 text-xs text-[#5f5e5e]">
+                        <td className="px-4 py-3.5 text-xs text-[#6B6259]">
                           {category.parentName || '—'}
                         </td>
                         <td className="px-4 py-3.5 text-center text-xs">
@@ -375,7 +375,7 @@ export default function AdminCategoriesSection({
                 </tbody>
               </table>
             </div>
-            <p className="mt-4 text-right text-xs text-[#777777]">
+            <p className="mt-4 text-right text-xs text-[#6B6259]">
               Hiển thị {visibleTreeCategories.length}/{treeCategories.length} danh mục
             </p>
           </>
@@ -404,7 +404,7 @@ export default function AdminCategoriesSection({
           />
 
           <label className="block">
-            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
               Danh mục cha
             </span>
             <SearchableSelect
@@ -451,7 +451,7 @@ export default function AdminCategoriesSection({
           <div className="flex gap-3 pt-2">
             <button
               disabled={isSaving}
-              className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
+              className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536] disabled:bg-[#777777]"
             >
               {isSaving
                 ? 'Đang lưu...'
@@ -462,7 +462,7 @@ export default function AdminCategoriesSection({
             <button
               type="button"
               onClick={handleCloseDrawer}
-              className="border border-[#d7d2c8] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:border-black hover:text-black"
+              className="border border-[#DED2C2] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259] transition hover:border-black hover:text-black"
             >
               Hủy
             </button>

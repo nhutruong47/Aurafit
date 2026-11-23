@@ -1,7 +1,7 @@
 // Danh sach san pham da duoc xac nhan trong trang order success.
 function IconText({ icon, text, accent = false }) {
   return (
-    <div className={`flex items-center gap-2 ${accent ? 'text-[#99854e]' : ''}`}>
+    <div className={`flex items-center gap-2 ${accent ? 'text-[#756536]' : ''}`}>
       <span className="material-symbols-outlined text-sm">{icon}</span>
       <span className="text-[12px] font-semibold uppercase tracking-[0.15em]">{text}</span>
     </div>
@@ -17,7 +17,7 @@ function ConfirmedItem({ item }) {
       <div className="flex flex-col justify-between py-2">
         <div>
           <h3 className="mb-2 font-serif text-3xl font-normal">{item.name}</h3>
-          <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">{item.size}</p>
+          <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#6B6259]">{item.size}</p>
         </div>
         <div className="space-y-2">
           <IconText icon="calendar_today" text={`Thời gian thuê: ${item.rental || 'Đang cập nhật'}`} />
@@ -31,7 +31,7 @@ function ConfirmedItem({ item }) {
 export default function OrderSelectionSection({ items }) {
   return (
     <div className="space-y-12 md:col-span-7">
-      <div className="border-b border-[#cfc4c5] pb-4">
+      <div className="border-b border-[#DED2C2] pb-4">
         <h2 className="text-[12px] font-semibold uppercase tracking-[0.2em]">Sản phẩm đã chọn</h2>
       </div>
       <div className="space-y-16">

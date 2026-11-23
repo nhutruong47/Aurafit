@@ -30,7 +30,7 @@ const formatReviewDate = (createdAt) => {
 
 function StarInput({ value, onChange, disabled = false, size = 24 }) {
   return (
-    <div className="flex text-[#99854e]">
+    <div className="flex text-[#756536]">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
@@ -110,10 +110,10 @@ function ReviewForm({
   const isDisabled = isUploadingImages || isSubmitting;
 
   return (
-    <div className="mb-10 border border-[#cfc4c5]/40 bg-[#f9f9f9] p-6">
+    <div className="mb-10 border border-[#DED2C2]/40 bg-[#F6F1E8] p-6">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.1em] text-black">Đánh giá của bạn</h3>
       <form onSubmit={handleSubmit}>
-        <label className="mb-4 block text-sm text-[#5f5e5e]">
+        <label className="mb-4 block text-sm text-[#6B6259]">
           Lượt thuê
           <select
             value={newReviewData.rentalOrderDetailId}
@@ -122,7 +122,7 @@ function ReviewForm({
               ...newReviewData,
               rentalOrderDetailId: event.target.value,
             })}
-            className="mt-2 w-full border border-[#cfc4c5] bg-white px-3 py-3 text-sm text-black outline-none focus:border-black disabled:bg-[#eeeeee]"
+            className="mt-2 w-full border border-[#DED2C2] bg-white px-3 py-3 text-sm text-black outline-none focus:border-black disabled:bg-[#eeeeee]"
             required
           >
             {!hasEligibleRental && (
@@ -140,7 +140,7 @@ function ReviewForm({
         </label>
 
         <div className="mb-4 flex items-center gap-3">
-          <span className="text-sm text-[#5f5e5e]">Chất lượng:</span>
+          <span className="text-sm text-[#6B6259]">Chất lượng:</span>
           <StarInput
             value={newReviewData.rating}
             disabled={isDisabled}
@@ -152,7 +152,7 @@ function ReviewForm({
           value={newReviewData.comment}
           disabled={isDisabled}
           onChange={(event) => onReviewDataChange({ ...newReviewData, comment: event.target.value })}
-          className="mb-4 min-h-[100px] w-full border border-[#cfc4c5] p-4 text-sm outline-none focus:border-black disabled:bg-[#eeeeee]"
+          className="mb-4 min-h-[100px] w-full border border-[#DED2C2] p-4 text-sm outline-none focus:border-black disabled:bg-[#eeeeee]"
           placeholder="Hãy chia sẻ trải nghiệm của bạn về sản phẩm này nhé..."
         />
 
@@ -180,14 +180,14 @@ function ReviewForm({
             type="button"
             onClick={handleCancel}
             disabled={isSubmitting}
-            className="border border-[#cfc4c5] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#5f5e5e] hover:border-black hover:text-black disabled:opacity-60"
+            className="border border-[#DED2C2] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#6B6259] hover:border-black hover:text-black disabled:opacity-60"
           >
             Hủy
           </button>
           <button
             type="submit"
             disabled={isDisabled || !hasEligibleRental}
-            className="bg-black px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
+            className="bg-black px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#756536] disabled:cursor-not-allowed disabled:bg-[#777777]"
           >
             {isSubmitting ? 'Đang gửi...' : 'Gửi đánh giá'}
           </button>
@@ -231,7 +231,7 @@ function ReviewCard({
   };
 
   return (
-    <article className="border border-[#cfc4c5]/20 bg-[#f9f9f9] p-6">
+    <article className="border border-[#DED2C2]/20 bg-[#F6F1E8] p-6">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black font-serif text-xl text-white">
@@ -239,7 +239,7 @@ function ReviewCard({
           </div>
           <div>
             <p className="text-sm font-semibold text-black">{authorName}</p>
-            <p className="text-xs text-[#999999]">{formatReviewDate(review.createdAt)}</p>
+            <p className="text-xs text-[#6B6259]">{formatReviewDate(review.createdAt)}</p>
           </div>
         </div>
         {!isEditing && (
@@ -258,14 +258,14 @@ function ReviewCard({
             value={editData.comment}
             disabled={isMutating}
             onChange={(event) => setEditData((current) => ({ ...current, comment: event.target.value }))}
-            className="min-h-[90px] w-full border border-[#cfc4c5] bg-white p-3 text-sm outline-none focus:border-black"
+            className="min-h-[90px] w-full border border-[#DED2C2] bg-white p-3 text-sm outline-none focus:border-black"
           />
           <div className="flex justify-end gap-2">
             <button
               type="button"
               disabled={isMutating}
               onClick={() => setIsEditing(false)}
-              className="border border-[#cfc4c5] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em]"
+              className="border border-[#DED2C2] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em]"
             >
               Hủy
             </button>
@@ -282,7 +282,7 @@ function ReviewCard({
       ) : (
         <>
           {review.comment && (
-            <p className="text-sm italic leading-6 text-[#5f5e5e]">“{review.comment}”</p>
+            <p className="text-sm italic leading-6 text-[#6B6259]">“{review.comment}”</p>
           )}
           {Array.isArray(review.imageUrls) && review.imageUrls.length > 0 && (
             <div className="mt-4 grid grid-cols-3 gap-2">
@@ -292,7 +292,7 @@ function ReviewCard({
                   type="button"
                   onClick={() => onPreviewImages(review.imageUrls, index)}
                   aria-label={`Xem ảnh đánh giá ${index + 1}`}
-                  className="group relative overflow-hidden border border-[#ebe7df] bg-white"
+                  className="group relative overflow-hidden border border-[#E8DDCE] bg-white"
                 >
                   <img
                     src={imageUrl}
@@ -307,12 +307,12 @@ function ReviewCard({
             </div>
           )}
           {canModify && (
-            <div className="mt-5 flex justify-end gap-3 border-t border-[#cfc4c5]/30 pt-4">
+            <div className="mt-5 flex justify-end gap-3 border-t border-[#DED2C2]/30 pt-4">
               <button
                 type="button"
                 disabled={isMutating}
                 onClick={() => setIsEditing(true)}
-                className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5f5e5e] hover:text-black disabled:opacity-50"
+                className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B6259] hover:text-black disabled:opacity-50"
               >
                 Sửa
               </button>
@@ -371,14 +371,14 @@ export default function ProductReviewsSection({
 
   return (
     <>
-      <section className="mt-16 border border-[#cfc4c5] bg-white p-6 md:p-12">
-      <div className="mb-8 flex flex-col justify-between gap-6 border-b border-[#cfc4c5]/30 pb-6 md:flex-row md:items-center">
+      <section className="mt-16 border border-[#DED2C2] bg-white p-6 md:p-12">
+      <div className="mb-8 flex flex-col justify-between gap-6 border-b border-[#DED2C2]/30 pb-6 md:flex-row md:items-center">
         <h2 className="font-serif text-3xl text-black">Đánh giá từ người thuê</h2>
         {currentUser?.id && (
           <button
             type="button"
             onClick={() => onToggleReviewForm(!showReviewForm)}
-            className="bg-black px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+            className="bg-black px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
           >
             {showReviewForm ? 'Đóng biểu mẫu' : 'Viết đánh giá'}
           </button>
@@ -402,10 +402,10 @@ export default function ProductReviewsSection({
 
       <div className="mb-8 flex flex-col items-center gap-8 border border-[#f9ede5] bg-[#fffbf8] p-6 md:flex-row">
         <div className="text-center md:w-1/4">
-          <div className="mb-2 text-5xl font-serif text-[#99854e]">
-            {averageRating.toFixed(1)} <span className="text-2xl text-[#99854e]/60">/ 5</span>
+          <div className="mb-2 text-5xl font-serif text-[#756536]">
+            {averageRating.toFixed(1)} <span className="text-2xl text-[#756536]/60">/ 5</span>
           </div>
-          <div className="flex justify-center text-[#99854e]">
+          <div className="flex justify-center text-[#756536]">
             {[1, 2, 3, 4, 5].map((star) => (
               <span
                 key={star}
@@ -422,7 +422,7 @@ export default function ProductReviewsSection({
           <button
             type="button"
             onClick={() => onFilterRatingChange('all')}
-            className={`border px-5 py-2 text-sm ${ratingFilter === null ? 'border-[#99854e] bg-white text-[#99854e]' : 'border-[#cfc4c5]/50 bg-white text-[#5f5e5e]'}`}
+            className={`border px-5 py-2 text-sm ${ratingFilter === null ? 'border-[#A98A55] bg-white text-[#756536]' : 'border-[#DED2C2]/50 bg-white text-[#6B6259]'}`}
           >
             Tất cả ({totalCount})
           </button>
@@ -431,7 +431,7 @@ export default function ProductReviewsSection({
               key={star}
               type="button"
               onClick={() => onFilterRatingChange(star)}
-              className={`border px-5 py-2 text-sm ${ratingFilter === star ? 'border-[#99854e] bg-white text-[#99854e]' : 'border-[#cfc4c5]/50 bg-white text-[#5f5e5e]'}`}
+              className={`border px-5 py-2 text-sm ${ratingFilter === star ? 'border-[#A98A55] bg-white text-[#756536]' : 'border-[#DED2C2]/50 bg-white text-[#6B6259]'}`}
             >
               {star} sao ({Number(ratingDistribution[star] || 0)})
             </button>
@@ -442,11 +442,11 @@ export default function ProductReviewsSection({
       {isLoading ? (
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="h-48 animate-pulse border border-[#cfc4c5]/20 bg-[#f1eceb]" />
+            <div key={index} className="h-48 animate-pulse border border-[#DED2C2]/20 bg-[#f1eceb]" />
           ))}
         </div>
       ) : reviews.length === 0 ? (
-        <div className="py-10 text-center italic text-[#5f5e5e]">Chưa có đánh giá nào cho bộ lọc này.</div>
+        <div className="py-10 text-center italic text-[#6B6259]">Chưa có đánh giá nào cho bộ lọc này.</div>
       ) : (
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {reviews.map((review) => (
@@ -469,18 +469,18 @@ export default function ProductReviewsSection({
             type="button"
             disabled={page <= 0 || isLoading}
             onClick={() => onPageChange(page - 1)}
-            className="border border-[#cfc4c5] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] disabled:opacity-40"
+            className="border border-[#DED2C2] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] disabled:opacity-40"
           >
             Trang trước
           </button>
-          <span className="text-sm text-[#5f5e5e]">
+          <span className="text-sm text-[#6B6259]">
             Trang {page + 1}/{totalPages} · {totalElements} đánh giá
           </span>
           <button
             type="button"
             disabled={page >= totalPages - 1 || isLoading}
             onClick={() => onPageChange(page + 1)}
-            className="border border-[#cfc4c5] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] disabled:opacity-40"
+            className="border border-[#DED2C2] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] disabled:opacity-40"
           >
             Trang sau
           </button>

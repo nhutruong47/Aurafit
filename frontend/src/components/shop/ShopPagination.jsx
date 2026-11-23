@@ -9,7 +9,7 @@ export default function ShopPagination({ currentPage, totalPages, onPageChange }
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="flex h-10 w-10 items-center justify-center border border-[#cfc4c5] bg-white disabled:cursor-not-allowed disabled:text-[#cfc4c5]"
+        className="flex h-10 w-10 items-center justify-center border border-[#DED2C2] bg-white disabled:cursor-not-allowed disabled:text-[#DED2C2]"
         aria-label="Trang trước"
       >
         <span className="material-symbols-outlined text-[18px]">west</span>
@@ -21,7 +21,7 @@ export default function ShopPagination({ currentPage, totalPages, onPageChange }
           className={`h-10 min-w-10 border px-3 text-sm font-semibold ${
             page === currentPage
               ? 'border-black bg-black text-white'
-              : 'border-[#cfc4c5] bg-white text-black hover:border-[#99854e]'
+              : 'border-[#DED2C2] bg-white text-black hover:border-[#A98A55]'
           }`}
         >
           {page}
@@ -30,7 +30,7 @@ export default function ShopPagination({ currentPage, totalPages, onPageChange }
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="flex h-10 w-10 items-center justify-center border border-[#cfc4c5] bg-white disabled:cursor-not-allowed disabled:text-[#cfc4c5]"
+        className="flex h-10 w-10 items-center justify-center border border-[#DED2C2] bg-white disabled:cursor-not-allowed disabled:text-[#DED2C2]"
         aria-label="Trang sau"
       >
         <span className="material-symbols-outlined text-[18px]">east</span>

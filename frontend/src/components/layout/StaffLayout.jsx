@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { clearCurrentUser } from '../../store/authSlice';
 import { useAppDispatch } from '../../store/hooks';
+import { performLogout } from '../../services/sessionService';
 import authNotify from '../../utils/authNotify';
 import ToastContainer from '../ui/ToastContainer';
 
@@ -18,11 +18,7 @@ export default function StaffLayout({ currentUser }) {
 
   const handleLogout = () => {
     authNotify.logoutSuccess(currentUser);
-    dispatch(clearCurrentUser());
-    localStorage.removeItem('aurafitCurrentUser');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    navigate('/account');
+    performLogout(dispatch).finally(() => navigate('/account'));
   };
 
   const navItems = [
@@ -41,9 +37,9 @@ export default function StaffLayout({ currentUser }) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f4f4f2] text-[#171717] font-sans">
+    <div className="flex h-screen overflow-hidden bg-[#F1EAE0] text-[#211E1B] font-sans">
       {/* Sidebar */}
-      <aside className="flex w-64 flex-col border-r border-[#d7d2c8] bg-[#111111] text-white">
+      <aside className="flex w-64 flex-col border-r border-[#DED2C2] bg-[#111111] text-white">
         <div className="flex h-16 items-center px-6 border-b border-white/10 bg-[#111111]">
           <span className="text-xl font-serif italic tracking-wider">AuraFit Staff</span>
         </div>
@@ -55,7 +51,7 @@ export default function StaffLayout({ currentUser }) {
               onClick={() => handleNavClick(item.id)}
               className={`flex w-full items-center gap-3 rounded-md px-4 py-3 text-sm font-medium transition-colors ${
                 currentTab === item.id
-                  ? 'bg-[#7f7041] text-white shadow-sm'
+                  ? 'bg-[#756536] text-white shadow-sm'
                   : 'text-white/68 hover:bg-white/10 hover:text-white'
               }`}
             >
@@ -98,13 +94,13 @@ export default function StaffLayout({ currentUser }) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-hidden flex flex-col bg-[#f4f4f2]">
-        <header className="flex h-16 shrink-0 items-center border-b border-[#d7d2c8] bg-[#fdfdfb] px-8">
-          <h1 className="font-serif text-2xl font-normal italic text-[#171717] capitalize">
+      <main className="flex-1 overflow-hidden flex flex-col bg-[#F1EAE0]">
+        <header className="flex h-16 shrink-0 items-center border-b border-[#DED2C2] bg-[#FFFCF7] px-8">
+          <h1 className="font-serif text-2xl font-normal italic text-[#211E1B] capitalize">
             {navItems.find(i => i.id === currentTab)?.label || 'Dashboard'}
           </h1>
         </header>
-        <div className="flex-1 overflow-auto p-8">
+        <div key={location.pathname + currentTab} className="page-enter flex-1 overflow-auto p-8">
           <Outlet context={{ currentTab }} />
         </div>
       </main>

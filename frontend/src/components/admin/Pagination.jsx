@@ -13,7 +13,7 @@ export default function Pagination({ page, totalPages, totalElements, onPageChan
   };
 
   return (
-    <div className="flex items-center justify-between border-t border-[#d7d2c8] pt-4 mt-4 text-sm text-[#111111]/70">
+    <div className="flex items-center justify-between border-t border-[#DED2C2] pt-4 mt-4 text-sm text-[#111111]/70">
       <div>
         Hiển thị trang <span className="font-semibold text-[#111111]">{page + 1}</span> / <span className="font-semibold text-[#111111]">{totalPages}</span> 
         (Tổng: {totalElements})
@@ -22,7 +22,7 @@ export default function Pagination({ page, totalPages, totalElements, onPageChan
         <button
           onClick={handlePrev}
           disabled={isFirst}
-          className={`flex h-8 w-8 items-center justify-center rounded border border-[#d7d2c8] transition ${
+          className={`flex h-8 w-8 items-center justify-center rounded border border-[#DED2C2] transition ${
             isFirst ? 'opacity-50 cursor-not-allowed bg-transparent' : 'hover:bg-[#111111] hover:text-white bg-white text-[#111111]'
           }`}
         >
@@ -31,7 +31,7 @@ export default function Pagination({ page, totalPages, totalElements, onPageChan
         <button
           onClick={handleNext}
           disabled={isLast}
-          className={`flex h-8 w-8 items-center justify-center rounded border border-[#d7d2c8] transition ${
+          className={`flex h-8 w-8 items-center justify-center rounded border border-[#DED2C2] transition ${
             isLast ? 'opacity-50 cursor-not-allowed bg-transparent' : 'hover:bg-[#111111] hover:text-white bg-white text-[#111111]'
           }`}
         >

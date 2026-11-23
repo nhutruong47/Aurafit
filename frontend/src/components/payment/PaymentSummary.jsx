@@ -2,8 +2,8 @@ import { formatCurrency } from '../../utils/formatCurrency';
 
 function SummaryRow({ label, value, accent = false }) {
   return (
-    <div className={`flex justify-between ${accent ? 'font-medium text-[#99854e]' : ''}`}>
-      <span className="text-[#5f5e5e]">{label}</span>
+    <div className={`flex justify-between ${accent ? 'font-medium text-[#756536]' : ''}`}>
+      <span className="text-[#6B6259]">{label}</span>
       <span>{value}</span>
     </div>
   );
@@ -35,15 +35,15 @@ export default function PaymentSummary({
   return (
     <>
       <aside className="lg:w-96">
-        <div className="sticky top-32 border border-[#cfc4c5] bg-white p-8">
-          <h3 className="mb-8 border-b border-[#cfc4c5] pb-4 font-serif text-3xl font-normal">
+        <div className="sticky top-32 border border-[#DED2C2] bg-white p-8">
+          <h3 className="mb-8 border-b border-[#DED2C2] pb-4 font-serif text-3xl font-normal">
             Tóm tắt đơn thuê
           </h3>
 
           {/* Items list */}
           <div className="mb-8 space-y-6">
             {isLoading ? (
-              <p className="text-sm text-[#5f5e5e]">Đang tải thông tin đơn hàng...</p>
+              <p className="text-sm text-[#6B6259]">Đang tải thông tin đơn hàng...</p>
             ) : items.length > 0 ? (
               items.map((item) => (
                 <div key={item.cartId || item.id || item.name} className="flex gap-4">
@@ -55,7 +55,7 @@ export default function PaymentSummary({
                       <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.15em]">
                         {item.name}
                       </p>
-                      <p className="text-xs uppercase tracking-tight text-[#999999]">
+                      <p className="text-xs uppercase tracking-tight text-[#6B6259]">
                         {item.meta || 'Sản phẩm thuê'}
                       </p>
                     </div>
@@ -64,11 +64,11 @@ export default function PaymentSummary({
                 </div>
               ))
             ) : (
-              <p className="text-sm text-[#5f5e5e]">Chưa có sản phẩm nào.</p>
+              <p className="text-sm text-[#6B6259]">Chưa có sản phẩm nào.</p>
             )}
           </div>
 
-          <hr className="mb-8 border-[#cfc4c5]" />
+          <hr className="mb-8 border-[#DED2C2]" />
 
           {/* Pricing breakdown */}
           <div className="space-y-4 text-sm">
@@ -86,7 +86,7 @@ export default function PaymentSummary({
               value={formatCurrency(summary?.refundableDeposit || 0)}
               accent
             />
-            <div className="flex justify-between border-t border-[#cfc4c5] pt-4 text-lg">
+            <div className="flex justify-between border-t border-[#DED2C2] pt-4 text-lg">
               <span className="self-center text-[12px] font-semibold uppercase tracking-[0.15em]">
                 Tổng thanh toán
               </span>
@@ -103,7 +103,7 @@ export default function PaymentSummary({
 
           {/* QR section - shown when paymentInit is available */}
           {paymentInit && !isPaid && (
-            <div className="mt-6 border border-[#99854e]/30 bg-[#f8f4e8] p-4">
+            <div className="mt-6 border border-[#A98A55]/30 bg-[#f8f4e8] p-4">
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#725f2f]">
                 Mã thanh toán
               </p>
@@ -111,10 +111,10 @@ export default function PaymentSummary({
                 <img
                   src={paymentInit.qrImageUrl}
                   alt="Mã VietQR thanh toán"
-                  className="mx-auto mb-4 h-52 w-52 rounded-lg border border-[#cfc4c5] bg-white object-contain p-2"
+                  className="mx-auto mb-4 h-52 w-52 rounded-lg border border-[#DED2C2] bg-white object-contain p-2"
                  loading="lazy" decoding="async" />
               ) : (
-                <div className="mx-auto mb-4 flex h-52 w-52 items-center justify-center rounded-lg border border-[#cfc4c5] bg-white">
+                <div className="mx-auto mb-4 flex h-52 w-52 items-center justify-center rounded-lg border border-[#DED2C2] bg-white">
                   <span className="material-symbols-outlined text-6xl text-[#ccc]">qr_code</span>
                 </div>
               )}
@@ -125,10 +125,10 @@ export default function PaymentSummary({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#725f2f]">Số tiền:</span>
-                  <span className="font-semibold text-[#99854e]">{formatCurrency(paymentInit.amount || 0)}</span>
+                  <span className="font-semibold text-[#756536]">{formatCurrency(paymentInit.amount || 0)}</span>
                 </div>
               </div>
-              <p className="mt-3 text-xs leading-relaxed text-[#5f5e5e]">
+              <p className="mt-3 text-xs leading-relaxed text-[#6B6259]">
                 Sau khi chuyển khoản thành công, hệ thống sẽ đối soát tự động và cập nhật trạng thái đơn hàng trong 10 giây.
               </p>
               {/* DEV: Test webhook button - only visible on localhost */}
@@ -136,7 +136,7 @@ export default function PaymentSummary({
                 <button
                   onClick={onTestWebhook}
                   disabled={isTestingWebhook}
-                  className="mt-4 w-full border-2 border-dashed border-[#99854e] bg-[#fdfbf5] py-3 text-[11px] font-bold uppercase tracking-[0.15em] text-[#99854e] transition hover:border-[#725f2f] hover:bg-[#f5f0e0] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 w-full border-2 border-dashed border-[#A98A55] bg-[#fdfbf5] py-3 text-[11px] font-bold uppercase tracking-[0.15em] text-[#756536] transition hover:border-[#725f2f] hover:bg-[#f5f0e0] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isTestingWebhook ? 'Đang xử lý...' : '🧪 Test Thanh Toán (Dev Only)'}
                 </button>
@@ -151,7 +151,7 @@ export default function PaymentSummary({
                 check_circle
               </span>
               <p className="mt-2 text-sm font-semibold text-[#2e7d32]">Thanh toán thành công!</p>
-              <p className="mt-1 text-xs text-[#5f5e5e]">Cảm ơn bạn đã sử dụng dịch vụ AuraFit.</p>
+              <p className="mt-1 text-xs text-[#6B6259]">Cảm ơn bạn đã sử dụng dịch vụ AuraFit.</p>
             </div>
           )}
 
@@ -160,7 +160,7 @@ export default function PaymentSummary({
             <button
               onClick={onCompletePayment}
               disabled={isSubmitting || isLoading}
-              className="mt-8 w-full bg-black py-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
+              className="mt-8 w-full bg-black py-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536] disabled:cursor-not-allowed disabled:bg-[#777777]"
             >
               {isSubmitting
                 ? 'Đang tạo mã thanh toán...'
@@ -179,14 +179,14 @@ export default function PaymentSummary({
             </button>
           )}
 
-          <p className="mt-6 text-center text-[10px] font-semibold uppercase leading-relaxed tracking-[0.12em] text-[#999999]">
+          <p className="mt-6 text-center text-[10px] font-semibold uppercase leading-relaxed tracking-[0.12em] text-[#6B6259]">
             Tạo QR không đồng nghĩa đơn đã thanh toán. Trạng thái đơn sẽ được cập nhật tự động sau khi đối soát giao dịch.
           </p>
         </div>
       </aside>
 
       {/* Trust row */}
-      <div className="mt-12 flex w-full flex-col items-center justify-center gap-4 border-t border-[#cfc4c5] py-10 opacity-60 md:flex-row md:gap-12">
+      <div className="mt-12 flex w-full flex-col items-center justify-center gap-4 border-t border-[#DED2C2] py-10 opacity-60 md:flex-row md:gap-12">
         <TrustItem icon="verified" label="Thanh toán mã hóa" />
         <TrustItem icon="local_shipping" label="Hỗ trợ giao nhận" />
         <TrustItem icon="history" label="Trải nghiệm bền vững" />

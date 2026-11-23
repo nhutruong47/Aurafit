@@ -170,8 +170,8 @@ export default function CatalogPage({ onNavigate }) {
 
         <div className="mx-auto w-full min-w-0 max-w-[1440px] xl:mx-0" data-event-page-content="catalog">
           <header className="mb-10 space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#9a7745]">Bộ sưu tập</p>
-            <h1 className="font-serif text-3xl font-normal italic text-[#2f251f] sm:text-4xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">Bộ sưu tập</p>
+            <h1 className="font-serif text-3xl font-normal italic text-[#2B2521] sm:text-4xl">
               Bộ sưu tập trang phục
             </h1>
             <p className="max-w-2xl pt-2 text-base leading-7 text-[#6f6259]">
@@ -223,9 +223,10 @@ export default function CatalogPage({ onNavigate }) {
                 </p>
               )}
 
+              <h2 className="sr-only">Danh sách trang phục</h2>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {displayedCostumes.map((costume) => (
-                  <CatalogProductCard key={costume.id} costume={costume} onNavigate={onNavigate} />
+                {displayedCostumes.map((costume, index) => (
+                  <CatalogProductCard key={costume.id} costume={costume} index={index} onNavigate={onNavigate} />
                 ))}
               </div>
 

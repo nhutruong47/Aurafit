@@ -159,9 +159,9 @@ function SingleImageUploadField({
   return (
     <div className="space-y-3">
       <div>
-        <p className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">{label}</p>
+        <p className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">{label}</p>
         {helperText && (
-          <p className="mb-2 text-xs leading-5 text-[#777777]">{helperText}</p>
+          <p className="mb-2 text-xs leading-5 text-[#6B6259]">{helperText}</p>
         )}
         <input
           type="file"
@@ -173,9 +173,9 @@ function SingleImageUploadField({
       </div>
 
       {selectedFile && (
-        <div className="flex items-center gap-3 border border-[#ebe7df] bg-[#fafaf8] p-3 text-xs text-[#5f5e5e]">
+        <div className="flex items-center gap-3 border border-[#E8DDCE] bg-[#FAF5ED] p-3 text-xs text-[#6B6259]">
           {showPreview && previewUrl && (
-            <img src={previewUrl} alt="Xem trước" className="h-12 w-12 object-cover rounded-sm border border-[#d7d2c8] shrink-0"  loading="lazy" decoding="async" />
+            <img src={previewUrl} alt="Xem trước" className="h-12 w-12 object-cover rounded-sm border border-[#DED2C2] shrink-0"  loading="lazy" decoding="async" />
           )}
           <div className="min-w-0 flex-1">
             <p className="font-medium text-black truncate">{selectedFile.name}</p>
@@ -185,7 +185,7 @@ function SingleImageUploadField({
       )}
 
       {showPreview && previewUrl && (
-        <div className="overflow-hidden border border-[#ebe7df] bg-[#fafaf8]">
+        <div className="overflow-hidden border border-[#E8DDCE] bg-[#FAF5ED]">
           <img
             src={previewUrl}
             alt="Xem trước ảnh tải lên"
@@ -199,7 +199,7 @@ function SingleImageUploadField({
           type="button"
           onClick={handleUpload}
           disabled={disabled || isUploading || !selectedFile}
-          className="bg-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777]"
+          className="bg-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#756536] disabled:cursor-not-allowed disabled:bg-[#777777]"
         >
           {isUploading ? 'Đang tải ảnh...' : 'Tải ảnh lên'}
         </button>
@@ -216,14 +216,14 @@ function SingleImageUploadField({
           type="button"
           onClick={handleUpload}
           disabled={disabled}
-          className="bg-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777]"
+          className="bg-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#756536] disabled:cursor-not-allowed disabled:bg-[#777777]"
         >
           Tải ảnh lên lại
         </button>
       )}
 
       {(getUploadAssetUrl(uploadedAsset) || value) && (
-        <div className="border border-[#ebe7df] bg-[#fafaf8] p-3 text-xs text-[#5f5e5e]">
+        <div className="border border-[#E8DDCE] bg-[#FAF5ED] p-3 text-xs text-[#6B6259]">
           <p className="font-medium text-black">{readyLabel}</p>
           <p className="mt-1 break-all">{getUploadAssetUrl(uploadedAsset) || value}</p>
         </div>
@@ -361,7 +361,7 @@ function MultipleImageUploadField({
   return (
     <div className="space-y-3">
       <div>
-        <p className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+        <p className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
           {label}
         </p>
         <input
@@ -372,7 +372,7 @@ function MultipleImageUploadField({
           onChange={handleFilesChange}
           className="block w-full text-sm file:mr-3 file:border-0 file:bg-black file:px-4 file:py-3 file:text-[10px] file:font-semibold file:uppercase file:tracking-[0.14em] file:text-white disabled:opacity-60"
         />
-        <p className="mt-1 text-xs text-[#777777]">
+        <p className="mt-1 text-xs text-[#6B6259]">
           Tối đa {resolvedMaxFiles} ảnh, mỗi ảnh không quá 5 MB. Hỗ trợ JPG, PNG và WEBP.
         </p>
       </div>
@@ -382,7 +382,7 @@ function MultipleImageUploadField({
           {items.map((item) => {
             const previewUrl = getUploadAssetUrl(item.asset) || item.previewUrl;
             return (
-              <div key={item.id} className="relative overflow-hidden border border-[#d7d2c8] bg-white p-1.5">
+              <div key={item.id} className="relative overflow-hidden border border-[#DED2C2] bg-white p-1.5">
                 <img
                   src={previewUrl}
                   alt={`Ảnh đánh giá ${item.file.name}`}
@@ -397,7 +397,7 @@ function MultipleImageUploadField({
                 >
                   <span className="material-symbols-outlined text-[16px]">close</span>
                 </button>
-                <div className="px-1 pb-1 pt-2 text-[10px] text-[#5f5e5e]">
+                <div className="px-1 pb-1 pt-2 text-[10px] text-[#6B6259]">
                   <p className="truncate" title={item.file.name}>{item.file.name}</p>
                   {item.status === 'uploading' && <p className="mt-1 text-blue-700">Đang tải lên...</p>}
                   {item.status === 'uploaded' && <p className="mt-1 text-green-700">Đã tải lên</p>}

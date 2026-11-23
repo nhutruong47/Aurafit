@@ -249,7 +249,7 @@ export default function CosplayPage({ onNavigate }) {
 
           <div className="md:col-span-9">
             <div className="mb-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#756536]">
                 Gợi ý cho buổi hóa thân
               </p>
               <h2 className="mt-3 font-serif text-3xl italic leading-tight text-black md:text-4xl">
@@ -257,12 +257,12 @@ export default function CosplayPage({ onNavigate }) {
                   ? selectedBrowseCategories.map((category) => category.name).join(' + ')
                   : 'Chọn set phù hợp với nhân vật bạn muốn thể hiện'}
               </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#5f5e5e]">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#6B6259]">
                 {selectedBrowseCategories.length
                   ? `Bạn đang xem các mẫu thuộc ${selectedBrowseCategories.length} nhóm đã chọn để so sánh dễ hơn.`
                   : 'Từ trang phục chính đến phụ kiện đi kèm, bạn có thể lọc theo từng nhóm để tìm ra set hợp ý nhất cho buổi chụp ảnh hay sự kiện.'}
               </p>
-              <p className="mt-4 text-sm text-[#5f5e5e]">
+              <p className="mt-4 text-sm text-[#6B6259]">
                 {isLoading ? (
                   'Đang chuẩn bị danh sách cho bạn...'
                 ) : (

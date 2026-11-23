@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { generateTryOn } from '../../services/tryOnService';
 
-const ACCENT = '#99854e';
+const ACCENT = '#A98A55';
 
 const TIPS = [
   'Dùng ảnh toàn thân hoặc nửa thân rõ mặt',
@@ -214,7 +214,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
             >
               1
             </span>
-            <p className="text-sm font-bold text-[#1A1A1A]">Tải ảnh của bạn</p>
+            <p className="text-sm font-bold text-[#211E1B]">Tải ảnh của bạn</p>
           </div>
 
           <div
@@ -236,7 +236,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
                   src={personPreview}
                   alt="Ảnh của bạn"
                   className="w-full object-contain"
-                  style={{ maxHeight: 480, background: '#f9f9f9' }}
+                  style={{ maxHeight: 480, background: '#F6F1E8' }}
                  loading="lazy" decoding="async" />
                 <button
                   type="button"
@@ -260,7 +260,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
                 <span className="material-symbols-outlined text-[40px] opacity-60" style={{ color: ACCENT }}>
                   cloud_upload
                 </span>
-                <p className="text-center text-sm font-bold text-[#1A1A1A]">Tải ảnh lên</p>
+                <p className="text-center text-sm font-bold text-[#211E1B]">Tải ảnh lên</p>
                 <p className="text-xs text-gray-400">JPG, PNG hoặc WEBP · tối đa 10MB</p>
               </div>
             )}
@@ -311,7 +311,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
             >
               2
             </span>
-            <p className={`text-sm font-bold ${isProcessing ? 'text-[#1A1A1A]' : 'text-gray-400'}`}>
+            <p className={`text-sm font-bold ${isProcessing ? 'text-[#211E1B]' : 'text-gray-400'}`}>
               AI đang xử lý
             </p>
           </div>
@@ -351,7 +351,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
                     check
                   </span>
                 </div>
-                <p className="text-sm font-bold text-[#1A1A1A]">Hoàn tất!</p>
+                <p className="text-sm font-bold text-[#211E1B]">Hoàn tất!</p>
                 <p className="text-center text-xs text-gray-400">Kết quả đã sẵn sàng</p>
               </div>
             ) : (
@@ -395,7 +395,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
             >
               3
             </span>
-            <p className={`text-sm font-bold ${isDone ? 'text-[#1A1A1A]' : 'text-gray-400'}`}>
+            <p className={`text-sm font-bold ${isDone ? 'text-[#211E1B]' : 'text-gray-400'}`}>
               Kết quả thử đồ
             </p>
           </div>
@@ -407,7 +407,7 @@ export default function TryOnPanel({ productId, productName, productImageUrl }) 
                   src={resultUrl}
                   alt="Kết quả thử đồ"
                   className="w-full object-contain"
-                  style={{ background: '#f9f9f9' }}
+                  style={{ background: '#F6F1E8' }}
                  loading="lazy" decoding="async" />
               </div>
               <div className="flex gap-2">

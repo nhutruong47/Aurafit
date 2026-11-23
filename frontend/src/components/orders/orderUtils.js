@@ -5,13 +5,13 @@ export const mapOrderStatus = (status, order = null) => {
     case 'PENDING':
       return { text: 'Chờ thanh toán', color: 'text-[#a15c00]' };
     case 'CONFIRMED':
-      return { text: 'Đã xác nhận', color: 'text-[#99854e]' };
+      return { text: 'Đã xác nhận', color: 'text-[#756536]' };
     case 'SHIPPING':
       return { text: 'Đang giao hàng', color: 'text-[#1c6b9a]' };
     case 'PICKED_UP':
       return { text: 'Đã bàn giao', color: 'text-[#1c6b9a]' };
     case 'RENTED':
-      return { text: 'Đang thuê', color: 'text-[#7f7041]' };
+      return { text: 'Đang thuê', color: 'text-[#756536]' };
     case 'RETURNING':
       return { text: 'Đang thu hồi', color: 'text-[#1c6b9a]' };
     case 'RETURNED':

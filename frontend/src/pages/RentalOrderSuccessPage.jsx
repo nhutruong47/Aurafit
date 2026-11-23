@@ -25,9 +25,14 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [contextOrderId, setContextOrderId] = useState(null);
+  const [isContextReady, setIsContextReady] = useState(false);
 
   useEffect(() => {
-    hydratePendingOrderId();
+    // Capture the order that opened this page. Clearing it when the customer
+    // continues shopping must not turn the current page into an error state.
+    setContextOrderId(hydratePendingOrderId() || null);
+    setIsContextReady(true);
   }, [hydratePendingOrderId]);
 
   useEffect(() => {
@@ -91,11 +96,40 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
     onNavigate?.('home');
   };
 
+  if (isContextReady && !contextOrderId) {
+    return (
+      <div className="min-h-screen bg-[#F6F1E8] text-[#211E1B]">
+        <div className="mx-auto flex max-w-2xl flex-col items-center px-5 py-24 text-center">
+          <span className="material-symbols-outlined text-[48px] text-[#756536]">receipt_long</span>
+          <h1 className="mt-6 font-serif text-3xl text-[#211E1B]">Không tìm thấy đơn hàng</h1>
+          <p className="mt-3 max-w-md text-sm leading-6 text-[#6B6259]">
+            Trang xác nhận này chỉ hiển thị sau khi bạn hoàn tất đặt thuê. Vui lòng kiểm tra
+            lịch sử đơn hàng hoặc quay về trang chủ.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => onNavigate?.('orders')}
+              className="border border-[#3A302A] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3A302A] transition hover:bg-[#3A302A] hover:text-white"
+            >
+              Xem đơn hàng
+            </button>
+            <button
+              onClick={() => onNavigate?.('home')}
+              className="px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B6259] transition hover:text-[#211E1B]"
+            >
+              Về trang chủ
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
-      <main className="pt-10">
+    <div className="min-h-screen bg-[#F6F1E8] text-[#211E1B]">
+      <div className="pt-10">
         <OrderSuccessHero
-          orderId={order?.id || pendingOrderId}
+          orderId={order?.id || contextOrderId}
           status={order?.status}
           totalLabel={totalLabel}
           onContinue={handleContinueShopping}
@@ -109,7 +143,7 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
         )}
 
         {isLoading ? (
-          <div className="mx-5 py-20 text-center text-sm text-[#5f5e5e] md:mx-20">Đang tải chi tiết đơn hàng...</div>
+          <div className="mx-5 py-20 text-center text-sm text-[#6B6259] md:mx-20">Đang tải chi tiết đơn hàng...</div>
         ) : (
           <section className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-5 py-20 md:grid-cols-12 md:px-20">
             <OrderSelectionSection items={items} />
@@ -118,7 +152,7 @@ export default function RentalOrderSuccessPage({ cartItems = [], onNavigate }) {
         )}
 
         <OrderSuccessStorySection links={storyLinks} />
-      </main>
+      </div>
     </div>
   );
 }

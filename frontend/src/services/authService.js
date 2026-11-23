@@ -52,3 +52,32 @@ export const refreshAccessToken = async () =>
     },
     'Không thể làm mới phiên đăng nhập.'
   );
+
+export const logoutUser = async () =>
+  requestAuthApi(
+    {
+      url: '/auth/logout',
+      method: 'POST',
+    },
+    'Không thể đăng xuất.'
+  );
+
+export const requestPasswordResetOtp = async ({ email }) =>
+  requestAuthApi(
+    {
+      url: '/auth/password/request-otp',
+      method: 'POST',
+      data: { email },
+    },
+    'Không thể gửi mã đặt lại mật khẩu.'
+  );
+
+export const resetPassword = async ({ email, otpCode, newPassword }) =>
+  requestAuthApi(
+    {
+      url: '/auth/password/reset',
+      method: 'POST',
+      data: { email, otpCode, newPassword },
+    },
+    'Không thể đặt lại mật khẩu.'
+  );

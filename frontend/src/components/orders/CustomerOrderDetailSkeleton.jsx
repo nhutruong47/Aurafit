@@ -19,11 +19,11 @@ export default function CustomerOrderDetailSkeleton() {
         </div>
       </div>
 
-      <div className="border-t border-[#cfc4c5] pt-8">
+      <div className="border-t border-[#DED2C2] pt-8">
         <div className="mb-6 h-4 w-40 bg-gray-200"></div>
         <div className="space-y-6">
           {[1, 2].map((i) => (
-            <div key={i} className="flex items-center justify-between border-b border-[#cfc4c5]/20 pb-4">
+            <div key={i} className="flex items-center justify-between border-b border-[#DED2C2]/20 pb-4">
               <div className="flex items-center gap-4">
                 <div className="h-16 w-12 bg-gray-200"></div>
                 <div className="space-y-2">

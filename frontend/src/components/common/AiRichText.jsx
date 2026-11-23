@@ -6,7 +6,7 @@ const renderInlineText = (text) => String(text || '')
   .map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
-        <strong key={`${part}-${index}`} className="font-semibold text-[#171717]">
+        <strong key={`${part}-${index}`} className="font-semibold text-[#211E1B]">
           {part.slice(2, -2)}
         </strong>
       );

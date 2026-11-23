@@ -41,20 +41,20 @@ function TrackingCodeLink({ label, code }) {
 
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-[#5f5e5e]">{label}</span>
+      <span className="text-sm text-[#6B6259]">{label}</span>
       <div className="flex items-center gap-2">
         <a
           href={`${GHN_TRACKING_BASE}${code}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-mono text-sm font-bold text-[#1c6b9a] underline underline-offset-2 transition hover:text-[#7f7041]"
+          className="font-mono text-sm font-bold text-[#1c6b9a] underline underline-offset-2 transition hover:text-[#756536]"
         >
           {code}
         </a>
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center justify-center rounded-sm border border-[#d7d2c8] p-1 text-[#5f5e5e] transition hover:bg-[#f4f4f2] hover:text-[#111111]"
+          className="flex items-center justify-center rounded-sm border border-[#DED2C2] p-1 text-[#6B6259] transition hover:bg-[#F1EAE0] hover:text-[#111111]"
           title="Sao chép mã vận đơn"
         >
           <span className="material-symbols-outlined text-[14px]">content_copy</span>
@@ -63,7 +63,7 @@ function TrackingCodeLink({ label, code }) {
           href={`${GHN_TRACKING_BASE}${code}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center rounded-sm border border-[#d7d2c8] p-1 text-[#5f5e5e] transition hover:bg-[#f4f4f2] hover:text-[#111111]"
+          className="flex items-center justify-center rounded-sm border border-[#DED2C2] p-1 text-[#6B6259] transition hover:bg-[#F1EAE0] hover:text-[#111111]"
           title="Tra cứu trên GHN"
         >
           <span className="material-symbols-outlined text-[14px]">open_in_new</span>
@@ -101,14 +101,14 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
 
   return (
     <>
-      <div className="sticky top-28 border border-[#cfc4c5] bg-white p-8 md:p-10">
-        <div className="mb-8 flex items-baseline justify-between border-b border-[#cfc4c5] pb-6">
+      <div className="sticky top-28 border border-[#DED2C2] bg-white p-8 md:p-10">
+        <div className="mb-8 flex items-baseline justify-between border-b border-[#DED2C2] pb-6">
           <h2 className="font-serif text-3xl font-normal">Chi tiết: {getOrderCode(order.id)}</h2>
           <div className="flex items-center gap-4">
             {(order.status === 'RENTED' || order.status === 'CONFIRMED') && (
               <button 
                 onClick={() => setIsExtensionModalOpen(true)} 
-                className="text-[10px] font-bold uppercase tracking-wider text-black border-b border-black hover:text-[#99854e] hover:border-[#99854e] transition"
+                className="text-[10px] font-bold uppercase tracking-wider text-black border-b border-black hover:text-[#756536] hover:border-[#A98A55] transition"
               >
                 Gia hạn thuê
               </button>
@@ -121,7 +121,7 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
             {order.status === 'PENDING' && (
               <button 
                 onClick={handlePayNow}
-                className="bg-black px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#99854e]"
+                className="bg-black px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#756536]"
               >
                 Thanh toán ngay
               </button>
@@ -156,7 +156,7 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
           <>
             {/* Timeline */}
             <div className="mb-12">
-              <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+              <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
                 Tiến trình đơn hàng
               </h3>
               <OrderTimeline timeline={timeline} />
@@ -164,12 +164,12 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
 
             {/* GHN Tracking Block */}
             {showTrackingBlock && (
-              <div className="mb-12 border border-[#d7d2c8] bg-[#fafaf8] p-6">
-                <h3 className="mb-4 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
-                  <span className="material-symbols-outlined text-[16px] text-[#7f7041]">local_shipping</span>
+              <div className="mb-12 border border-[#DED2C2] bg-[#FAF5ED] p-6">
+                <h3 className="mb-4 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
+                  <span className="material-symbols-outlined text-[16px] text-[#756536]">local_shipping</span>
                   Thông tin Vận chuyển
                 </h3>
-                <div className="divide-y divide-[#ebe7df]">
+                <div className="divide-y divide-[#E8DDCE]">
                   {showOutboundTracking && (
                     <TrackingCodeLink label="Mã vận đơn giao hàng" code={order.ghnOrderCode} />
                   )}
@@ -183,7 +183,7 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
             {/* Receiver Info + Payment */}
             <div className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+                <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
                   Thông tin nhận hàng
                 </h3>
                 <div className="space-y-2 text-sm">
@@ -198,20 +198,20 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
                 </div>
               </div>
               <div>
-                <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+                <h3 className="mb-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
                   Thanh toán
                 </h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-[#5f5e5e]">Tiền thuê:</span>
+                    <span className="font-medium text-[#6B6259]">Tiền thuê:</span>
                     <span className="font-semibold text-black">{formatCurrency(order.totalRentalPrice)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-[#5f5e5e]">Tiền cọc:</span>
+                    <span className="font-medium text-[#6B6259]">Tiền cọc:</span>
                     <span className="font-semibold text-black">{formatCurrency(order.totalDeposit)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-[#5f5e5e]">Phí giao hàng:</span>
+                    <span className="font-medium text-[#6B6259]">Phí giao hàng:</span>
                     <span className="font-semibold text-black">{formatCurrency(order.shippingFee)}</span>
                   </div>
                   {order.discountAmount > 0 && (
@@ -220,7 +220,7 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
                       <span className="font-semibold">-{formatCurrency(order.discountAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-center font-bold border-t border-[#cfc4c5] pt-4 mt-2">
+                  <div className="flex justify-between items-center font-bold border-t border-[#DED2C2] pt-4 mt-2">
                     <span className="text-[11px] uppercase tracking-wider text-black">Tổng cộng:</span>
                     <span className="text-base text-black">{formatCurrency(order.finalAmount)}</span>
                   </div>
@@ -228,9 +228,9 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
 
                 {/* Refund Breakdown for COMPLETED / PENDING_REFUND */}
                 {showRefundBlock && (
-                  <div className="mt-6 border-t border-[#d7d2c8] pt-4">
-                    <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#5f5e5e]">
-                      <span className="material-symbols-outlined text-[14px] text-[#7f7041]">account_balance</span>
+                  <div className="mt-6 border-t border-[#DED2C2] pt-4">
+                    <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6B6259]">
+                      <span className="material-symbols-outlined text-[14px] text-[#756536]">account_balance</span>
                       Nghiệm thu & Hoàn cọc
                     </h4>
                     <div className="space-y-2 text-sm">
@@ -252,7 +252,7 @@ export default function OrderDetailsPanel({ order, isDetailLoading, onCancel, cu
                           <span>0 đ</span>
                         </div>
                       )}
-                      <div className="flex justify-between font-bold border-t border-[#d7d2c8] pt-2 mt-2 text-[#087b3f]">
+                      <div className="flex justify-between font-bold border-t border-[#DED2C2] pt-2 mt-2 text-[#087b3f]">
                         <span>Hoàn cọc cho khách:</span>
                         <span>{formatCurrency(refundedAmount)}</span>
                       </div>

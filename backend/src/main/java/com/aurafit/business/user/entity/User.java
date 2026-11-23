@@ -59,7 +59,14 @@ public class User extends BaseEntity {
     @Column(name = "consecutive_cancel_count")
     private Integer consecutiveCancelCount = 0;
 
+    @Column(name = "token_version", nullable = false)
+    private Integer tokenVersion = 0;
+
     public Integer getConsecutiveCancelCount() {
         return consecutiveCancelCount != null ? consecutiveCancelCount : 0;
+    }
+
+    public Integer getTokenVersion() {
+        return tokenVersion != null ? tokenVersion : 0;
     }
 }

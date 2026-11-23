@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AdBanners from '../components/ui/AdBanners';
+import Reveal from '../components/common/Reveal';
 import HomeCategoryMosaic from '../components/home/HomeCategoryMosaic';
 import HomeActiveEventsSection from '../components/home/HomeActiveEventsSection';
 import HomeFeaturedSection from '../components/home/HomeFeaturedSection';
@@ -151,50 +152,68 @@ export default function HomePage({ onNavigate, onAddToCart }) {
   };
 
   return (
-    <div className="bg-[#f9f9f9] text-[#1a1c1c]">
+    <div className="bg-[#F6F1E8] text-[#211E1B]">
       <HomeHero onNavigate={onNavigate} />
-      <HomeServicesSection />
-      <HomeActiveEventsSection
-        events={activeEvents}
-        isLoading={isActiveEventsLoading}
-        error={activeEventsError}
-      />
+      <Reveal>
+        <HomeServicesSection />
+      </Reveal>
+      <Reveal delay={60}>
+        <HomeActiveEventsSection
+          events={activeEvents}
+          isLoading={isActiveEventsLoading}
+          error={activeEventsError}
+        />
+      </Reveal>
       <div className="relative">
         <AdBanners />
-        <HomeFeaturedSection
-          activeTab={activeTab}
-          isLoading={isLoading}
-          products={products}
-          onSetActiveTab={setActiveTab}
-          onAddToCart={onAddToCart}
-          onNavigate={onNavigate}
-        />
-        <HomeTrendingSection
-          title="Gợi ý dành cho bạn"
-          emptyMessage="Chưa có sản phẩm gợi ý phù hợp lúc này."
-          trending={recommendedProducts}
-          isLoading={isRecommendedLoading}
-          error={recommendedError}
-          onNavigate={onNavigate}
-        />
-        <HomeTrendingSection
-          trending={trendingProducts}
-          isLoading={isTrendingLoading}
-          error={trendingError}
-          onNavigate={onNavigate}
-        />
+        <Reveal>
+          <HomeFeaturedSection
+            activeTab={activeTab}
+            isLoading={isLoading}
+            products={products}
+            onSetActiveTab={setActiveTab}
+            onAddToCart={onAddToCart}
+            onNavigate={onNavigate}
+          />
+        </Reveal>
+        <Reveal delay={60}>
+          <HomeTrendingSection
+            title="Gợi ý dành cho bạn"
+            emptyMessage="Chưa có sản phẩm gợi ý phù hợp lúc này."
+            trending={recommendedProducts}
+            isLoading={isRecommendedLoading}
+            error={recommendedError}
+            onNavigate={onNavigate}
+          />
+        </Reveal>
+        <Reveal delay={120}>
+          <HomeTrendingSection
+            trending={trendingProducts}
+            isLoading={isTrendingLoading}
+            error={trendingError}
+            onNavigate={onNavigate}
+          />
+        </Reveal>
       </div>
-      <HomeCategoryMosaic onNavigate={onNavigate} />
-      <HomeStyleSlider sliderRef={sliderRef} onNavigate={onNavigate} onScroll={scrollSlider} />
-      <HomeTrustSection />
-      <HomeInsiderSection
-        email={email}
-        isSubscribed={isSubscribed}
-        onEmailChange={setEmail}
-        onSubscribe={handleSubscribe}
-        onCopyVoucher={handleCopyVoucher}
-        onScrollTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      />
+      <Reveal>
+        <HomeCategoryMosaic onNavigate={onNavigate} />
+      </Reveal>
+      <Reveal>
+        <HomeStyleSlider sliderRef={sliderRef} onNavigate={onNavigate} onScroll={scrollSlider} />
+      </Reveal>
+      <Reveal>
+        <HomeTrustSection />
+      </Reveal>
+      <Reveal>
+        <HomeInsiderSection
+          email={email}
+          isSubscribed={isSubscribed}
+          onEmailChange={setEmail}
+          onSubscribe={handleSubscribe}
+          onCopyVoucher={handleCopyVoucher}
+          onScrollTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        />
+      </Reveal>
     </div>
   );
 }

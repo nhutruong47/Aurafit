@@ -1,8 +1,7 @@
 import { categoryLabels, resolveRootCategory } from './catalogCategory';
 import { formatCurrency } from './formatCurrency';
 
-export const fallbackCostumeImage =
-  'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=900&q=85';
+export const fallbackCostumeImage = '/placeholder-costume.svg';
 
 export const extractCategoryName = (value) => {
   if (!value) return '';

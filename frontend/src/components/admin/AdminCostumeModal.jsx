@@ -142,15 +142,15 @@ export default function AdminCostumeModal({
     >
       <div
         ref={contentRef}
-        className="relative flex h-[95vh] w-[95vw] max-w-none flex-col overflow-hidden bg-[#fdfdfb] shadow-2xl rounded-lg"
+        className="relative flex h-[95vh] w-[95vw] max-w-none flex-col overflow-hidden bg-[#FFFCF7] shadow-2xl rounded-lg"
         style={{ animation: 'scaleIn 0.25s cubic-bezier(0.22, 1, 0.36, 1)' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#d7d2c8] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[#DED2C2] px-6 py-4">
           <h2 className="font-serif text-2xl italic text-black">{title}</h2>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center text-[#5f5e5e] transition hover:bg-[#f0ede6] hover:text-black"
+            className="flex h-9 w-9 items-center justify-center text-[#6B6259] transition hover:bg-[#f0ede6] hover:text-black"
             aria-label="Đóng"
           >
             <span className="material-symbols-outlined text-[22px]">close</span>
@@ -158,7 +158,7 @@ export default function AdminCostumeModal({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-[#d7d2c8]">
+        <div className="flex border-b border-[#DED2C2]">
           {TABS.filter((tab) => tab.key !== 'ai' || isAdmin).map((tab) => {
             const isDisabled = (tab.key === 'inventory' || tab.key === 'ai') && !editingProductId;
             return (
@@ -171,7 +171,7 @@ export default function AdminCostumeModal({
                     ? 'border-b-2 border-black text-black'
                     : isDisabled
                       ? 'cursor-not-allowed text-[#c4c0b8]'
-                      : 'text-[#777777] hover:text-black'
+                      : 'text-[#6B6259] hover:text-black'
                 }`}
                 title={isDisabled ? 'Lưu sản phẩm trước để quản lý phân loại kho' : ''}
               >
@@ -199,14 +199,14 @@ export default function AdminCostumeModal({
                     disabled={isSavingProduct}
                   />
                   <label className="block">
-                    <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+                    <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
                       Trạng thái hiển thị
                     </span>
                     <select
                       name="status"
                       value={productForm.status}
                       onChange={onProductFieldChange}
-                      className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+                      className="w-full border border-[#DED2C2] bg-[#FAF5ED] px-3 py-3 text-sm outline-none focus:border-[#756536]"
                     >
                       <option value="ACTIVE">ACTIVE</option>
                       <option value="INACTIVE">INACTIVE</option>
@@ -230,7 +230,7 @@ export default function AdminCostumeModal({
                   </div>
 
                   <label className="block">
-                    <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+                    <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
                       Danh mục
                     </span>
                     <SearchableSelect
@@ -244,10 +244,10 @@ export default function AdminCostumeModal({
                   </label>
 
                   {/* Metadata section */}
-                  <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
+                  <div className="border border-[#E8DDCE] bg-[#FAF5ED] p-4">
                     <div className="mb-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">Đặc điểm sản phẩm</p>
-                      <p className="mt-1 text-xs text-[#5f5e5e]">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#756536]">Đặc điểm sản phẩm</p>
+                      <p className="mt-1 text-xs text-[#6B6259]">
                         Phong cách, dịp sử dụng, mùa, màu sắc và từ khóa là các thông tin cần thiết để tư vấn sản phẩm.
                       </p>
                     </div>
@@ -277,7 +277,7 @@ export default function AdminCostumeModal({
               <div className="flex gap-3 pt-2">
                 <button
                   disabled={isSavingProduct || imageUploadState.isUploading || Boolean(imageUploadState.error)}
-                  className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
+                  className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536] disabled:bg-[#777777]"
                 >
                   {imageUploadState.isUploading
                     ? 'Đang tải ảnh...'
@@ -290,7 +290,7 @@ export default function AdminCostumeModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="border border-[#d7d2c8] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:border-black hover:text-black"
+                  className="border border-[#DED2C2] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259] transition hover:border-black hover:text-black"
                 >
                   Hủy
                 </button>
@@ -301,14 +301,14 @@ export default function AdminCostumeModal({
           {activeTab === 'inventory' && (
             <div className="space-y-6">
               {/* Add/Edit item form */}
-              <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
-                <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">
+              <div className="border border-[#E8DDCE] bg-[#FAF5ED] p-4">
+                <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#756536]">
                   {editingItemId ? 'Sửa phân loại' : 'Thêm phân loại mới'}
                 </p>
                 {/* Row 1: Size + Color (smart inputs) */}
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block">
-                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#777777]">Size *</span>
+                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B6259]">Size *</span>
                     <input
                       name="size"
                       value={itemForm.size}
@@ -316,14 +316,14 @@ export default function AdminCostumeModal({
                       list="size-suggestions"
                       placeholder="Chọn hoặc nhập tùy chỉnh"
                       autoComplete="off"
-                      className="w-full border border-[#d7d2c8] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#7f7041]"
+                      className="w-full border border-[#DED2C2] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#756536]"
                     />
                     <datalist id="size-suggestions">
                       {SIZE_SUGGESTIONS.map((s) => <option key={s} value={s} />)}
                     </datalist>
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#777777]">Màu *</span>
+                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B6259]">Màu *</span>
                     <input
                       name="color"
                       value={itemForm.color}
@@ -331,7 +331,7 @@ export default function AdminCostumeModal({
                       list="color-suggestions"
                       placeholder="Chọn hoặc nhập tùy chỉnh"
                       autoComplete="off"
-                      className="w-full border border-[#d7d2c8] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#7f7041]"
+                      className="w-full border border-[#DED2C2] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#756536]"
                     />
                     <datalist id="color-suggestions">
                       {COLOR_SUGGESTIONS.map((c) => <option key={c} value={c} />)}
@@ -342,7 +342,7 @@ export default function AdminCostumeModal({
                 {/* Row 2: SKU (auto-generated) + Status */}
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <label className="block">
-                    <span className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#777777]">
+                    <span className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B6259]">
                       SKU
                       {!editingItemId && !skuManuallyEdited && itemForm.sku && (
                         <span className="inline-flex items-center gap-0.5 rounded-sm bg-[#e8f5e9] px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-green-700">
@@ -356,21 +356,21 @@ export default function AdminCostumeModal({
                       value={itemForm.sku}
                       onChange={handleItemFieldChange}
                       placeholder={itemForm.size && itemForm.color ? 'Đang tự tạo...' : 'Chọn Size và Màu trước'}
-                      className={`w-full border px-3 py-2.5 text-sm outline-none focus:border-[#7f7041] ${
+                      className={`w-full border px-3 py-2.5 text-sm outline-none focus:border-[#756536] ${
                         !editingItemId && !skuManuallyEdited && itemForm.sku
                           ? 'border-green-200 bg-green-50/50 font-mono text-green-800'
-                          : 'border-[#d7d2c8] bg-white'
+                          : 'border-[#DED2C2] bg-white'
                       }`}
                     />
                     {!editingItemId && (
-                      <p className="mt-1 text-[9px] text-[#999999]">
+                      <p className="mt-1 text-[9px] text-[#6B6259]">
                         {skuManuallyEdited
                           ? 'SKU thủ công — '
                           : 'Tự động tạo từ Tên + Size + Màu — '}
                         <button
                           type="button"
                           onClick={handleRegenerateSku}
-                          className="text-[#7f7041] underline hover:text-black"
+                          className="text-[#756536] underline hover:text-black"
                         >
                           Tạo lại
                         </button>
@@ -378,12 +378,12 @@ export default function AdminCostumeModal({
                     )}
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#777777]">Trạng thái</span>
+                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B6259]">Trạng thái</span>
                     <select
                       name="status"
                       value={itemForm.status}
                       onChange={handleItemFieldChange}
-                      className="w-full border border-[#d7d2c8] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#7f7041]"
+                      className="w-full border border-[#DED2C2] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#756536]"
                     >
                       {STATUS_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -396,7 +396,7 @@ export default function AdminCostumeModal({
                     type="button"
                     onClick={handleSaveItem}
                     disabled={isSavingItem || !itemForm.sku || !itemForm.size || !itemForm.color}
-                    className="flex items-center gap-1.5 bg-black px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#7f7041] disabled:bg-[#999999]"
+                    className="flex items-center gap-1.5 bg-black px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#756536] disabled:bg-[#999999]"
                   >
                     <span className="material-symbols-outlined text-[14px]">{editingItemId ? 'save' : 'add'}</span>
                     {isSavingItem ? 'Đang lưu...' : editingItemId ? 'Cập nhật' : 'Thêm'}
@@ -405,7 +405,7 @@ export default function AdminCostumeModal({
                     <button
                       type="button"
                       onClick={handleCancelEditItem}
-                      className="border border-[#d7d2c8] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5f5e5e] transition hover:border-black hover:text-black"
+                      className="border border-[#DED2C2] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B6259] transition hover:border-black hover:text-black"
                     >
                       Hủy sửa
                     </button>
@@ -416,12 +416,12 @@ export default function AdminCostumeModal({
               {/* Items list */}
               {isLoadingItems ? (
                 <div className="flex items-center justify-center py-12">
-                  <span className="material-symbols-outlined animate-spin text-[28px] text-[#7f7041]">progress_activity</span>
+                  <span className="material-symbols-outlined animate-spin text-[28px] text-[#756536]">progress_activity</span>
                 </div>
               ) : items.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-12 text-center">
-                  <span className="material-symbols-outlined text-[48px] text-[#d7d2c8]">inventory_2</span>
-                  <p className="text-sm text-[#5f5e5e]">Chưa có phân loại kho nào. Hãy thêm mới ở form bên trên.</p>
+                  <span className="material-symbols-outlined text-[48px] text-[#DED2C2]">inventory_2</span>
+                  <p className="text-sm text-[#6B6259]">Chưa có phân loại kho nào. Hãy thêm mới ở form bên trên.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -435,7 +435,7 @@ export default function AdminCostumeModal({
                         <th className="px-4 py-2.5 text-right">Thao tác</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
+                    <tbody className="divide-y divide-[#E8DDCE] bg-[#FAF5ED]">
                       {items.map((item) => (
                         <tr key={item.id} className="transition hover:bg-[#f5f2eb]">
                           <td className="px-4 py-2.5">
@@ -458,7 +458,7 @@ export default function AdminCostumeModal({
                                 type="button"
                                 onClick={() => handleDeleteItem(item.id)}
                                 disabled={item.status === 'RENTED'}
-                                className="inline-flex items-center gap-1 border border-red-300 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-red-600 transition hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:border-[#d7d2c8] disabled:text-[#c4c0b8] disabled:hover:bg-transparent"
+                                className="inline-flex items-center gap-1 border border-red-300 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-red-600 transition hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:border-[#DED2C2] disabled:text-[#c4c0b8] disabled:hover:bg-transparent"
                                 title={item.status === 'RENTED' ? 'Không thể xóa item đang được thuê' : ''}
                               >
                                 <span className="material-symbols-outlined text-[12px]">delete</span>

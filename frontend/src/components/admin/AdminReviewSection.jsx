@@ -139,13 +139,13 @@ export default function AdminReviewSection() {
       <Panel title="Quản lý đánh giá" action={`${totalElements} đánh giá`}>
       <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <label className="block">
-          <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+          <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
             Trạng thái
           </span>
           <select
             value={statusFilter}
             onChange={handleStatusFilterChange}
-            className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+            className="w-full border border-[#DED2C2] bg-[#FAF5ED] px-3 py-3 text-sm outline-none focus:border-[#756536]"
           >
             <option value="">Tất cả trạng thái</option>
             <option value="VISIBLE">Đang hiển thị</option>
@@ -154,11 +154,11 @@ export default function AdminReviewSection() {
         </label>
 
         <label className="block">
-          <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+          <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
             Tên sản phẩm
           </span>
           <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#6B6259]">
               search
             </span>
             <input
@@ -166,19 +166,19 @@ export default function AdminReviewSection() {
               value={costumeNameFilter}
               onChange={handleCostumeNameFilterChange}
               placeholder="Tìm theo tên sản phẩm"
-              className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
+              className="w-full border border-[#DED2C2] bg-[#FAF5ED] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#756536]"
             />
           </div>
         </label>
 
         <label className="block">
-          <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+          <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
             Số sao
           </span>
           <select
             value={ratingFilter}
             onChange={handleRatingFilterChange}
-            className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+            className="w-full border border-[#DED2C2] bg-[#FAF5ED] px-3 py-3 text-sm outline-none focus:border-[#756536]"
           >
             <option value="">Tất cả số sao</option>
             <option value="5">5 sao</option>
@@ -202,11 +202,11 @@ export default function AdminReviewSection() {
       )}
 
       {isLoading ? (
-        <p className="py-12 text-center text-sm text-[#5f5e5e]">Đang tải đánh giá...</p>
+        <p className="py-12 text-center text-sm text-[#6B6259]">Đang tải đánh giá...</p>
       ) : reviews.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <span className="material-symbols-outlined text-[48px] text-[#d7d2c8]">reviews</span>
-          <p className="text-sm text-[#5f5e5e]">Không có đánh giá nào khớp bộ lọc hiện tại.</p>
+          <span className="material-symbols-outlined text-[48px] text-[#DED2C2]">reviews</span>
+          <p className="text-sm text-[#6B6259]">Không có đánh giá nào khớp bộ lọc hiện tại.</p>
         </div>
       ) : (
         <>
@@ -223,7 +223,7 @@ export default function AdminReviewSection() {
                   <th className="px-4 py-3 text-right">Hành động</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
+              <tbody className="divide-y divide-[#E8DDCE] bg-[#FAF5ED]">
                 {reviews.map((review) => {
                   const isUpdating = updatingReviewId === review.id;
                   const isVisible = review.status === 'VISIBLE';
@@ -232,14 +232,14 @@ export default function AdminReviewSection() {
                     <tr key={review.id} className="align-top transition hover:bg-[#f5f2eb]">
                       <td className="px-4 py-4">
                         <p className="font-medium text-black">{review.costumeName || '—'}</p>
-                        <p className="mt-1 font-mono text-xs text-[#777777]">Costume #{review.costumeId}</p>
+                        <p className="mt-1 font-mono text-xs text-[#6B6259]">Costume #{review.costumeId}</p>
                       </td>
                       <td className="px-4 py-4">
                         <p className="font-medium text-black">{review.userFullName || 'Khách hàng AuraFit'}</p>
-                        <p className="mt-1 font-mono text-xs text-[#777777]">User #{review.userId}</p>
+                        <p className="mt-1 font-mono text-xs text-[#6B6259]">User #{review.userId}</p>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className="inline-flex items-center gap-1 font-semibold text-[#7f7041]">
+                        <span className="inline-flex items-center gap-1 font-semibold text-[#756536]">
                           {review.rating}
                           <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                             star
@@ -247,8 +247,8 @@ export default function AdminReviewSection() {
                         </span>
                       </td>
                       <td className="max-w-[320px] px-4 py-4">
-                        <p className="line-clamp-3 leading-6 text-[#5f5e5e]">{review.comment || 'Không có nội dung'}</p>
-                        <p className="mt-2 text-xs text-[#999999]">{formatDateTime(review.createdAt)}</p>
+                        <p className="line-clamp-3 leading-6 text-[#6B6259]">{review.comment || 'Không có nội dung'}</p>
+                        <p className="mt-2 text-xs text-[#6B6259]">{formatDateTime(review.createdAt)}</p>
                       </td>
                       <td className="px-4 py-4">
                         {Array.isArray(review.imageUrls) && review.imageUrls.length > 0 ? (
@@ -264,13 +264,13 @@ export default function AdminReviewSection() {
                                 <img
                                   src={imageUrl}
                                   alt={`Ảnh review ${index + 1}`}
-                                  className="h-12 w-12 border border-[#d7d2c8] object-cover transition group-hover:scale-105"
+                                  className="h-12 w-12 border border-[#DED2C2] object-cover transition group-hover:scale-105"
                                  loading="lazy" decoding="async" />
                               </button>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-xs text-[#999999]">Không có ảnh</span>
+                          <span className="text-xs text-[#6B6259]">Không có ảnh</span>
                         )}
                       </td>
                       <td className="px-4 py-4">
@@ -331,8 +331,8 @@ export default function AdminReviewSection() {
       >
         {selectedReview && (
           <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#d7d2c8] pb-5">
-              <div className="flex items-center gap-2 text-[#7f7041]">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DED2C2] pb-5">
+              <div className="flex items-center gap-2 text-[#756536]">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <span
                     key={star}
@@ -351,32 +351,32 @@ export default function AdminReviewSection() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">Trang phục</p>
+              <div className="border border-[#E8DDCE] bg-[#FAF5ED] p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">Trang phục</p>
                 <p className="mt-2 font-medium text-black">{selectedReview.costumeName || '—'}</p>
-                <p className="mt-1 font-mono text-xs text-[#777777]">Costume #{selectedReview.costumeId}</p>
+                <p className="mt-1 font-mono text-xs text-[#6B6259]">Costume #{selectedReview.costumeId}</p>
               </div>
-              <div className="border border-[#ebe7df] bg-[#fafaf8] p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">Khách hàng</p>
+              <div className="border border-[#E8DDCE] bg-[#FAF5ED] p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">Khách hàng</p>
                 <p className="mt-2 font-medium text-black">{selectedReview.userFullName || 'Khách hàng AuraFit'}</p>
-                <p className="mt-1 font-mono text-xs text-[#777777]">User #{selectedReview.userId}</p>
+                <p className="mt-1 font-mono text-xs text-[#6B6259]">User #{selectedReview.userId}</p>
               </div>
             </div>
 
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">Thời gian đánh giá</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">Thời gian đánh giá</p>
               <p className="mt-2 text-sm text-black">{formatDateTime(selectedReview.createdAt)}</p>
             </div>
 
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">Nội dung</p>
-              <p className="mt-2 whitespace-pre-wrap border border-[#ebe7df] bg-[#fafaf8] p-4 text-sm leading-7 text-[#5f5e5e]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">Nội dung</p>
+              <p className="mt-2 whitespace-pre-wrap border border-[#E8DDCE] bg-[#FAF5ED] p-4 text-sm leading-7 text-[#6B6259]">
                 {selectedReview.comment || 'Không có nội dung đánh giá.'}
               </p>
             </div>
 
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">Ảnh đính kèm</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">Ảnh đính kèm</p>
               {Array.isArray(selectedReview.imageUrls) && selectedReview.imageUrls.length > 0 ? (
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {selectedReview.imageUrls.map((imageUrl, index) => (
@@ -385,7 +385,7 @@ export default function AdminReviewSection() {
                       type="button"
                       onClick={() => openImagePreview(selectedReview.imageUrls, index)}
                       aria-label={`Xem ảnh review ${index + 1}`}
-                      className="group relative overflow-hidden border border-[#d7d2c8] bg-white"
+                      className="group relative overflow-hidden border border-[#DED2C2] bg-white"
                     >
                       <img
                         src={imageUrl}
@@ -399,11 +399,11 @@ export default function AdminReviewSection() {
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-[#999999]">Review này không có ảnh đính kèm.</p>
+                <p className="mt-2 text-sm text-[#6B6259]">Review này không có ảnh đính kèm.</p>
               )}
             </div>
 
-            <div className="border-t border-[#d7d2c8] pt-5">
+            <div className="border-t border-[#DED2C2] pt-5">
               <button
                 type="button"
                 disabled={updatingReviewId === selectedReview.id}

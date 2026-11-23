@@ -12,38 +12,43 @@ const refreshApi = axios.create({
 });
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Access token lives in memory only. The refresh token is an HttpOnly cookie,
+// so a page reload silently refreshes through /auth/refresh on the first 401.
 // ---------------------------------------------------------------------------
+let accessToken = null;
+let isLoggingOut = false;
+let refreshAbortController = null;
 
-const logClientStorageError = (context, error) => {
-  if (typeof console !== 'undefined') {
-    console.warn('[HandledError]', { context, name: error?.name || 'Error' });
+export const setAccessToken = (token) => {
+  accessToken = token || null;
+  isLoggingOut = false;
+};
+
+export const getAccessToken = () => accessToken;
+
+export const clearAccessToken = () => {
+  accessToken = null;
+};
+
+/**
+ * Stops an in-flight refresh before logout. Without this a refresh that was
+ * already running can re-issue the HttpOnly cookie right after logout clears it.
+ */
+export const beginLogout = () => {
+  isLoggingOut = true;
+  accessToken = null;
+  if (refreshAbortController) {
+    refreshAbortController.abort();
+    refreshAbortController = null;
   }
 };
 
-const getAccessToken = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const user = JSON.parse(window.localStorage.getItem('aurafitCurrentUser') || 'null');
-    return user?.accessToken || null;
-  } catch (error) {
-    logClientStorageError('Read access token', error);
-    return null;
-  }
-};
-
-const setTokens = ({ accessToken }) => {
-  if (typeof window === 'undefined') return;
-  try {
-    const user = JSON.parse(window.localStorage.getItem('aurafitCurrentUser') || 'null') || {};
-    if (accessToken !== undefined) user.accessToken = accessToken;
-    window.localStorage.setItem('aurafitCurrentUser', JSON.stringify(user));
-  } catch (error) {
-    logClientStorageError('Persist refreshed tokens', error);
-  }
+export const endLogout = () => {
+  isLoggingOut = false;
 };
 
 const clearTokens = () => {
+  accessToken = null;
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem('aurafitCurrentUser');
 };
@@ -98,8 +103,9 @@ apiClient.interceptors.response.use(
 
     const originalRequest = error.config;
 
-    // Skip refresh logic for login endpoint or if we already retried
+    // Skip refresh logic while logging out, after a retry, or for login itself
     if (
+      isLoggingOut ||
       error.response?.status !== 401 ||
       originalRequest._retry ||
       originalRequest.url?.includes('/auth/login')
@@ -124,9 +130,12 @@ apiClient.interceptors.response.use(
     // Mark as retried so we don't loop
     originalRequest._retry = true;
     isRefreshing = true;
+    refreshAbortController = new AbortController();
 
     try {
-      const { data } = await refreshApi.post('/auth/refresh');
+      const { data } = await refreshApi.post('/auth/refresh', null, {
+        signal: refreshAbortController.signal,
+      });
 
       const newAccessToken = data?.accessToken || data?.data?.accessToken;
 
@@ -134,7 +143,7 @@ apiClient.interceptors.response.use(
         throw new Error('No accessToken in refresh response');
       }
 
-      setTokens({ accessToken: newAccessToken });
+      setAccessToken(newAccessToken);
       resolvePendingRequests(null, newAccessToken);
 
       originalRequest.headers = originalRequest.headers || {};
@@ -143,12 +152,13 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       clearTokens();
       resolvePendingRequests(refreshError);
-      if (window.location.pathname !== '/account') {
+      if (!isLoggingOut && window.location.pathname !== '/account') {
         window.location.href = '/account';
       }
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
+      refreshAbortController = null;
     }
   }
 );

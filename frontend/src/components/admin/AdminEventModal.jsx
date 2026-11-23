@@ -66,10 +66,10 @@ export default function AdminEventModal({
         if (event.target === event.currentTarget && !isSaving) onClose();
       }}
     >
-      <div className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-[#fdfdfb] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#d7d2c8] px-6 py-4">
+      <div className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-[#FFFCF7] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#DED2C2] px-6 py-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#7f7041]">AuraFit Event</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#756536]">AuraFit Event</p>
             <h2 className="mt-1 font-serif text-2xl italic text-black">
               {editingEventId ? 'Cập nhật sự kiện' : 'Tạo sự kiện mới'}
             </h2>
@@ -78,7 +78,7 @@ export default function AdminEventModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="flex h-9 w-9 items-center justify-center text-[#5f5e5e] transition hover:bg-[#f0ede6] hover:text-black disabled:opacity-50"
+            className="flex h-9 w-9 items-center justify-center text-[#6B6259] transition hover:bg-[#f0ede6] hover:text-black disabled:opacity-50"
             aria-label="Đóng"
           >
             <span className="material-symbols-outlined text-[22px]">close</span>
@@ -111,7 +111,7 @@ export default function AdminEventModal({
                 </button>
               )}
 
-              <div className="border-t border-[#ebe7df] pt-5">
+              <div className="border-t border-[#E8DDCE] pt-5">
                 <ImageUploadField
                   key={`${editingEventId || 'new-event'}-side-banner`}
                   label="Ảnh banner dọc (hiển thị hai bên Catalog và Chi tiết sản phẩm)"
@@ -137,7 +137,7 @@ export default function AdminEventModal({
               </div>
 
               <label className="block">
-                <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+                <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
                   Trạng thái
                 </span>
                 <select
@@ -145,7 +145,7 @@ export default function AdminEventModal({
                   value={eventForm.status}
                   onChange={onFieldChange}
                   disabled={isSaving}
-                  className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+                  className="w-full border border-[#DED2C2] bg-[#FAF5ED] px-3 py-3 text-sm outline-none focus:border-[#756536]"
                 >
                   <option value="DRAFT">Bản nháp</option>
                   <option value="ACTIVE">Đang hoạt động</option>
@@ -173,7 +173,7 @@ export default function AdminEventModal({
 
               <div className="grid gap-4 md:grid-cols-3">
                 <label className="block">
-                  <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+                  <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
                     Giảm giá chung (%)
                   </span>
                   <input
@@ -185,7 +185,7 @@ export default function AdminEventModal({
                     required
                     value={eventForm.discountPercent}
                     onChange={onFieldChange}
-                    className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+                    className="w-full border border-[#DED2C2] bg-[#FAF5ED] px-3 py-3 text-sm outline-none focus:border-[#756536]"
                   />
                 </label>
                 <AdminField
@@ -225,18 +225,18 @@ export default function AdminEventModal({
             </div>
           </div>
 
-          <div className="sticky bottom-0 flex justify-end gap-3 border-t border-[#d7d2c8] bg-[#fdfdfb] px-6 py-4">
+          <div className="sticky bottom-0 flex justify-end gap-3 border-t border-[#DED2C2] bg-[#FFFCF7] px-6 py-4">
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="border border-[#d7d2c8] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5f5e5e] transition hover:border-black hover:text-black disabled:opacity-50"
+              className="border border-[#DED2C2] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B6259] transition hover:border-black hover:text-black disabled:opacity-50"
             >
               Hủy
             </button>
             <button
               disabled={isSaving || isUploading || Boolean(uploadError)}
-              className="bg-black px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#777777]"
+              className="bg-black px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#756536] disabled:cursor-not-allowed disabled:bg-[#777777]"
             >
               {isUploading
                 ? 'Đang tải ảnh banner...'

@@ -50,6 +50,9 @@ public class OtpVerification extends BaseEntity {
     @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
+    @Column(name = "purpose", nullable = false, length = 20)
+    private String purpose = "REGISTRATION";
+
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
     }

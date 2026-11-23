@@ -29,7 +29,7 @@ public class OtpServiceImpl implements OtpService {
      * only needs to verify the code.
      */
     @Transactional
-    public void store(String email, String fullName, String phone, String passwordHash) {
+    public void store(String email, String fullName, String phone, String passwordHash, String purpose) {
         LocalDateTime now = LocalDateTime.now();
         OtpVerification entry = repository.findByEmail(email).orElseGet(OtpVerification::new);
 
@@ -48,18 +48,22 @@ public class OtpServiceImpl implements OtpService {
         entry.setFullName(fullName);
         entry.setPhone(phone);
         entry.setPasswordHash(passwordHash);
+        entry.setPurpose(purpose);
         repository.save(entry);
     }
 
     /**
-     * Retrieves the stored OTP record for the given email.
+     * Retrieves the stored OTP record for the given email and purpose.
      */
-    public OtpVerification getValidEntry(String email) {
+    public OtpVerification getValidEntry(String email, String purpose) {
         OtpVerification entry = repository.findByEmail(email)
                 .orElseThrow(() -> new BadRequestException("Bạn chưa yêu cầu mã xác thực OTP. Vui lòng yêu cầu lại."));
         if (entry.isExpired()) {
             repository.deleteByEmail(email);
             throw new BadRequestException("Mã xác thực OTP đã hết hạn. Vui lòng yêu cầu gửi lại mã mới.");
+        }
+        if (!purpose.equals(entry.getPurpose())) {
+            throw new BadRequestException("Mã xác thực OTP không hợp lệ cho thao tác này. Vui lòng yêu cầu lại.");
         }
         return entry;
     }
@@ -67,8 +71,8 @@ public class OtpServiceImpl implements OtpService {
     /**
      * Verifies that the supplied code matches the stored entry.
      */
-    public void verify(String email, String inputCode) {
-        OtpVerification entry = getValidEntry(email);
+    public void verify(String email, String inputCode, String purpose) {
+        OtpVerification entry = getValidEntry(email, purpose);
         if (!entry.getOtpCode().equals(inputCode)) {
             throw new BadRequestException("Mã xác thực OTP không chính xác. Vui lòng thử lại.");
         }

@@ -85,6 +85,10 @@ public class UserServiceImpl implements UserService {
         String email = jwtTokenProvider.extractUsername(refreshToken);
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
+        if (!"REFRESH".equals(jwtTokenProvider.extractTokenType(refreshToken))) {
+            throw new UnauthorizedException("Mã xác thực không hợp lệ, vui lòng đăng nhập lại.");
+        }
+
         if (!jwtTokenProvider.validateToken(refreshToken, userDetails)) {
             throw new UnauthorizedException("Mã xác thực không hợp lệ, vui lòng đăng nhập lại.");
         }
@@ -92,7 +96,30 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại trong hệ thống."));
 
+        Integer tokenVersion = jwtTokenProvider.extractTokenVersion(refreshToken);
+        if (tokenVersion == null || !tokenVersion.equals(user.getTokenVersion())) {
+            throw new UnauthorizedException("Phiên đăng nhập đã bị thu hồi, vui lòng đăng nhập lại.");
+        }
+
         return buildAuthResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return;
+        }
+
+        try {
+            String email = jwtTokenProvider.extractUsername(refreshToken);
+            userRepository.findByEmail(email).ifPresent(user -> {
+                user.setTokenVersion(user.getTokenVersion() + 1);
+                userRepository.save(user);
+            });
+        } catch (RuntimeException ignored) {
+            // Invalid or expired token: the controller still clears the cookie.
+        }
     }
 
     @Override
@@ -151,7 +178,7 @@ public class UserServiceImpl implements UserService {
 
         String temporaryPassword = request.temporaryPassword();
         if (temporaryPassword == null || temporaryPassword.isBlank()) {
-            temporaryPassword = "Staff@12345";
+            throw new BadRequestException("Mật khẩu tạm thời không được để trống.");
         }
 
         User staff = new User();
@@ -225,6 +252,7 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
     }
 
@@ -234,9 +262,9 @@ public class UserServiceImpl implements UserService {
 
     private AuthResponseDTO buildAuthResponse(User user) {
         String accessToken = jwtTokenProvider.generateToken(
-                user.getEmail(), user.getId(), user.getRole().name());
+                user.getEmail(), user.getId(), user.getRole().name(), user.getTokenVersion());
         String refreshToken = jwtTokenProvider.generateRefreshToken(
-                user.getEmail(), user.getId(), user.getRole().name());
+                user.getEmail(), user.getId(), user.getRole().name(), user.getTokenVersion());
 
         UserResponseDTO userDTO = toUserResponse(user);
 

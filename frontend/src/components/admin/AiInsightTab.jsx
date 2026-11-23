@@ -157,16 +157,16 @@ export default function AiInsightTab({ eventManagement }) {
 
         {isLoading ? (
         <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
-          <span className="material-symbols-outlined animate-spin text-[30px] text-[#7f7041]">
+          <span className="material-symbols-outlined animate-spin text-[30px] text-[#756536]">
             progress_activity
           </span>
-          <p className="text-sm text-[#5f5e5e]">Đang tải các phân tích gần nhất...</p>
+          <p className="text-sm text-[#6B6259]">Đang tải các phân tích gần nhất...</p>
         </div>
       ) : insights.length === 0 ? (
-        <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[#cfc7ba] bg-[#fafaf8] px-6 text-center">
+        <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[#cfc7ba] bg-[#FAF5ED] px-6 text-center">
           <span className="material-symbols-outlined text-[48px] text-[#b7aa8a]">insights</span>
           <h3 className="mt-4 font-serif text-2xl italic text-black">Chưa có phân tích AI</h3>
-          <p className="mt-3 max-w-lg text-sm leading-6 text-[#5f5e5e]">
+          <p className="mt-3 max-w-lg text-sm leading-6 text-[#6B6259]">
             Bấm “Tạo phân tích mới” để tổng hợp dữ liệu 7 ngày gần nhất và nhận đề xuất xu hướng cho cửa hàng.
           </p>
         </div>
@@ -190,26 +190,26 @@ export default function AiInsightTab({ eventManagement }) {
                 {isLatest && (
                   <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#765f2d] via-[#c6a962] to-[#765f2d]" />
                 )}
-                <div className="flex flex-col gap-3 border-b border-[#ebe7df] pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 border-b border-[#E8DDCE] pb-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="material-symbols-outlined text-[20px] text-[#7f7041]">
+                      <span className="material-symbols-outlined text-[20px] text-[#756536]">
                         date_range
                       </span>
                       <h3 className="text-sm font-semibold text-black">
                         {formatPeriodDate(insight.periodStart)} – {formatPeriodDate(insight.periodEnd)}
                       </h3>
                       {isLatest && (
-                        <span className="rounded-full border border-[#c9b982] bg-[#fbf7e8] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#7f7041]">
+                        <span className="rounded-full border border-[#c9b982] bg-[#fbf7e8] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#756536]">
                           Mới nhất
                         </span>
                       )}
                     </div>
-                    <p className="mt-2 text-xs text-[#777777]">
+                    <p className="mt-2 text-xs text-[#6B6259]">
                       Cập nhật lúc {formatCreatedAt(insight.updatedAt || insight.createdAt)}
                     </p>
                   </div>
-                  <span className="w-fit rounded-full border border-[#d7d2c8] bg-[#faf9f6] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#5f5e5e]">
+                  <span className="w-fit rounded-full border border-[#DED2C2] bg-[#faf9f6] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#6B6259]">
                     Xu hướng tuần
                   </span>
                 </div>
@@ -221,7 +221,7 @@ export default function AiInsightTab({ eventManagement }) {
                   <AiRichText content={insight.content} variant="analyst" />
                 </div>
 
-                <section className="mt-6 border-t border-[#ebe7df] pt-5">
+                <section className="mt-6 border-t border-[#E8DDCE] pt-5">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[21px] text-[#8a7442]">
                       event_upcoming
@@ -230,7 +230,7 @@ export default function AiInsightTab({ eventManagement }) {
                   </div>
 
                   {suggestedEvents.length === 0 ? (
-                    <p className="mt-4 rounded-xl border border-dashed border-[#d7d2c8] bg-[#fafaf8] px-4 py-5 text-sm text-[#777777]">
+                    <p className="mt-4 rounded-xl border border-dashed border-[#DED2C2] bg-[#FAF5ED] px-4 py-5 text-sm text-[#6B6259]">
                       Không có gợi ý event tuần này
                     </p>
                   ) : (
@@ -252,12 +252,12 @@ export default function AiInsightTab({ eventManagement }) {
                                   {suggestion.reason}
                                 </p>
                               </div>
-                              <span className="shrink-0 rounded-full border border-[#c9b982] bg-white px-2.5 py-1 text-xs font-semibold text-[#7f7041]">
+                              <span className="shrink-0 rounded-full border border-[#c9b982] bg-white px-2.5 py-1 text-xs font-semibold text-[#756536]">
                                 -{formatDiscount(suggestion.suggestedDiscountPercent)}
                               </span>
                             </div>
 
-                            <div className="mt-4 flex flex-wrap gap-2 text-xs text-[#5f5e5e]">
+                            <div className="mt-4 flex flex-wrap gap-2 text-xs text-[#6B6259]">
                               <span className="rounded-full bg-white px-3 py-1.5">
                                 Danh mục: {suggestion.categorySlug || '—'}
                               </span>
@@ -272,7 +272,7 @@ export default function AiInsightTab({ eventManagement }) {
                             <button
                               type="button"
                               onClick={() => openSuggestedEventModal(suggestion)}
-                              className="mt-5 inline-flex w-fit items-center gap-2 bg-black px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#7f7041]"
+                              className="mt-5 inline-flex w-fit items-center gap-2 bg-black px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#756536]"
                             >
                               <span className="material-symbols-outlined text-[17px]">add</span>
                               Tạo event từ gợi ý này

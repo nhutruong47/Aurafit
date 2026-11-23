@@ -41,16 +41,16 @@ export default function AdminDrawer({ isOpen, onClose, title, children, width = 
       {/* Drawer Panel */}
       <aside
         ref={panelRef}
-        className={`fixed right-0 top-0 z-50 flex h-full w-full ${width} flex-col bg-[#fdfdfb] shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`fixed right-0 top-0 z-50 flex h-full w-full ${width} flex-col bg-[#FFFCF7] shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#d7d2c8] px-6 py-5">
+        <div className="flex items-center justify-between border-b border-[#DED2C2] px-6 py-5">
           <h2 className="font-serif text-2xl italic text-black">{title}</h2>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center text-[#5f5e5e] transition hover:bg-[#f0ede6] hover:text-black"
+            className="flex h-9 w-9 items-center justify-center text-[#6B6259] transition hover:bg-[#f0ede6] hover:text-black"
             aria-label="Đóng"
           >
             <span className="material-symbols-outlined text-[22px]">close</span>

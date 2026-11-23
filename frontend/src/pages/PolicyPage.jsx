@@ -82,8 +82,8 @@ const formulaItems = [
 
 export default function PolicyPage({ onNavigate }) {
   return (
-    <div className="min-h-screen bg-[#f6f2eb] text-[#2f251f]">
-      <section className="relative overflow-hidden border-b border-[#cdbda9] bg-[#473a33] px-5 py-16 text-[#f8f0df] sm:px-8 lg:py-24">
+    <div className="min-h-screen bg-[#f6f2eb] text-[#2B2521]">
+      <section className="relative overflow-hidden border-b border-[#cdbda9] bg-[#3A302A] px-5 py-16 text-[#f8f0df] sm:px-8 lg:py-24">
         <div className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full border border-[#c9ae68]/30" />
         <div className="pointer-events-none absolute -bottom-40 right-20 h-96 w-96 rounded-full border border-[#c9ae68]/15" />
 
@@ -96,7 +96,7 @@ export default function PolicyPage({ onNavigate }) {
               <h1 className="max-w-4xl font-serif text-4xl font-normal italic leading-tight sm:text-5xl lg:text-7xl">
                 Chính sách thuê tại AuraFit
               </h1>
-              <p className="mt-6 max-w-2xl text-sm leading-7 text-[#f4ecdc]/75 sm:text-base">
+              <p className="mt-6 max-w-2xl text-sm leading-7 text-[#F6F1E8]/85 sm:text-base">
                 Các nguyên tắc dưới đây phản ánh trực tiếp cách hệ thống tính giá, giữ lịch,
                 thanh toán và hoàn cọc. Bạn luôn nhìn thấy đầy đủ chi phí trước khi xác nhận đơn.
               </p>
@@ -112,14 +112,14 @@ export default function PolicyPage({ onNavigate }) {
         </div>
       </section>
 
-      <main className="mx-auto max-w-[1200px] px-5 py-12 sm:px-8 lg:py-20">
-        <section className="mb-16 grid border border-[#d8cabc] bg-[#fffdfa] md:grid-cols-3">
+      <div className="mx-auto max-w-[1200px] px-5 py-12 sm:px-8 lg:py-20">
+        <section className="mb-16 grid border border-[#d8cabc] bg-[#FFFCF7] md:grid-cols-3">
           {formulaItems.map((item, index) => (
             <div
               key={item.label}
               className={`p-6 sm:p-8 ${index < formulaItems.length - 1 ? 'border-b border-[#d8cabc] md:border-b-0 md:border-r' : ''}`}
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a7745]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#756536]">
                 {item.label}
               </p>
               <p className="mt-3 text-sm leading-6 text-[#5f554d]">{item.value}</p>
@@ -129,7 +129,7 @@ export default function PolicyPage({ onNavigate }) {
 
         <div className="mb-10 flex flex-col gap-3 border-b border-[#cdbda9] pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#9a7745]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#756536]">
               Điều khoản áp dụng
             </p>
             <h2 className="mt-2 font-serif text-3xl italic sm:text-4xl">Mọi điều bạn cần biết trước khi thuê</h2>
@@ -143,7 +143,7 @@ export default function PolicyPage({ onNavigate }) {
           {policySections.map((section) => (
             <article
               key={section.number}
-              className="group border border-[#d8cabc] bg-[#fffdfa] p-6 transition duration-300 hover:-translate-y-1 hover:border-[#9a7745]/70 hover:shadow-lg sm:p-8"
+              className="group border border-[#d8cabc] bg-[#FFFCF7] p-6 transition duration-300 hover:-translate-y-1 hover:border-[#B08D57]/70 hover:shadow-lg sm:p-8"
             >
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -151,7 +151,7 @@ export default function PolicyPage({ onNavigate }) {
                     <span className="material-symbols-outlined text-[21px]">{section.icon}</span>
                   </span>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9a7745]">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#756536]">
                       Điều {section.number}
                     </p>
                     <h3 className="mt-1 font-serif text-xl sm:text-2xl">{section.title}</h3>
@@ -177,14 +177,14 @@ export default function PolicyPage({ onNavigate }) {
           ))}
         </div>
 
-        <section className="mt-16 overflow-hidden bg-[#2f251f] text-[#f8f0df]">
+        <section className="mt-16 overflow-hidden bg-[#2B2521] text-[#f8f0df]">
           <div className="grid lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="p-8 sm:p-10">
               <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#ead9aa]">
                 Cần hỗ trợ thêm?
               </p>
               <h2 className="mt-3 font-serif text-3xl italic">AuraFit sẵn sàng giải đáp trước khi bạn đặt thuê.</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#f4ecdc]/70">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#F6F1E8]/85">
                 Hãy liên hệ đội ngũ tư vấn nếu bạn cần xác nhận lịch, kích thước, phương thức nhận hàng hoặc cách hoàn cọc.
               </p>
             </div>
@@ -192,7 +192,7 @@ export default function PolicyPage({ onNavigate }) {
               <button
                 type="button"
                 onClick={() => onNavigate?.('catalog')}
-                className="bg-[#ead9aa] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2f251f] transition hover:bg-white"
+                className="bg-[#ead9aa] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2B2521] transition hover:bg-white"
               >
                 Xem bộ sưu tập
               </button>
@@ -206,7 +206,7 @@ export default function PolicyPage({ onNavigate }) {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 }

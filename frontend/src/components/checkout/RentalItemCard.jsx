@@ -72,7 +72,7 @@ export default function RentalItemCard({
             imageElement
           )}
           {item.badge && (
-            <div className="absolute bottom-1 left-1 bg-[#99854e] px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white">
+            <div className="absolute bottom-1 left-1 bg-[#756536] px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white">
               {item.badge}
             </div>
           )}
@@ -82,7 +82,7 @@ export default function RentalItemCard({
         <div className="flex min-w-0 flex-1 flex-col gap-1 py-0.5">
           {/* Title */}
           {productLink !== '#' ? (
-            <Link to={productLink} className="truncate transition-colors hover:text-[#99854e]">
+            <Link to={productLink} className="truncate transition-colors hover:text-[#756536]">
               <h3 className="truncate font-serif text-base uppercase tracking-wide text-black md:text-lg">{item.name}</h3>
             </Link>
           ) : (
@@ -97,32 +97,32 @@ export default function RentalItemCard({
           
           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
             {item.discountAmount > 0 && (
-              <span className="text-[#999] line-through">
+              <span className="text-[#6B6259] line-through">
                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.originalUnitPrice || 0)}
               </span>
             )}
-            <span className={`font-medium ${item.discountAmount > 0 ? 'text-[#7f7041]' : 'text-black'}`}>
+            <span className={`font-medium ${item.discountAmount > 0 ? 'text-[#756536]' : 'text-black'}`}>
               {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.unitPrice || 0)} / ngày
             </span>
           </div>
 
           {item.eventName && (
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7f7041]">
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#756536]">
               {item.eventName}
             </p>
           )}
 
           {/* Inline Quantity Control */}
           <div className="mt-2 flex items-center gap-3">
-            <div className="flex h-8 items-center border border-[#cfc4c5]">
+            <div className="flex h-8 items-center border border-[#DED2C2]">
               <button
                 onClick={() => setIsEditModalOpen(true)}
-                className="flex h-full w-8 items-center justify-center text-black hover:bg-[#f9f9f9] transition"
+                className="flex h-full w-8 items-center justify-center text-black hover:bg-[#F6F1E8] transition"
               >
                 <span className="material-symbols-outlined text-[14px]">remove</span>
               </button>
               <span 
-                className="flex h-full w-9 items-center justify-center border-x border-[#cfc4c5] text-xs font-medium cursor-pointer hover:bg-gray-50"
+                className="flex h-full w-9 items-center justify-center border-x border-[#DED2C2] text-xs font-medium cursor-pointer hover:bg-gray-50"
                 onClick={() => setIsEditModalOpen(true)}
                 title="Sửa số lượng"
               >
@@ -130,14 +130,14 @@ export default function RentalItemCard({
               </span>
               <button
                 onClick={() => setIsEditModalOpen(true)}
-                className="flex h-full w-8 items-center justify-center text-black hover:bg-[#f9f9f9] transition"
+                className="flex h-full w-8 items-center justify-center text-black hover:bg-[#F6F1E8] transition"
               >
                 <span className="material-symbols-outlined text-[14px]">add</span>
               </button>
             </div>
 
             {effectiveStock > 0 && (
-              <span className="text-[10px] text-[#999]">Tối đa: {effectiveStock}</span>
+              <span className="text-[10px] text-[#6B6259]">Tối đa: {effectiveStock}</span>
             )}
           </div>
 
@@ -151,14 +151,14 @@ export default function RentalItemCard({
             )}
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="ml-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#99854e] underline transition hover:text-black"
+              className="ml-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#756536] underline transition hover:text-black"
             >
               Chỉnh sửa
             </button>
           </div>
 
           {item.multiplier && item.multiplier > 1 && (
-            <p className="ml-5 mt-0.5 text-[10px] text-[#999]">
+            <p className="ml-5 mt-0.5 text-[10px] text-[#6B6259]">
               Hệ số thuê: {item.multiplier.toFixed(1)}x ({item.rentalDays} ngày)
             </p>
           )}
@@ -178,7 +178,7 @@ export default function RentalItemCard({
           <div className="flex-1" />
 
           {/* Price Breakdown */}
-          <div className="mb-1 flex flex-col items-end gap-0.5 text-[10px] uppercase tracking-wider text-[#999]">
+          <div className="mb-1 flex flex-col items-end gap-0.5 text-[10px] uppercase tracking-wider text-[#6B6259]">
             <div className="flex w-full min-w-[100px] justify-between gap-2">
               <span>{item.discountAmount > 0 ? 'Thuê gốc:' : 'Thuê:'}</span>
               <span>{item.discountAmount > 0
@@ -186,7 +186,7 @@ export default function RentalItemCard({
                 : item.rentalFeeFormatted || item.total}</span>
             </div>
             {item.discountAmount > 0 && (
-              <div className="flex w-full min-w-[100px] justify-between gap-2 text-[#7f7041]">
+              <div className="flex w-full min-w-[100px] justify-between gap-2 text-[#756536]">
                 <span>Ưu đãi:</span>
                 <span>-{new Intl.NumberFormat('vi-VN').format(item.discountAmount)}đ</span>
               </div>
@@ -200,7 +200,7 @@ export default function RentalItemCard({
           {/* Total Price */}
           <div className="mt-1 text-right">
             {item.discountAmount > 0 && (
-              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#7f7041]">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#756536]">
                 Tổng sau ưu đãi
               </p>
             )}

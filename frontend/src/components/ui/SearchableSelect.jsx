@@ -49,27 +49,27 @@ export default function SearchableSelect({
   return (
     <div className={`relative ${className}`} ref={wrapperRef}>
       <div
-        className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus-within:border-[#7f7041] cursor-pointer flex justify-between items-center"
+        className="w-full border border-[#DED2C2] bg-[#FAF5ED] px-3 py-3 text-sm outline-none focus-within:border-[#756536] cursor-pointer flex justify-between items-center"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className={selectedOption ? 'text-black truncate pr-4' : 'text-[#999999] truncate pr-4'}>
+        <span className={selectedOption ? 'text-black truncate pr-4' : 'text-[#6B6259] truncate pr-4'}>
           {selectedOption ? getOptionLabel(selectedOption) : placeholder}
         </span>
-        <span className="material-symbols-outlined text-[18px] text-[#999999] flex-shrink-0">
+        <span className="material-symbols-outlined text-[18px] text-[#6B6259] flex-shrink-0">
           {isOpen ? 'expand_less' : 'expand_more'}
         </span>
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full border border-[#d7d2c8] bg-white shadow-xl">
-          <div className="p-2 border-b border-[#ebe7df] bg-[#fafaf8]">
+        <div className="absolute z-50 mt-1 w-full border border-[#DED2C2] bg-white shadow-xl">
+          <div className="p-2 border-b border-[#E8DDCE] bg-[#FAF5ED]">
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-[#999999]">
+              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-[#6B6259]">
                 search
               </span>
               <input
                 type="text"
-                className="w-full border border-[#d7d2c8] bg-white py-2 pl-8 pr-3 text-sm outline-none focus:border-[#7f7041]"
+                className="w-full border border-[#DED2C2] bg-white py-2 pl-8 pr-3 text-sm outline-none focus:border-[#756536]"
                 placeholder="Tìm kiếm..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -103,7 +103,7 @@ export default function SearchableSelect({
                 return (
                   <li
                     key={optValue + '-' + idx}
-                    className={`cursor-pointer px-4 py-2 text-sm hover:bg-[#f5f2eb] ${isSelected ? 'bg-[#f5f2eb] font-medium text-black' : 'text-[#5f5e5e]'} truncate`}
+                    className={`cursor-pointer px-4 py-2 text-sm hover:bg-[#f5f2eb] ${isSelected ? 'bg-[#f5f2eb] font-medium text-black' : 'text-[#6B6259]'} truncate`}
                     onClick={() => handleSelect(option)}
                   >
                     {getOptionLabel(option)}
@@ -111,7 +111,7 @@ export default function SearchableSelect({
                 );
               })
             ) : (
-              <li className="px-4 py-3 text-sm text-[#999999] text-center">Không tìm thấy kết quả</li>
+              <li className="px-4 py-3 text-sm text-[#6B6259] text-center">Không tìm thấy kết quả</li>
             )}
           </ul>
         </div>

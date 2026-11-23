@@ -10,6 +10,7 @@ import com.aurafit.business.auth.dto.response.OtpSentResponse;
 import com.aurafit.business.user.dto.response.UserResponseDTO;
 import com.aurafit.business.auth.entity.OtpVerification;
 import com.aurafit.business.user.entity.User;
+import com.aurafit.common.exception.BadRequestException;
 import com.aurafit.common.exception.ConflictException;
 import com.aurafit.business.user.repository.UserRepository;
 import com.aurafit.security.CustomUserDetailsService;
@@ -110,8 +111,48 @@ public class AuthServiceImpl implements AuthService {
     }
 
     // -------------------------------------------------------------------------
+    // Password reset
+    // -------------------------------------------------------------------------
+
+    @Override
+    @Transactional
+    public OtpSentResponse requestPasswordResetOtp(String email) {
+        String normalizedEmail = normalizeEmail(email);
+        userRepository.findByEmail(normalizedEmail).ifPresent(user -> {
+            otpService.store(normalizedEmail, null, null, null, "PASSWORD_RESET");
+            OtpVerification entry = otpService.getValidEntry(normalizedEmail, "PASSWORD_RESET");
+            emailService.sendOtpEmail(normalizedEmail, entry.getOtpCode());
+        });
+
+        // Same response whether or not the account exists.
+        return new OtpSentResponse(
+                LocalDateTime.now(),
+                "Nếu email tồn tại trong hệ thống, mã xác thực đã được gửi."
+        );
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(String email, String otpCode, String newPassword) {
+        String normalizedEmail = normalizeEmail(email);
+        otpService.verify(normalizedEmail, otpCode, "PASSWORD_RESET");
+
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy tài khoản cần đặt lại mật khẩu."));
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userRepository.save(user);
+        otpService.remove(normalizedEmail);
+    }
+
+    // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    private static String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
+    }
 
     private static boolean isGmail(String email) {
         return email != null && email.toLowerCase().endsWith("@gmail.com");
@@ -119,9 +160,9 @@ public class AuthServiceImpl implements AuthService {
 
     private AuthResponseDTO buildAuthResponse(User user) {
         String accessToken = jwtTokenProvider.generateToken(
-                user.getEmail(), user.getId(), user.getRole().name());
+                user.getEmail(), user.getId(), user.getRole().name(), user.getTokenVersion());
         String refreshToken = jwtTokenProvider.generateRefreshToken(
-                user.getEmail(), user.getId(), user.getRole().name());
+                user.getEmail(), user.getId(), user.getRole().name(), user.getTokenVersion());
 
         UserResponseDTO userDTO = new UserResponseDTO(
                 user.getId(),

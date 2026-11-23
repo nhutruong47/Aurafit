@@ -22,7 +22,8 @@ class ActuatorConfigurationTest {
         assertThat(yml).contains("probes:");
         assertThat(yml).contains("enabled: true");
         assertThat(yml).contains("show-details: never");
-        assertThat(yml).contains("exclude: mail");
+        assertThat(yml).contains("mail:");
+        assertThat(yml).contains("enabled: false");
         assertThat(yml).contains("readiness:");
         assertThat(yml).contains("application: aurafit-backend");
     }

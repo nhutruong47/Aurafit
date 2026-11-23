@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Ảnh trang phục đang cập nhật">
+  <rect width="800" height="1000" fill="#f3efe8"/>
+  <rect x="24" y="24" width="752" height="952" fill="none" stroke="#d7d2c8" stroke-width="2"/>
+  <g fill="none" stroke="#b9ab92" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M400 360c-34 0-62 28-62 62s28 62 62 62 62-28 62-62-28-62-62-62z"/>
+    <path d="M300 640l40-120 60 40 60-40 40 120"/>
+  </g>
+  <text x="400" y="760" text-anchor="middle" font-family="Georgia, serif" font-size="34" font-style="italic" fill="#7f7041">AuraFit</text>
+  <text x="400" y="805" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" letter-spacing="4" fill="#8d8478">ẢNH ĐANG CẬP NHẬT</text>
+</svg>

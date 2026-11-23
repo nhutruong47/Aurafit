@@ -19,6 +19,12 @@ public interface UserService {
 
     AuthResponseDTO refresh(String refreshToken);
 
+    /**
+     * Invalidates every refresh token issued for the account.
+     * A missing or malformed token is ignored so the cookie can still be cleared.
+     */
+    void logout(String refreshToken);
+
     Long getUserIdByEmail(String email);
 
     com.aurafit.common.dto.response.PaginatedResponse<UserResponseDTO> getAllUsers(

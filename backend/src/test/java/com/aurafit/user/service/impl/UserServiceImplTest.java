@@ -71,6 +71,22 @@ class UserServiceImplTest {
     }
 
     @Test
+    void logout_shouldIncrementTokenVersionToRevokeRefreshTokens() {
+        User user = new User();
+        user.setId(9L);
+        user.setEmail("customer@aurafit.com");
+        user.setTokenVersion(2);
+
+        when(jwtTokenProvider.extractUsername("refresh-token")).thenReturn("customer@aurafit.com");
+        when(userRepository.findByEmail("customer@aurafit.com")).thenReturn(Optional.of(user));
+
+        userService.logout("refresh-token");
+
+        assertEquals(3, user.getTokenVersion());
+        verify(userRepository).save(user);
+    }
+
+    @Test
     void updateUserStatus_shouldBlockCustomer() {
         User customer = new User();
         customer.setId(12L);

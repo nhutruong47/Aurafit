@@ -1,14 +1,34 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { loadJson } from './browserStorage';
+import { loadJson, saveJson } from './browserStorage';
+
+// Older builds persisted the access token with the profile. Strip it on load
+// and immediately rewrite storage so a reload never leaves a token behind.
+const loadInitialUser = () => {
+  const storedUser = loadJson('aurafitCurrentUser', null);
+  if (!storedUser) return null;
+  if (!storedUser.accessToken) return storedUser;
+
+  const safeUser = { ...storedUser };
+  delete safeUser.accessToken;
+  saveJson('aurafitCurrentUser', safeUser);
+  return safeUser;
+};
 
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    currentUser: loadJson('aurafitCurrentUser', null),
+    currentUser: loadInitialUser(),
   },
   reducers: {
     setCurrentUser: (state, action) => {
-      state.currentUser = action.payload;
+      if (!action.payload) {
+        state.currentUser = null;
+        return;
+      }
+
+      const safeUser = { ...action.payload };
+      delete safeUser.accessToken;
+      state.currentUser = safeUser;
     },
     clearCurrentUser: (state) => {
       state.currentUser = null;

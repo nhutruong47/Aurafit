@@ -56,6 +56,15 @@ public class JwtTokenProvider {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
+    public String extractTokenType(String token) {
+        return extractClaim(token, claims -> claims.get("tokenType", String.class));
+    }
+
+    public Integer extractTokenVersion(String token) {
+        Object value = extractClaim(token, claims -> claims.get("tokenVersion"));
+        return value instanceof Number number ? number.intValue() : null;
+    }
+
     /**
      * Validates that the token belongs to the given user and has not expired.
      * Used by JwtAuthenticationFilter for ACCESS tokens extracted from the
@@ -73,11 +82,12 @@ public class JwtTokenProvider {
     /**
      * Generates a short-lived ACCESS token (stored in frontend memory).
      */
-    public String generateToken(String username, Long userId, String role) {
+    public String generateToken(String username, Long userId, String role, int tokenVersion) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("role", role);
         claims.put("tokenType", "ACCESS");
+        claims.put("tokenVersion", tokenVersion);
 
         return buildToken(claims, username, accessTokenExpirationMs);
     }
@@ -85,11 +95,12 @@ public class JwtTokenProvider {
     /**
      * Generates a long-lived REFRESH token (transported via HttpOnly cookie).
      */
-    public String generateRefreshToken(String username, Long userId, String role) {
+    public String generateRefreshToken(String username, Long userId, String role, int tokenVersion) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("role", role);
         claims.put("tokenType", "REFRESH");
+        claims.put("tokenVersion", tokenVersion);
 
         return buildToken(claims, username, refreshTokenExpirationMs);
     }

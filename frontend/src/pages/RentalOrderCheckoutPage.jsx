@@ -46,8 +46,8 @@ export default function RentalOrderCheckoutPage({
 
   if (isCartEmpty) {
     return (
-      <div className="bg-[#f9f9f9] pb-20 text-[#1a1c1c] md:pb-0">
-        <main className="mx-auto max-w-[1440px] px-5 pb-28 pt-8 md:px-20 md:pb-40 md:pt-12">
+      <div className="bg-[#F6F1E8] pb-20 text-[#211E1B] md:pb-0">
+        <div className="mx-auto max-w-[1440px] px-5 pb-28 pt-8 md:px-20 md:pb-40 md:pt-12">
           <EmptyState
             icon="shopping_bag"
             title="Chưa có sản phẩm nào"
@@ -55,18 +55,18 @@ export default function RentalOrderCheckoutPage({
             actionLabel="Xem bộ sưu tập"
             onAction={() => onNavigate?.('catalog')}
           />
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#f9f9f9] pb-20 text-[#1a1c1c] md:pb-0">
-      <main className="mx-auto max-w-[1440px] px-5 pb-28 pt-8 md:px-20 md:pb-40 md:pt-12">
+    <div className="bg-[#F6F1E8] pb-20 text-[#211E1B] md:pb-0">
+      <div className="mx-auto max-w-[1440px] px-5 pb-28 pt-8 md:px-20 md:pb-40 md:pt-12">
         <header className="mb-16 animate-[fadeIn_0.8s_ease-out_forwards]">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#99854e]">
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#756536]">
                 Xác nhận đơn thuê
               </p>
               <h1 className="mb-2 font-serif text-[40px] font-normal italic leading-tight md:text-[64px]">
@@ -75,7 +75,7 @@ export default function RentalOrderCheckoutPage({
               {hasItems && (
                 <button
                   onClick={() => onNavigate?.('orders')}
-                  className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#99854e] transition-colors hover:text-black"
+                  className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#756536] transition-colors hover:text-black"
                 >
                   <span className="material-symbols-outlined text-[16px]">receipt_long</span>
                   Lịch sử đơn hàng
@@ -83,7 +83,7 @@ export default function RentalOrderCheckoutPage({
               )}
             </div>
             {hasItems && (
-              <div className="flex items-center gap-4 text-[#5f5e5e]">
+              <div className="flex items-center gap-4 text-[#6B6259]">
                 {cartDisplayItems.length > 0 && (
                   <>
                     <label className="flex cursor-pointer items-center gap-2 text-[12px] font-semibold">
@@ -101,7 +101,7 @@ export default function RentalOrderCheckoutPage({
                             setSelectedCartItemIds(new Set());
                           }
                         }}
-                        className="h-4 w-4 accent-[#99854e]"
+                        className="h-4 w-4 accent-[#A98A55]"
                       />
                       Chọn tất cả
                     </label>
@@ -115,7 +115,7 @@ export default function RentalOrderCheckoutPage({
                     )}
                   </>
                 )}
-                <span className="text-[12px] font-semibold uppercase tracking-[0.15em] ml-2 border-l border-[#cfc4c5] pl-4">
+                <span className="text-[12px] font-semibold uppercase tracking-[0.15em] ml-2 border-l border-[#DED2C2] pl-4">
                   {selectedDisplayCount} / {totalDisplayCount} sản phẩm
                 </span>
               </div>
@@ -153,14 +153,14 @@ export default function RentalOrderCheckoutPage({
                   </div>
                 )}
 
-                <div className="border-t border-[#cfc4c5] pt-12">
+                <div className="border-t border-[#DED2C2] pt-12">
                   <h2 className="mb-6 font-serif text-2xl font-normal uppercase italic">
                     Thông tin giao hàng
                   </h2>
                   <label className="mb-5 flex cursor-pointer items-center gap-3">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 accent-[#99854e]"
+                      className="h-4 w-4 accent-[#A98A55]"
                       onChange={(e) => {
                         if (e.target.checked && currentUser) {
                           setDeliveryInfo({
@@ -191,7 +191,7 @@ export default function RentalOrderCheckoutPage({
                         value={deliveryInfo.receiverName}
                         onChange={handleDeliveryChange}
                         placeholder="Họ và tên"
-                        className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                        className="w-full border border-[#DED2C2] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                       />
                     </div>
                     <div>
@@ -205,7 +205,7 @@ export default function RentalOrderCheckoutPage({
                         value={deliveryInfo.receiverPhone}
                         onChange={handleDeliveryChange}
                         placeholder="0xxx xxx xxx"
-                        className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                        className="w-full border border-[#DED2C2] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                       />
                     </div>
                     
@@ -213,11 +213,11 @@ export default function RentalOrderCheckoutPage({
                       <label className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em]">Hình thức nhận hàng</label>
                       <div className="flex flex-col gap-3 md:flex-row md:gap-8 mb-4">
                         <label className="flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="radio" name="deliveryMethod" value="STORE_PICKUP" checked={deliveryMethod === 'STORE_PICKUP'} onChange={() => setDeliveryMethod('STORE_PICKUP')} className="h-4 w-4 accent-[#99854e]" />
+                          <input type="radio" name="deliveryMethod" value="STORE_PICKUP" checked={deliveryMethod === 'STORE_PICKUP'} onChange={() => setDeliveryMethod('STORE_PICKUP')} className="h-4 w-4 accent-[#A98A55]" />
                           Nhận & Trả hàng tại cửa hàng
                         </label>
                         <label className="flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="radio" name="deliveryMethod" value="GHN_DELIVERY" checked={deliveryMethod === 'GHN_DELIVERY'} onChange={() => setDeliveryMethod('GHN_DELIVERY')} className="h-4 w-4 accent-[#99854e]" />
+                          <input type="radio" name="deliveryMethod" value="GHN_DELIVERY" checked={deliveryMethod === 'GHN_DELIVERY'} onChange={() => setDeliveryMethod('GHN_DELIVERY')} className="h-4 w-4 accent-[#A98A55]" />
                           Giao hàng toàn quốc (GHN)
                         </label>
                       </div>
@@ -225,11 +225,11 @@ export default function RentalOrderCheckoutPage({
 
                     {deliveryMethod === 'STORE_PICKUP' && (
                       <div className="md:col-span-2">
-                        <div className="mb-6 border border-[#cfc4c5] bg-[#fdfaf5] p-5">
+                        <div className="mb-6 border border-[#DED2C2] bg-[#fdfaf5] p-5">
                           <p className="text-[13px] font-medium text-black">
                             📍 Địa chỉ nhận/trả đồ:
                           </p>
-                          <p className="mt-1 text-[13px] leading-relaxed text-[#5f5e5e]">
+                          <p className="mt-1 text-[13px] leading-relaxed text-[#6B6259]">
                             Cửa hàng AuraFit - Lô E2a-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức, TP. Hồ Chí Minh.
                           </p>
                         </div>
@@ -243,7 +243,7 @@ export default function RentalOrderCheckoutPage({
                           value={storePickupAddress}
                           onChange={(e) => setStorePickupAddress(e.target.value)}
                           placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                          className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                          className="w-full border border-[#DED2C2] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                         />
                       </div>
                     )}
@@ -287,7 +287,7 @@ export default function RentalOrderCheckoutPage({
                             value={streetAddress}
                             onChange={(e) => setStreetAddress(e.target.value)}
                             placeholder="Số nhà, tên đường..."
-                            className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
+                            className="w-full border border-[#DED2C2] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none"
                           />
                         </div>
                       </div>
@@ -320,7 +320,7 @@ export default function RentalOrderCheckoutPage({
             </div>
           </aside>
         </div>
-      </main>
+      </div>
       <ConfirmDialog
         isOpen={isDeleteModalOpen}
         title="Xóa sản phẩm"

@@ -188,19 +188,19 @@ export default function AdminEventCostumePicker({
   };
 
   return (
-    <div className="space-y-4 border border-[#d7d2c8] bg-[#fafaf8] p-4">
+    <div className="space-y-4 border border-[#DED2C2] bg-[#FAF5ED] p-4">
       <div className="flex flex-col gap-3">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#756536]">
               Sản phẩm áp dụng
             </p>
-            <p className="mt-1 text-xs text-[#5f5e5e]">
+            <p className="mt-1 text-xs text-[#6B6259]">
               Chọn theo danh mục hoặc từng sản phẩm. Mức giảm riêng để trống sẽ dùng mức giảm chung của sự kiện.
             </p>
           </div>
           <div className="flex shrink-0 gap-2">
-            <span className="border border-[#d7d2c8] bg-white px-3 py-1.5 text-xs text-[#5f5e5e]">
+            <span className="border border-[#DED2C2] bg-white px-3 py-1.5 text-xs text-[#6B6259]">
               Kết quả <strong className="text-black">{filteredCostumes.length}</strong>
             </span>
             <span className="border border-[#9b8248] bg-[#fbf7e8] px-3 py-1.5 text-xs text-[#6f5e35]">
@@ -211,20 +211,20 @@ export default function AdminEventCostumePicker({
 
         <div className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_280px]">
           <label className="relative block w-full">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#6B6259]">
               search
             </span>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Tìm sản phẩm..."
-              className="w-full border border-[#d7d2c8] bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
+              className="w-full border border-[#DED2C2] bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#756536]"
             />
           </label>
           <select
             value={categoryFilter}
             onChange={(event) => setCategoryFilter(event.target.value)}
-            className="w-full border border-[#d7d2c8] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#7f7041]"
+            className="w-full border border-[#DED2C2] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#756536]"
             aria-label="Lọc sản phẩm theo danh mục"
           >
             <option value="all">Tất cả danh mục</option>
@@ -241,7 +241,7 @@ export default function AdminEventCostumePicker({
             <select
               value={selectionFilter}
               onChange={(event) => setSelectionFilter(event.target.value)}
-              className="w-full border border-[#d7d2c8] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#7f7041]"
+              className="w-full border border-[#DED2C2] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#756536]"
               aria-label="Lọc theo trạng thái lựa chọn"
             >
               <option value="all">Tất cả lựa chọn</option>
@@ -251,7 +251,7 @@ export default function AdminEventCostumePicker({
             <select
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value)}
-              className="w-full border border-[#d7d2c8] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#7f7041]"
+              className="w-full border border-[#DED2C2] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#756536]"
               aria-label="Sắp xếp sản phẩm"
             >
               <option value="selected-first">Đã chọn lên trước</option>
@@ -268,7 +268,7 @@ export default function AdminEventCostumePicker({
                 type="button"
                 onClick={resetFilters}
                 disabled={disabled}
-                className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#777777] underline decoration-[#c6beb0] underline-offset-4 transition hover:text-black disabled:opacity-50"
+                className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B6259] underline decoration-[#c6beb0] underline-offset-4 transition hover:text-black disabled:opacity-50"
               >
                 Xóa bộ lọc ({activeFilterCount})
               </button>
@@ -277,7 +277,7 @@ export default function AdminEventCostumePicker({
               type="button"
               onClick={unselectFilteredCostumes}
               disabled={disabled || filteredSelectedCount === 0}
-              className="border border-[#d7d2c8] bg-white px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5f5e5e] transition hover:border-red-300 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+              className="border border-[#DED2C2] bg-white px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B6259] transition hover:border-red-300 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Bỏ chọn kết quả ({filteredSelectedCount})
             </button>
@@ -285,7 +285,7 @@ export default function AdminEventCostumePicker({
               type="button"
               onClick={selectFilteredCostumes}
               disabled={disabled || filteredCostumes.length === 0 || filteredSelectedCount === filteredCostumes.length}
-              className="bg-black px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-[#7f7041] disabled:cursor-not-allowed disabled:bg-[#aaa49a]"
+              className="bg-black px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-[#756536] disabled:cursor-not-allowed disabled:bg-[#aaa49a]"
             >
               Chọn tất cả kết quả ({filteredCostumes.length})
             </button>
@@ -294,9 +294,9 @@ export default function AdminEventCostumePicker({
       </div>
 
       {isLoading ? (
-        <p className="py-8 text-center text-sm text-[#777777]">Đang tải sản phẩm...</p>
+        <p className="py-8 text-center text-sm text-[#6B6259]">Đang tải sản phẩm...</p>
       ) : filteredCostumes.length === 0 ? (
-        <p className="py-8 text-center text-sm text-[#777777]">Không tìm thấy sản phẩm phù hợp.</p>
+        <p className="py-8 text-center text-sm text-[#6B6259]">Không tìm thấy sản phẩm phù hợp.</p>
       ) : (
         <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
           {filteredCostumes.map((costume) => {
@@ -315,9 +315,9 @@ export default function AdminEventCostumePicker({
                     checked={isSelected}
                     onChange={() => toggleCostume(costume.id)}
                     disabled={disabled}
-                    className="h-4 w-4 accent-[#7f7041]"
+                    className="h-4 w-4 accent-[#756536]"
                   />
-                  <div className="h-12 w-12 shrink-0 overflow-hidden bg-[#ebe7df]">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden bg-[#E8DDCE]">
                     {costume.imageUrl ? (
                       <img src={costume.imageUrl} alt={costume.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                     ) : (
@@ -328,14 +328,14 @@ export default function AdminEventCostumePicker({
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-black">{costume.name}</p>
-                    <p className="mt-1 text-xs text-[#777777]">
+                    <p className="mt-1 text-xs text-[#6B6259]">
                       {costume.category?.name || 'Chưa có danh mục'} · {formatCurrency(costume.rentalPrice || 0)}
                     </p>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       <span className={`px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${
                         costume.status === 'ACTIVE'
                           ? 'bg-green-50 text-green-700'
-                          : 'bg-[#f0ede6] text-[#777777]'
+                          : 'bg-[#f0ede6] text-[#6B6259]'
                       }`}>
                         {STATUS_LABELS[costume.status] || costume.status}
                       </span>
@@ -352,7 +352,7 @@ export default function AdminEventCostumePicker({
 
                 {isSelected && (
                   <label className="block">
-                    <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.12em] text-[#777777]">
+                    <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.12em] text-[#6B6259]">
                       Giảm riêng (%)
                     </span>
                     <input
@@ -364,7 +364,7 @@ export default function AdminEventCostumePicker({
                       onChange={(event) => updateOverride(costume.id, event.target.value)}
                       disabled={disabled}
                       placeholder="Dùng mức chung"
-                      className="w-full border border-[#d7d2c8] bg-white px-3 py-2 text-sm outline-none focus:border-[#7f7041]"
+                      className="w-full border border-[#DED2C2] bg-white px-3 py-2 text-sm outline-none focus:border-[#756536]"
                     />
                   </label>
                 )}

@@ -9,7 +9,7 @@ export default function OrderItemPromotion({ detail, className = '' }) {
 
   return (
     <div className={`space-y-1.5 text-xs ${className}`}>
-      <p className="text-[#5f5e5e]">
+      <p className="text-[#6B6259]">
         Giá thuê:{' '}
         {hasDiscount && (
           <span className="mr-1.5 line-through">{formatCurrency(originalRentalFee)}</span>

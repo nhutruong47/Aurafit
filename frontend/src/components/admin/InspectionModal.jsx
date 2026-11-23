@@ -88,7 +88,7 @@ const InspectionModal = ({ order, isOpen, onClose, onSuccess }) => {
                       <input
                         type="date"
                         required
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#99854e] focus:border-[#99854e] sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#A98A55] focus:border-[#A98A55] sm:text-sm"
                         value={actualReturnDate}
                         onChange={(e) => setActualReturnDate(e.target.value)}
                       />
@@ -98,7 +98,7 @@ const InspectionModal = ({ order, isOpen, onClose, onSuccess }) => {
                       <label className="block text-sm font-medium text-gray-700">Phí phạt trễ (VND)</label>
                       <input
                         type="text"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#99854e] focus:border-[#99854e] sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#A98A55] focus:border-[#A98A55] sm:text-sm"
                         value={lateFee ? Number(lateFee).toLocaleString('vi-VN') : ''}
                         onChange={(e) => setLateFee(e.target.value.replace(/\D/g, ''))}
                       />
@@ -109,7 +109,7 @@ const InspectionModal = ({ order, isOpen, onClose, onSuccess }) => {
                       <label className="block text-sm font-medium text-gray-700">Phí đền bù hư hỏng (VND)</label>
                       <input
                         type="text"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#99854e] focus:border-[#99854e] sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#A98A55] focus:border-[#A98A55] sm:text-sm"
                         value={damageFee ? Number(damageFee).toLocaleString('vi-VN') : ''}
                         onChange={(e) => setDamageFee(e.target.value.replace(/\D/g, ''))}
                       />
@@ -119,7 +119,7 @@ const InspectionModal = ({ order, isOpen, onClose, onSuccess }) => {
                       <label className="block text-sm font-medium text-gray-700">Ghi chú kiểm định</label>
                       <textarea
                         rows="3"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#99854e] focus:border-[#99854e] sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#A98A55] focus:border-[#A98A55] sm:text-sm"
                         value={inspectionNote}
                         onChange={(e) => setInspectionNote(e.target.value)}
                         placeholder="Nhập tình trạng hàng hoá, lý do đền bù (nếu có)..."
@@ -141,7 +141,7 @@ const InspectionModal = ({ order, isOpen, onClose, onSuccess }) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#99854e] sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#A98A55] sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
               >
                 Huỷ
               </button>

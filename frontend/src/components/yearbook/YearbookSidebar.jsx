@@ -14,10 +14,10 @@ export default function YearbookSidebar({
         selectedItems={selectedCategoryPath ? [selectedCategoryPath] : []}
         onToggle={onToggleCategory}
       />
-      <div className="border border-[#cfc4c5] bg-[#f2f0eb] p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">Ưu đãi nhóm</p>
+      <div className="border border-[#DED2C2] bg-[#f2f0eb] p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#756536]">Ưu đãi nhóm</p>
         <p className="mt-3 font-serif text-3xl italic leading-tight">Giảm 15% cho lớp từ 8 outfit</p>
-        <p className="mt-4 text-sm leading-6 text-[#5f5e5e]">
+        <p className="mt-4 text-sm leading-6 text-[#6B6259]">
           AuraFit hỗ trợ phối màu, chọn size và sắp xếp lịch giao nhận để cả nhóm chuẩn bị nhẹ nhàng hơn.
         </p>
       </div>

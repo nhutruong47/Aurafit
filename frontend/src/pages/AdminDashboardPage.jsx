@@ -138,12 +138,12 @@ export default function AdminDashboardPage({ currentUser }) {
   };
 
   return (
-    <div className="flex min-h-[calc(100dvh-56px)] flex-col bg-[#f4f4f2] text-[#171717]">
+    <div className="flex min-h-[calc(100dvh-56px)] flex-col bg-[#F1EAE0] text-[#211E1B]">
       {/* Sub-header with stats */}
-      <div className="border-b border-[#d7d2c8] bg-[#fdfdfb]">
+      <div className="border-b border-[#DED2C2] bg-[#FFFCF7]">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:justify-between md:px-8">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7f7041]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#756536]">
               {isAdmin ? 'AuraFit Admin' : 'AuraFit Staff'}
             </p>
             <h1 className="mt-1.5 font-serif text-3xl font-normal italic leading-[1.15] md:text-4xl">
@@ -155,7 +155,7 @@ export default function AdminDashboardPage({ currentUser }) {
 
       <div className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 items-start gap-0 md:grid-cols-[220px_1fr]">
         {/* Sidebar navigation with hash links */}
-        <aside className="sticky top-14 z-20 h-auto w-full border-r border-[#d7d2c8] bg-[#111111] p-2 text-white md:h-[calc(100vh-56px)] md:overflow-y-auto">
+        <aside className="sticky top-14 z-20 h-auto w-full border-r border-[#DED2C2] bg-[#111111] p-2 text-white md:h-[calc(100vh-56px)] md:overflow-y-auto">
           {tabs.map(([id, label, icon]) => (
             <a
               key={id}
@@ -165,7 +165,7 @@ export default function AdminDashboardPage({ currentUser }) {
                 setActiveTab(id);
               }}
               className={`mb-0.5 flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                activeTab === id ? 'bg-[#7f7041] text-white' : 'text-white/68 hover:bg-white/10 hover:text-white'
+                activeTab === id ? 'bg-[#756536] text-white' : 'text-white/68 hover:bg-white/10 hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">{icon}</span>
@@ -175,7 +175,7 @@ export default function AdminDashboardPage({ currentUser }) {
         </aside>
 
         {/* Main content area — 100% width */}
-        <main className="min-w-0 flex-1 p-5 md:p-8">
+        <div className="min-w-0 flex-1 p-5 md:p-8">
           {activeTab === 'overview' && isAdmin && (
             <AdminOverviewTab onNavigate={setActiveTab} />
           )}
@@ -264,7 +264,7 @@ export default function AdminDashboardPage({ currentUser }) {
             <AiInsightTab eventManagement={eventManagement} />
           )}
           {activeTab === 'support' && isAdmin && <AdminSupportSection />}
-        </main>
+        </div>
       </div>
     </div>
   );

@@ -40,7 +40,7 @@ export default function OrdersTab({
 
   return (
     <div className="flex h-full flex-col space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-none md:rounded-sm bg-white border border-[#d7d2c8] p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-none md:rounded-sm bg-white border border-[#DED2C2] p-4 shadow-sm">
         <div className="flex flex-wrap flex-1 items-center gap-4">
           <div className="relative max-w-sm flex-1 min-w-[200px]">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
@@ -75,14 +75,14 @@ export default function OrdersTab({
         <button
           onClick={() => loadOrders()}
           disabled={isLoading}
-          className={`flex items-center gap-2 rounded-sm px-4 py-2 text-sm font-medium border whitespace-nowrap transition-colors ${isLoading ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-[#171717] border-[#d7d2c8] hover:bg-[#f4f4f2]'}`}
+          className={`flex items-center gap-2 rounded-sm px-4 py-2 text-sm font-medium border whitespace-nowrap transition-colors ${isLoading ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-[#211E1B] border-[#DED2C2] hover:bg-[#F1EAE0]'}`}
         >
           <span className="material-symbols-outlined text-[18px]">refresh</span>
           Tải lại
         </button>
       </div>
 
-      <div className="flex-1 overflow-hidden rounded-none md:rounded-sm bg-white border border-[#d7d2c8] shadow-sm flex flex-col">
+      <div className="flex-1 overflow-hidden rounded-none md:rounded-sm bg-white border border-[#DED2C2] shadow-sm flex flex-col">
         <div className="flex-1 overflow-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0 z-10">
@@ -155,7 +155,7 @@ export default function OrdersTab({
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                       <button
                         onClick={() => { openOrder(order.id); setIsModalOpen(true); }}
-                        className="text-[#7f7041] hover:text-[#5c502b] font-medium text-sm underline underline-offset-2"
+                        className="text-[#756536] hover:text-[#5c502b] font-medium text-sm underline underline-offset-2"
                       >
                         Chi tiết
                       </button>

@@ -11,7 +11,7 @@ import { featuredTabs } from './homeData';
 function ProductCard({ product, onAddToCart, onNavigate }) {
   return (
     <article className="group cursor-pointer" onClick={() => onNavigate?.('productDetail', product)}>
-      <div className="relative mb-6 aspect-[4/5] overflow-hidden border border-[#cfc4c5]/20 bg-white transition duration-500 group-hover:border-[#99854e]/40">
+      <div className="relative mb-6 aspect-[4/5] overflow-hidden border border-[#DED2C2]/20 bg-white transition duration-500 group-hover:border-[#A98A55]/40">
         <img
           src={getCostumeImage(product)}
           alt={product.name}
@@ -26,13 +26,13 @@ function ProductCard({ product, onAddToCart, onNavigate }) {
             e.stopPropagation();
             onAddToCart?.(toCartItemFromCostume(product));
           }}
-          className="absolute bottom-6 left-1/2 w-[80%] -translate-x-1/2 bg-black px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white opacity-0 transition duration-500 hover:bg-[#99854e] group-hover:opacity-100"
+          className="absolute bottom-6 left-1/2 w-[80%] -translate-x-1/2 bg-black px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white opacity-0 transition duration-500 hover:bg-[#756536] group-hover:opacity-100"
         >
           Thêm vào giỏ
         </button>
       </div>
       <div className="text-center">
-        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition group-hover:text-[#99854e]">
+        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition group-hover:text-[#756536]">
           {product.name}
         </h3>
         <p className="mb-3 text-xs italic text-[#4c4546]">{getCostumeDisplayMeta(product)}</p>
@@ -55,7 +55,7 @@ export default function HomeFeaturedSection({
       <div className="mx-auto max-w-[1440px] px-5 md:px-20">
         <div className="mb-16 flex flex-col items-baseline justify-between gap-10 md:flex-row">
           <div>
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Bộ sưu tập</p>
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">Bộ sưu tập</p>
             <h2 className="font-serif text-4xl font-normal md:text-5xl">Sản phẩm nổi bật</h2>
           </div>
           <div className="flex flex-wrap gap-6 md:gap-8">
@@ -66,7 +66,7 @@ export default function HomeFeaturedSection({
                 className={`pb-1 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
                   activeTab === tab.key
                     ? 'border-b border-black text-black'
-                    : 'text-[#4c4546] hover:text-[#99854e]'
+                    : 'text-[#4c4546] hover:text-[#756536]'
                 }`}
               >
                 {tab.label}
@@ -76,7 +76,7 @@ export default function HomeFeaturedSection({
         </div>
 
         {isLoading ? (
-          <p className="text-sm italic text-[#5f5e5e]">Đang tải sản phẩm...</p>
+          <p className="text-sm italic text-[#6B6259]">Đang tải sản phẩm...</p>
         ) : (
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
             {products[activeTab].map((product) => (
@@ -93,7 +93,7 @@ export default function HomeFeaturedSection({
         <div className="mt-20 flex justify-center">
           <button
             onClick={() => onNavigate?.('catalog')}
-            className="group flex items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:text-[#99854e]"
+            className="group flex items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:text-[#756536]"
           >
             <span>Khám phá toàn bộ bộ sưu tập</span>
             <span className="material-symbols-outlined text-[16px]">east</span>

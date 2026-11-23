@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { getUserRoles } from '../../utils/roles';
 import { updateProfile, changePassword } from '../../services/userService';
+import { performLogout } from '../../services/sessionService';
+import { useAppDispatch } from '../../store/hooks';
 import { useToastStore } from '../../store/useToastStore';
 import authNotify from '../../utils/authNotify';
 import SearchableSelect from '../common/SearchableSelect';
@@ -9,8 +11,8 @@ import TryOnHistorySection from './TryOnHistorySection';
 
 function ProfileField({ label, value }) {
   return (
-    <div className="border border-[#cfc4c5] bg-[#f9f9f9] p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#999999]">{label}</p>
+    <div className="border border-[#DED2C2] bg-[#F6F1E8] p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6B6259]">{label}</p>
       <p className="mt-2 break-words text-sm font-medium text-black">{value}</p>
     </div>
   );
@@ -57,7 +59,7 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget && !isSubmitting) onClose(); }}
     >
@@ -65,19 +67,19 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
         <h2 className="font-serif text-2xl italic">Chỉnh sửa hồ sơ</h2>
         <div>
           <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Họ tên *</label>
-          <input type="text" value={form.fullName} onChange={(e) => setForm(f => ({...f, fullName: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
+          <input type="text" value={form.fullName} onChange={(e) => setForm(f => ({...f, fullName: e.target.value}))} className="w-full border border-[#DED2C2] px-4 py-3 text-sm focus:border-black focus:outline-none" />
         </div>
         <div>
           <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Số điện thoại</label>
-          <input type="tel" value={form.phone} onChange={(e) => setForm(f => ({...f, phone: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
+          <input type="tel" value={form.phone} onChange={(e) => setForm(f => ({...f, phone: e.target.value}))} className="w-full border border-[#DED2C2] px-4 py-3 text-sm focus:border-black focus:outline-none" />
         </div>
         <div>
           <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Địa chỉ</label>
-          <input type="text" value={form.address} onChange={(e) => setForm(f => ({...f, address: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" placeholder="Số nhà, đường, phường, quận, TP" />
+          <input type="text" value={form.address} onChange={(e) => setForm(f => ({...f, address: e.target.value}))} className="w-full border border-[#DED2C2] px-4 py-3 text-sm focus:border-black focus:outline-none" placeholder="Số nhà, đường, phường, quận, TP" />
         </div>
-        
+
         <div className="border-t pt-4 mt-2">
-          <h3 className="font-serif italic text-lg mb-4 text-[#99854e]">Thông tin hoàn cọc (Tùy chọn)</h3>
+          <h3 className="font-serif italic text-lg mb-4 text-[#756536]">Thông tin hoàn cọc (Tùy chọn)</h3>
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Ngân hàng</label>
@@ -90,20 +92,20 @@ function EditProfileModal({ currentUser, onClose, onSaved }) {
             </div>
             <div>
               <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Số tài khoản</label>
-              <input type="text" value={form.bankAccountNumber} onChange={(e) => setForm(f => ({...f, bankAccountNumber: e.target.value}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none" />
+              <input type="text" value={form.bankAccountNumber} onChange={(e) => setForm(f => ({...f, bankAccountNumber: e.target.value}))} className="w-full border border-[#DED2C2] px-4 py-3 text-sm focus:border-black focus:outline-none" />
             </div>
             <div>
               <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">Chủ tài khoản</label>
-              <input type="text" value={form.bankAccountName} onChange={(e) => setForm(f => ({...f, bankAccountName: e.target.value.toUpperCase()}))} className="w-full border border-[#cfc4c5] px-4 py-3 text-sm focus:border-black focus:outline-none uppercase placeholder:normal-case" placeholder="NGUYEN VAN A" />
+              <input type="text" value={form.bankAccountName} onChange={(e) => setForm(f => ({...f, bankAccountName: e.target.value.toUpperCase()}))} className="w-full border border-[#DED2C2] px-4 py-3 text-sm focus:border-black focus:outline-none uppercase placeholder:normal-case" placeholder="NGUYEN VAN A" />
             </div>
           </div>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-3">
-          <button type="submit" disabled={isSubmitting} className="flex-1 bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:opacity-50">
+          <button type="submit" disabled={isSubmitting} className="flex-1 bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536] disabled:opacity-50">
             {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
           </button>
-          <button type="button" onClick={onClose} className="flex-1 border border-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:border-[#99854e] hover:text-[#99854e]">
+          <button type="button" onClick={onClose} className="flex-1 border border-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:border-[#A98A55] hover:text-[#756536]">
             Hủy
           </button>
         </div>
@@ -118,11 +120,11 @@ function PasswordField({ label, value, onChange }) {
     <div>
       <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">{label}</label>
       <div className="relative">
-        <input 
-          type={showPassword ? 'text' : 'password'} 
-          value={value} 
-          onChange={onChange} 
-          className="w-full border border-[#cfc4c5] py-3 pl-4 pr-10 text-sm focus:border-black focus:outline-none" 
+        <input
+          type={showPassword ? 'text' : 'password'}
+          value={value}
+          onChange={onChange}
+          className="w-full border border-[#DED2C2] py-3 pl-4 pr-10 text-sm focus:border-black focus:outline-none"
         />
         <button
           type="button"
@@ -130,7 +132,7 @@ function PasswordField({ label, value, onChange }) {
             e.preventDefault();
             setShowPassword(!showPassword);
           }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5f5e5e] hover:text-black flex items-center justify-center"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B6259] hover:text-black flex items-center justify-center"
           title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
         >
           <span className="material-symbols-outlined text-[18px]">
@@ -166,33 +168,33 @@ function ChangePasswordModal({ onClose }) {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget && !isSubmitting) onClose(); }}
     >
       <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 space-y-5">
         <h2 className="font-serif text-2xl italic">Đổi mật khẩu</h2>
-        <PasswordField 
-          label="Mật khẩu cũ *" 
-          value={form.oldPassword} 
-          onChange={(e) => setForm(f => ({...f, oldPassword: e.target.value}))} 
+        <PasswordField
+          label="Mật khẩu cũ *"
+          value={form.oldPassword}
+          onChange={(e) => setForm(f => ({...f, oldPassword: e.target.value}))}
         />
-        <PasswordField 
-          label="Mật khẩu mới *" 
-          value={form.newPassword} 
-          onChange={(e) => setForm(f => ({...f, newPassword: e.target.value}))} 
+        <PasswordField
+          label="Mật khẩu mới *"
+          value={form.newPassword}
+          onChange={(e) => setForm(f => ({...f, newPassword: e.target.value}))}
         />
-        <PasswordField 
-          label="Xác nhận mật khẩu mới *" 
-          value={form.confirmPassword} 
-          onChange={(e) => setForm(f => ({...f, confirmPassword: e.target.value}))} 
+        <PasswordField
+          label="Xác nhận mật khẩu mới *"
+          value={form.confirmPassword}
+          onChange={(e) => setForm(f => ({...f, confirmPassword: e.target.value}))}
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-3">
-          <button type="submit" disabled={isSubmitting} className="flex-1 bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:opacity-50">
+          <button type="submit" disabled={isSubmitting} className="flex-1 bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536] disabled:opacity-50">
             {isSubmitting ? 'Đang xử lý yêu cầu...' : 'Đổi mật khẩu'}
           </button>
-          <button type="button" onClick={onClose} className="flex-1 border border-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:border-[#99854e] hover:text-[#99854e]">
+          <button type="button" onClick={onClose} className="flex-1 border border-black py-3 text-[11px] font-semibold uppercase tracking-[0.2em] transition hover:border-[#A98A55] hover:text-[#756536]">
             Hủy
           </button>
         </div>
@@ -202,6 +204,7 @@ function ChangePasswordModal({ onClose }) {
 }
 
 export default function AccountProfileView({ currentUser, onNavigate, onAuthChange }) {
+  const dispatch = useAppDispatch();
   const roles = getUserRoles(currentUser);
   const isAdmin = roles.includes('ADMIN');
   const isStaff = roles.includes('STAFF') || isAdmin;
@@ -216,32 +219,32 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
   };
 
   return (
-    <div className="bg-[#f9f9f9] text-[#1a1c1c]">
+    <div className="bg-[#F6F1E8] text-[#211E1B]">
       <section className="mx-auto grid min-h-[calc(100dvh-80px)] max-w-[1440px] grid-cols-1 gap-12 px-5 py-16 md:grid-cols-12 md:px-20 md:py-24">
         <div className="flex flex-col justify-center md:col-span-5">
-          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Hồ sơ AuraFit</p>
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">Hồ sơ AuraFit</p>
           <h1 className="font-serif text-[44px] font-normal italic leading-[1.12] md:text-[68px]">
             Hồ sơ tài khoản
           </h1>
-          <p className="mt-7 max-w-lg text-base leading-8 text-[#5f5e5e]">
+          <p className="mt-7 max-w-lg text-base leading-8 text-[#6B6259]">
             Đây là thông tin tài khoản đang đăng nhập. Bạn có thể chỉnh sửa thông tin cá nhân hoặc đổi mật khẩu.
           </p>
         </div>
 
         <div className="flex items-center md:col-span-7">
-          <div className="w-full border border-[#cfc4c5] bg-white p-6 md:p-10">
-            <div className="mb-8 flex items-start justify-between gap-6 border-b border-[#cfc4c5] pb-8">
+          <div className="w-full border border-[#DED2C2] bg-white p-6 md:p-10">
+            <div className="mb-8 flex items-start justify-between gap-6 border-b border-[#DED2C2] pb-8">
               <div className="flex items-center gap-5">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black text-3xl font-semibold uppercase text-white">
                   {(currentUser.fullName || currentUser.email || 'A').charAt(0)}
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">Đang đăng nhập</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#756536]">Đang đăng nhập</p>
                   <h2 className="mt-2 font-serif text-3xl italic">{currentUser.fullName || 'Người dùng AuraFit'}</h2>
-                  <p className="mt-1 text-sm text-[#5f5e5e]">{currentUser.email}</p>
+                  <p className="mt-1 text-sm text-[#6B6259]">{currentUser.email}</p>
                 </div>
               </div>
-              <span className="hidden border border-[#99854e]/30 bg-[#99854e]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#99854e] md:inline-flex">
+              <span className="hidden border border-[#A98A55]/30 bg-[#756536]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#756536] md:inline-flex">
                 {roles.join(', ') || 'CUSTOMER'}
               </span>
             </div>
@@ -259,14 +262,14 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
               <button
                 type="button"
                 onClick={() => setShowEditProfile(true)}
-                className="bg-[#99854e] px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7a6a3e]"
+                className="bg-[#756536] px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7a6a3e]"
               >
                 Chỉnh sửa hồ sơ
               </button>
               <button
                 type="button"
                 onClick={() => setShowChangePassword(true)}
-                className="border border-[#99854e] px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e] transition hover:bg-[#99854e]/10"
+                className="border border-[#A98A55] px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#756536] transition hover:bg-[#756536]/10"
               >
                 Đổi mật khẩu
               </button>
@@ -274,7 +277,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                 <button
                   type="button"
                   onClick={() => onNavigate?.('adminDashboard')}
-                  className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+                  className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
                 >
                   Vào dashboard Admin
                 </button>
@@ -283,7 +286,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                 <button
                   type="button"
                   onClick={() => onNavigate?.('staffDashboard')}
-                  className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+                  className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
                 >
                   Vào dashboard nhân viên
                 </button>
@@ -292,7 +295,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                 <button
                   type="button"
                   onClick={() => onNavigate?.('orders')}
-                  className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+                  className="bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
                 >
                   Xem đơn hàng
                 </button>
@@ -300,7 +303,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
               <button
                 type="button"
                 onClick={() => onNavigate?.('home')}
-                className="border border-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:border-[#99854e] hover:text-[#99854e]"
+                className="border border-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:border-[#A98A55] hover:text-[#756536]"
               >
                 Về trang chủ
               </button>
@@ -308,8 +311,7 @@ export default function AccountProfileView({ currentUser, onNavigate, onAuthChan
                 type="button"
                 onClick={() => {
                   authNotify.logoutSuccess(currentUser);
-                  onAuthChange?.(null);
-                  onNavigate?.('account');
+                  performLogout(dispatch).finally(() => onNavigate?.('account'));
                 }}
                 className="border border-[#ba1a1a]/40 px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#93000a] transition hover:bg-[#ffdad6] md:col-span-2"
               >

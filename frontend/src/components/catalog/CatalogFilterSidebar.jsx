@@ -19,8 +19,8 @@ function CategoryNode({
             isActive
               ? 'text-[12px] font-semibold uppercase tracking-[0.1em] text-[#3f7c78]'
               : category.parentPath
-                ? 'text-[13px] text-[#6f6259] hover:text-[#2f251f]'
-                : 'text-[12px] font-semibold uppercase tracking-[0.1em] text-[#2f251f] hover:text-[#3f7c78]'
+                ? 'text-[13px] text-[#6f6259] hover:text-[#2B2521]'
+                : 'text-[12px] font-semibold uppercase tracking-[0.1em] text-[#2B2521] hover:text-[#3f7c78]'
           }`}
         >
           {category.name}
@@ -32,7 +32,7 @@ function CategoryNode({
             onClick={() => onToggleCategory(category.path)}
             aria-label={`${isExpanded ? 'Thu gọn' : 'Mở rộng'} ${category.name}`}
             aria-expanded={isExpanded}
-            className="p-1 text-[#9b9087] hover:text-[#2f251f]"
+            className="p-1 text-[#9b9087] hover:text-[#2B2521]"
           >
             <span className="material-symbols-outlined text-[18px]">
               {isExpanded ? 'remove' : 'add'}
@@ -79,7 +79,7 @@ export default function CatalogFilterSidebar({
         onClick={() => onSetMobileFilterOpen(!isMobileFilterOpen)}
         aria-expanded={isMobileFilterOpen}
         aria-controls="catalog-filter-panel"
-        className="flex h-full min-h-[58px] w-full items-center justify-between gap-3 rounded-lg border border-[#ded2c6] bg-[#fffdfa] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-[#2f251f] transition hover:border-[#4d3830] sm:px-5 sm:text-sm sm:tracking-[0.1em]"
+        className="flex h-full min-h-[58px] w-full items-center justify-between gap-3 rounded-lg border border-[#ded2c6] bg-[#FFFCF7] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-[#2B2521] transition hover:border-[#3A302A] sm:px-5 sm:text-sm sm:tracking-[0.1em]"
       >
         <span className="flex items-center gap-2">
           <span className="material-symbols-outlined text-[20px] text-[#3f7c78]">category</span>
@@ -92,10 +92,10 @@ export default function CatalogFilterSidebar({
         id="catalog-filter-panel"
         className={`${
           isMobileFilterOpen ? 'block' : 'hidden'
-        } custom-scrollbar absolute left-0 top-full z-40 mt-2 max-h-[32rem] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-[#ded2c6] bg-[#fffdfa] p-6 shadow-xl`}
+        } custom-scrollbar absolute left-0 top-full z-40 mt-2 max-h-[32rem] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-[#ded2c6] bg-[#FFFCF7] p-6 shadow-xl`}
       >
         <div className="mb-6 flex items-center justify-between border-b border-[#ded2c6] pb-4">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[#2f251f]">Danh mục sản phẩm</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[#2B2521]">Danh mục sản phẩm</h2>
           {hasActiveFilter && (
             <button
               type="button"
@@ -103,7 +103,7 @@ export default function CatalogFilterSidebar({
                 onClearFilters();
                 onSetMobileFilterOpen(false);
               }}
-              className="text-[11px] font-semibold uppercase text-[#3f7c78] hover:text-[#2f251f]"
+              className="text-[11px] font-semibold uppercase text-[#3f7c78] hover:text-[#2B2521]"
             >
               Xóa bộ lọc
             </button>
@@ -140,7 +140,7 @@ export default function CatalogFilterSidebar({
                     className={`rounded-full border px-3 py-1 text-[11px] transition ${
                       isActive
                         ? 'border-[#3f7c78] bg-[#3f7c78] text-white'
-                        : 'border-[#ded2c6] text-[#6f6259] hover:border-[#4d3830] hover:text-[#2f251f]'
+                        : 'border-[#ded2c6] text-[#6f6259] hover:border-[#3A302A] hover:text-[#2B2521]'
                     }`}
                   >
                     {tag}

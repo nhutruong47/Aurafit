@@ -13,14 +13,14 @@ export default function CheckoutSummary({
 }) {
   const canSubmit = selectedCount > 0 && !isSubmitting && !hasMissingDates && !isCalculatingFee;
   return (
-    <div className="sticky top-32 border border-[#cfc4c5] bg-white p-8 shadow-sm">
+    <div className="sticky top-32 border border-[#DED2C2] bg-white p-8 shadow-sm">
       <h2 className="mb-8 font-serif text-[28px] font-normal uppercase tracking-tight">Tóm tắt đơn thuê</h2>
 
       <div className="space-y-6">
         {summaryRows.map((row) => (
           <div
             key={row.label}
-            className={`flex items-center justify-between gap-6 ${row.accent ? 'text-[#99854e]' : ''}`}
+            className={`flex items-center justify-between gap-6 ${row.accent ? 'text-[#756536]' : ''}`}
           >
             <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-current opacity-80">
               {row.label}
@@ -50,11 +50,11 @@ export default function CheckoutSummary({
           <button
             onClick={onProceedToCheckout}
             disabled={!canSubmit}
-            className="mb-3 w-full bg-black py-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition duration-500 hover:bg-[#99854e] hover:tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40"
+            className="mb-3 w-full bg-black py-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition duration-500 hover:bg-[#756536] hover:tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isSubmitting ? 'Đang xử lý yêu cầu...' : isCalculatingFee ? 'Đang tính phí vận chuyển...' : `Thanh toán (${selectedCount})`}
           </button>
-          <p className="mt-4 text-center text-[11px] leading-relaxed text-[#999999]">
+          <p className="mt-4 text-center text-[11px] leading-relaxed text-[#6B6259]">
             Bằng việc nhấn thanh toán, bạn đồng ý với{' '}
             <a className="underline hover:text-black" href="#">
               điều khoản thuê

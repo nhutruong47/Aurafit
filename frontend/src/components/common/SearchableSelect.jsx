@@ -67,7 +67,7 @@ export default function SearchableSelect({
           onClick={handleInputClick}
           disabled={disabled}
           placeholder={selectedOption ? '' : placeholder}
-          className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full border border-[#DED2C2] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed cursor-pointer"
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
           <span className="material-symbols-outlined text-xl">
@@ -77,7 +77,7 @@ export default function SearchableSelect({
       </div>
 
       {isOpen && !disabled && (
-        <ul className="absolute z-50 w-full bg-white border border-[#cfc4c5] mt-1 max-h-60 overflow-y-auto shadow-lg shadow-black/5">
+        <ul className="absolute z-50 w-full bg-white border border-[#DED2C2] mt-1 max-h-60 overflow-y-auto shadow-lg shadow-black/5">
           {filteredOptions.length === 0 ? (
             <li className="px-4 py-3 text-sm text-gray-500 italic text-center">
               Không tìm thấy kết quả
@@ -89,8 +89,8 @@ export default function SearchableSelect({
                 onClick={() => handleSelect(opt)}
                 className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
                   String(opt.value) === String(value)
-                    ? 'bg-[#f9f9f9] text-[#7f7041] font-medium'
-                    : 'text-black hover:bg-[#f9f9f9] hover:text-[#7f7041]'
+                    ? 'bg-[#F6F1E8] text-[#756536] font-medium'
+                    : 'text-black hover:bg-[#F6F1E8] hover:text-[#756536]'
                 }`}
               >
                 {opt.label}

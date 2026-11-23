@@ -17,10 +17,10 @@ function TextField({ label, name, placeholder, type = 'text', value, onChange, r
 
   return (
     <label className="block">
-      <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5f5e5e]">{label}</span>
+      <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B6259]">{label}</span>
       <div className="relative">
         <input
-          className={`w-full border border-[#cfc4c5] bg-[#f9f9f9] py-4 pl-4 outline-none transition focus:border-[#99854e] ${isPassword ? 'pr-12' : 'pr-4'}`}
+          className={`w-full border border-[#DED2C2] bg-[#F6F1E8] py-4 pl-4 outline-none transition focus:border-[#A98A55] ${isPassword ? 'pr-12' : 'pr-4'}`}
           name={name}
           placeholder={placeholder}
           required={required}
@@ -36,7 +36,7 @@ function TextField({ label, name, placeholder, type = 'text', value, onChange, r
               e.preventDefault();
               setShowPassword(!showPassword);
             }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5f5e5e] hover:text-black transition flex items-center justify-center"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6259] hover:text-black transition flex items-center justify-center"
             title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
           >
             <span className="material-symbols-outlined text-[20px]">
@@ -173,14 +173,14 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
   const displayError = formError || localError;
 
   return (
-    <div className="bg-[#f9f9f9] text-[#1a1c1c]">
+    <div className="bg-[#F6F1E8] text-[#211E1B]">
       <section className="mx-auto grid min-h-[calc(100dvh-80px)] max-w-[1440px] grid-cols-1 gap-12 px-5 py-16 md:grid-cols-12 md:px-20 md:py-24">
         <div className="flex flex-col justify-center md:col-span-5">
-          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Tài khoản AuraFit</p>
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">Tài khoản AuraFit</p>
           <h1 className="font-serif text-[44px] font-normal italic leading-[1.12] md:text-[68px]">
             Tủ đồ thuê của bạn chỉ cách một lần đăng nhập.
           </h1>
-          <p className="mt-7 max-w-lg text-base leading-8 text-[#5f5e5e]">
+          <p className="mt-7 max-w-lg text-base leading-8 text-[#6B6259]">
             Đăng nhập để theo dõi đơn thuê và quản lý giỏ hàng của bạn.
           </p>
           <div className="mt-10 grid max-w-md grid-cols-2 gap-4">
@@ -188,8 +188,8 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
               ['verified_user', 'An toàn'],
               ['local_shipping', 'Theo dõi được'],
             ].map(([icon, label]) => (
-              <div key={label} className="border border-[#cfc4c5] bg-white p-4">
-                <span className="material-symbols-outlined text-[#99854e]">{icon}</span>
+              <div key={label} className="border border-[#DED2C2] bg-white p-4">
+                <span className="material-symbols-outlined text-[#756536]">{icon}</span>
                 <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.16em]">{label}</p>
               </div>
             ))}
@@ -197,8 +197,8 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
         </div>
 
         <div className="flex items-center md:col-span-7">
-          <div className="w-full border border-[#cfc4c5] bg-white p-6 md:p-10">
-            <div className="mb-9 grid grid-cols-2 border border-[#cfc4c5] bg-[#f3f3f4] p-1">
+          <div className="w-full border border-[#DED2C2] bg-white p-6 md:p-10">
+            <div className="mb-9 grid grid-cols-2 border border-[#DED2C2] bg-[#EFE7DB] p-1">
               <button
                 type="button"
                 onClick={() => {
@@ -207,7 +207,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   setInfoMessage('');
                 }}
                 className={`px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
-                  !isRegister ? 'bg-black text-white' : 'text-[#5f5e5e] hover:text-black'
+                  !isRegister ? 'bg-black text-white' : 'text-[#6B6259] hover:text-black'
                 }`}
               >
                 Đăng nhập
@@ -220,7 +220,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                   setInfoMessage('');
                 }}
                 className={`px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
-                  isRegister ? 'bg-black text-white' : 'text-[#5f5e5e] hover:text-black'
+                  isRegister ? 'bg-black text-white' : 'text-[#6B6259] hover:text-black'
                 }`}
               >
                 Đăng ký
@@ -235,7 +235,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                     : 'Đăng ký tài khoản'
                   : 'Chào mừng trở lại'}
               </h2>
-              <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
+              <p className="mt-3 text-sm leading-6 text-[#6B6259]">
                 {isRegister
                   ? stage === 'verify-otp'
                     ? `Mã xác thực đã gửi tới ${form.email}. Nhập mã OTP để kích hoạt tài khoản của bạn.`
@@ -249,12 +249,22 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                 <TextField label="Email" name="email" type="email" placeholder="you@aurafit.vn" autoComplete="email" />
                 <TextField label="Mật khẩu" name="password" type="password" placeholder="********" autoComplete="current-password" />
 
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onModeChange('forgot')}
+                    className="text-xs font-medium text-[#756536] underline-offset-4 hover:underline"
+                  >
+                    Quên mật khẩu?
+                  </button>
+                </div>
+
                 {displayError && <AlertMessage text={displayError} />}
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
+                  className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536] disabled:cursor-not-allowed disabled:bg-[#777777]"
                 >
                   {isSubmitting ? 'Đang xử lý yêu cầu...' : 'Đăng nhập'}
                 </button>
@@ -311,7 +321,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                 <button
                   type="submit"
                   disabled={isSubmitting || isSendingOtp}
-                  className="flex w-full items-center justify-center bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-black/70"
+                  className="flex w-full items-center justify-center bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536] disabled:cursor-not-allowed disabled:bg-black/70"
                 >
                   {isSendingOtp ? (
                     <>
@@ -330,8 +340,8 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
               </form>
             ) : (
               <form className="space-y-5" onSubmit={handleVerifyAndRegister}>
-                <div className="border border-[#cfc4c5] bg-[#f9f9f9] p-4 text-sm leading-6 text-[#5f5e5e]">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#99854e]">Thông tin đã đăng ký</p>
+                <div className="border border-[#DED2C2] bg-[#F6F1E8] p-4 text-sm leading-6 text-[#6B6259]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#756536]">Thông tin đã đăng ký</p>
                   <p className="mt-2"><strong>Họ tên:</strong> {form.fullName}</p>
                   <p><strong>Số điện thoại:</strong> {form.phone}</p>
                   <p><strong>Email:</strong> {form.email}</p>
@@ -345,7 +355,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                     value={form.otpCode}
                     onChange={updateField('otpCode')}
                   />
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#5f5e5e]">
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#6B6259]">
                     <span>
                       {otpCountdown > 0
                         ? `Mã hết hạn sau ${Math.floor(otpCountdown / 60)}:${String(otpCountdown % 60).padStart(2, '0')}`
@@ -355,7 +365,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                       type="button"
                       onClick={handleResendOtp}
                       disabled={otpCountdown > 0}
-                      className="font-semibold uppercase tracking-[0.16em] text-[#99854e] transition hover:text-black disabled:cursor-not-allowed disabled:text-[#999999]"
+                      className="font-semibold uppercase tracking-[0.16em] text-[#756536] transition hover:text-black disabled:cursor-not-allowed disabled:text-[#6B6259]"
                     >
                       Gửi lại mã
                     </button>
@@ -369,7 +379,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e] disabled:cursor-not-allowed disabled:bg-[#777777]"
+                  className="w-full bg-black px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536] disabled:cursor-not-allowed disabled:bg-[#777777]"
                 >
                   {isSubmitting ? 'Đang xử lý yêu cầu...' : 'Xác thực và tạo tài khoản'}
                 </button>
@@ -381,7 +391,7 @@ export default function AccountAuthForm({ mode, formError, isSubmitting, onModeC
                     setLocalError('');
                     setInfoMessage('');
                   }}
-                  className="block w-full text-center text-[11px] uppercase tracking-[0.18em] text-[#5f5e5e] transition hover:text-black"
+                  className="block w-full text-center text-[11px] uppercase tracking-[0.18em] text-[#6B6259] transition hover:text-black"
                 >
                   ← Chỉnh sửa thông tin
                 </button>

@@ -58,10 +58,10 @@ export default function CustomerDetailModal({ customer, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-opacity duration-300">
       <div
         ref={modalRef}
-        className="w-full max-w-4xl bg-[#fafaf8] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+        className="w-full max-w-4xl bg-[#FAF5ED] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#d7d2c8] bg-white px-6 py-5">
+        <div className="flex items-center justify-between border-b border-[#DED2C2] bg-white px-6 py-5">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold font-serif italic text-black">
               {customer.fullName || 'Khách hàng'}
@@ -79,7 +79,7 @@ export default function CustomerDetailModal({ customer, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="text-[#999999] transition hover:text-black"
+            className="text-[#6B6259] transition hover:text-black"
           >
             <span className="material-symbols-outlined text-[24px]">close</span>
           </button>
@@ -88,73 +88,73 @@ export default function CustomerDetailModal({ customer, onClose }) {
         {/* Content */}
         <div className="flex flex-col md:flex-row overflow-y-auto">
           {/* Left Column: Profile Info */}
-          <div className="w-full md:w-1/3 border-r border-[#ebe7df] p-6 space-y-6 bg-white">
+          <div className="w-full md:w-1/3 border-r border-[#E8DDCE] p-6 space-y-6 bg-white">
             <div>
-              <h3 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7f7041]">
+              <h3 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#756536]">
                 Thông tin cá nhân
               </h3>
               <div className="space-y-4 text-sm">
                 <div>
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-[#999999]">Email</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-[#6B6259]">Email</p>
                   <p className="font-medium text-black">{customer.email}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-[#999999]">Số điện thoại</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-[#6B6259]">Số điện thoại</p>
                   <p className="font-medium text-black">{customer.phone || 'Chưa cập nhật'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-[#999999]">Địa chỉ</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-[#6B6259]">Địa chỉ</p>
                   <p className="font-medium text-black leading-relaxed">{customer.address || 'Chưa cập nhật'}</p>
                 </div>
               </div>
             </div>
 
-            <div className="pt-6 border-t border-[#ebe7df]">
-              <h3 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7f7041]">
+            <div className="pt-6 border-t border-[#E8DDCE]">
+              <h3 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#756536]">
                 Tài khoản ngân hàng
               </h3>
               {customer.bankName ? (
                 <div className="space-y-4 text-sm">
                   <div>
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-[#999999]">Ngân hàng</p>
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-[#6B6259]">Ngân hàng</p>
                     <p className="font-medium text-black">{customer.bankName}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-[#999999]">Số tài khoản</p>
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-[#6B6259]">Số tài khoản</p>
                     <p className="font-medium text-black">{customer.bankAccountNumber}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-[#999999]">Tên chủ tài khoản</p>
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-[#6B6259]">Tên chủ tài khoản</p>
                     <p className="font-medium text-black">{customer.bankAccountName}</p>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-[#999999] italic">Chưa cập nhật thông tin hoàn tiền.</p>
+                <p className="text-sm text-[#6B6259] italic">Chưa cập nhật thông tin hoàn tiền.</p>
               )}
             </div>
           </div>
 
           {/* Right Column: Order History */}
-          <div className="w-full md:w-2/3 p-6 bg-[#fafaf8]">
-            <h3 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7f7041]">
+          <div className="w-full md:w-2/3 p-6 bg-[#FAF5ED]">
+            <h3 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#756536]">
               Lịch sử đơn hàng
             </h3>
             
             {isLoadingOrders ? (
               <div className="flex items-center justify-center py-12">
-                <span className="material-symbols-outlined animate-spin text-[32px] text-[#7f7041]">
+                <span className="material-symbols-outlined animate-spin text-[32px] text-[#756536]">
                   autorenew
                 </span>
               </div>
             ) : orders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-[#d7d2c8] bg-white">
-                <span className="material-symbols-outlined text-[48px] text-[#ebe7df] mb-3">
+              <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-[#DED2C2] bg-white">
+                <span className="material-symbols-outlined text-[48px] text-[#E8DDCE] mb-3">
                   history
                 </span>
-                <p className="text-sm text-[#5f5e5e]">Khách hàng chưa có lịch sử thuê đồ.</p>
+                <p className="text-sm text-[#6B6259]">Khách hàng chưa có lịch sử thuê đồ.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto border border-[#ebe7df] bg-white">
+              <div className="overflow-x-auto border border-[#E8DDCE] bg-white">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-[#111111] text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
                     <tr>
@@ -164,13 +164,13 @@ export default function CustomerDetailModal({ customer, onClose }) {
                       <th className="px-4 py-3 text-right">Tổng cộng</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#ebe7df]">
+                  <tbody className="divide-y divide-[#E8DDCE]">
                     {orders.map((order) => {
                       const statusInfo = ORDER_STATUS_MAP[order.status] || { label: order.status, color: 'bg-gray-100 text-gray-800' };
                       return (
                         <tr key={order.id} className="transition hover:bg-[#f5f2eb]">
                           <td className="px-4 py-3 font-medium text-black">#{order.id}</td>
-                          <td className="px-4 py-3 text-[#5f5e5e]">
+                          <td className="px-4 py-3 text-[#6B6259]">
                             {new Date(order.createdAt).toLocaleDateString('vi-VN', {
                               year: 'numeric',
                               month: '2-digit',

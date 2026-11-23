@@ -264,7 +264,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
           <h2 className="font-serif text-xl uppercase tracking-wide">Chỉnh sửa sản phẩm</h2>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center text-[#999] transition hover:text-black"
+            className="flex h-8 w-8 items-center justify-center text-[#6B6259] transition hover:text-black"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
@@ -281,7 +281,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
              loading="lazy" decoding="async" />
             <div>
               <h3 className="font-serif text-base uppercase tracking-wide">{item.name}</h3>
-              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#99854e]">
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#756536]">
                 {item.category}
               </p>
             </div>
@@ -289,14 +289,14 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
 
           {isLoadingItems ? (
             <div className="flex items-center justify-center py-8">
-              <span className="text-sm text-[#999]">Đang tải sản phẩm...</span>
+              <span className="text-sm text-[#6B6259]">Đang tải sản phẩm...</span>
             </div>
           ) : (
             <>
               {/* ── Size Selector ── */}
               {uniqueSizes.length > 0 && !(uniqueSizes.length === 1 && uniqueSizes[0] === '') && (
                 <div className="mb-4">
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
                     Kích cỡ
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -307,7 +307,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
                         className={`border px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition ${
                           selectedSize === size
                             ? 'border-black bg-black text-white'
-                            : 'border-[#cfc4c5] bg-white text-black hover:border-black'
+                            : 'border-[#DED2C2] bg-white text-black hover:border-black'
                         }`}
                       >
                         {size || 'Freesize'}
@@ -320,7 +320,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
               {/* ── Color Selector ── */}
               {availableColorsForSize.length > 0 && !(availableColorsForSize.length === 1 && availableColorsForSize[0] === '') && (
                 <div className="mb-4">
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
                     Màu sắc
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -330,8 +330,8 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
                         onClick={() => handleColorChange(color)}
                         className={`border px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition ${
                           selectedColor === color
-                            ? 'border-[#99854e] bg-[#99854e] text-white'
-                            : 'border-[#cfc4c5] bg-white text-black hover:border-[#99854e]'
+                            ? 'border-[#A98A55] bg-[#756536] text-white'
+                            : 'border-[#DED2C2] bg-white text-black hover:border-[#A98A55]'
                         }`}
                       >
                         {color || 'Mặc định'}
@@ -356,15 +356,15 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
 
               {/* ── Quantity ── */}
               <div className="mb-5">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Số lượng</p>
-                <div className="flex h-9 w-fit items-center border border-[#cfc4c5]">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">Số lượng</p>
+                <div className="flex h-9 w-fit items-center border border-[#DED2C2]">
                   <button
                     onClick={() => setEditQuantity((q) => Math.max(1, q - 1))}
-                    className="flex h-full w-9 items-center justify-center text-black transition hover:bg-[#f9f9f9]"
+                    className="flex h-full w-9 items-center justify-center text-black transition hover:bg-[#F6F1E8]"
                   >
                     <span className="material-symbols-outlined text-sm">remove</span>
                   </button>
-                  <span className="flex h-full w-10 items-center justify-center border-x border-[#cfc4c5] text-sm">
+                  <span className="flex h-full w-10 items-center justify-center border-x border-[#DED2C2] text-sm">
                     {editQuantity}
                   </span>
                   <button
@@ -379,7 +379,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
                     className={`flex h-full w-9 items-center justify-center transition ${
                       editQuantity >= effectiveStock
                         ? 'cursor-not-allowed bg-gray-50 text-gray-400'
-                        : 'text-black hover:bg-[#f9f9f9]'
+                        : 'text-black hover:bg-[#F6F1E8]'
                     }`}
                   >
                     <span className="material-symbols-outlined text-sm">add</span>
@@ -389,26 +389,28 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
 
               {/* ── Date Picker ── */}
               <div className="mb-2">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">Thời gian thuê</p>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">Thời gian thuê</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-1 block text-[9px] uppercase tracking-wide text-[#999]">Ngày nhận</label>
+                    <label htmlFor="edit-rental-start-date" className="mb-1 block text-[9px] uppercase tracking-wide text-[#6B6259]">Ngày nhận</label>
                     <input
+                      id="edit-rental-start-date"
                       type="date"
                       value={editStartDate}
                       min={today}
                       onChange={handleStartDateChange}
-                      className="w-full border border-[#cfc4c5] bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
+                      className="w-full border border-[#DED2C2] bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[9px] uppercase tracking-wide text-[#999]">Ngày trả</label>
+                    <label htmlFor="edit-rental-end-date" className="mb-1 block text-[9px] uppercase tracking-wide text-[#6B6259]">Ngày trả</label>
                     <input
+                      id="edit-rental-end-date"
                       type="date"
                       value={editEndDate}
                       min={editStartDate ? getLocalDateString(new Date(new Date(editStartDate).getTime() + 86400000)) : today}
                       onChange={handleEndDateChange}
-                      className="w-full border border-[#cfc4c5] bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
+                      className="w-full border border-[#DED2C2] bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
                     />
                   </div>
                 </div>
@@ -422,7 +424,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
         <div className="flex-none px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-white">
           <button
             onClick={onClose}
-            className="flex-1 border border-[#cfc4c5] py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5f5e5e] transition hover:border-black hover:text-black"
+            className="flex-1 border border-[#DED2C2] py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B6259] transition hover:border-black hover:text-black"
           >
             Hủy
           </button>
@@ -431,7 +433,7 @@ export default function CartItemEditModal({ item, isOpen, onClose, onSaved }) {
             disabled={!canSave || isUpdating}
             className={`flex-1 py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
               canSave && !isUpdating
-                ? 'bg-black text-white hover:bg-[#99854e]'
+                ? 'bg-black text-white hover:bg-[#756536]'
                 : 'opacity-70 cursor-not-allowed bg-black text-white'
             }`}
           >

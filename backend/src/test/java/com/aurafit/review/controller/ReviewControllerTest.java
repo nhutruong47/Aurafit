@@ -64,6 +64,9 @@ class ReviewControllerTest {
     @MockBean
     private UserDetailsService userDetailsService;
 
+    @MockBean
+    private com.aurafit.business.user.repository.UserRepository userRepository;
+
     @Test
     void createReview_shouldReturnUnauthorizedWithoutAuthentication() throws Exception {
         ReviewRequest request = new ReviewRequest(30L, 5, "Great costume", List.of());

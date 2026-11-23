@@ -16,8 +16,8 @@ export default function OrdersList({ orders, selectedOrderId, onSelectOrder }) {
             <div
               key={order.id}
               onClick={() => onSelectOrder(order)}
-              className={`flex cursor-pointer items-center justify-between border bg-white p-5 transition duration-300 hover:border-[#99854e] hover:shadow-md ${
-                selectedOrderId === order.id ? 'border-[#99854e] shadow-md' : 'border-[#cfc4c5]'
+              className={`flex cursor-pointer items-center justify-between border bg-white p-5 transition duration-300 hover:border-[#A98A55] hover:shadow-md ${
+                selectedOrderId === order.id ? 'border-[#A98A55] shadow-md' : 'border-[#DED2C2]'
               }`}
             >
               <div className="flex gap-4">
@@ -33,10 +33,10 @@ export default function OrdersList({ orders, selectedOrderId, onSelectOrder }) {
                 </div>
                 <div className="flex flex-col justify-center">
                   <p className="text-[11px] font-bold uppercase tracking-widest">{getOrderCode(order.id)}</p>
-                  <p className="mt-1 text-xs text-[#5f5e5e]">
+                  <p className="mt-1 text-xs text-[#6B6259]">
                     {new Date(order.createdAt).toLocaleDateString('vi-VN')}
                   </p>
-                  <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-[#999999]">
+                  <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-[#6B6259]">
                     {order.itemCount || 0} món
                   </p>
                 </div>

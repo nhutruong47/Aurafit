@@ -18,7 +18,7 @@ export default function HomeTrendingSection({
         <div className="mb-16 flex items-end justify-between gap-8">
           <h2 className="font-serif text-4xl font-normal md:text-5xl">{title}</h2>
           <a
-            className="border-b border-[#99854e] pb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]"
+            className="border-b border-[#A98A55] pb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#756536]"
             href="#categories"
           >
             Xem tất cả
@@ -30,7 +30,7 @@ export default function HomeTrendingSection({
         ) : isLoading ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="overflow-hidden border border-[#cfc4c5] bg-white">
+              <div key={index} className="overflow-hidden border border-[#DED2C2] bg-white">
                 <div className="h-64 animate-pulse bg-[#f1eceb]" />
                 <div className="space-y-4 p-5">
                   <div className="h-5 w-3/4 animate-pulse bg-[#ece7e6]" />
@@ -52,7 +52,7 @@ export default function HomeTrendingSection({
                 className="group cursor-pointer"
                 onClick={() => onNavigate?.('productDetail', item)}
               >
-                <div className="mb-6 aspect-square overflow-hidden border border-[#cfc4c5]/20 bg-white">
+                <div className="mb-6 aspect-square overflow-hidden border border-[#DED2C2]/20 bg-white">
                   <img
                     src={getCostumeImage(item)}
                     alt={item.name}
@@ -63,12 +63,12 @@ export default function HomeTrendingSection({
                   />
                 </div>
                 <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em]">{item.name}</h3>
-                <p className="font-serif text-2xl text-[#99854e]">{getCostumePrice(item)}</p>
+                <p className="font-serif text-2xl text-[#756536]">{getCostumePrice(item)}</p>
               </article>
             ))}
           </div>
         ) : (
-          <div className="border border-dashed border-[#d8d0cf] bg-[#faf8f7] px-5 py-8 text-sm leading-6 text-[#5f5e5e]">
+          <div className="border border-dashed border-[#d8d0cf] bg-[#faf8f7] px-5 py-8 text-sm leading-6 text-[#6B6259]">
             {emptyMessage}
           </div>
         )}

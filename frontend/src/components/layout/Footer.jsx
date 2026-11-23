@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
-    <footer className="w-full overflow-x-hidden bg-[#F9F9F9] pt-20 pb-12 border-t border-gray-200 relative">
+    <footer className="w-full overflow-x-hidden bg-[#F6F1E8] pt-20 pb-12 border-t border-gray-200 relative">
       <div className="max-w-screen-2xl mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-12 text-sm text-gray-600">
         {/* Column 1: Brand Info */}
         <div className="flex flex-col items-start space-y-6">

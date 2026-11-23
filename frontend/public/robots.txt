@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /staff
+Disallow: /account
+Disallow: /checkout
+Disallow: /payment
+Disallow: /success
+Disallow: /orders
+Disallow: /chat
+
+Sitemap: https://aurafitstore.vercel.app/sitemap.xml

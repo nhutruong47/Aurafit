@@ -40,7 +40,7 @@ function ToastItem({ toast, onDismiss }) {
       icon: 'error',
     },
     info: {
-      bg: 'bg-[#99854e]',
+      bg: 'bg-[#756536]',
       icon: 'info',
     },
     warning: {

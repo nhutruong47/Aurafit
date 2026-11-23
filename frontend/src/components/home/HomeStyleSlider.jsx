@@ -15,7 +15,7 @@ export default function HomeStyleSlider({ sliderRef, onNavigate, onScroll }) {
       <div className="mx-auto max-w-[1440px] px-5 md:px-20">
         <div className="mb-16 flex flex-col items-end justify-between gap-6 md:flex-row">
           <div className="text-center md:text-left">
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">
               Danh mục tuyển chọn
             </p>
             <h2 className="font-serif text-4xl font-normal italic md:text-5xl">Khám phá phong cách</h2>
@@ -23,14 +23,14 @@ export default function HomeStyleSlider({ sliderRef, onNavigate, onScroll }) {
           <div className="flex gap-4">
             <button
               onClick={() => onScroll('left')}
-              className="flex h-12 w-12 items-center justify-center border border-[#cfc4c5]/40 transition hover:bg-[#99854e] hover:text-white"
+              className="flex h-12 w-12 items-center justify-center border border-[#DED2C2]/40 transition hover:bg-[#756536] hover:text-white"
               aria-label="Cuộn trái"
             >
               <span className="material-symbols-outlined">west</span>
             </button>
             <button
               onClick={() => onScroll('right')}
-              className="flex h-12 w-12 items-center justify-center border border-[#cfc4c5]/40 transition hover:bg-[#99854e] hover:text-white"
+              className="flex h-12 w-12 items-center justify-center border border-[#DED2C2]/40 transition hover:bg-[#756536] hover:text-white"
               aria-label="Cuộn phải"
             >
               <span className="material-symbols-outlined">east</span>

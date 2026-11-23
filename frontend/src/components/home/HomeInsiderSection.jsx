@@ -12,7 +12,7 @@ export default function HomeInsiderSection({
       <div className="relative mx-auto max-w-[1440px] overflow-hidden bg-black px-6 py-24 text-center md:py-36">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')] opacity-20" />
         <div className="relative z-10">
-          <p className="mb-8 text-[11px] font-semibold uppercase tracking-[0.4em] text-[#99854e]">
+          <p className="mb-8 text-[11px] font-semibold uppercase tracking-[0.4em] text-[#756536]">
             Câu lạc bộ thành viên
           </p>
           <h2 className="mb-10 font-serif text-4xl font-normal italic text-white md:text-6xl">
@@ -22,20 +22,20 @@ export default function HomeInsiderSection({
             Nhận đặc quyền ưu đãi 20% cho đơn hàng đầu tiên và truy cập sớm vào các bộ sưu tập giới hạn.
           </p>
           {isSubscribed ? (
-            <div className="mx-auto max-w-xl animate-[fadeIn_0.5s_ease-out] border border-[#99854e] bg-black px-8 py-10 text-center text-white shadow-2xl">
-              <span className="material-symbols-outlined mb-4 text-4xl text-[#99854e]">redeem</span>
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
+            <div className="mx-auto max-w-xl animate-[fadeIn_0.5s_ease-out] border border-[#A98A55] bg-black px-8 py-10 text-center text-white shadow-2xl">
+              <span className="material-symbols-outlined mb-4 text-4xl text-[#756536]">redeem</span>
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.2em] text-[#756536]">
                 Đăng ký thành công!
               </p>
               <p className="mb-6 text-sm italic text-white/80">
                 Chào mừng bạn đến với câu lạc bộ thành viên. Đây là Voucher giảm giá 20% cho đơn hàng đầu tiên
                 của bạn:
               </p>
-              <div className="mx-auto mb-6 flex max-w-sm items-center justify-between border border-dashed border-[#cfc4c5]/40 bg-[#1a1c1c] p-4">
+              <div className="mx-auto mb-6 flex max-w-sm items-center justify-between border border-dashed border-[#DED2C2]/40 bg-[#211E1B] p-4">
                 <span className="font-mono text-xl font-bold tracking-widest text-white">AURA20WELCOME</span>
                 <button
                   onClick={onCopyVoucher}
-                  className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#99854e] transition hover:text-white"
+                  className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#756536] transition hover:text-white"
                 >
                   <span className="material-symbols-outlined text-[14px]">content_copy</span>
                   Sao chép
@@ -43,7 +43,7 @@ export default function HomeInsiderSection({
               </div>
               <button
                 onClick={onScrollTop}
-                className="bg-[#99854e] px-8 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white hover:text-black"
+                className="bg-[#756536] px-8 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white hover:text-black"
               >
                 Bắt đầu trải nghiệm thuê
               </button>
@@ -60,7 +60,7 @@ export default function HomeInsiderSection({
               />
               <button
                 type="submit"
-                className="bg-white px-10 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-[#99854e] hover:text-white"
+                className="bg-white px-10 py-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-[#756536] hover:text-white"
               >
                 Đăng ký ngay
               </button>

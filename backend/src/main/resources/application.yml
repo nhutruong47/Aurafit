@@ -62,7 +62,10 @@ cloudinary:
 
 app:
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174}
+
+  auth:
+    cookie-secure: ${REFRESH_COOKIE_SECURE:false}   # true in production (HTTPS)
 
   upload:
     image-folder: ${UPLOAD_IMAGE_FOLDER:aurafit}
@@ -166,6 +169,9 @@ openai:
 
 # -- Actuator / Observability ------------------------------------------------
 management:
+  health:
+    mail:
+      enabled: false             # SMTP Gmail không phải dependency health của app
   endpoints:
     web:
       exposure:
@@ -180,7 +186,6 @@ management:
           include: livenessState
         readiness:
           include: readinessState,db   # readiness = app sẵn sàng nhận traffic (có DB)
-      exclude: mail               # SMTP Gmail không phải dependency liveness của app
   metrics:
     tags:
       application: aurafit-backend

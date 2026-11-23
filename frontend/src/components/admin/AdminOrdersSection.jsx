@@ -97,32 +97,32 @@ export default function AdminOrdersSection() {
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-col gap-4 border border-[#d7d2c8] bg-[#fdfdfb] p-6 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 border border-[#DED2C2] bg-[#FFFCF7] p-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7f7041]">Vận hành</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#756536]">Vận hành</p>
           <h2 className="mt-2 font-serif text-4xl italic">Chi tiết đơn hàng</h2>
-          <p className="mt-2 text-sm text-[#5f5e5e]">Theo dõi toàn bộ đơn thuê và mở thông tin chi tiết từng đơn.</p>
+          <p className="mt-2 text-sm text-[#6B6259]">Theo dõi toàn bộ đơn thuê và mở thông tin chi tiết từng đơn.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-[minmax(260px,1fr)_210px_auto]">
           <label className="block">
-            <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#777777]">Tìm kiếm</span>
+            <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B6259]">Tìm kiếm</span>
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[19px] text-[#777777]">search</span>
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[19px] text-[#6B6259]">search</span>
               <input
                 type="search"
                 value={keyword}
                 onChange={(event) => changeKeyword(event.target.value)}
                 placeholder="Mã đơn, tên, email, SĐT..."
-                className="h-11 w-full border border-[#d7d2c8] bg-white pl-10 pr-3 text-sm outline-none transition focus:border-[#7f7041] focus:ring-1 focus:ring-[#7f7041]/20"
+                className="h-11 w-full border border-[#DED2C2] bg-white pl-10 pr-3 text-sm outline-none transition focus:border-[#756536] focus:ring-1 focus:ring-[#756536]/20"
               />
             </div>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#777777]">Trạng thái</span>
+            <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B6259]">Trạng thái</span>
             <select
               value={status}
               onChange={(event) => changeStatus(event.target.value)}
-              className="h-11 min-w-52 border border-[#d7d2c8] bg-white px-3 text-sm outline-none focus:border-[#7f7041]"
+              className="h-11 min-w-52 border border-[#DED2C2] bg-white px-3 text-sm outline-none focus:border-[#756536]"
             >
               {statusOptions.map(([value, label]) => (
                 <option key={value || 'all'} value={value}>{label}</option>
@@ -133,7 +133,7 @@ export default function AdminOrdersSection() {
             type="button"
             onClick={loadOrders}
             disabled={isLoading}
-            className="flex h-11 items-center justify-center gap-2 border border-[#d7d2c8] bg-white px-4 text-sm font-medium transition hover:border-[#7f7041] disabled:opacity-50 sm:self-end"
+            className="flex h-11 items-center justify-center gap-2 border border-[#DED2C2] bg-white px-4 text-sm font-medium transition hover:border-[#756536] disabled:opacity-50 sm:self-end"
           >
             <span className={`material-symbols-outlined text-[19px] ${isLoading ? 'animate-spin' : ''}`}>refresh</span>
             Tải lại
@@ -143,14 +143,14 @@ export default function AdminOrdersSection() {
 
       {error && <AlertMessage text={error} />}
 
-      <div className="overflow-hidden border border-[#d7d2c8] bg-[#fdfdfb]">
-        <div className="flex items-center justify-between border-b border-[#d7d2c8] px-5 py-4">
+      <div className="overflow-hidden border border-[#DED2C2] bg-[#FFFCF7]">
+        <div className="flex items-center justify-between border-b border-[#DED2C2] px-5 py-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">Danh sách đơn</p>
-          <span className="text-sm text-[#5f5e5e]">{totalElements} đơn hàng</span>
+          <span className="text-sm text-[#6B6259]">{totalElements} đơn hàng</span>
         </div>
 
         {isLoading ? (
-          <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-[#5f5e5e]">
+          <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-[#6B6259]">
             <span className="material-symbols-outlined animate-spin">progress_activity</span>
             Đang tải danh sách đơn hàng...
           </div>
@@ -164,7 +164,7 @@ export default function AdminOrdersSection() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-[980px] w-full text-left text-sm">
-              <thead className="bg-[#f4f4f2] text-[10px] font-semibold uppercase tracking-[0.14em] text-[#666666]">
+              <thead className="bg-[#F1EAE0] text-[10px] font-semibold uppercase tracking-[0.14em] text-[#666666]">
                 <tr>
                   <th className="px-5 py-3">Mã đơn</th>
                   <th className="px-5 py-3">Khách hàng</th>
@@ -175,16 +175,16 @@ export default function AdminOrdersSection() {
                   <th className="px-5 py-3 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#ebe7df]">
+              <tbody className="divide-y divide-[#E8DDCE]">
                 {orders.map((order) => (
                   <tr key={order.id} className="transition hover:bg-[#faf8f2]">
                     <td className="whitespace-nowrap px-5 py-4 font-semibold">RO-{String(order.id).padStart(4, '0')}</td>
                     <td className="px-5 py-4">
                       <p className="font-medium">{order.customerName || order.receiverName || '—'}</p>
-                      <p className="mt-1 text-xs text-[#777777]">{order.customerPhone || order.receiverPhone || order.customerEmail || '—'}</p>
+                      <p className="mt-1 text-xs text-[#6B6259]">{order.customerPhone || order.receiverPhone || order.customerEmail || '—'}</p>
                     </td>
-                    <td className="whitespace-nowrap px-5 py-4 text-[#5f5e5e]">{formatDateTime(order.createdAt)}</td>
-                    <td className="whitespace-nowrap px-5 py-4 text-[#5f5e5e]">
+                    <td className="whitespace-nowrap px-5 py-4 text-[#6B6259]">{formatDateTime(order.createdAt)}</td>
+                    <td className="whitespace-nowrap px-5 py-4 text-[#6B6259]">
                       {order.deliveryMethod === 'STORE_PICKUP' ? 'Nhận tại cửa hàng' : 'Giao hàng GHN'}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4">
@@ -206,7 +206,7 @@ export default function AdminOrdersSection() {
                         type="button"
                         onClick={() => handleOpenOrder(order.id)}
                         disabled={isLoadingDetail}
-                        className="text-sm font-semibold text-[#7f7041] underline-offset-4 hover:underline disabled:opacity-50"
+                        className="text-sm font-semibold text-[#756536] underline-offset-4 hover:underline disabled:opacity-50"
                       >
                         {openingOrderId === order.id ? 'Đang tải...' : 'Xem chi tiết'}
                       </button>

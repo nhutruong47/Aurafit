@@ -23,7 +23,7 @@ export default function CosplayHero() {
           <div className="mt-9 flex flex-wrap gap-4">
             <button
               onClick={() => document.getElementById('cosplay-products')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-white px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-[#99854e] hover:text-white"
+              className="bg-white px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-[#756536] hover:text-white"
             >
               Thuê trang phục
             </button>

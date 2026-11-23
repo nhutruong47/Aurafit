@@ -103,7 +103,7 @@ export default function ImageGalleryUploadField({
   return (
     <div className="space-y-3">
       <div>
-        <p className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+        <p className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
           {label}
         </p>
         <input
@@ -114,14 +114,14 @@ export default function ImageGalleryUploadField({
           onChange={handleFilesChange}
           className="block w-full text-sm file:mr-3 file:border-0 file:bg-black file:px-4 file:py-3 file:text-[10px] file:font-semibold file:uppercase file:tracking-[0.14em] file:text-white disabled:opacity-60"
         />
-        <p className="mt-1 text-xs text-[#777777]">Chọn nhiều ảnh; ảnh đầu tiên sẽ là ảnh chính.</p>
+        <p className="mt-1 text-xs text-[#6B6259]">Chọn nhiều ảnh; ảnh đầu tiên sẽ là ảnh chính.</p>
       </div>
 
       {imageUrls.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {imageUrls.map((imageUrl, index) => (
-            <div key={`${imageUrl}-${index}`} className="border border-[#d7d2c8] bg-[#fafaf8] p-1.5 flex flex-col">
-              <div className="relative overflow-hidden bg-[#ebe7df] aspect-square rounded-sm">
+            <div key={`${imageUrl}-${index}`} className="border border-[#DED2C2] bg-[#FAF5ED] p-1.5 flex flex-col">
+              <div className="relative overflow-hidden bg-[#E8DDCE] aspect-square rounded-sm">
                 <img
                   src={imageUrl}
                   alt={`Ảnh sản phẩm ${index + 1}`}
@@ -139,7 +139,7 @@ export default function ImageGalleryUploadField({
                   type="button"
                   onClick={() => moveImage(index, -1)}
                   disabled={disabled || isUploading || index === 0}
-                  className="flex h-9 items-center justify-center border border-[#d7d2c8] text-black transition hover:border-black disabled:cursor-not-allowed disabled:opacity-30"
+                  className="flex h-9 items-center justify-center border border-[#DED2C2] text-black transition hover:border-black disabled:cursor-not-allowed disabled:opacity-30"
                   aria-label={`Đưa ảnh ${index + 1} lên trước`}
                   title="Đưa lên"
                 >
@@ -149,7 +149,7 @@ export default function ImageGalleryUploadField({
                   type="button"
                   onClick={() => moveImage(index, 1)}
                   disabled={disabled || isUploading || index === imageUrls.length - 1}
-                  className="flex h-9 items-center justify-center border border-[#d7d2c8] text-black transition hover:border-black disabled:cursor-not-allowed disabled:opacity-30"
+                  className="flex h-9 items-center justify-center border border-[#DED2C2] text-black transition hover:border-black disabled:cursor-not-allowed disabled:opacity-30"
                   aria-label={`Đưa ảnh ${index + 1} xuống sau`}
                   title="Đưa xuống"
                 >

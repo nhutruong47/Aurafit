@@ -3,18 +3,18 @@ export default function EventsHero() {
   return (
     <section className="mx-auto grid min-h-[calc(100dvh-80px)] max-w-[1440px] grid-cols-1 items-center gap-10 px-5 py-12 md:grid-cols-12 md:px-20 md:py-16">
       <div className="md:col-span-5">
-        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Trang phục sự kiện</p>
+        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">Trang phục sự kiện</p>
         <h1 className="font-serif text-[48px] font-normal italic leading-[1.12] md:text-[78px]">
           Trang phục cho mọi khoảnh khắc lớn.
         </h1>
-        <p className="mt-7 max-w-xl text-base leading-8 text-[#5f5e5e]">
+        <p className="mt-7 max-w-xl text-base leading-8 text-[#6B6259]">
           Từ gala, tiệc cưới, prom đến thảm đỏ, AuraFit tuyển chọn những outfit có form dáng rõ, lên hình đẹp
           và dễ hoàn thiện bằng phụ kiện.
         </p>
         <div className="mt-9 flex flex-wrap gap-4">
           <button
             onClick={() => document.getElementById('event-products')?.scrollIntoView({ behavior: 'smooth' })}
-            className="bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+            className="bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
           >
             Xem sản phẩm
           </button>

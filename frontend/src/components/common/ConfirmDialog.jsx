@@ -21,11 +21,11 @@ export default function ConfirmDialog({ isOpen, title, message, onConfirm, onCan
     >
       <div className="w-full max-w-md bg-white p-6 shadow-xl animate-[slideUp_0.2s_ease-out]">
         <h3 className="mb-2 font-serif text-2xl font-normal uppercase italic text-black">{title}</h3>
-        <p className="mb-8 text-sm text-[#5f5e5e]">{message}</p>
+        <p className="mb-8 text-sm text-[#6B6259]">{message}</p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="border border-[#cfc4c5] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#666] transition hover:bg-[#f3f3f4]"
+            className="border border-[#DED2C2] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#666] transition hover:bg-[#EFE7DB]"
           >
             {cancelLabel}
           </button>

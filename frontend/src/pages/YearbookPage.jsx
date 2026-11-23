@@ -59,10 +59,10 @@ export default function YearbookPage({ onNavigate }) {
   };
 
   return (
-    <div className="bg-[#f9f9f9] text-[#151515]">
+    <div className="bg-[#F6F1E8] text-[#151515]">
       <YearbookHero onNavigate={onNavigate} />
 
-      <section id="yearbook-products" className="border-t border-[#cfc4c5]/60 bg-white py-20 md:py-28">
+      <section id="yearbook-products" className="border-t border-[#DED2C2]/60 bg-white py-20 md:py-28">
         <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-12 px-5 md:grid-cols-12 md:px-20">
           <aside className="md:col-span-3">
             <YearbookSidebar

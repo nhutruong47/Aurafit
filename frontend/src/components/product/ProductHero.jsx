@@ -220,8 +220,8 @@ export default function ProductHero({
   };
 
   return (
-    <div className="flex flex-col gap-0 border border-[#cfc4c5] bg-white md:flex-row">
-      <div className="flex w-full justify-center overflow-hidden border-b border-[#cfc4c5]/30 bg-[#f5f4f3] md:w-[42%] md:border-b-0 md:border-r">
+    <div className="flex flex-col gap-0 border border-[#DED2C2] bg-white md:flex-row">
+      <div className="flex w-full justify-center overflow-hidden border-b border-[#DED2C2]/30 bg-[#f5f4f3] md:w-[42%] md:border-b-0 md:border-r">
         <div className="w-full">
           <img
             src={activeImageUrl}
@@ -233,7 +233,7 @@ export default function ProductHero({
           />
 
           {costumeImages.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto border-t border-[#cfc4c5]/30 p-3">
+            <div className="flex gap-2 overflow-x-auto border-t border-[#DED2C2]/30 p-3">
               {costumeImages.map((imageUrl, index) => {
                 const isSelected = imageUrl === activeImageUrl;
 
@@ -244,7 +244,7 @@ export default function ProductHero({
                     onClick={() => setSelectedImageUrl(imageUrl)}
                     className={`h-20 w-16 flex-none overflow-hidden border-2 bg-white transition ${isSelected
                       ? 'border-black'
-                      : 'border-transparent opacity-70 hover:border-[#99854e] hover:opacity-100'
+                      : 'border-transparent opacity-70 hover:border-[#A98A55] hover:opacity-100'
                       }`}
                     aria-label={`Xem ảnh sản phẩm ${index + 1}`}
                     aria-pressed={isSelected}
@@ -271,24 +271,24 @@ export default function ProductHero({
             {categoryLabel}
           </span>
           {tag && (
-            <span className="bg-[#99854e] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-white">
+            <span className="bg-[#756536] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-white">
               {tag}
             </span>
           )}
         </div>
 
         <h1 className="mb-1 font-serif text-xl text-black md:text-3xl">{product.name}</h1>
-        <p className="mb-3 text-xs text-[#777777]">{getCostumeSubcategory(product)}</p>
+        <p className="mb-3 text-xs text-[#6B6259]">{getCostumeSubcategory(product)}</p>
 
         <div className="mb-3 grid grid-cols-2 gap-4 border-y border-[#e8e4e3] py-2.5">
           <div>
-            <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">
+            <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
               Giá thuê
             </span>
             {discounted ? (
               <div className="space-y-1">
-                <span className="block text-xs text-[#777777] line-through">{formatCurrency(rentalPriceValue)} / ngày</span>
-                <span className="block font-serif text-xl text-[#7f7041]">{formatCurrency(finalPriceValue)} / ngày</span>
+                <span className="block text-xs text-[#6B6259] line-through">{formatCurrency(rentalPriceValue)} / ngày</span>
+                <span className="block font-serif text-xl text-[#756536]">{formatCurrency(finalPriceValue)} / ngày</span>
               </div>
             ) : (
               <div className="flex items-baseline">
@@ -302,22 +302,22 @@ export default function ProductHero({
             </div>
           </div>
           <div>
-            <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#999999]">
+            <span className="mb-1 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
               Tiền cọc
             </span>
-            <span className="font-serif text-xl text-[#99854e]">{formatCurrency(depositPriceValue)}</span>
+            <span className="font-serif text-xl text-[#756536]">{formatCurrency(depositPriceValue)}</span>
           </div>
         </div>
 
         {discounted && (
-          <div className="mb-3 inline-flex w-fit border border-[#c8b378] bg-[#fbf7e8] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#7f7041]">
+          <div className="mb-3 inline-flex w-fit border border-[#D6B87E] bg-[#fbf7e8] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#756536]">
             {product.eventName ? `${product.eventName} · ` : ''}Giảm {discountPercent}%
           </div>
         )}
 
         {allUniqueSizes.length > 0 && !(allUniqueSizes.length === 1 && allUniqueSizes[0] === '') && (
           <div className="mb-3">
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
               Kích cỡ
             </p>
             <div className="flex flex-wrap gap-2">
@@ -333,7 +333,7 @@ export default function ProductHero({
                     className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${isSelected
                       ? 'border-black bg-black text-white'
                       : available
-                        ? 'border-[#cfc4c5] bg-white text-black hover:border-black'
+                        ? 'border-[#DED2C2] bg-white text-black hover:border-black'
                         : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
                       }`}
                   >
@@ -347,7 +347,7 @@ export default function ProductHero({
 
         {allUniqueColors.length > 0 && !(allUniqueColors.length === 1 && allUniqueColors[0] === '') && (
           <div className="mb-3">
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
               Màu sắc
             </p>
             <div className="flex flex-wrap gap-2">
@@ -364,9 +364,9 @@ export default function ProductHero({
                     onClick={() => handleColorChange(color)}
                     disabled={!available}
                     className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${isSelected
-                      ? 'border-[#99854e] bg-[#99854e] text-white'
+                      ? 'border-[#A98A55] bg-[#756536] text-white'
                       : available
-                        ? 'border-[#cfc4c5] bg-white text-black hover:border-[#99854e]'
+                        ? 'border-[#DED2C2] bg-white text-black hover:border-[#A98A55]'
                         : 'cursor-not-allowed border-[#e0e0e0] bg-[#f5f5f5] text-[#b0b0b0]'
                       }`}
                   >
@@ -381,17 +381,17 @@ export default function ProductHero({
         {selectedItem && (
           <div className="mb-3 flex items-center justify-between">
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
                 Số lượng
               </span>
-              <div className="flex h-8 items-center border border-[#cfc4c5]">
+              <div className="flex h-8 items-center border border-[#DED2C2]">
                 <button
                   onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                  className="flex h-full w-8 items-center justify-center text-black transition hover:bg-[#f9f9f9] hover:text-[#99854e]"
+                  className="flex h-full w-8 items-center justify-center text-black transition hover:bg-[#F6F1E8] hover:text-[#756536]"
                 >
                   <span className="material-symbols-outlined text-[12px]">remove</span>
                 </button>
-                <span className="flex h-full w-8 items-center justify-center border-x border-[#cfc4c5] text-xs">
+                <span className="flex h-full w-8 items-center justify-center border-x border-[#DED2C2] text-xs">
                   {quantity}
                 </span>
                 <button
@@ -399,7 +399,7 @@ export default function ProductHero({
                   disabled={quantity >= effectiveStock}
                   className={`flex h-full w-8 items-center justify-center transition ${quantity >= effectiveStock
                     ? 'cursor-not-allowed bg-gray-50 text-gray-400'
-                    : 'text-black hover:bg-[#f9f9f9] hover:text-[#99854e]'
+                    : 'text-black hover:bg-[#F6F1E8] hover:text-[#756536]'
                     }`}
                 >
                   <span className="material-symbols-outlined text-[12px]">add</span>
@@ -416,7 +416,7 @@ export default function ProductHero({
               >
                 {isVariantAvailable ? `Có thể đặt ${effectiveStock} sp` : 'Hết hàng'}
               </span>
-              <span className="text-[9px] font-medium text-[#777777]">
+              <span className="text-[9px] font-medium text-[#6B6259]">
                 Tổng tồn kho: {totalStock} sp
               </span>
               {reservedCountForVariant > 0 && (
@@ -434,23 +434,25 @@ export default function ProductHero({
         )}
 
         <div className="mb-4">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e]">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6B6259]">
             Thời gian thuê
           </p>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-[8px] uppercase tracking-wide text-[#999]">Ngày nhận</label>
+              <label htmlFor="rental-start-date" className="mb-1 block text-[8px] uppercase tracking-wide text-[#6B6259]">Ngày nhận</label>
               <input
+                id="rental-start-date"
                 type="date"
                 value={rentalStartDate}
                 min={today}
                 onChange={handleStartDateChange}
-                className="w-full border border-[#cfc4c5] bg-white px-2 py-1.5 text-xs focus:border-black focus:outline-none"
+                className="w-full border border-[#DED2C2] bg-white px-2 py-1.5 text-xs focus:border-black focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[8px] uppercase tracking-wide text-[#999]">Ngày trả</label>
+              <label htmlFor="rental-end-date" className="mb-1 block text-[8px] uppercase tracking-wide text-[#6B6259]">Ngày trả</label>
               <input
+                id="rental-end-date"
                 type="date"
                 value={rentalEndDate}
                 min={
@@ -459,7 +461,7 @@ export default function ProductHero({
                     : today
                 }
                 onChange={handleEndDateChange}
-                className="w-full border border-[#cfc4c5] bg-white px-2 py-1.5 text-xs focus:border-black focus:outline-none"
+                className="w-full border border-[#DED2C2] bg-white px-2 py-1.5 text-xs focus:border-black focus:outline-none"
               />
             </div>
           </div>
@@ -487,7 +489,7 @@ export default function ProductHero({
               }
             }}
             className={`w-full border border-black py-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${!isVariantAvailable || isLoading || isAddingToCart
-              ? 'cursor-not-allowed border-[#eeeeee] bg-[#eeeeee] text-[#999999]'
+              ? 'cursor-not-allowed border-[#eeeeee] bg-[#eeeeee] text-[#6B6259]'
               : 'text-black hover:bg-black hover:text-white'
               }`}
           >
@@ -503,8 +505,8 @@ export default function ProductHero({
             disabled={!canRentNow || !isVariantAvailable || isAddingToCart}
             onClick={handleRentNow}
             className={`w-full py-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${canRentNow && isVariantAvailable && !isAddingToCart
-              ? 'bg-[#99854e] text-white hover:bg-black'
-              : 'cursor-not-allowed bg-[#eeeeee] text-[#999999]'
+              ? 'bg-[#756536] text-white hover:bg-black'
+              : 'cursor-not-allowed bg-[#eeeeee] text-[#6B6259]'
               }`}
           >
             Thuê ngay{' '}

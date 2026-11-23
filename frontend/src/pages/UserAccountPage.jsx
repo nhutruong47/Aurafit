@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import AccountAuthForm from '../components/account/AccountAuthForm';
 import AccountProfileView from '../components/account/AccountProfileView';
+import ForgotPasswordForm from '../components/account/ForgotPasswordForm';
 import { loginUser, verifyOtpAndRegister } from '../services/authService';
+import { setAccessToken } from '../services/http/apiClient';
 import { getUserRoles } from '../utils/roles';
 import authNotify from '../utils/authNotify';
 import { parseAuthApiError, validateLoginForm, buildRegisterSuccessMessage } from '../utils/authMessages';
@@ -24,10 +26,14 @@ const normalizeAuthUser = (payload) => {
   const userDto = payload.user || {};
   const roleName = typeof userDto.role === 'string' ? userDto.role : userDto.role?.name;
 
+  // Never persist the access token with the user profile.
+  if (payload.accessToken) {
+    setAccessToken(payload.accessToken);
+  }
+
   return {
     ...userDto,
     fullName: userDto.fullName || userDto.full_name,
-    accessToken: payload.accessToken,
     role: roleName || 'CUSTOMER',
   };
 };
@@ -74,7 +80,7 @@ export default function UserAccountPage({ onNavigate, currentUser, onAuthChange 
     try {
       const { data: payload, message } = await verifyOtpAndRegister(registrationData);
       const user = normalizeAuthUser(payload);
-      if (user?.accessToken) {
+      if (payload?.accessToken) {
         authNotify.registerSuccess(user, message);
         onAuthChange?.(user);
         onNavigate?.(resolveRolePage(user));
@@ -102,6 +108,17 @@ export default function UserAccountPage({ onNavigate, currentUser, onAuthChange 
 
   if (currentUser) {
     return <AccountProfileView currentUser={currentUser} onNavigate={onNavigate} onAuthChange={onAuthChange} />;
+  }
+
+  if (mode === 'forgot') {
+    return (
+      <ForgotPasswordForm
+        onBack={() => {
+          setMode('login');
+          setFormError('');
+        }}
+      />
+    );
   }
 
   return (

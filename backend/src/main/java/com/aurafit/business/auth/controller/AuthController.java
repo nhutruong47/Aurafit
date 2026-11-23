@@ -1,8 +1,10 @@
 package com.aurafit.business.auth.controller;
 
 import com.aurafit.business.auth.dto.request.AuthRequest;
+import com.aurafit.business.auth.dto.request.ForgotPasswordRequest;
 import com.aurafit.business.auth.dto.request.OtpRequestDTO;
 import com.aurafit.business.auth.dto.request.RegisterRequest;
+import com.aurafit.business.auth.dto.request.ResetPasswordRequest;
 import com.aurafit.business.auth.dto.request.VerifyOtpRequestDTO;
 import com.aurafit.common.dto.response.ApiResponse;
 import com.aurafit.business.auth.dto.response.AuthResponseDTO;
@@ -19,6 +21,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -32,6 +35,9 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
+
+    @Value("${app.auth.cookie-secure:false}")
+    private boolean cookieSecure;
 
     public AuthController(AuthService authService, UserService userService) {
         this.authService = authService;
@@ -117,12 +123,48 @@ public class AuthController {
                 .body(ApiResponse.success("Cập nhật phiên đăng nhập thành công.", authResponse));
     }
 
+    @PostMapping("/logout")
+    @Operation(summary = "Logout",
+            description = "Invalidates the refresh token and clears the HttpOnly cookie")
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
+        userService.logout(readRefreshTokenFromCookies(request));
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .sameSite("Strict")
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.success("Đăng xuất thành công.", HttpStatus.OK));
+    }
+
+    @PostMapping("/password/request-otp")
+    @Operation(summary = "Request a password-reset OTP")
+    public ResponseEntity<ApiResponse<OtpSentResponse>> requestPasswordResetOtp(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        OtpSentResponse result = authService.requestPasswordResetOtp(request.email());
+        return ResponseEntity.ok(ApiResponse.success(
+                "Nếu email tồn tại, mã xác thực đã được gửi.", result));
+    }
+
+    @PostMapping("/password/reset")
+    @Operation(summary = "Reset the password with an OTP")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.email(), request.otpCode(), request.newPassword());
+        return ResponseEntity.ok(ApiResponse.success(
+                "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.", HttpStatus.OK));
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────
 
     private ResponseCookie buildRefreshCookie(String refreshToken) {
         return ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(false)          // false for localhost dev; true in production
+                .secure(cookieSecure)   // true in production via REFRESH_COOKIE_SECURE
                 .path("/")
                 .maxAge(REFRESH_COOKIE_MAX_AGE)
                 .sameSite("Strict")
@@ -130,6 +172,17 @@ public class AuthController {
     }
 
     private String extractRefreshTokenFromCookies(HttpServletRequest request) {
+        String refreshToken = readRefreshTokenFromCookies(request);
+        if (refreshToken == null) {
+            throw new UnauthorizedException("Phiên làm việc đã hết hạn, vui lòng đăng nhập lại.");
+        }
+        return refreshToken;
+    }
+
+    private String readRefreshTokenFromCookies(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
@@ -138,6 +191,6 @@ public class AuthController {
                 }
             }
         }
-        throw new UnauthorizedException("Phiên làm việc đã hết hạn, vui lòng đăng nhập lại.");
+        return null;
     }
 }

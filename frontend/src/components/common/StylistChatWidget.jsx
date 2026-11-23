@@ -235,12 +235,12 @@ export default function StylistChatWidget() {
         <section
           role="dialog"
           aria-label="Trợ lý thời trang AuraFit"
-          className="mb-3 flex h-[min(62dvh,29rem)] w-[calc(100vw-2rem)] max-w-[22rem] flex-col overflow-hidden rounded-2xl border border-[#cfc4c5] bg-[#f9f9f9] shadow-[0_22px_60px_rgba(25,22,17,0.22)] sm:mb-4 sm:h-[30rem] cursor-default"
+          className="mb-3 flex h-[min(62dvh,29rem)] w-[calc(100vw-2rem)] max-w-[22rem] flex-col overflow-hidden rounded-2xl border border-[#DED2C2] bg-[#F6F1E8] shadow-[0_22px_60px_rgba(25,22,17,0.22)] sm:mb-4 sm:h-[30rem] cursor-default"
           onPointerDown={(e) => e.stopPropagation()}
         >
           <header className="flex items-center justify-between bg-gradient-to-r from-[#171613] to-[#2b2519] px-4 py-3 text-white">
             <div className="flex items-center gap-3">
-              <StylistAvatar className="h-9 w-9 border-2 border-[#99854e] bg-white" />
+              <StylistAvatar className="h-9 w-9 border-2 border-[#A98A55] bg-white" />
               <div>
                 <h2 className="font-serif text-base italic">AuraFit Stylist</h2>
                 <p className="text-[10px] uppercase tracking-[0.14em] text-white/60">
@@ -263,8 +263,8 @@ export default function StylistChatWidget() {
             aria-live="polite"
           >
             {isHistoryLoading && (
-              <div className="flex items-center justify-center gap-2 py-8 text-sm text-[#777777]">
-                <span className="material-symbols-outlined animate-spin text-[19px] text-[#99854e]">
+              <div className="flex items-center justify-center gap-2 py-8 text-sm text-[#6B6259]">
+                <span className="material-symbols-outlined animate-spin text-[19px] text-[#756536]">
                   progress_activity
                 </span>
                 Đang tải cuộc trò chuyện...
@@ -278,7 +278,7 @@ export default function StylistChatWidget() {
             )}
 
             {!isHistoryLoading && messages.length === 0 && (
-              <div className="rounded-xl border border-[#e4ddd2] bg-[#fffdf8] p-4 text-sm leading-6 text-[#5f5e5e] shadow-sm">
+              <div className="rounded-xl border border-[#e4ddd2] bg-[#FFFCF7] p-4 text-sm leading-6 text-[#6B6259] shadow-sm">
                 Xin chào! Hãy cho mình biết dịp sử dụng, phong cách, màu sắc hoặc ngân sách để được gợi ý trang phục phù hợp nhé.
               </div>
             )}
@@ -306,11 +306,11 @@ export default function StylistChatWidget() {
             })}
 
             {isSending && (
-              <div className="flex items-center gap-1 border border-[#e4ddd2] bg-white px-4 py-3 text-[#99854e]">
+              <div className="flex items-center gap-1 border border-[#e4ddd2] bg-white px-4 py-3 text-[#756536]">
                 <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
                 <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
                 <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current" />
-                <span className="ml-2 text-xs text-[#777777]">Stylist đang tư vấn...</span>
+                <span className="ml-2 text-xs text-[#6B6259]">Stylist đang tư vấn...</span>
               </div>
             )}
 
@@ -325,13 +325,13 @@ export default function StylistChatWidget() {
               onChange={(event) => setInputValue(event.target.value)}
               placeholder="Bạn đang tìm trang phục gì?"
               disabled={isSending}
-              className="min-w-0 flex-1 rounded-full border border-[#cfc4c5] bg-white px-4 py-2.5 text-sm outline-none transition placeholder:text-[#999999] focus:border-[#99854e] focus:ring-2 focus:ring-[#99854e]/15 disabled:bg-[#f3f3f3]"
+              className="min-w-0 flex-1 rounded-full border border-[#DED2C2] bg-white px-4 py-2.5 text-sm outline-none transition placeholder:text-[#6B6259] focus:border-[#A98A55] focus:ring-2 focus:ring-[#A98A55]/15 disabled:bg-[#f3f3f3]"
               aria-label="Tin nhắn cho trợ lý thời trang"
             />
             <button
               type="submit"
               disabled={isSending || !inputValue.trim()}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#99854e] text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:bg-[#d4cec2] disabled:shadow-none"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#756536] text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:bg-[#d4cec2] disabled:shadow-none"
               aria-label="Gửi tin nhắn"
             >
               <span className="material-symbols-outlined text-[20px]">send</span>
@@ -345,7 +345,7 @@ export default function StylistChatWidget() {
         onClick={() => {
           if (!isDragging) setIsOpen(!isOpen);
         }}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#111111] text-white shadow-xl transition hover:bg-[#99854e] focus:outline-none focus:ring-2 focus:ring-[#99854e] focus:ring-offset-2 sm:h-16 sm:w-16 cursor-grab active:cursor-grabbing"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#111111] text-white shadow-xl transition hover:bg-[#756536] focus:outline-none focus:ring-2 focus:ring-[#A98A55] focus:ring-offset-2 sm:h-16 sm:w-16 cursor-grab active:cursor-grabbing"
         aria-label={isOpen ? 'Đóng trợ lý thời trang' : 'Mở trợ lý thời trang'}
         aria-expanded={isOpen}
       >

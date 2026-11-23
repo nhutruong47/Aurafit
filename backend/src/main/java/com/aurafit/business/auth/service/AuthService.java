@@ -26,4 +26,16 @@ public interface AuthService {
      * @return AuthResponseDTO with accessToken, refreshToken, and user data
      */
     AuthResponseDTO verifyOtpAndRegister(VerifyOtpRequestDTO request);
+
+    /**
+     * Sends a password-reset OTP when the email belongs to an account.
+     * The response is intentionally generic to avoid account enumeration.
+     */
+    OtpSentResponse requestPasswordResetOtp(String email);
+
+    /**
+     * Verifies the reset OTP, stores the new password hash, and invalidates
+     * every existing refresh token for that account.
+     */
+    void resetPassword(String email, String otpCode, String newPassword);
 }

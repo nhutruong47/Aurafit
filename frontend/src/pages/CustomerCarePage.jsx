@@ -52,23 +52,23 @@ export default function CustomerCarePage() {
   };
 
   return (
-    <div className="bg-[#f9f9f9] text-[#1a1c1c]">
+    <div className="bg-[#F6F1E8] text-[#211E1B]">
       <section className="mx-auto max-w-[1440px] px-5 py-20 text-center md:px-20 md:py-28">
-        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Hỗ trợ khách hàng</p>
+        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">Hỗ trợ khách hàng</p>
         <h1 className="font-serif text-[42px] font-normal leading-[1.12] md:text-[72px]">
           AuraFit có thể hỗ trợ bạn điều gì?
         </h1>
-        <p className="mx-auto mt-7 max-w-2xl text-lg font-light leading-8 text-[#5f5e5e]">
+        <p className="mx-auto mt-7 max-w-2xl text-lg font-light leading-8 text-[#6B6259]">
           Đồng hành cùng bạn trong mọi giai đoạn thuê đồ, từ kiểm tra form dáng và lịch giao nhận đến hoàn trả
           sau sự kiện.
         </p>
 
         <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
           {careChannels.map((channel) => (
-            <article key={channel.label} className="border border-[#cfc4c5] bg-white p-7 text-left">
-              <span className="material-symbols-outlined text-[34px] text-[#99854e]">{channel.icon}</span>
+            <article key={channel.label} className="border border-[#DED2C2] bg-white p-7 text-left">
+              <span className="material-symbols-outlined text-[34px] text-[#756536]">{channel.icon}</span>
               <h2 className="mt-7 text-[12px] font-semibold uppercase tracking-[0.18em]">{channel.label}</h2>
-              <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">{channel.copy}</p>
+              <p className="mt-3 text-sm leading-6 text-[#6B6259]">{channel.copy}</p>
             </article>
           ))}
         </div>
@@ -86,19 +86,19 @@ export default function CustomerCarePage() {
 
         <section id="size-guide" className="scroll-mt-28">
           <div className="mb-8 flex items-center gap-4">
-            <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#99854e]">02</span>
+            <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#756536]">02</span>
             <h2 className="font-serif text-3xl font-normal md:text-4xl">Bảng size</h2>
           </div>
 
-          <div className="border border-[#cfc4c5] bg-[#eeeeee] p-7 md:p-12">
+          <div className="border border-[#DED2C2] bg-[#eeeeee] p-7 md:p-12">
             <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-2">
               <div>
                 <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.18em]">Tìm form dáng phù hợp</p>
-                <p className="mb-8 leading-7 text-[#5f5e5e]">
+                <p className="mb-8 leading-7 text-[#6B6259]">
                   Size của từng thương hiệu có thể khác nhau. Mỗi sản phẩm trên AuraFit đều có số đo, ghi chú form
                   dáng và nhận xét từ stylist để bạn chọn tự tin hơn.
                 </p>
-                <button className="bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#99854e]">
+                <button className="bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#756536]">
                   Xem bảng quy đổi size
                 </button>
               </div>
@@ -132,7 +132,7 @@ export default function CustomerCarePage() {
                loading="lazy" decoding="async" />
             </div>
             <div className="flex flex-col justify-center p-8 md:p-16">
-              <p className="mb-6 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#99854e]">
+              <p className="mb-6 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#756536]">
                 Tư vấn cá nhân
               </p>
               <h2 className="font-serif text-4xl font-normal leading-tight md:text-5xl">

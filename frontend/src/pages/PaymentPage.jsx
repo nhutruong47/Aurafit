@@ -251,34 +251,34 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
 
   if (isInitialized && !pendingOrderId) {
     return (
-      <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
+      <div className="min-h-screen bg-[#F6F1E8] text-[#211E1B]">
         <PaymentHeader onNavigate={onNavigate} />
-        <main className="mx-auto max-w-[1440px] px-5 pb-28 pt-16 md:px-20 md:pb-40">
+        <div className="mx-auto max-w-[1440px] px-5 pb-28 pt-16 md:px-20 md:pb-40">
           <div className="mx-auto max-w-xl py-20 text-center">
             <span className="material-symbols-outlined text-6xl text-[#ccc]">receipt_long</span>
             <h1 className="mt-6 font-serif text-3xl italic">Không tìm thấy đơn hàng</h1>
-            <p className="mt-4 text-sm text-[#5f5e5e]">
+            <p className="mt-4 text-sm text-[#6B6259]">
               Vui lòng quay lại bước checkout để tạo đơn thuê trước khi thanh toán.
             </p>
             <button
               onClick={() => onNavigate?.('checkout')}
-              className="mt-8 bg-black px-8 py-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+              className="mt-8 bg-black px-8 py-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
             >
               Quay lại giỏ hàng
             </button>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
+    <div className="min-h-screen bg-[#F6F1E8] text-[#211E1B]">
       <PaymentHeader onNavigate={onNavigate} />
 
-      <main className="mx-auto max-w-[1440px] px-5 pb-28 pt-16 md:px-20 md:pb-40">
+      <div className="mx-auto max-w-[1440px] px-5 pb-28 pt-16 md:px-20 md:pb-40">
         <header className="mb-16 animate-[fadeIn_0.8s_ease-out_forwards]">
-          <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#99854e]">
+          <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#756536]">
             Thanh toán đơn thuê
           </p>
           <h1 className="font-serif text-[40px] font-normal italic leading-tight md:text-[64px]">
@@ -332,7 +332,7 @@ export default function PaymentPage({ cartItems = [], onNavigate }) {
             />
           </aside>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

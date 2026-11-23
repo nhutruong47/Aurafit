@@ -52,7 +52,7 @@ export default function EventSideBanner({ side, event }) {
           <span
             className={`mb-auto inline-flex w-fit px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] shadow-sm ${
               event.isOngoing
-                ? 'bg-[#99854e] text-white'
+                ? 'bg-[#756536] text-white'
                 : 'bg-white/90 text-[#6f5e35]'
             }`}
           >
@@ -63,7 +63,7 @@ export default function EventSideBanner({ side, event }) {
             {formatDayMonth(event.startDate)} – {formatDayMonth(event.endDate)}
           </p>
           <h2 className="mt-2 font-serif text-2xl italic leading-tight">{event.name}</h2>
-          <p className="mt-3 text-sm font-semibold text-[#eadcae]">
+          <p className="mt-3 text-sm font-semibold text-[#E8D3A9]">
             {discount ? `Giảm đến ${discount}%` : 'Ưu đãi đặc biệt'}
           </p>
           <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/80">

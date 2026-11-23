@@ -55,7 +55,7 @@ function CategoryTile({ category, wide = false, onClick }) {
         {wide && category.copy && (
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60">{category.copy}</p>
         )}
-        <span className="inline-block border-b border-white pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition group-hover:border-[#99854e] group-hover:text-[#99854e]">
+        <span className="inline-block border-b border-white pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition group-hover:border-[#A98A55] group-hover:text-[#756536]">
           {category.cta || 'Xem ngay'}
         </span>
       </div>
@@ -88,10 +88,10 @@ export default function HomeCategoryMosaic({ onNavigate }) {
   const regularTiles = displayCategories.filter((category) => !category.wide);
 
   return (
-    <section className="bg-[#f9f9f9] py-24 md:py-[120px]" id="categories">
+    <section className="bg-[#F6F1E8] py-24 md:py-[120px]" id="categories">
       <div className="mx-auto max-w-[1440px] px-5 md:px-20">
         <div className="mb-16 text-center">
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">Khám phá</p>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">Khám phá</p>
           <h2 className="font-serif text-4xl font-normal md:text-5xl">Khám phá theo danh mục</h2>
         </div>
 

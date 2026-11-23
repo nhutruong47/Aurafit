@@ -76,6 +76,7 @@ public class CostumeDataSeeder implements org.springframework.boot.CommandLineRu
 
         for (SeedProduct seed : seeds) {
             if (existingSlugs.contains(seed.slug())) {
+                refreshLegacySeedImage(seed);
                 skippedCount++;
                 continue;
             }
@@ -178,6 +179,24 @@ public class CostumeDataSeeder implements org.springframework.boot.CommandLineRu
         return category;
     }
 
+    private String buildSeedImageUrl(SeedProduct seed) {
+        return "https://picsum.photos/seed/aurafit-" + seed.slug() + "/800/1000";
+    }
+
+    /**
+     * Replaces the old unreliable loremflickr links on existing seed products.
+     * Admin-uploaded Cloudinary URLs are left untouched.
+     */
+    private void refreshLegacySeedImage(SeedProduct seed) {
+        costumeRepository.findBySlug(seed.slug()).ifPresent(costume -> {
+            String currentImage = costume.getImageUrl();
+            if (currentImage != null && currentImage.contains("loremflickr.com")) {
+                costume.setImageUrl(buildSeedImageUrl(seed));
+                costumeRepository.save(costume);
+            }
+        });
+    }
+
     private void applyProduct(Costume costume, Category category, SeedProduct seed) {
         costume.setName(seed.name());
         costume.setSlug(seed.slug());
@@ -187,23 +206,9 @@ public class CostumeDataSeeder implements org.springframework.boot.CommandLineRu
         costume.setStatus(CostumeStatus.ACTIVE);
         costume.setCategory(category);
         
-        // Use unique images per product using loremflickr with a lock so they don't change on every reload
-        String lowerCategory = seed.categoryPath().toLowerCase();
-        int lockId = Math.abs(seed.slug().hashCode()) % 10000;
-        
-        if (lowerCategory.contains("vest") || lowerCategory.contains("tuxedo")) {
-            costume.setImageUrl("https://loremflickr.com/800/1000/suit,menswear?lock=" + lockId);
-        } else if (lowerCategory.contains("da-hoi") || lowerCategory.contains("vay") || lowerCategory.contains("dam")) {
-            costume.setImageUrl("https://loremflickr.com/800/1000/dress,gown?lock=" + lockId);
-        } else if (lowerCategory.contains("truyen-thong") || lowerCategory.contains("ao-dai") || lowerCategory.contains("hanbok") || lowerCategory.contains("kimono")) {
-            costume.setImageUrl("https://loremflickr.com/800/1000/traditional,clothing?lock=" + lockId);
-        } else if (lowerCategory.contains("cosplay") || lowerCategory.contains("anime") || lowerCategory.contains("game")) {
-            costume.setImageUrl("https://loremflickr.com/800/1000/cosplay,costume?lock=" + lockId);
-        } else if (lowerCategory.contains("phu-kien")) {
-            costume.setImageUrl("https://loremflickr.com/800/1000/accessory,jewelry?lock=" + lockId);
-        } else {
-            costume.setImageUrl("https://loremflickr.com/800/1000/fashion,outfit?lock=" + lockId);
-        }
+        // Deterministic, reliable placeholder per product. Real catalog photos
+        // should be uploaded through the admin Cloudinary flow.
+        costume.setImageUrl(buildSeedImageUrl(seed));
 
         CostumeMetadata metadata = costume.getMetadata();
         if (metadata == null) {

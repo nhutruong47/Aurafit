@@ -231,7 +231,7 @@ export default function EventsPage({ onNavigate }) {
   };
 
   return (
-    <div className="bg-[#f9f9f9] text-[#1a1c1c]">
+    <div className="bg-[#F6F1E8] text-[#211E1B]">
       <EventsHero onNavigate={onNavigate} />
       <EventServicesSection services={eventServices} />
 
@@ -255,7 +255,7 @@ export default function EventsPage({ onNavigate }) {
 
           <div className="md:col-span-9">
             <div className="mb-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#756536]">
                 Gợi ý cho dịp đặc biệt
               </p>
               <h2 className="mt-3 font-serif text-3xl italic leading-tight text-black md:text-4xl">
@@ -263,12 +263,12 @@ export default function EventsPage({ onNavigate }) {
                   ? selectedBrowseCategories.map((category) => category.name).join(' + ')
                   : 'Chọn trang phục nổi bật cho buổi tiệc của bạn'}
               </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#5f5e5e]">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#6B6259]">
                 {selectedBrowseCategories.length
                   ? `Bạn đang xem các mẫu thuộc ${selectedBrowseCategories.length} nhóm đã chọn để so sánh dễ hơn.`
                   : 'Từ trang phục chính đến điểm nhấn đi kèm, bạn có thể lọc theo từng nhóm để chọn set phù hợp cho gala, prom, tiệc cưới hay buổi biểu diễn.'}
               </p>
-              <p className="mt-4 text-sm text-[#5f5e5e]">
+              <p className="mt-4 text-sm text-[#6B6259]">
                 {isLoading ? (
                   'Đang chuẩn bị danh sách cho bạn...'
                 ) : (

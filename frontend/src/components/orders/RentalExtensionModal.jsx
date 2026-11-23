@@ -76,8 +76,8 @@ export default function RentalExtensionModal({ isOpen, onClose, order, onSuccess
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md animate-[fadeIn_0.3s_ease-out_forwards] border border-[#cfc4c5] bg-[#fafaf8] p-8 shadow-2xl">
-        <div className="mb-6 flex items-center justify-between border-b border-[#cfc4c5] pb-4">
+      <div className="w-full max-w-md animate-[fadeIn_0.3s_ease-out_forwards] border border-[#DED2C2] bg-[#FAF5ED] p-8 shadow-2xl">
+        <div className="mb-6 flex items-center justify-between border-b border-[#DED2C2] pb-4">
           <h2 className="font-serif text-2xl font-normal">Gia hạn thuê</h2>
           <button onClick={onClose} className="text-[#8b8787] hover:text-black transition">
             <span className="material-symbols-outlined">close</span>
@@ -85,7 +85,7 @@ export default function RentalExtensionModal({ isOpen, onClose, order, onSuccess
         </div>
 
         <div className="mb-6 rounded-sm bg-gray-50 p-4 border border-[#e5e5e5]">
-          <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#5f5e5e]">Thông tin đơn thuê</h3>
+          <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#6B6259]">Thông tin đơn thuê</h3>
           <div className="space-y-2 text-sm text-[#3d3d3d]">
             <div className="flex justify-between">
               <span>Mã đơn:</span>
@@ -112,11 +112,11 @@ export default function RentalExtensionModal({ isOpen, onClose, order, onSuccess
               min={minDate}
               value={newEndDate}
               onChange={(e) => setNewEndDate(e.target.value)}
-              className="w-full border border-[#cfc4c5] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none transition"
+              className="w-full border border-[#DED2C2] bg-white px-4 py-3 text-sm focus:border-black focus:outline-none transition"
               required
             />
             {extraDays > 0 && (
-              <p className="mt-2 text-[12px] font-medium text-[#7f7041]">
+              <p className="mt-2 text-[12px] font-medium text-[#756536]">
                 Gia hạn thêm: <span className="font-bold">{extraDays} ngày</span>
               </p>
             )}
@@ -134,14 +134,14 @@ export default function RentalExtensionModal({ isOpen, onClose, order, onSuccess
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="w-1/2 border border-[#cfc4c5] bg-white px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-[#3d3d3d] transition hover:bg-[#f4f4f2] hover:text-black disabled:opacity-50"
+              className="w-1/2 border border-[#DED2C2] bg-white px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-[#3d3d3d] transition hover:bg-[#F1EAE0] hover:text-black disabled:opacity-50"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !newEndDate}
-              className="w-1/2 border border-black bg-black px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-white transition hover:bg-[#99854e] hover:border-[#99854e] disabled:opacity-50 disabled:bg-gray-300 disabled:border-gray-300"
+              className="w-1/2 border border-black bg-black px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-white transition hover:bg-[#756536] hover:border-[#A98A55] disabled:opacity-50 disabled:bg-gray-300 disabled:border-gray-300"
             >
               {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
             </button>

@@ -3,20 +3,20 @@ export default function YearbookHero() {
   return (
     <section className="mx-auto grid min-h-[calc(100dvh-80px)] max-w-[1440px] grid-cols-1 items-center gap-10 px-5 py-12 md:grid-cols-12 md:px-20 md:py-16">
       <div className="order-2 md:order-1 md:col-span-5">
-        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">
+        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">
           AuraFit Yearbook Atelier
         </p>
         <h1 className="font-serif text-[48px] font-normal italic leading-[1.12] md:text-[76px]">
           Kỷ yếu & Thanh xuân
         </h1>
-        <p className="mt-7 max-w-xl text-base leading-8 text-[#5f5e5e]">
+        <p className="mt-7 max-w-xl text-base leading-8 text-[#6B6259]">
           Những set đồ học thuật, áo choàng tốt nghiệp và phụ kiện tinh chỉnh cho bộ ảnh kỷ yếu có chất riêng,
           chỉn chu từ khung hình đầu tiên.
         </p>
         <div className="mt-9 flex flex-wrap gap-4">
           <button
             onClick={() => document.getElementById('yearbook-products')?.scrollIntoView({ behavior: 'smooth' })}
-            className="bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#99854e]"
+            className="bg-black px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
           >
             Xem bộ sưu tập
           </button>

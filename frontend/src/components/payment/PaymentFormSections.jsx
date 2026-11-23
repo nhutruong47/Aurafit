@@ -8,9 +8,9 @@ function CheckoutSection({ number, title, meta, icon, children }) {
           {number}. {title}
         </h2>
         {icon ? (
-          <span className="material-symbols-outlined text-[#999999]">{icon}</span>
+          <span className="material-symbols-outlined text-[#6B6259]">{icon}</span>
         ) : (
-          <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
+          <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#6B6259]">
             {meta}
           </span>
         )}
@@ -23,16 +23,16 @@ function CheckoutSection({ number, title, meta, icon, children }) {
 function DetailRow({ label, value }) {
   return (
     <div className="border-b border-[#e8e2e3] pb-4">
-      <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
+      <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#6B6259]">
         {label}
       </p>
-      <p className="text-sm leading-6 text-[#1a1c1c]">{value || 'Đang cập nhật'}</p>
+      <p className="text-sm leading-6 text-[#211E1B]">{value || 'Đang cập nhật'}</p>
     </div>
   );
 }
 
 function GoldDivider() {
-  return <hr className="h-px border-none bg-gradient-to-r from-transparent via-[#99854e] to-transparent" />;
+  return <hr className="h-px border-none bg-gradient-to-r from-transparent via-[#A98A55] to-transparent" />;
 }
 
 function formatDateRange(start, end) {
@@ -84,7 +84,7 @@ export default function PaymentFormSections({ order, orders, paymentInit, isPaid
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <DetailRow label="Mã đơn" value={displayOrderIds} />
           <div>
-            <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
+            <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#6B6259]">
               Trạng thái hiện tại
             </p>
             <span className={`inline-block border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${style.badge}`}>
@@ -109,7 +109,7 @@ export default function PaymentFormSections({ order, orders, paymentInit, isPaid
             </span>
             <div>
               <h3 className="mb-2 font-serif text-3xl italic text-[#2e7d32]">Thanh toán thành công!</h3>
-              <p className="text-sm text-[#5f5e5e]">
+              <p className="text-sm text-[#6B6259]">
                 Đơn hàng <strong>{displayOrderIds}</strong> đã được thanh toán.
                 AuraFit sẽ liên hệ xác nhận trong thời gian sớm nhất.
               </p>
@@ -142,11 +142,11 @@ export default function PaymentFormSections({ order, orders, paymentInit, isPaid
                         e.target.onerror = null;
                         e.target.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" fill="#f5f5f5"/><text x="128" y="128" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14" fill="#999">QR đang tải...</text></svg>');
                       }}
-                      className="h-64 w-64 rounded-lg border border-[#cfc4c5] bg-white object-contain p-2 shadow-sm"
+                      className="h-64 w-64 rounded-lg border border-[#DED2C2] bg-white object-contain p-2 shadow-sm"
                     />
                   ) : (
-                    <div className="flex h-64 w-64 items-center justify-center rounded-lg border border-[#cfc4c5] bg-[#f5f5f5]">
-                      <span className="material-symbols-outlined text-6xl text-[#999]">qr_code</span>
+                    <div className="flex h-64 w-64 items-center justify-center rounded-lg border border-[#DED2C2] bg-[#f5f5f5]">
+                      <span className="material-symbols-outlined text-6xl text-[#6B6259]">qr_code</span>
                     </div>
                   )}
                   {/* Countdown indicator */}
@@ -158,35 +158,35 @@ export default function PaymentFormSections({ order, orders, paymentInit, isPaid
                     </div>
                   )}
                 </div>
-                <p className="text-center text-xs text-[#999999]">
+                <p className="text-center text-xs text-[#6B6259]">
                   Quét mã QR bằng ứng dụng ngân hàng
                 </p>
               </div>
 
               {/* Transfer details */}
               <div className="flex flex-col justify-center gap-4">
-                <div className="rounded-lg border border-[#99854e]/30 bg-[#f8f4e8] p-5">
+                <div className="rounded-lg border border-[#A98A55]/30 bg-[#f8f4e8] p-5">
                   <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#725f2f]">
                     Thông tin chuyển khoản
                   </p>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-xs text-[#5f5e5e]">Số tiền</span>
-                      <span className="font-semibold text-[#99854e]">
+                      <span className="text-xs text-[#6B6259]">Số tiền</span>
+                      <span className="font-semibold text-[#756536]">
                         {formatCurrency(paymentInit.amount || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-xs text-[#5f5e5e]">Nội dung CK</span>
+                      <span className="text-xs text-[#6B6259]">Nội dung CK</span>
                       <span className="font-mono font-semibold">{paymentInit.paymentContent}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-xs text-[#5f5e5e]">Mã đơn</span>
+                      <span className="text-xs text-[#6B6259]">Mã đơn</span>
                       <span className="font-semibold">ARF{String(displayOrderId).padStart(4, '0')}</span>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs leading-relaxed text-[#5f5e5e]">
+                <p className="text-xs leading-relaxed text-[#6B6259]">
                   Sau khi chuyển khoản thành công, hệ thống sẽ tự động kiểm tra và cập nhật trạng thái đơn hàng trong{' '}
                   <strong>10 giây</strong>. Vui lòng không đóng trình duyệt.
                 </p>
@@ -195,35 +195,35 @@ export default function PaymentFormSections({ order, orders, paymentInit, isPaid
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="border border-[#cfc4c5] bg-white p-5">
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">
+            <div className="border border-[#DED2C2] bg-white p-5">
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#6B6259]">
                 Quy trình thanh toán
               </p>
               <p className="font-serif text-3xl italic">ARF{String(displayOrderId).padStart(4, '0')}</p>
-              <p className="mt-3 text-sm leading-6 text-[#5f5e5e]">
+              <p className="mt-3 text-sm leading-6 text-[#6B6259]">
                 Nhấn <strong>"Tạo mã QR thanh toán"</strong> bên phải để nhận mã VietQR thanh toán.
                 Hệ thống sẽ tự động kiểm tra giao dịch và cập nhật trạng thái đơn hàng khi bạn hoàn tất thanh toán.
               </p>
             </div>
             <div className="rounded-lg border border-[#e8e2e3] bg-[#fafafa] p-5">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#999999]">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
                 Các bước thực hiện
               </p>
-              <ol className="space-y-3 text-sm text-[#5f5e5e]">
+              <ol className="space-y-3 text-sm text-[#6B6259]">
                 <li className="flex gap-3">
-                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#99854e] text-xs font-bold text-white">1</span>
+                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#756536] text-xs font-bold text-white">1</span>
                   Nhấn <strong>"Tạo mã QR thanh toán"</strong> bên phải màn hình
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#99854e] text-xs font-bold text-white">2</span>
+                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#756536] text-xs font-bold text-white">2</span>
                   Mở ứng dụng ngân hàng trên điện thoại
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#99854e] text-xs font-bold text-white">3</span>
+                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#756536] text-xs font-bold text-white">3</span>
                   Quét mã QR hoặc nhập nội dung chuyển khoản
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#99854e] text-xs font-bold text-white">4</span>
+                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#756536] text-xs font-bold text-white">4</span>
                   Xác nhận thanh toán — hệ thống tự động cập nhật trạng thái
                 </li>
               </ol>

@@ -18,6 +18,8 @@ public record StaffCreateRequest(
 
         UserStatus status,
 
+        @NotBlank(message = "Mật khẩu tạm thời không được để trống")
+        @Size(min = 8, max = 72, message = "Mật khẩu tạm thời phải có từ 8 đến 72 ký tự")
         String temporaryPassword
 ) {
 }

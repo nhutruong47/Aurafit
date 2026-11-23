@@ -226,23 +226,23 @@ export default function TraditionalPage({ onNavigate }) {
 
   return (
     <div className="bg-[#f7f7f7] text-[#111111]">
-      <section className="overflow-hidden border-b border-[#cfc4c5] bg-[#f3eee7]">
+      <section className="overflow-hidden border-b border-[#DED2C2] bg-[#f3eee7]">
         <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-10 px-5 py-16 md:grid-cols-12 md:px-20 md:py-24">
           <div className="md:col-span-7">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#99854e]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#756536]">
               Bộ sưu tập truyền thống
             </p>
             <h1 className="mt-4 max-w-4xl font-serif text-4xl italic leading-tight text-black md:text-6xl">
               Những set đồ mang nét duyên riêng cho buổi chụp ảnh, lễ hội và sự kiện văn hóa
             </h1>
-            <p className="mt-6 max-w-2xl text-sm leading-7 text-[#5f5e5e] md:text-base">
+            <p className="mt-6 max-w-2xl text-sm leading-7 text-[#6B6259] md:text-base">
               Từ áo dài, kimono đến hanbok, bạn có thể chọn nhanh theo từng phong cách yêu thích và kết hợp thêm phụ
               kiện để hoàn thiện tổng thể hài hòa hơn.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <button
                 onClick={() => document.getElementById('traditional-products')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bg-black px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#99854e]"
+                className="bg-black px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#756536]"
               >
                 Xem bộ sưu tập
               </button>
@@ -295,7 +295,7 @@ export default function TraditionalPage({ onNavigate }) {
 
           <div className="md:col-span-9">
             <div className="mb-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#756536]">
                 Gợi ý cho phong cách truyền thống
               </p>
               <h2 className="mt-3 font-serif text-3xl italic leading-tight text-black md:text-4xl">
@@ -303,12 +303,12 @@ export default function TraditionalPage({ onNavigate }) {
                   ? selectedBrowseCategories.map((category) => category.name).join(' + ')
                   : 'Chọn set đồ truyền thống theo phong cách bạn yêu thích'}
               </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#5f5e5e]">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#6B6259]">
                 {selectedBrowseCategories.length
                   ? `Bạn đang xem các mẫu thuộc ${selectedBrowseCategories.length} nhóm đã chọn để so sánh dễ hơn.`
                   : 'Lọc theo quốc gia, kiểu trang phục hoặc phụ kiện để tìm ra set phù hợp cho buổi chụp ảnh, lễ hội hay sự kiện văn hóa.'}
               </p>
-              <p className="mt-4 text-sm text-[#5f5e5e]">
+              <p className="mt-4 text-sm text-[#6B6259]">
                 {isLoading ? (
                   'Đang chuẩn bị danh sách cho bạn...'
                 ) : (

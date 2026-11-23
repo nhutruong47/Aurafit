@@ -189,14 +189,14 @@ export default function StaffOrderDetailModal({
               <h4 className="font-medium text-gray-900 mb-3 uppercase tracking-wider text-sm">Vận Đơn GHN</h4>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {activeOrder.ghnOrderCode && (
-                  <div className="bg-[#f8f4e8] p-3 border border-[#99854e] flex justify-between items-center rounded">
+                  <div className="bg-[#f8f4e8] p-3 border border-[#A98A55] flex justify-between items-center rounded">
                     <div>
-                      <p className="text-xs text-[#5f5e5e] uppercase tracking-wider">Mã giao hàng</p>
+                      <p className="text-xs text-[#6B6259] uppercase tracking-wider">Mã giao hàng</p>
                       <p className="font-semibold text-gray-800">{activeOrder.ghnOrderCode}</p>
                     </div>
                     <button 
                       onClick={() => copyToClipboard(activeOrder.ghnOrderCode, 'giao')}
-                      className="text-[#99854e] hover:text-[#857241] p-2"
+                      className="text-[#756536] hover:text-[#857241] p-2"
                       title="Copy mã giao hàng"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,7 +208,7 @@ export default function StaffOrderDetailModal({
                 {activeOrder.ghnReturnOrderCode && (
                   <div className="bg-[#fdf3f3] p-3 border border-[#d32f2f] flex justify-between items-center rounded">
                     <div>
-                      <p className="text-xs text-[#5f5e5e] uppercase tracking-wider">Mã thu hồi</p>
+                      <p className="text-xs text-[#6B6259] uppercase tracking-wider">Mã thu hồi</p>
                       <p className="font-semibold text-gray-800">{activeOrder.ghnReturnOrderCode}</p>
                     </div>
                     <button 

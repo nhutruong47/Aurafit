@@ -10,7 +10,7 @@ const STATUS_LABELS = {
 };
 
 const STATUS_CLASSES = {
-  DRAFT: 'border-[#d7d2c8] bg-[#f4f4f2] text-[#5f5e5e]',
+  DRAFT: 'border-[#DED2C2] bg-[#F1EAE0] text-[#6B6259]',
   ACTIVE: 'border-green-200 bg-green-50 text-green-700',
   ENDED: 'border-blue-200 bg-blue-50 text-blue-700',
   CANCELLED: 'border-red-200 bg-red-50 text-red-700',
@@ -76,7 +76,7 @@ export default function AdminEventsSection({
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
+            className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             Tạo sự kiện
@@ -84,13 +84,13 @@ export default function AdminEventsSection({
         }
       >
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-[#5f5e5e]">
+          <p className="text-sm text-[#6B6259]">
             Quản lý thời gian, mức giảm và các sản phẩm được áp dụng cho từng event.
           </p>
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041] sm:w-52"
+            className="w-full border border-[#DED2C2] bg-[#FAF5ED] px-3 py-3 text-sm outline-none focus:border-[#756536] sm:w-52"
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="DRAFT">Bản nháp</option>
@@ -108,13 +108,13 @@ export default function AdminEventsSection({
         )}
 
         {isLoading ? (
-          <div className="flex min-h-64 items-center justify-center text-sm text-[#777777]">
+          <div className="flex min-h-64 items-center justify-center text-sm text-[#6B6259]">
             Đang tải danh sách sự kiện...
           </div>
         ) : events.length === 0 ? (
           <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
             <span className="material-symbols-outlined text-[48px] text-[#c7bfae]">event_busy</span>
-            <p className="text-sm text-[#5f5e5e]">Chưa có sự kiện phù hợp với bộ lọc hiện tại.</p>
+            <p className="text-sm text-[#6B6259]">Chưa có sự kiện phù hợp với bộ lọc hiện tại.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -130,11 +130,11 @@ export default function AdminEventsSection({
                   <th className="w-[150px] px-4 py-3 text-right">Hành động</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
+              <tbody className="divide-y divide-[#E8DDCE] bg-[#FAF5ED]">
                 {events.map((event) => (
                   <tr key={event.id} className="transition hover:bg-[#f5f2eb]">
                     <td className="px-4 py-3">
-                      <div className="h-12 w-16 overflow-hidden bg-[#ebe7df]">
+                      <div className="h-12 w-16 overflow-hidden bg-[#E8DDCE]">
                         {event.bannerImageUrl ? (
                           <img src={event.bannerImageUrl} alt={event.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                         ) : (
@@ -146,15 +146,15 @@ export default function AdminEventsSection({
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-black">{event.name}</p>
-                      <code className="mt-1 inline-block bg-[#eeeeee] px-1.5 py-0.5 text-[10px] text-[#777777]">
+                      <code className="mt-1 inline-block bg-[#eeeeee] px-1.5 py-0.5 text-[10px] text-[#6B6259]">
                         {event.slug || '—'}
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-xs leading-5 text-[#5f5e5e]">
+                    <td className="px-4 py-3 text-xs leading-5 text-[#6B6259]">
                       <p>{formatDateTime(event.startDate)}</p>
                       <p>→ {formatDateTime(event.endDate)}</p>
                     </td>
-                    <td className="px-4 py-3 text-center font-semibold text-[#7f7041]">
+                    <td className="px-4 py-3 text-center font-semibold text-[#756536]">
                       {Number(event.discountPercent || 0).toLocaleString('vi-VN')}%
                     </td>
                     <td className="px-4 py-3 text-center">

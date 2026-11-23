@@ -4,10 +4,10 @@ import { formatCurrency } from '../../utils/formatCurrency';
 function InfoRow({ icon, title, value, muted = false }) {
   return (
     <div className="flex gap-4">
-      <span className="material-symbols-outlined text-[#99854e]">{icon}</span>
+      <span className="material-symbols-outlined text-[#756536]">{icon}</span>
       <div>
         <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.15em]">{title}</p>
-        <p className={muted ? 'leading-6 text-[#5f5e5e]' : 'leading-6'}>{value}</p>
+        <p className={muted ? 'leading-6 text-[#6B6259]' : 'leading-6'}>{value}</p>
       </div>
     </div>
   );
@@ -16,7 +16,7 @@ function InfoRow({ icon, title, value, muted = false }) {
 function SmallSummary({ label, value }) {
   return (
     <div className="mb-4 flex items-center justify-between">
-      <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#999999]">{label}</span>
+      <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#6B6259]">{label}</span>
       <span>{value}</span>
     </div>
   );
@@ -32,8 +32,8 @@ export default function OrderSuccessSidebar({ order }) {
   return (
     <aside className="md:col-span-5">
       <div className="sticky top-32 space-y-12">
-        <div className="border border-[#cfc4c5] bg-white p-10">
-          <h2 className="mb-8 border-b border-[#cfc4c5] pb-4 text-[12px] font-semibold uppercase tracking-[0.2em]">
+        <div className="border border-[#DED2C2] bg-white p-10">
+          <h2 className="mb-8 border-b border-[#DED2C2] pb-4 text-[12px] font-semibold uppercase tracking-[0.2em]">
             Thông tin giao hàng
           </h2>
           <div className="space-y-8">
@@ -61,7 +61,7 @@ export default function OrderSuccessSidebar({ order }) {
           {deposit && <SmallSummary label="Tiền cọc (Hoàn trả)" value={formatCurrency(deposit)} />}
           {order?.deliveryMethod === 'GHN_DELIVERY' && <SmallSummary label="Phí vận chuyển" value={`+ ${formatCurrency(shippingFee)}`} />}
           {Number(discount) > 0 && <SmallSummary label="Giảm giá" value={`-${formatCurrency(discount)}`} />}
-          <div className="mt-4 flex items-center justify-between border-t border-[#cfc4c5] pt-4">
+          <div className="mt-4 flex items-center justify-between border-t border-[#DED2C2] pt-4">
             <span className="text-[12px] font-bold uppercase tracking-[0.15em]">Tổng thanh toán</span>
             <span className="font-serif text-3xl">{formatCurrency(total || subtotal || 0)}</span>
           </div>

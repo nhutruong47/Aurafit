@@ -83,7 +83,7 @@ export default function AdminProductsSection({
                 type="button"
                 onClick={handleRunAllEnrichment}
                 disabled={isRunningEnrichmentBatch}
-                className="flex items-center gap-2 border border-[#7f7041] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6d6037] transition hover:bg-[#7f7041] hover:text-white disabled:cursor-wait disabled:opacity-60"
+                className="flex items-center gap-2 border border-[#756536] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6d6037] transition hover:bg-[#756536] hover:text-white disabled:cursor-wait disabled:opacity-60"
               >
                 <span className={`material-symbols-outlined text-[17px] ${isRunningEnrichmentBatch ? 'animate-spin' : ''}`}>
                   {isRunningEnrichmentBatch ? 'progress_activity' : 'auto_awesome'}
@@ -93,7 +93,7 @@ export default function AdminProductsSection({
             )}
             <button
               onClick={handleOpenCreate}
-              className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
+              className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
               Đăng sản phẩm
@@ -116,14 +116,14 @@ export default function AdminProductsSection({
         {/* Filter bar */}
         <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_200px_160px]">
           <label className="relative block">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#6B6259]">
               search
             </span>
             <input
               value={productSearch}
               onChange={(event) => onProductSearchChange(event.target.value)}
               placeholder="Tìm theo tên, mô tả, đặc điểm..."
-              className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
+              className="w-full border border-[#DED2C2] bg-[#FAF5ED] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#756536]"
             />
           </label>
           <SearchableSelect
@@ -138,7 +138,7 @@ export default function AdminProductsSection({
           <select
             value={productStatusFilter}
             onChange={(event) => onProductStatusFilterChange(event.target.value)}
-            className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+            className="w-full border border-[#DED2C2] bg-[#FAF5ED] px-3 py-3 text-sm outline-none focus:border-[#756536]"
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="available">Đang hiển thị</option>
@@ -149,8 +149,8 @@ export default function AdminProductsSection({
         {/* Product table */}
         {filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
-            <span className="material-symbols-outlined text-[48px] text-[#d7d2c8]">inventory_2</span>
-            <p className="text-sm text-[#5f5e5e]">Không có sản phẩm nào khớp bộ lọc hiện tại.</p>
+            <span className="material-symbols-outlined text-[48px] text-[#DED2C2]">inventory_2</span>
+            <p className="text-sm text-[#6B6259]">Không có sản phẩm nào khớp bộ lọc hiện tại.</p>
           </div>
         ) : (
           <>
@@ -168,7 +168,7 @@ export default function AdminProductsSection({
                     <th className="px-4 py-3 w-[80px] text-right">Sửa</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
+                <tbody className="divide-y divide-[#E8DDCE] bg-[#FAF5ED]">
                   {filteredProducts.map((product) => (
                     <tr key={product.id} className="transition hover:bg-[#f5f2eb] cursor-pointer" onClick={() => handleOpenEdit(product)}>
                       <td className="px-4 py-3">
@@ -176,7 +176,7 @@ export default function AdminProductsSection({
                           {product.imageUrl ? (
                             <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                           ) : (
-                            <div className="flex h-full items-center justify-center text-[#999999]">
+                            <div className="flex h-full items-center justify-center text-[#6B6259]">
                               <span className="material-symbols-outlined text-[18px]">image</span>
                             </div>
                           )}
@@ -185,12 +185,12 @@ export default function AdminProductsSection({
                       <td className="px-4 py-3">
                         <p className="font-medium text-black">{product.name}</p>
                         {product.slug && (
-                          <code className="mt-0.5 inline-block bg-[#eeeeee] px-1 text-[10px] text-[#999999]">
+                          <code className="mt-0.5 inline-block bg-[#eeeeee] px-1 text-[10px] text-[#6B6259]">
                             {product.slug}
                           </code>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-[#5f5e5e]">
+                      <td className="px-4 py-3 text-xs text-[#6B6259]">
                         {product.category?.name || '—'}
                       </td>
                       <td className="px-4 py-3 text-xs font-medium">
@@ -200,12 +200,12 @@ export default function AdminProductsSection({
                         <span className={`inline-flex h-6 min-w-[24px] items-center justify-center px-1 text-[11px] font-bold ${
                           product.availableItemCount > 0
                             ? 'bg-green-50 text-green-700'
-                            : 'bg-[#f4f4f2] text-[#999999]'
+                            : 'bg-[#F1EAE0] text-[#6B6259]'
                         }`}>
                           {product.availableItemCount ?? 0}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-[#5f5e5e]">
+                      <td className="px-4 py-3 text-xs text-[#6B6259]">
                         {product.metadata?.style && (
                           <span>
                             {[product.metadata.style, product.metadata.occasion, product.metadata.season]
@@ -219,7 +219,7 @@ export default function AdminProductsSection({
                           className={`inline-block border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] ${
                             product.status === 'ACTIVE'
                               ? 'border-green-200 bg-green-50 text-green-700'
-                              : 'border-[#d7d2c8] bg-[#f4f4f2] text-[#999999]'
+                              : 'border-[#DED2C2] bg-[#F1EAE0] text-[#6B6259]'
                           }`}
                         >
                           {product.status === 'ACTIVE' ? 'Hiển thị' : product.status}

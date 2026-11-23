@@ -42,7 +42,7 @@ export default function AdBanners() {
             rel="noreferrer"
             className="group block overflow-hidden shadow-lg transition-transform hover:-translate-y-1 hover:shadow-xl bg-white border border-[#eaeaea]"
           >
-            <div className="w-full bg-[#f4f4f2]">
+            <div className="w-full bg-[#F1EAE0]">
               <img 
                 src={ad.imageUrl} 
                 alt={ad.name} 
@@ -68,7 +68,7 @@ export default function AdBanners() {
             rel="noreferrer"
             className="group block overflow-hidden shadow-lg transition-transform hover:-translate-y-1 hover:shadow-xl bg-white border border-[#eaeaea]"
           >
-            <div className="w-full bg-[#f4f4f2]">
+            <div className="w-full bg-[#F1EAE0]">
               <img 
                 src={ad.imageUrl} 
                 alt={ad.name} 

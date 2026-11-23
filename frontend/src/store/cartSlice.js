@@ -53,6 +53,13 @@ const mapCartItemToLocal = (cartItem) => {
 };
 
 /**
+ * Stable identity of a grouped cart entry. Checkout selects items by this key,
+ * so "Rent now" must use the same value after adding to the cart.
+ */
+export const getCartGroupId = (item) =>
+  `group-${item.costumeId}_${item.size || ''}_${item.color || ''}`;
+
+/**
  * Groups an array of flat cart items (each representing 1 physical SKU row)
  * by costumeId + size + color. Produces 1 grouped entry per unique variant.
  *
@@ -81,7 +88,7 @@ const groupCartItems = (flatItems) => {
       groups.set(key, {
         ...item,
         // Override identity fields for the grouped representation
-        cartId: `group-${key}`,
+        cartId: getCartGroupId(item),
         meta: [item.size, item.color].filter(Boolean).join(' • '),
         quantity: 1,
         cartItemIds: [item.cartItemId],

@@ -50,8 +50,8 @@ export default function RentalOrdersPage({ currentUser, onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
-      <main className="mx-auto max-w-[1440px] px-5 py-16 md:px-20 lg:py-24">
+    <div className="min-h-screen bg-[#F6F1E8] text-[#211E1B]">
+      <div className="mx-auto max-w-[1440px] px-5 py-16 md:px-20 lg:py-24">
         <OrdersHeader onRefresh={loadOrders} onContinueShopping={() => onNavigate?.('home')} />
 
         {error && <AlertMessage text={error} className="mb-8" />}
@@ -93,7 +93,7 @@ export default function RentalOrdersPage({ currentUser, onNavigate }) {
           onConfirm={handleConfirmCancel}
           isSubmitting={isCancelling}
         />
-      </main>
+      </div>
     </div>
   );
 }

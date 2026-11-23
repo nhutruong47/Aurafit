@@ -52,12 +52,12 @@ export default function ShippingTab({
   return (
     <div className="flex h-full gap-6">
       <div className="w-1/3 flex flex-col gap-4">
-        <div className="rounded-none md:rounded-sm bg-white border border-[#d7d2c8] p-4 shadow-sm flex flex-col gap-4 shrink-0">
-          <div className="flex p-1 bg-[#f4f4f2] rounded-md border border-[#d7d2c8]">
+        <div className="rounded-none md:rounded-sm bg-white border border-[#DED2C2] p-4 shadow-sm flex flex-col gap-4 shrink-0">
+          <div className="flex p-1 bg-[#F1EAE0] rounded-md border border-[#DED2C2]">
             <button
               onClick={() => setActiveSubTab('PENDING')}
               className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
-                activeSubTab === 'PENDING' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
+                activeSubTab === 'PENDING' ? 'bg-white text-[#211E1B] shadow-sm' : 'text-gray-500 hover:text-[#211E1B]'
               }`}
             >
               Chờ giao
@@ -65,7 +65,7 @@ export default function ShippingTab({
             <button
               onClick={() => setActiveSubTab('IN_TRANSIT')}
               className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
-                activeSubTab === 'IN_TRANSIT' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
+                activeSubTab === 'IN_TRANSIT' ? 'bg-white text-[#211E1B] shadow-sm' : 'text-gray-500 hover:text-[#211E1B]'
               }`}
             >
               Đang giao
@@ -78,11 +78,11 @@ export default function ShippingTab({
               placeholder="Tìm mã đơn, tên khách..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full rounded-md border-[#d7d2c8] pl-10 focus:border-[#7f7041] focus:ring-[#7f7041] sm:text-sm h-10 border px-3"
+              className="block w-full rounded-md border-[#DED2C2] pl-10 focus:border-[#756536] focus:ring-[#756536] sm:text-sm h-10 border px-3"
             />
           </div>
         </div>
-        <div className="flex-1 overflow-auto rounded-none md:rounded-sm bg-white shadow-sm border border-[#d7d2c8] divide-y divide-[#d7d2c8]">
+        <div className="flex-1 overflow-auto rounded-none md:rounded-sm bg-white shadow-sm border border-[#DED2C2] divide-y divide-[#DED2C2]">
           {displayedOrders.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-500">
               {activeSubTab === 'PENDING' ? 'Không có đơn hàng cần giao (GHN).' : 'Không có đơn hàng đang giao.'}
@@ -95,7 +95,7 @@ export default function ShippingTab({
                   setMode('SHIPPING');
                   openOrder(order.id);
                 }}
-                className={`w-full text-left p-4 hover:bg-[#f4f4f2] transition-colors ${activeOrder?.id === order.id ? 'bg-[#f4f4f2] border-l-4 border-[#7f7041]' : ''}`}
+                className={`w-full text-left p-4 hover:bg-[#F1EAE0] transition-colors ${activeOrder?.id === order.id ? 'bg-[#F1EAE0] border-l-4 border-[#756536]' : ''}`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-semibold text-gray-900">RO-{String(order.id).padStart(4, '0')}</span>
@@ -119,10 +119,10 @@ export default function ShippingTab({
           </div>
         ) : (
           <>
-            <div className="rounded-none md:rounded-sm bg-white p-5 shadow-sm border border-[#d7d2c8] shrink-0">
+            <div className="rounded-none md:rounded-sm bg-white p-5 shadow-sm border border-[#DED2C2] shrink-0">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-sm">
                 <div className="space-y-3">
-                  <h4 className="font-serif italic text-lg font-normal text-[#171717] border-b pb-2 mb-3">Thông tin Đơn hàng</h4>
+                  <h4 className="font-serif italic text-lg font-normal text-[#211E1B] border-b pb-2 mb-3">Thông tin Đơn hàng</h4>
                   <p className="flex justify-between items-start gap-4">
                     <span className="text-gray-500 whitespace-nowrap">Khách hàng:</span> 
                     <span className="font-medium text-gray-900 text-right">{activeOrder.customerName} - {activeOrder.customerPhone}</span>
@@ -163,7 +163,7 @@ export default function ShippingTab({
                 </div>
                 
                 <div className="space-y-3 border-t lg:border-t-0 lg:border-l border-gray-200 lg:pl-6 pt-4 lg:pt-0">
-                  <h4 className="font-serif italic text-lg font-normal text-[#171717] border-b pb-2 mb-3">Thông tin Tài chính</h4>
+                  <h4 className="font-serif italic text-lg font-normal text-[#211E1B] border-b pb-2 mb-3">Thông tin Tài chính</h4>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Phí thuê:</span>
                     <span className="font-medium">{formatCurrency(activeOrder.totalRentalFee || activeOrder.totalRentalPrice || 0)}</span>
@@ -184,13 +184,13 @@ export default function ShippingTab({
               </div>
             </div>
 
-            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#d7d2c8] flex flex-col">
+            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#DED2C2] flex flex-col">
               {activeSubTab === 'PENDING' ? (
                 <>
-                  <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Đóng gói & Giao GHN</h3>
+                  <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-3 mb-4">Đóng gói & Giao GHN</h3>
                   <form onSubmit={(e) => { e.preventDefault(); submitShipping(); }} className="flex flex-col gap-6">
                     <div className="space-y-4">
-                      <h4 className="font-serif italic text-lg font-normal text-[#171717]">Danh sách sản phẩm (Cần đóng gói)</h4>
+                      <h4 className="font-serif italic text-lg font-normal text-[#211E1B]">Danh sách sản phẩm (Cần đóng gói)</h4>
                       {activeOrder.details?.map(detail => (
                         <div key={detail.id} className="p-4 border border-gray-200 rounded-md bg-gray-50 flex flex-col gap-3">
                           <div className="font-medium text-gray-900">{detail.costumeName}</div>
@@ -216,7 +216,7 @@ export default function ShippingTab({
                           onUploaded={handleHandoverImageUploaded}
                         />
                         {(handoverImageUrl || handoverImageFile) && (
-                          <button type="button" onClick={() => setPreviewImage(handoverImageFile ? URL.createObjectURL(handoverImageFile) : handoverImageUrl)} className="mt-2 text-xs font-medium text-[#7f7041] hover:underline flex items-center gap-1">
+                          <button type="button" onClick={() => setPreviewImage(handoverImageFile ? URL.createObjectURL(handoverImageFile) : handoverImageUrl)} className="mt-2 text-xs font-medium text-[#756536] hover:underline flex items-center gap-1">
                             <span className="material-symbols-outlined text-[14px]">image</span>
                             Xem ảnh minh chứng đóng gói
                           </button>
@@ -229,7 +229,7 @@ export default function ShippingTab({
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
                             rows={2}
-                            className="block w-full rounded-md border-[#d7d2c8] text-sm border p-3 focus:border-[#7f7041] focus:ring-[#7f7041]"
+                            className="block w-full rounded-md border-[#DED2C2] text-sm border p-3 focus:border-[#756536] focus:ring-[#756536]"
                             placeholder="Ghi chú đóng gói, tình trạng hàng..."
                           />
                         </div>
@@ -240,7 +240,7 @@ export default function ShippingTab({
                       <button
                         type="submit"
                         disabled={isSubmitting || (!handoverImageUrl && !handoverImageFile)}
-                        className="w-full py-2.5 px-4 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors focus:outline-none disabled:bg-[#d7d2c8] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-2.5 px-4 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#756536] transition-colors focus:outline-none disabled:bg-[#DED2C2] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSubmitting ? 'Đang xử lý...' : `GIAO HÀNG CHO GHN`}
                       </button>
@@ -251,7 +251,7 @@ export default function ShippingTab({
                 </>
               ) : (
                 <>
-                  <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Theo dõi Đơn Hàng GHN</h3>
+                  <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-3 mb-4">Theo dõi Đơn Hàng GHN</h3>
                   <div className="flex flex-col gap-6">
                     <div className="bg-orange-50 border border-orange-100 p-4 rounded-md flex items-center justify-between shrink-0">
                       <div>
@@ -262,7 +262,7 @@ export default function ShippingTab({
                     </div>
 
                     <div className="border border-gray-200 rounded-md p-4 bg-gray-50">
-                      <h4 className="font-serif italic text-lg font-normal text-[#171717] mb-3">Danh sách sản phẩm chi tiết</h4>
+                      <h4 className="font-serif italic text-lg font-normal text-[#211E1B] mb-3">Danh sách sản phẩm chi tiết</h4>
                       <div className="space-y-4">
                         {activeOrder.details?.map(detail => (
                           <div key={detail.id} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3 bg-white">
@@ -305,7 +305,7 @@ export default function ShippingTab({
                     </div>
 
                     <div className="space-y-4 shrink-0">
-                      <h4 className="font-serif italic text-lg font-normal text-[#171717]">Hành động trạng thái</h4>
+                      <h4 className="font-serif italic text-lg font-normal text-[#211E1B]">Hành động trạng thái</h4>
                       <div className="flex flex-col gap-3">
                         <button
                           onClick={() => markOrderRented()}

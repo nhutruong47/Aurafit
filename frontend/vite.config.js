@@ -9,6 +9,20 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      manifest: {
+        name: 'AuraFit - Cho thuê trang phục',
+        short_name: 'AuraFit',
+        description: 'Nền tảng cho thuê trang phục cao cấp cho sự kiện, cosplay, kỷ yếu và truyền thống.',
+        lang: 'vi',
+        theme_color: '#4d3830',
+        background_color: '#f9f9f9',
+        display: 'standalone',
+        start_url: '/',
+        icons: [
+          { src: '/IconAF.webp', sizes: 'any', type: 'image/webp', purpose: 'any' },
+          { src: '/LogoAF.webp', sizes: 'any', type: 'image/webp', purpose: 'maskable' },
+        ],
+      },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}'],
         runtimeCaching: [
@@ -48,7 +62,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:8085',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },
@@ -58,7 +72,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:8085',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },

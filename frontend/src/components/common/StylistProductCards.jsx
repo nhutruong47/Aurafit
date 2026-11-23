@@ -45,7 +45,7 @@ function StylistProductCard({ costume, onSelect }) {
             {costume.categoryName}
           </p>
         )}
-        <p className="line-clamp-2 min-h-10 text-xs font-semibold leading-5 text-black transition group-hover:text-[#99854e]">
+        <p className="line-clamp-2 min-h-10 text-xs font-semibold leading-5 text-black transition group-hover:text-[#756536]">
           {costume.name}
         </p>
         {hasActiveDiscount && costume.eventName && (
@@ -56,7 +56,7 @@ function StylistProductCard({ costume, onSelect }) {
         <div className="mt-2 flex items-end justify-between gap-2 border-t border-[#eee9e0] pt-2">
           <div>
             <p className="text-[9px] uppercase tracking-[0.1em] text-[#8b877f]">Giá thuê</p>
-            <p className="mt-0.5 font-serif text-sm font-semibold text-[#7f7041]">
+            <p className="mt-0.5 font-serif text-sm font-semibold text-[#756536]">
               {formatCurrency(hasActiveDiscount ? costume.finalPrice : costume.rentalPrice)}
             </p>
             {hasActiveDiscount && (

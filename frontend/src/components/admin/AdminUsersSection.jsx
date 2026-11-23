@@ -85,7 +85,7 @@ export default function AdminUsersSection({
             <button
               type="button"
               onClick={handleOpenCreate}
-              className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041]"
+              className="flex items-center gap-2 bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536]"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
               Tạo staff
@@ -93,7 +93,7 @@ export default function AdminUsersSection({
           ) : null
         }
       >
-        <div className="mb-5 grid grid-cols-2 border border-[#d7d2c8] bg-[#f4f4f2] p-1 sm:w-fit">
+        <div className="mb-5 grid grid-cols-2 border border-[#DED2C2] bg-[#F1EAE0] p-1 sm:w-fit">
           {[
             ['STAFF', 'Nhân viên', 'badge'],
             ['CUSTOMER', 'Khách hàng', 'group'],
@@ -105,7 +105,7 @@ export default function AdminUsersSection({
               className={`flex min-w-40 items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold transition ${
                 activeRole === role
                   ? 'bg-[#111111] text-white shadow-sm'
-                  : 'text-[#5f5e5e] hover:bg-white hover:text-black'
+                  : 'text-[#6B6259] hover:bg-white hover:text-black'
               }`}
             >
               <span className="material-symbols-outlined text-[19px]">{icon}</span>
@@ -116,26 +116,26 @@ export default function AdminUsersSection({
 
         <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
           <label className="relative block flex-1 max-w-md">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#999999]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#6B6259]">
               search
             </span>
             <input
               value={userSearch}
               onChange={(event) => onUserSearchChange(event.target.value)}
               placeholder={`Tìm ${activeRole === 'STAFF' ? 'nhân viên' : 'khách hàng'} theo tên, email hoặc SĐT...`}
-              className="w-full border border-[#d7d2c8] bg-[#fafaf8] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#7f7041]"
+              className="w-full border border-[#DED2C2] bg-[#FAF5ED] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#756536]"
             />
           </label>
         </div>
 
         {message && <p className="mb-4 border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{message}</p>}
         {error && <p className="mb-4 border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-        {isLoading && <p className="border border-[#ebe7df] bg-[#fafaf8] p-6 text-sm text-[#5f5e5e]">Đang tải tài khoản...</p>}
+        {isLoading && <p className="border border-[#E8DDCE] bg-[#FAF5ED] p-6 text-sm text-[#6B6259]">Đang tải tài khoản...</p>}
 
         {!isLoading && filteredUsers.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
-            <span className="material-symbols-outlined text-[48px] text-[#d7d2c8]">group</span>
-            <p className="text-sm text-[#5f5e5e]">Không có tài khoản nào khớp bộ lọc hiện tại.</p>
+            <span className="material-symbols-outlined text-[48px] text-[#DED2C2]">group</span>
+            <p className="text-sm text-[#6B6259]">Không có tài khoản nào khớp bộ lọc hiện tại.</p>
           </div>
         ) : (
           !isLoading && (
@@ -151,14 +151,14 @@ export default function AdminUsersSection({
                       <th className="px-4 py-3 text-right">Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#ebe7df] bg-[#fafaf8]">
+                  <tbody className="divide-y divide-[#E8DDCE] bg-[#FAF5ED]">
                     {filteredUsers.map((user) => {
                       return (
                         <tr key={user.id} className="transition hover:bg-[#f5f2eb]">
                           <td className="px-4 py-4 font-medium text-black">{user.fullName || 'Chưa cập nhật'}</td>
-                          <td className="px-4 py-4 text-[#5f5e5e]">{user.email}</td>
-                          <td className="px-4 py-4 text-[#5f5e5e]">{user.phone || 'Chưa cập nhật'}</td>
-                          <td className="px-4 py-4 text-[#5f5e5e]">
+                          <td className="px-4 py-4 text-[#6B6259]">{user.email}</td>
+                          <td className="px-4 py-4 text-[#6B6259]">{user.phone || 'Chưa cập nhật'}</td>
+                          <td className="px-4 py-4 text-[#6B6259]">
                             <span
                               className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${
                                 user.status === 'ACTIVE'
@@ -176,7 +176,7 @@ export default function AdminUsersSection({
                                 <button
                                   type="button"
                                   onClick={() => setSelectedCustomer(user)}
-                                  className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041] transition hover:underline"
+                                  className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#756536] transition hover:underline"
                                 >
                                   Xem chi tiết
                                 </button>
@@ -245,14 +245,14 @@ export default function AdminUsersSection({
           />
 
           <label className="block">
-            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#777777]">
+            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6B6259]">
               Trạng thái
             </span>
             <select
               name="status"
               value={staffForm.status}
               onChange={handleFieldChange}
-              className="w-full border border-[#d7d2c8] bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#7f7041]"
+              className="w-full border border-[#DED2C2] bg-[#FAF5ED] px-3 py-3 text-sm outline-none focus:border-[#756536]"
             >
               <option value="ACTIVE">Hoạt động (ACTIVE)</option>
               <option value="BLOCKED">Vô hiệu hóa (BLOCKED)</option>
@@ -260,25 +260,27 @@ export default function AdminUsersSection({
           </label>
 
           <AdminField
-            label="Mật khẩu tạm thời (tùy chọn)"
+            label="Mật khẩu tạm thời"
             name="temporaryPassword"
             value={staffForm.temporaryPassword}
             onChange={handleFieldChange}
-            required={false}
+            type="password"
+            required
+            minLength={8}
           />
-          <p className="text-xs text-[#5f5e5e] italic -mt-2">Nếu để trống, mật khẩu mặc định sẽ là Staff@12345</p>
+          <p className="text-xs text-[#6B6259] italic -mt-2">Tối thiểu 8 ký tự. Nhân viên nên đổi mật khẩu sau lần đăng nhập đầu tiên.</p>
 
           <div className="flex gap-3 pt-4">
             <button
               disabled={isCreatingStaff}
-              className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7f7041] disabled:bg-[#777777]"
+              className="flex-1 bg-black py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#756536] disabled:bg-[#777777]"
             >
               {isCreatingStaff ? 'Đang tạo...' : 'Tạo tài khoản'}
             </button>
             <button
               type="button"
               onClick={handleCloseDrawer}
-              className="border border-[#d7d2c8] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:border-black hover:text-black"
+              className="border border-[#DED2C2] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259] transition hover:border-black hover:text-black"
             >
               Hủy
             </button>

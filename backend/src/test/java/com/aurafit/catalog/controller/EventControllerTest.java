@@ -49,6 +49,9 @@ class EventControllerTest {
     @MockBean
     private UserDetailsService userDetailsService;
 
+    @MockBean
+    private com.aurafit.business.user.repository.UserRepository userRepository;
+
     @Test
     void getUpcomingAndActiveEvents_shouldBePublicAndReturnBannerShape() throws Exception {
         LocalDateTime startDate = LocalDateTime.of(2026, 7, 20, 8, 0);

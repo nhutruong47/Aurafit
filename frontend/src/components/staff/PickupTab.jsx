@@ -28,7 +28,7 @@ export default function PickupTab({
   return (
     <div className="flex h-full gap-6">
       <div className="w-1/3 flex flex-col gap-4">
-        <div className="rounded-none md:rounded-sm bg-white border border-[#d7d2c8] p-4 shadow-sm">
+        <div className="rounded-none md:rounded-sm bg-white border border-[#DED2C2] p-4 shadow-sm">
            <div className="relative">
              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
              <input
@@ -36,11 +36,11 @@ export default function PickupTab({
                placeholder="Tìm mã đơn, tên khách..."
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
-               className="block w-full rounded-md border-[#d7d2c8] pl-10 focus:border-[#7f7041] focus:ring-[#7f7041] sm:text-sm h-10 border px-3"
+               className="block w-full rounded-md border-[#DED2C2] pl-10 focus:border-[#756536] focus:ring-[#756536] sm:text-sm h-10 border px-3"
              />
            </div>
         </div>
-        <div className="flex-1 overflow-auto rounded-none md:rounded-sm bg-white shadow-sm border border-[#d7d2c8] divide-y divide-[#d7d2c8]">
+        <div className="flex-1 overflow-auto rounded-none md:rounded-sm bg-white shadow-sm border border-[#DED2C2] divide-y divide-[#DED2C2]">
           {filteredOrders.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-500">Không có đơn hàng cần xử lý.</div>
           ) : (
@@ -51,7 +51,7 @@ export default function PickupTab({
                   setMode('PICKUP');
                   openOrder(order.id);
                 }}
-                className={`w-full text-left p-4 hover:bg-[#f4f4f2] transition-colors ${activeOrder?.id === order.id ? 'bg-[#f4f4f2] border-l-4 border-[#7f7041]' : ''}`}
+                className={`w-full text-left p-4 hover:bg-[#F1EAE0] transition-colors ${activeOrder?.id === order.id ? 'bg-[#F1EAE0] border-l-4 border-[#756536]' : ''}`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-semibold text-gray-900">RO-{String(order.id).padStart(4, '0')}</span>
@@ -75,8 +75,8 @@ export default function PickupTab({
           </div>
         ) : (
           <>
-            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#d7d2c8] shrink-0">
-              <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Thông tin khách hàng & Đơn hàng</h3>
+            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#DED2C2] shrink-0">
+              <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-3 mb-4">Thông tin khách hàng & Đơn hàng</h3>
               <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
                 <div><span className="text-gray-500">Khách hàng:</span> <span className="font-medium ml-1">{activeOrder.customerName}</span></div>
                 <div><span className="text-gray-500">Điện thoại:</span> <span className="font-medium ml-1">{activeOrder.customerPhone}</span></div>
@@ -89,11 +89,11 @@ export default function PickupTab({
               </div>
             </div>
 
-            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#d7d2c8] flex flex-col">
-              <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Biên bản xử lý PICKUP</h3>
+            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#DED2C2] flex flex-col">
+              <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-3 mb-4">Biên bản xử lý PICKUP</h3>
               <form onSubmit={(e) => { e.preventDefault(); submitHandover(); }} className="flex flex-col gap-6">
                 <div className="space-y-4">
-                  <h4 className="font-serif italic text-lg font-normal text-[#171717]">Danh sách sản phẩm</h4>
+                  <h4 className="font-serif italic text-lg font-normal text-[#211E1B]">Danh sách sản phẩm</h4>
                   {activeOrder.details?.map(detail => (
                     <div key={detail.id} className="p-4 border border-gray-200 rounded-md bg-gray-50 flex flex-col gap-3">
                       <div className="font-medium text-gray-900">{detail.costumeName}</div>
@@ -120,7 +120,7 @@ export default function PickupTab({
                       onUploaded={handleHandoverImageUploaded}
                     />
                     {(handoverImageUrl || handoverImageFile) && (
-                       <button type="button" onClick={() => setPreviewImage(handoverImageFile ? URL.createObjectURL(handoverImageFile) : handoverImageUrl)} className="mt-2 text-xs font-medium text-[#7f7041] hover:underline flex items-center gap-1">
+                       <button type="button" onClick={() => setPreviewImage(handoverImageFile ? URL.createObjectURL(handoverImageFile) : handoverImageUrl)} className="mt-2 text-xs font-medium text-[#756536] hover:underline flex items-center gap-1">
                          <span className="material-symbols-outlined text-[14px]">image</span>
                          Xem ảnh minh chứng
                        </button>
@@ -133,7 +133,7 @@ export default function PickupTab({
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                         rows={2}
-                        className="block w-full rounded-md border-[#d7d2c8] text-sm border p-3 focus:border-[#7f7041] focus:ring-[#7f7041]"
+                        className="block w-full rounded-md border-[#DED2C2] text-sm border p-3 focus:border-[#756536] focus:ring-[#756536]"
                         placeholder="Ghi chú thêm..."
                       />
                     </div>
@@ -144,7 +144,7 @@ export default function PickupTab({
                       <button
                         type="submit"
                         disabled={isSubmitting || (!handoverImageUrl && !handoverImageFile)}
-                        className="w-full py-2.5 px-4 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors focus:outline-none disabled:bg-[#d7d2c8] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-2.5 px-4 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#756536] transition-colors focus:outline-none disabled:bg-[#DED2C2] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSubmitting ? 'Đang xử lý...' : `Xác nhận PICKUP`}
                       </button>

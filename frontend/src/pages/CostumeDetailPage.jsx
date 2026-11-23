@@ -462,7 +462,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] px-4 pb-12 pt-4 sm:px-6 lg:px-8 xl:px-0">
+    <div className="min-h-screen bg-[#F6F1E8] px-4 pb-12 pt-4 sm:px-6 lg:px-8 xl:px-0">
       <div className="w-full xl:grid xl:grid-cols-[minmax(120px,1fr)_minmax(0,1440px)_minmax(120px,1fr)] xl:items-stretch" data-event-page-grid="costume-detail">
         <aside className="hidden min-h-0 self-stretch xl:block xl:px-4" aria-label="Sự kiện nổi bật bên trái">
           {leftEvent && <EventSideBanner side="left" event={leftEvent} />}
@@ -471,7 +471,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
         <div className="mx-auto w-full min-w-0 max-w-[1440px] xl:mx-0" data-event-page-content="costume-detail">
           <button
             onClick={() => navigate(-1)}
-            className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5f5e5e] transition hover:text-black"
+            className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6B6259] transition hover:text-black"
           >
             <span className="material-symbols-outlined text-[16px]">west</span>
             Quay lại
@@ -494,23 +494,23 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
 
           {product && (
             <div className="mt-6">
-              <div className="border border-[#cfc4c5] bg-white p-6">
-                <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#99854e]">Mô tả sản phẩm</h3>
-                <p className="text-sm leading-7 text-[#5f5e5e]">
+              <div className="border border-[#DED2C2] bg-white p-6">
+                <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#756536]">Mô tả sản phẩm</h2>
+                <p className="text-sm leading-7 text-[#6B6259]">
                   {product.description ||
                     'Trang phục cao cấp mang đến trải nghiệm nổi bật cho sự kiện của bạn. Thiết kế tỉ mỉ, chất liệu chỉn chu và kiểu dáng ấn tượng giúp bạn tỏa sáng ở mọi góc nhìn.'}
                 </p>
               </div>
 
-              <div className="border-x border-b border-[#cfc4c5] bg-[#f5f2eb] p-4 sm:p-5">
+              <div className="border-x border-b border-[#DED2C2] bg-[#f5f2eb] p-4 sm:p-5">
                 <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#99854e]">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#756536]">
                       Trợ lý thông minh AuraFit
                     </p>
                     <h3 className="mt-1 font-serif text-lg text-black">Chọn trải nghiệm dành cho bạn</h3>
                   </div>
-                  <p className="text-xs text-[#777777]">Nhanh chóng · Cá nhân hóa · Dễ sử dụng</p>
+                  <p className="text-xs text-[#6B6259]">Nhanh chóng · Cá nhân hóa · Dễ sử dụng</p>
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2">
@@ -518,15 +518,15 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
                     ref={tryOnBtnRef}
                     type="button"
                     onClick={() => tryOnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    className="group relative min-h-44 overflow-hidden border border-[#c8b378] bg-gradient-to-br from-[#fffdf7] via-[#f8f0d9] to-[#ead9aa] p-5 text-left shadow-[0_8px_24px_rgba(127,112,65,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-[#99854e] hover:shadow-[0_16px_32px_rgba(127,112,65,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#99854e] focus-visible:ring-offset-2"
+                    className="group relative min-h-44 overflow-hidden border border-[#D6B87E] bg-gradient-to-br from-[#fffdf7] via-[#f8f0d9] to-[#ead9aa] p-5 text-left shadow-[0_8px_24px_rgba(127,112,65,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-[#A98A55] hover:shadow-[0_16px_32px_rgba(127,112,65,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A98A55] focus-visible:ring-offset-2"
                   >
                     <span className="pointer-events-none absolute -right-8 -top-10 size-32 rounded-full border border-white/60 bg-white/25 transition-transform duration-500 group-hover:scale-125" />
                     <span className="relative flex h-full flex-col justify-between gap-5">
                       <span className="flex items-start justify-between gap-3">
-                        <span className="inline-flex size-11 items-center justify-center rounded-full bg-[#99854e] text-white shadow-lg shadow-[#99854e]/20">
+                        <span className="inline-flex size-11 items-center justify-center rounded-full bg-[#756536] text-white shadow-lg shadow-[#A98A55]/20">
                           <span className="material-symbols-outlined text-[23px]">apparel</span>
                         </span>
-                        <span className="border border-[#99854e]/30 bg-white/70 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#7f7041] backdrop-blur-sm">
+                        <span className="border border-[#A98A55]/30 bg-white/70 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#756536] backdrop-blur-sm">
                           AI Powered
                         </span>
                       </span>
@@ -535,7 +535,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
                         <span className="mt-1 block text-xs leading-5 text-[#665d49]">
                           Tải ảnh và xem trước trang phục trên chính bạn chỉ trong vài bước.
                         </span>
-                        <span className="mt-4 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7f7041]">
+                        <span className="mt-4 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#756536]">
                           Thử đồ ngay
                           <span className="material-symbols-outlined text-[17px] transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
                         </span>
@@ -547,7 +547,7 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
                     ref={chatBtnRef}
                     type="button"
                     onClick={() => onNavigate?.('chat', product)}
-                    className="group relative min-h-44 overflow-hidden border border-black bg-gradient-to-br from-[#181818] via-[#24221e] to-[#4a402b] p-5 text-left text-white shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 hover:border-[#7f7041] hover:shadow-[0_16px_32px_rgba(0,0,0,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                    className="group relative min-h-44 overflow-hidden border border-black bg-gradient-to-br from-[#181818] via-[#24221e] to-[#4a402b] p-5 text-left text-white shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 hover:border-[#756536] hover:shadow-[0_16px_32px_rgba(0,0,0,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
                   >
                     <span className="pointer-events-none absolute -bottom-14 -right-8 size-40 rounded-full border border-white/10 bg-white/5 transition-transform duration-500 group-hover:scale-125" />
                     <span className="relative flex h-full flex-col justify-between gap-5">
@@ -580,17 +580,17 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
             <div
               ref={tryOnRef}
               id="try-on-section"
-              className="mt-6 overflow-hidden border border-[#cfc4c5] bg-white"
+              className="mt-6 overflow-hidden border border-[#DED2C2] bg-white"
             >
               <div className="flex items-center gap-3 border-b border-[#eee] px-6 py-4">
                 <span
                   className="flex h-9 w-9 items-center justify-center rounded-full text-white"
-                  style={{ background: '#99854e' }}
+                  style={{ background: '#A98A55' }}
                 >
                   <span className="material-symbols-outlined text-[20px]">apparel</span>
                 </span>
                 <div>
-                  <h2 className="text-base font-bold text-[#1A1A1A]">AI Virtual Try-On</h2>
+                  <h2 className="text-base font-bold text-[#211E1B]">AI Virtual Try-On</h2>
                   <p className="text-xs text-gray-500">
                     Tải ảnh của bạn để xem trước khi mặc thử trang phục này
                   </p>
@@ -633,15 +633,15 @@ export default function CostumeDetailPage({ onAddToCart, onRentNow, onNavigate, 
           )}
 
           {(isRelatedLoading || relatedProducts.length > 0) && (
-            <section className="mt-12 border-t border-[#cfc4c5] pt-10">
-              <h2 className="mb-8 font-serif text-3xl font-normal text-[#1a1c1c] sm:text-4xl">
+            <section className="mt-12 border-t border-[#DED2C2] pt-10">
+              <h2 className="mb-8 font-serif text-3xl font-normal text-[#211E1B] sm:text-4xl">
                 Sản phẩm liên quan
               </h2>
 
               {isRelatedLoading ? (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="overflow-hidden border border-[#cfc4c5] bg-white">
+                    <div key={index} className="overflow-hidden border border-[#DED2C2] bg-white">
                       <div className="h-64 animate-pulse bg-[#f1eceb]" />
                       <div className="space-y-4 p-5">
                         <div className="h-5 w-3/4 animate-pulse bg-[#ece7e6]" />

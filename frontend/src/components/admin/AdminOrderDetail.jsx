@@ -44,7 +44,7 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
           <button
             onClick={() => handleAction(adminOrderService.shipOrder, 'Đã giao hàng cho GHN')}
             disabled={isLoading}
-            className="w-full sm:w-auto bg-[#99854e] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#857241] disabled:opacity-50 transition-colors"
+            className="w-full sm:w-auto bg-[#756536] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#857241] disabled:opacity-50 transition-colors"
           >
             {isLoading ? 'Đang xử lý...' : 'Giao hàng cho GHN'}
           </button>
@@ -142,7 +142,7 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
               Đơn Hàng RO-{String(order.id).padStart(4, '0')}
             </h2>
             <div className="mt-1 flex items-center gap-2">
-              <span className="text-sm text-[#5f5e5e]">Trạng thái:</span>
+              <span className="text-sm text-[#6B6259]">Trạng thái:</span>
               <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider bg-gray-200 text-gray-800">
                 {order.status}
               </span>
@@ -170,7 +170,7 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                 </h3>
                 <div className="space-y-2 text-sm bg-gray-50 p-4 border border-[#e1dddc]">
                   <div className="flex justify-between">
-                    <span className="text-[#5f5e5e]">Phí thuê:</span>
+                    <span className="text-[#6B6259]">Phí thuê:</span>
                     <span className="font-semibold">{formatCurrency(order.totalRentalFee || 0)}</span>
                   </div>
                   {Number(order.discountAmount || 0) > 0 && (
@@ -180,11 +180,11 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-[#5f5e5e]">Tiền cọc:</span>
+                    <span className="text-[#6B6259]">Tiền cọc:</span>
                     <span className="font-semibold">{formatCurrency(order.totalDeposit || 0)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#5f5e5e]">Phí vận chuyển:</span>
+                    <span className="text-[#6B6259]">Phí vận chuyển:</span>
                     <span className="font-semibold">
                       {order.shippingFee ? formatCurrency(order.shippingFee) : '0 đ'}
                     </span>
@@ -210,11 +210,11 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                        loading="lazy" decoding="async" />
                       <div className="flex-1">
                         <p className="font-semibold text-sm line-clamp-2">{detail.costumeName}</p>
-                        <p className="text-xs text-[#5f5e5e] uppercase tracking-wider mt-1">
+                        <p className="text-xs text-[#6B6259] uppercase tracking-wider mt-1">
                           {detail.skuCode} | Size: {detail.size}
                         </p>
                         <OrderItemPromotion detail={detail} className="mt-2" />
-                        <p className="mt-1 text-xs text-[#5f5e5e]">
+                        <p className="mt-1 text-xs text-[#6B6259]">
                           Tiền cọc: <span className="font-semibold text-gray-900">{formatCurrency(detail.deposit)}</span>
                         </p>
                       </div>
@@ -231,12 +231,12 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                   Thông Tin Khách Hàng
                 </h3>
                 <div className="space-y-2 text-sm">
-                  <p><span className="text-[#5f5e5e] w-24 inline-block">Họ tên:</span> <span className="font-semibold">{order.customerName}</span></p>
-                  <p><span className="text-[#5f5e5e] w-24 inline-block">SĐT:</span> <span className="font-semibold">{order.customerPhone}</span></p>
-                  <p><span className="text-[#5f5e5e] w-24 inline-block">Email:</span> <span className="font-semibold">{order.customerEmail}</span></p>
-                  <p><span className="text-[#5f5e5e] w-24 inline-block">Ngày tạo:</span> <span className="font-semibold">{order.createdAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(order.createdAt)) : '—'}</span></p>
-                  <p><span className="text-[#5f5e5e] w-24 inline-block">Loại đơn:</span> <span className="font-semibold">{order.deliveryMethod === 'STORE_PICKUP' ? 'Thuê tại cửa hàng' : 'Giao hàng GHN'}</span></p>
-                  <p><span className="text-[#5f5e5e] w-24 inline-block align-top">Địa chỉ:</span> <span className="font-semibold inline-block w-[calc(100%-6rem)]">{order.deliveryAddress || 'Nhận tại cửa hàng'}</span></p>
+                  <p><span className="text-[#6B6259] w-24 inline-block">Họ tên:</span> <span className="font-semibold">{order.customerName}</span></p>
+                  <p><span className="text-[#6B6259] w-24 inline-block">SĐT:</span> <span className="font-semibold">{order.customerPhone}</span></p>
+                  <p><span className="text-[#6B6259] w-24 inline-block">Email:</span> <span className="font-semibold">{order.customerEmail}</span></p>
+                  <p><span className="text-[#6B6259] w-24 inline-block">Ngày tạo:</span> <span className="font-semibold">{order.createdAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(order.createdAt)) : '—'}</span></p>
+                  <p><span className="text-[#6B6259] w-24 inline-block">Loại đơn:</span> <span className="font-semibold">{order.deliveryMethod === 'STORE_PICKUP' ? 'Thuê tại cửa hàng' : 'Giao hàng GHN'}</span></p>
+                  <p><span className="text-[#6B6259] w-24 inline-block align-top">Địa chỉ:</span> <span className="font-semibold inline-block w-[calc(100%-6rem)]">{order.deliveryAddress || 'Nhận tại cửa hàng'}</span></p>
                 </div>
               </section>
 
@@ -246,13 +246,13 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                 </h3>
                 <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-4 border border-[#e1dddc]">
                   <div>
-                    <p className="text-xs text-[#5f5e5e] uppercase tracking-wider mb-1">Ngày nhận</p>
+                    <p className="text-xs text-[#6B6259] uppercase tracking-wider mb-1">Ngày nhận</p>
                     <p className="font-semibold">
                       {order.rentalStartDate ? new Date(order.rentalStartDate).toLocaleDateString('vi-VN') : '---'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-[#5f5e5e] uppercase tracking-wider mb-1">Ngày trả</p>
+                    <p className="text-xs text-[#6B6259] uppercase tracking-wider mb-1">Ngày trả</p>
                     <p className="font-semibold">
                       {order.rentalEndDate ? new Date(order.rentalEndDate).toLocaleDateString('vi-VN') : '---'}
                     </p>
@@ -268,14 +268,14 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                   </h3>
                   <div className="space-y-3">
                     {order.ghnOrderCode && (
-                      <div className="bg-[#f8f4e8] p-3 border border-[#99854e] flex justify-between items-center">
+                      <div className="bg-[#f8f4e8] p-3 border border-[#A98A55] flex justify-between items-center">
                         <div>
-                          <p className="text-xs text-[#5f5e5e] uppercase tracking-wider">Mã giao hàng</p>
+                          <p className="text-xs text-[#6B6259] uppercase tracking-wider">Mã giao hàng</p>
                           <p className="font-semibold text-gray-800">{order.ghnOrderCode}</p>
                         </div>
                         <button 
                           onClick={() => copyToClipboard(order.ghnOrderCode, 'giao')}
-                          className="text-[#99854e] hover:text-[#857241] p-2"
+                          className="text-[#756536] hover:text-[#857241] p-2"
                           title="Copy mã giao hàng"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,7 +287,7 @@ export default function AdminOrderDetail({ isOpen, onClose, order, onRefresh, is
                     {order.ghnReturnOrderCode && (
                       <div className="bg-[#fdf3f3] p-3 border border-[#d32f2f] flex justify-between items-center">
                         <div>
-                          <p className="text-xs text-[#5f5e5e] uppercase tracking-wider">Mã thu hồi</p>
+                          <p className="text-xs text-[#6B6259] uppercase tracking-wider">Mã thu hồi</p>
                           <p className="font-semibold text-gray-800">{order.ghnReturnOrderCode}</p>
                         </div>
                         <button 

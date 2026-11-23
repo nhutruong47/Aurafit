@@ -4,7 +4,7 @@ export default function AlertMessage({ tone = 'error', text, className = '' }) {
     tone === 'success'
       ? 'border-[#087b3f]/30 bg-[#e8f7ee] text-[#087b3f]'
       : tone === 'info'
-        ? 'border-[#99854e]/30 bg-[#99854e]/10 text-[#99854e]'
+        ? 'border-[#A98A55]/30 bg-[#756536]/10 text-[#756536]'
         : 'border-[#ba1a1a]/30 bg-[#ffdad6] text-[#93000a]';
   //12
 

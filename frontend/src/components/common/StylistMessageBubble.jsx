@@ -68,7 +68,7 @@ export default function StylistMessageBubble({ message, compact = false }) {
         className={`${compact ? 'max-w-[calc(100%_-_2.375rem)] px-3.5 py-3' : 'max-w-[calc(100%_-_2.625rem)] px-4 py-3.5 sm:max-w-[78%]'} rounded-2xl rounded-tl-md border shadow-[0_5px_18px_rgba(63,52,30,0.06)] ${
           errorPresentation
             ? errorPresentation.className
-            : 'border-[#e4ddd2] bg-[#fffdf8] text-[#333333]'
+            : 'border-[#e4ddd2] bg-[#FFFCF7] text-[#333333]'
         }`}
       >
         <div className="mb-2 flex items-center gap-1.5">

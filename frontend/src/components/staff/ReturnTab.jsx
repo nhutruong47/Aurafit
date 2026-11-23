@@ -239,7 +239,7 @@ export default function ReturnTab({
 
   const renderInspectionForm = () => (
     <>
-      <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Nghiệm thu & Thanh toán</h3>
+      <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-3 mb-4">Nghiệm thu & Thanh toán</h3>
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="space-y-4">
           <div className="bg-gray-50 p-4 rounded-md border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -308,7 +308,7 @@ export default function ReturnTab({
                 }}
               />
               {(returnImageUrl || returnImageFile) && (
-                <button type="button" onClick={() => setPreviewImage(returnImageFile ? URL.createObjectURL(returnImageFile) : returnImageUrl)} className="mt-2 text-xs font-medium text-[#7f7041] hover:underline flex items-center gap-1">
+                <button type="button" onClick={() => setPreviewImage(returnImageFile ? URL.createObjectURL(returnImageFile) : returnImageUrl)} className="mt-2 text-xs font-medium text-[#756536] hover:underline flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">image</span>
                   Xem ảnh minh chứng trả hàng
                 </button>
@@ -353,7 +353,7 @@ export default function ReturnTab({
           </div>
           
           <div className="bg-blue-50 p-4 rounded-md mt-4 border border-blue-100">
-            <h4 className="font-serif italic text-lg font-normal text-[#171717] mb-2">Tổng kết thanh toán</h4>
+            <h4 className="font-serif italic text-lg font-normal text-[#211E1B] mb-2">Tổng kết thanh toán</h4>
             <div className="flex justify-between text-sm mb-1">
               <span className="text-blue-800">Tiền cọc khách đã trả:</span>
               <span className="font-medium">{formatCurrency(activeOrder.totalDeposit)}</span>
@@ -376,7 +376,7 @@ export default function ReturnTab({
           <button
             type="submit"
             disabled={isSubmitting || (!returnImageUrl && !returnImageFile) || !actualReturnDate}
-            className="py-2.5 px-6 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors focus:outline-none disabled:bg-[#d7d2c8] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="py-2.5 px-6 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#756536] transition-colors focus:outline-none disabled:bg-[#DED2C2] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Đang xử lý...' : `XÁC NHẬN NGHIỆM THU & HOÀN CỌC`}
           </button>
@@ -411,7 +411,7 @@ export default function ReturnTab({
 
     return (
       <>
-        <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Chi tiết giải ngân</h3>
+        <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-3 mb-4">Chi tiết giải ngân</h3>
         <div className="flex flex-col gap-6">
           <div className="bg-gray-50 border border-gray-200 p-4 rounded-md">
             <h4 className="font-semibold text-gray-800 mb-3">Tóm tắt nghiệm thu</h4>
@@ -469,7 +469,7 @@ export default function ReturnTab({
             <button
               onClick={() => setShowRefundModal(true)}
               disabled={!hasBankInfo || isSubmitting}
-              className="py-2.5 px-6 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors disabled:bg-[#d7d2c8] disabled:cursor-not-allowed"
+              className="py-2.5 px-6 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#756536] transition-colors disabled:bg-[#DED2C2] disabled:cursor-not-allowed"
             >
               TIẾN HÀNH GIẢI NGÂN
             </button>
@@ -490,12 +490,12 @@ export default function ReturnTab({
   return (
     <div className="flex h-full gap-6">
       <div className="w-1/3 flex flex-col gap-4">
-        <div className="rounded-none md:rounded-sm bg-white border border-[#d7d2c8] p-4 shadow-sm flex flex-col gap-4 shrink-0">
-          <div className="flex p-1 bg-[#f4f4f2] rounded-md border border-[#d7d2c8]">
+        <div className="rounded-none md:rounded-sm bg-white border border-[#DED2C2] p-4 shadow-sm flex flex-col gap-4 shrink-0">
+          <div className="flex p-1 bg-[#F1EAE0] rounded-md border border-[#DED2C2]">
             <button
               onClick={() => setActiveSubTab('PENDING')}
               className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
-                activeSubTab === 'PENDING' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
+                activeSubTab === 'PENDING' ? 'bg-white text-[#211E1B] shadow-sm' : 'text-gray-500 hover:text-[#211E1B]'
               }`}
             >
               Cần thu hồi
@@ -503,7 +503,7 @@ export default function ReturnTab({
             <button
               onClick={() => { setActiveSubTab('IN_TRANSIT'); openOrder(null); }}
               className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
-                activeSubTab === 'IN_TRANSIT' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
+                activeSubTab === 'IN_TRANSIT' ? 'bg-white text-[#211E1B] shadow-sm' : 'text-gray-500 hover:text-[#211E1B]'
               }`}
             >
               Đang hoàn về
@@ -511,7 +511,7 @@ export default function ReturnTab({
             <button
               onClick={() => { setActiveSubTab('PENDING_REFUND'); openOrder(null); }}
               className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
-                activeSubTab === 'PENDING_REFUND' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
+                activeSubTab === 'PENDING_REFUND' ? 'bg-white text-[#211E1B] shadow-sm' : 'text-gray-500 hover:text-[#211E1B]'
               }`}
             >
               Chờ giải ngân
@@ -519,7 +519,7 @@ export default function ReturnTab({
             <button
               onClick={() => { setActiveSubTab('CANCELLED_REFUND'); openOrder(null); }}
               className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors ${
-                activeSubTab === 'CANCELLED_REFUND' ? 'bg-white text-[#171717] shadow-sm' : 'text-gray-500 hover:text-[#171717]'
+                activeSubTab === 'CANCELLED_REFUND' ? 'bg-white text-[#211E1B] shadow-sm' : 'text-gray-500 hover:text-[#211E1B]'
               }`}
             >
               Đơn hủy
@@ -532,11 +532,11 @@ export default function ReturnTab({
                placeholder="Tìm mã đơn, tên khách..."
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
-               className="block w-full rounded-md border-[#d7d2c8] pl-10 focus:border-[#7f7041] focus:ring-[#7f7041] sm:text-sm h-10 border px-3"
+               className="block w-full rounded-md border-[#DED2C2] pl-10 focus:border-[#756536] focus:ring-[#756536] sm:text-sm h-10 border px-3"
              />
           </div>
         </div>
-        <div className="flex-1 overflow-auto rounded-none md:rounded-sm bg-white shadow-sm border border-[#d7d2c8] divide-y divide-[#d7d2c8]">
+        <div className="flex-1 overflow-auto rounded-none md:rounded-sm bg-white shadow-sm border border-[#DED2C2] divide-y divide-[#DED2C2]">
           {displayedOrders.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-500">
               {activeSubTab === 'PENDING' ? 'Không có đơn hàng cần thu hồi.' : 
@@ -551,7 +551,7 @@ export default function ReturnTab({
                   setMode('RETURN');
                   openOrder(order.id);
                 }}
-                className={`w-full text-left p-4 hover:bg-[#f4f4f2] transition-colors ${activeOrder?.id === order.id ? 'bg-[#f4f4f2] border-l-4 border-[#7f7041]' : ''}`}
+                className={`w-full text-left p-4 hover:bg-[#F1EAE0] transition-colors ${activeOrder?.id === order.id ? 'bg-[#F1EAE0] border-l-4 border-[#756536]' : ''}`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-semibold text-gray-900">RO-{String(order.id).padStart(4, '0')}</span>
@@ -579,8 +579,8 @@ export default function ReturnTab({
           </div>
         ) : (
           <>
-            <div className="rounded-none md:rounded-sm bg-white p-5 shadow-sm border border-[#d7d2c8] shrink-0">
-              <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-2 mb-3">Thông tin khách hàng & Đơn hàng</h3>
+            <div className="rounded-none md:rounded-sm bg-white p-5 shadow-sm border border-[#DED2C2] shrink-0">
+              <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-2 mb-3">Thông tin khách hàng & Đơn hàng</h3>
               <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
                 <div><span className="text-gray-500">Khách hàng:</span> <span className="font-medium ml-1">{activeOrder.customerName}</span></div>
                 <div><span className="text-gray-500">Điện thoại:</span> <span className="font-medium ml-1">{activeOrder.customerPhone}</span></div>
@@ -601,8 +601,8 @@ export default function ReturnTab({
             </div>
 
             {activeOrder.status === 'CANCELLED' ? (
-              <div className="bg-white rounded-none md:rounded-sm border border-[#d7d2c8] shadow-sm p-6 mb-4 flex flex-col">
-                <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Hoàn tiền đơn hủy</h3>
+              <div className="bg-white rounded-none md:rounded-sm border border-[#DED2C2] shadow-sm p-6 mb-4 flex flex-col">
+                <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-3 mb-4">Hoàn tiền đơn hủy</h3>
                 <p className="text-gray-600 text-sm mb-4">Đơn hàng này đã bị hủy. Vui lòng hoàn lại toàn bộ số tiền khách đã thanh toán.</p>
                 <div className="bg-blue-50 border border-blue-200 p-4 rounded-md mb-6">
                   <div className="flex justify-between font-semibold text-lg text-blue-800">
@@ -613,7 +613,7 @@ export default function ReturnTab({
                 <div className="flex justify-end">
                   <button
                     onClick={() => setShowRefundModal(true)}
-                    className="py-2.5 px-6 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors"
+                    className="py-2.5 px-6 border border-transparent rounded-sm shadow-sm text-sm font-medium text-white bg-[#111111] hover:bg-[#756536] transition-colors"
                   >
                     HOÀN TIỀN QUA VIETQR
                   </button>
@@ -628,11 +628,11 @@ export default function ReturnTab({
                 )}
               </div>
             ) : (
-            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#d7d2c8] flex flex-col">
+            <div className="rounded-none md:rounded-sm bg-white p-6 shadow-sm border border-[#DED2C2] flex flex-col">
               {activeSubTab === 'PENDING' ? (
                 activeOrder.deliveryMethod === 'STORE_PICKUP' ? renderInspectionForm() :
                 <>
-                  <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Theo dõi thu hồi GHN</h3>
+                  <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-3 mb-4">Theo dõi thu hồi GHN</h3>
                   <div className="flex-1 flex flex-col gap-6 justify-center max-w-sm mx-auto w-full">
                     <div className="text-center text-gray-600 mb-2">
                       <span className="material-symbols-outlined text-5xl text-blue-400 mb-4">archive</span>
@@ -642,7 +642,7 @@ export default function ReturnTab({
                     <button
                       onClick={() => returnOrder()}
                       disabled={isSubmitting}
-                      className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-sm shadow-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors focus:outline-none disabled:bg-[#d7d2c8]"
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-sm shadow-sm font-medium text-white bg-[#111111] hover:bg-[#756536] transition-colors focus:outline-none disabled:bg-[#DED2C2]"
                     >
                       <span className="material-symbols-outlined">sync</span>
                       TẠO ĐƠN THU HỒI GHN
@@ -654,7 +654,7 @@ export default function ReturnTab({
               ) : (
                 activeOrder.status === 'RETURNING' ? (
                   <>
-                    <h3 className="font-serif italic text-xl font-normal text-[#171717] border-b pb-3 mb-4">Theo dõi Đơn Hàng Hoàn Trả GHN</h3>
+                    <h3 className="font-serif italic text-xl font-normal text-[#211E1B] border-b pb-3 mb-4">Theo dõi Đơn Hàng Hoàn Trả GHN</h3>
                     <div className="flex-1 flex flex-col gap-6 justify-center max-w-sm mx-auto w-full">
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
                         <span className="block text-sm text-gray-500 mb-1">Mã vận đơn thu hồi GHN</span>
@@ -666,7 +666,7 @@ export default function ReturnTab({
                         <button
                           onClick={() => markOrderReturned()}
                           disabled={isSubmitting}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-sm shadow-sm font-medium text-white bg-[#111111] hover:bg-[#7f7041] transition-colors focus:outline-none disabled:bg-[#d7d2c8]"
+                          className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-sm shadow-sm font-medium text-white bg-[#111111] hover:bg-[#756536] transition-colors focus:outline-none disabled:bg-[#DED2C2]"
                         >
                           <span className="material-symbols-outlined">inventory_2</span>
                           Xác nhận nhận hàng tại kho
